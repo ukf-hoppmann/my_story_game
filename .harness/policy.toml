@@ -1,0 +1,120 @@
+schema_version = 2
+policy_version = "YYYY.MM.REVISION"
+default_profile = "default"
+
+[execution.containers.example]
+theme = "example"
+capabilities = ["example-test-program"]
+image = "replace-with-local-runner-image:version"
+uid = 10001
+gid = 10001
+warning_seconds = 30
+heartbeat_seconds = 30
+timeout_seconds = 900
+memory_bytes = 2147483648
+cpus = 2.0
+pids_limit = 256
+workspace_bytes = 1073741824
+temp_bytes = 268435456
+export_bytes = 134217728
+export_entries = 10000
+
+[reports]
+root = ".harness/runs"
+
+# Optional reproducible image-build contract. Standard verification never
+# invokes these operations. The configured toolchain must already exist locally
+# and must be adopted explicitly before an offline project-image build.
+#
+# [image_builds]
+# lock = ".harness/image-builds.lock.json"
+#
+# [image_builds.targets.verification]
+# containerfile = ".harness/Containerfile"
+# context_inputs = ["pyproject.toml", "src", "tests"]
+# output_image = "project-runner-image:version"
+# toolchain_build_argument = "TOOLCHAIN_IMAGE"
+# network = false
+# pull = false
+# smoke_program = "example-test-program"
+# smoke_arguments = ["--version"]
+#
+# [image_builds.targets.verification.toolchain]
+# image = "project-toolchain-image:version"
+# dependency_inputs = [".harness/Toolchain.Containerfile", "dependency.lock"]
+# smoke_program = "example-test-program"
+# smoke_arguments = ["--version"]
+
+[rules]
+core = ["governance", "development", "documentation", "testing", "security"]
+# Standard for recommended/Goal and strict projects: material goals are
+# decomposed into independently verifiable subtasks when useful.
+modules = ["model-efficiency", "task-decomposition", "tdd"]
+project_rules = ".harness/project-rules.md"
+
+[changes]
+enabled = true
+target_branch = "main"
+branch_prefix = "changes/"
+worktree_directory = ".agent-harness-worktrees"
+worktree_location = "project"
+autonomous_follow_on = true
+approval_mode = "goal"
+goal_default_operations = ["integration", "cleanup"]
+integration_profile = "default"
+
+[changes.companion_scopes]
+tests = ["tests/"]
+documentation = [
+  "README.md",
+  "CHANGELOG.md",
+  "docs/development/",
+  "docs/guides/",
+  "docs/reference/",
+]
+backlog = ["docs/TODO.md"]
+
+[todo]
+enabled = true
+path = "docs/TODO.md"
+format_version = 2
+
+# Optional isolated Docker Compose resources for profiles that require local
+# databases or services. The effective topology must pass Harness safety
+# validation before startup.
+#
+# [test_resources.example]
+# kind = "docker-compose"
+# compose_file = "compose.test.yaml"
+# network = "test"
+# project_name_prefix = "agent-harness-example"
+# startup_timeout_seconds = 60
+# cleanup_timeout_seconds = 5
+
+[runners.example]
+container_theme = "example"
+container_capabilities = ["example-test-program"]
+program = "example-test-program"
+arguments = ["--junit", "{junit_path}"]
+affected_arguments = ["--junit", "{junit_path}", "{test_paths}"]
+working_directory = "."
+result_format = "junit"
+junit_required = true
+network = false
+external_services = false
+destructive = false
+filesystem_scope = "repository"
+
+[profiles.default]
+runners = ["example"]
+# test_resources = ["example"]
+standard = true
+
+[selection]
+fallback_paths = [".harness/", "AGENTS.md"]
+
+[[selection.components]]
+name = "example"
+source_paths = ["src/example/", "tests/example/"]
+test_paths = ["tests/example/"]
+targets = ["example"]

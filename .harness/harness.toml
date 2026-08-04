@@ -1,0 +1,46 @@
+schema_version = 1
+
+[harness]
+enabled = true
+core_enabled = true
+
+[source]
+kind = "local"
+path = "../Agent_Harness"
+
+[rules]
+project_rules = ".harness/project-rules.md"
+
+[modules.isolated-changes]
+enabled = true
+
+[modules.llm-testing]
+enabled = false
+
+[modules.model-efficiency]
+enabled = true
+
+[modules.persistence]
+enabled = false
+
+[modules.semver]
+enabled = false
+
+[modules.strict-change-approval]
+enabled = false
+
+[modules.task-decomposition]
+enabled = true
+
+[modules.tdd]
+enabled = true
+
+[modules.testing]
+enabled = true
+
+[modules.todo-backlog]
+enabled = true
+
+[verification]
+enabled = true
+config = ".harness/verification.toml"

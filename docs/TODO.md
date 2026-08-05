@@ -136,7 +136,7 @@ After explicit rejection:
 
 - `TASK-006` **Komponierbare Operationsarchitektur verbindlich einführen**
   - Type: Task.
-  - Status: Awaiting confirmation.
+  - Status: Completed.
   - Parent: None.
   - Created: 2026-08-05.
   - Area: Anwendungsarchitektur.
@@ -144,6 +144,7 @@ After explicit rejection:
   - Dependencies: None.
   - Goal: Die bestehende GameState-Anwendung verhaltensgleich auf kleine typisierte Operationen, anwendungseigene Ports und explizite Verdrahtung migrieren und diese Struktur anschließend als verbindlichen Architekturvertrag festhalten.
   - Completion criteria: Die frühere GameState-Service-Fassade enthält keine Anwendungslogik mehr; Erstellen, Laden und Committen sind unabhängig testbare Operationen mit `Success`- und `Failure`-Ergebnissen; Domain und Anwendung hängen nicht von API oder Infrastruktur ab; Architekturtests sichern die Grenzen; eine verständliche deutsche Erklärung und die verbindliche Regelquelle sind vorhanden; die vollständige isolierte Prüfung mit PostgreSQL besteht.
+  - Resolution: Confirmed by the project owner on 2026-08-05.
 
 - `EPIC-001` **Storygame-Datenmodell neu implementieren**
   - Type: Epic.

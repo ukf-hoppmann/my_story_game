@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+
+script_directory="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+compose_file="${script_directory}/compose.yaml"
+api_port="${API_HOST_PORT:-8000}"
+
+if ! command -v docker >/dev/null 2>&1; then
+  echo "Fehler: Docker wurde nicht gefunden." >&2
+  exit 1
+fi
+
+if ! docker compose version >/dev/null 2>&1; then
+  echo "Fehler: Docker Compose ist nicht verfügbar." >&2
+  exit 1
+fi
+
+if [[ ! -f "${compose_file}" ]]; then
+  echo "Fehler: Compose-Datei fehlt: ${compose_file}" >&2
+  exit 1
+fi
+
+echo "Starte Story Game mit PostgreSQL und API ..."
+docker compose --file "${compose_file}" up \
+  --build \
+  --detach \
+  --wait \
+  postgres api
+
+cat <<EOF
+
+Story Game läuft:
+  API:        http://localhost:${api_port}
+  Swagger UI: http://localhost:${api_port}/docs
+  OpenAPI:    http://localhost:${api_port}/openapi.json
+  ReDoc:      http://localhost:${api_port}/redoc
+
+Zum Stoppen: docker compose --file "${compose_file}" down
+EOF

@@ -6,14 +6,21 @@ darf diesen Zustand nicht direkt schreiben. Es erzeugt Prosa und geprüfte
 `ApprovedChangeSet`, den die Domain mit einer erwarteten `StateRevision`
 anwendet.
 
-## Kleine Ports statt einer God-Klasse
+## Kleine Ports und Operationen statt einer God-Klasse
 
-Die Anwendung kennt nur zwei Ports:
+Die Anwendung kennt schmale, fachlich benannte Ports:
 
 - `GameStateReader.load(run_id, revision)` lädt einen validierten Zustand.
 - `GameStateWriter.create_initial(state)` legt den initialen Zustand an.
 - `GameStateWriter.commit(run_id, changes)` wendet einen geprüften
   Änderungssatz atomar auf die erwartete Revision an.
+- `GameStateDocumentCodec` übersetzt das versionierte Zustandsdokument, ohne
+  den HTTP-Adapter an die konkrete JSON-Implementierung zu koppeln.
+
+Darauf aufbauend führen `CreateInitialGameState`, `LoadGameState` und
+`CommitGameStateChanges` jeweils genau einen Anwendungsfall aus. Sie liefern
+ein typisiertes `Success`- oder `Failure`-Ergebnis. Die API setzt diese
+Operationen zusammen und übersetzt die Fehler erst an ihrer HTTP-Grenze.
 
 Die JSON-Implementierung besteht aus getrennten Komponenten:
 

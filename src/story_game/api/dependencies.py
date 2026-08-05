@@ -1,15 +1,26 @@
-"""FastAPI dependencies exposing application services, not database objects."""
+"""FastAPI dependencies exposing application contracts, not infrastructure."""
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from fastapi import Request
 
-from story_game.application.game_state_service import GameStateService
+from story_game.application.game_state import GameStateOperations
+from story_game.application.ports import GameStateDocumentCodec
 
 
-def get_game_state_service(request: Request) -> GameStateService:
-    """Resolve the service installed by the application lifespan."""
-    service = getattr(request.app.state, "game_state_service", None)
-    if not isinstance(service, GameStateService):
-        raise RuntimeError("Der GameStateService wurde nicht initialisiert")
-    return service
+@dataclass(frozen=True, slots=True)
+class ApiDependencies:
+    """Application-facing dependencies required by the HTTP adapter."""
+
+    operations: GameStateOperations
+    state_codec: GameStateDocumentCodec
+
+
+def get_api_dependencies(request: Request) -> ApiDependencies:
+    """Resolve the application contracts installed by the app lifespan."""
+    dependencies = getattr(request.app.state, "api_dependencies", None)
+    if not isinstance(dependencies, ApiDependencies):
+        raise RuntimeError("Die API-Abhängigkeiten wurden nicht initialisiert")
+    return dependencies

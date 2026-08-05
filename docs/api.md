@@ -32,7 +32,16 @@ Mit gestarteter API sind die interaktiven API-Verträge verfügbar unter:
 PostgreSQL und API können gemeinsam gestartet werden:
 
 ```bash
-docker compose up --build --detach --wait postgres api
+./story-starter
+```
+
+Das Skript kann direkt aus dem Projektverzeichnis ausgeführt werden. Es baut
+das API-Image bei Bedarf, startet PostgreSQL und die API und wartet, bis beide
+Dienste bereit sind. Zum Stoppen der Container ohne Löschen des PostgreSQL-
+Volumes:
+
+```bash
+docker compose down
 ```
 
 Die API führt beim Start die idempotente PostgreSQL-Migration aus. Für lokale

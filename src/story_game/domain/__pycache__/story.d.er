@@ -1,0 +1,61 @@
+##[pylyzer] failed /users/hoppmann/documents/github/my_story_game/src/story_game/domain/story.py 1785880611 9376
+
+.___v_desugar_1 = pyimport "__future__"
+.annotations: Never
+.___v_desugar_2 = pyimport "dataclasses"
+.dataclass: {dataclasses.DataClass}
+.field: (default := dataclasses::_MISSING_TYPE, default_factory := dataclasses::_MISSING_TYPE, init := Bool, repr := Bool, hash := Bool, compare := Bool, metadata := GenericDict, kw_only := dataclasses::_MISSING_TYPE) -> (Obj) -> Obj
+.replace: Never
+.___v_desugar_3 = pyimport "errors"
+.InvalidReferenceError: Never
+.ValidationError: Never
+.___v_desugar_4 = pyimport "value_objects"
+.ChapterStatus: Never
+.GoalStatus: Never
+.StableId: {value_objects.StableId}
+.StateRevision: {value_objects.StateRevision}
+.StorySequence: {value_objects.StorySequence}
+.ThreadStatus: Never
+.Visibility: Never
+._text: (value: Str, label: Str) -> Str
+._unique_ids: (items: Tuple([Obj, NoneType]), label: Str) -> NoneType
+.Scene: ClassType
+.Scene.sequence: value_objects.StorySequence
+.Scene.location_id: value_objects.StableId
+.Scene.id: value_objects.StableId
+.Scene.__call__: () -> .Scene
+.Scene.participants: Tuple([.SceneParticipant, NoneType])
+.Scene.title: Str
+.Scene.focus: Str
+.Scene.focus_entity_id: value_objects.StableId or NoneType
+.Scene.__post_init__: |Type_59 <: Str, Type_51 <: Structural({.focus = Type_59})|(self: Type_51) -> NoneType
+
+.StorySummary: ClassType
+.StorySummary.from_sequence: value_objects.StorySequence
+.StorySummary.through_sequence: value_objects.StorySequence
+.StorySummary.text: Str
+.StorySummary.based_on_revision: value_objects.StateRevision
+.StorySummary.__call__: () -> .StorySummary
+.StorySummary.__post_init__: |Type_80 <: Str, Type_76 <: Structural({.text = Type_80})|(self: Type_76) -> NoneType
+
+.StoryState: ClassType
+.StoryState.__call__: () -> .StoryState
+.StoryState.events: Tuple([.StoryEvent, NoneType])
+.StoryState.scenes: Tuple([.Scene, NoneType])
+.StoryState.chapters: Tuple([.Chapter, NoneType])
+.StoryState.threads: Tuple([.StoryThread, NoneType])
+.StoryState.goals: Tuple([.Goal, NoneType])
+.StoryState.summaries: Tuple([.StorySummary, NoneType])
+.StoryState.current_scene_id: value_objects.StableId or NoneType
+.StoryState.current_chapter_id: value_objects.StableId or NoneType
+.StoryState.current_sequence: Int
+.StoryState.__post_init__: |Type_114: Type, Type_83 <: Structural({.current_chapter_id = Type_114})|(self: Type_83) -> NoneType
+.StoryState.add_event: |Type_85 <: Structural({.current_sequence = Type_118}), Type_118: Type|(self: Type_85, event: .StoryEvent) -> .StoryState
+.StoryState.add_scene: (self: .StoryState, scene: .Scene) -> .StoryState
+.StoryState.set_current_scene: (self: .StoryState, scene_id: value_objects.StableId) -> .StoryState
+.StoryState.add_chapter: (self: .StoryState, chapter: .Chapter) -> .StoryState
+.StoryState.add_thread: (self: .StoryState, thread: .StoryThread) -> .StoryState
+.StoryState.update_thread: (self: .StoryState, thread: .StoryThread) -> .StoryState
+.StoryState.add_goal: (self: .StoryState, goal: .Goal) -> .StoryState
+.StoryState.update_goal: (self: .StoryState, goal: .Goal) -> .StoryState
+

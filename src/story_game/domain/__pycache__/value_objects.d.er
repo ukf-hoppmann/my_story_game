@@ -1,0 +1,37 @@
+##[pylyzer] failed /users/hoppmann/documents/github/my_story_game/src/story_game/domain/value_objects.py 1785880611 4437
+
+.___v_desugar_1 = pyimport "__future__"
+.annotations: Never
+.___v_desugar_2 = pyimport "dataclasses"
+.dataclass: {dataclasses.DataClass}
+.___v_desugar_3 = pyimport "enum"
+.StrEnum: Never
+.___v_desugar_4 = pyimport "uuid"
+.uuid4: Never
+.___v_desugar_5 = pyimport "errors"
+.ValidationError: Never
+.StableId: ClassType
+.StableId.value: Str
+.StableId.__call__: () -> .StableId
+.StableId.__post_init__: |Type_22 <: Structural({.value = Type_28}), Type_28 <: Str|(self: Type_22) -> NoneType
+.StableId.new: (cls: (Str) -> .StableId) -> .StableId
+.StableId.__str__: |Type_26 <: Structural({.value = Type_32}), Type_32 <: Str|(self: Type_26) -> Str
+
+.StateRevision: ClassType
+.StateRevision.value: Int
+.StateRevision.__call__: () -> .StateRevision
+.StateRevision.__post_init__: |Type_36 <: Structural({.value = Type_40}), R :> {1}, Type_40 <: Structural({.__lt__ = (self: Never, R) -> Bool})|(self: Type_36) -> NoneType
+.StateRevision.next: |Type_38 <: Structural({.value = Type_42}), Type_42 <: Structural({.__add__ = (self: Never, R) -> O}), R :> {1}, O: Type|(self: Type_38) -> .StateRevision
+
+.StorySequence: ClassType
+.StorySequence.value: Int
+.StorySequence.__call__: () -> .StorySequence
+.StorySequence.__post_init__: |Type_46 <: Structural({.value = Type_48}), Type_48 <: Structural({.__lt__ = (self: Never, R) -> Bool}), R :> {1}|(self: Type_46) -> NoneType
+
+.Evidence: ClassType
+.Evidence.source: Str
+.Evidence.__call__: () -> .Evidence
+.Evidence.reference: .StableId or NoneType
+.Evidence.excerpt: Str or NoneType
+.Evidence.__post_init__: |Type_62: Type, Type_58 <: Structural({.excerpt = Type_62})|(self: Type_58) -> NoneType
+

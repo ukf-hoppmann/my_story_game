@@ -1,0 +1,35 @@
+##[pylyzer] failed /users/hoppmann/documents/github/my_story_game/src/story_game/domain/world.py 1785880611 11502
+
+.___v_desugar_1 = pyimport "__future__"
+.annotations: Never
+.___v_desugar_2 = pyimport "dataclasses"
+.dataclass: {dataclasses.DataClass}
+.field: (default := dataclasses::_MISSING_TYPE, default_factory := dataclasses::_MISSING_TYPE, init := Bool, repr := Bool, hash := Bool, compare := Bool, metadata := GenericDict, kw_only := dataclasses::_MISSING_TYPE) -> (Obj) -> Obj
+.replace: Never
+.___v_desugar_3 = pyimport "errors"
+.InvalidReferenceError: Never
+.ValidationError: Never
+.___v_desugar_4 = pyimport "value_objects"
+.ActorRole: Never
+.EntityKind: Never
+.Evidence: {value_objects.Evidence}
+.RelationKind: Never
+.StableId: {value_objects.StableId}
+.StorySequence: {value_objects.StorySequence}
+.Visibility: Never
+._require_text: (value: Str, field_name: Str) -> Str
+._unique_ids: (items: Tuple([Obj, NoneType]), field_name: Str) -> NoneType
+.Condition: ClassType
+.Condition.name: Str
+.Condition.__call__: () -> .Condition
+.Condition.description: Str
+.Condition.__post_init__: |Type_46 <: Str, Type_43 <: Structural({.description = Type_46})|(self: Type_43) -> NoneType
+
+.KnowledgeEntry: ClassType
+.KnowledgeEntry.fact_id: value_objects.StableId
+.KnowledgeEntry.learned_at: value_objects.StorySequence
+.KnowledgeEntry.actor_id: value_objects.StableId
+.KnowledgeEntry.__call__: () -> .KnowledgeEntry
+.KnowledgeEntry.forgotten_at: value_objects.StorySequence or NoneType
+.KnowledgeEntry.__post_init__: |R: Type, Type_65 <: Structural({.learned_at = R})|(self: Type_65) -> NoneType
+

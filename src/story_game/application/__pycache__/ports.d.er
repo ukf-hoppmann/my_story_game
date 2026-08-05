@@ -1,0 +1,11 @@
+##[pylyzer] failed /users/hoppmann/documents/github/my_story_game/src/story_game/application/ports.py 1785883575 713
+
+.___v_desugar_1 = pyimport "__future__"
+.annotations: Never
+.___v_desugar_2 = pyimport "typing"
+.Protocol: (Type := NoneType) -> Type
+.___v_desugar_3 = pyimport "(...)"
+.ApprovedChangeSet: Never
+.GameState: Never
+.StableId: Never
+.StateRevision: Never

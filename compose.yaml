@@ -15,5 +15,27 @@ services:
       timeout: 3s
       retries: 15
 
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      STORY_GAME_POSTGRES_DSN: "postgresql://${POSTGRES_USER:-story_game}:${POSTGRES_PASSWORD:-story_game_dev}@postgres:5432/${POSTGRES_DB:-story_game}"
+      STORY_GAME_AUTO_MIGRATE: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${API_HOST_PORT:-8000}:8000"
+    command:
+      [
+        "uvicorn",
+        "story_game.api.app:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000"
+      ]
+
 volumes:
   story-game-postgres-data:

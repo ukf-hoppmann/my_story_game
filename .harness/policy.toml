@@ -1,11 +1,11 @@
 schema_version = 2
-policy_version = "YYYY.MM.REVISION"
+policy_version = "2026.08.05"
 default_profile = "default"
 
-[execution.containers.example]
-theme = "example"
-capabilities = ["example-test-program"]
-image = "replace-with-local-runner-image:version"
+[execution.containers.python]
+theme = "python"
+capabilities = ["python", "pytest", "fastapi", "httpx", "psycopg"]
+image = "sha256:d564908295dcc7e0b365f5b2ded260ef60a8ac34edf98c8ce18e8b2734f540b5"
 uid = 10001
 gid = 10001
 warning_seconds = 30
@@ -22,33 +22,8 @@ export_entries = 10000
 [reports]
 root = ".harness/runs"
 
-# Optional reproducible image-build contract. Standard verification never
-# invokes these operations. The configured toolchain must already exist locally
-# and must be adopted explicitly before an offline project-image build.
-#
-# [image_builds]
-# lock = ".harness/image-builds.lock.json"
-#
-# [image_builds.targets.verification]
-# containerfile = ".harness/Containerfile"
-# context_inputs = ["pyproject.toml", "src", "tests"]
-# output_image = "project-runner-image:version"
-# toolchain_build_argument = "TOOLCHAIN_IMAGE"
-# network = false
-# pull = false
-# smoke_program = "example-test-program"
-# smoke_arguments = ["--version"]
-#
-# [image_builds.targets.verification.toolchain]
-# image = "project-toolchain-image:version"
-# dependency_inputs = [".harness/Toolchain.Containerfile", "dependency.lock"]
-# smoke_program = "example-test-program"
-# smoke_arguments = ["--version"]
-
 [rules]
 core = ["governance", "development", "documentation", "testing", "security"]
-# Standard for recommended/Goal and strict projects: material goals are
-# decomposed into independently verifiable subtasks when useful.
 modules = ["model-efficiency", "task-decomposition", "tdd"]
 project_rules = ".harness/project-rules.md"
 
@@ -79,24 +54,39 @@ enabled = true
 path = "docs/TODO.md"
 format_version = 2
 
-# Optional isolated Docker Compose resources for profiles that require local
-# databases or services. The effective topology must pass Harness safety
-# validation before startup.
-#
-# [test_resources.example]
-# kind = "docker-compose"
-# compose_file = "compose.test.yaml"
-# network = "test"
-# project_name_prefix = "agent-harness-example"
-# startup_timeout_seconds = 60
-# cleanup_timeout_seconds = 5
+[test_resources.postgres]
+kind = "docker-compose"
+compose_file = "compose.test.yaml"
+network = "test"
+project_name_prefix = "story-game-tests"
+startup_timeout_seconds = 60
+cleanup_timeout_seconds = 10
 
-[runners.example]
-container_theme = "example"
-container_capabilities = ["example-test-program"]
-program = "example-test-program"
-arguments = ["--junit", "{junit_path}"]
-affected_arguments = ["--junit", "{junit_path}", "{test_paths}"]
+[runners.python]
+container_theme = "python"
+container_capabilities = ["python", "pytest", "fastapi", "httpx", "psycopg"]
+program = "{python}"
+arguments = [
+  "-m",
+  "pytest",
+  "--junitxml={junit_path}",
+  "--basetemp={temp_directory}",
+  "-o",
+  "cache_dir={cache_directory}",
+  "-o",
+  "pythonpath=src",
+]
+affected_arguments = [
+  "-m",
+  "pytest",
+  "--junitxml={junit_path}",
+  "--basetemp={temp_directory}",
+  "-o",
+  "cache_dir={cache_directory}",
+  "-o",
+  "pythonpath=src",
+  "{test_paths}",
+]
 working_directory = "."
 result_format = "junit"
 junit_required = true
@@ -106,15 +96,46 @@ destructive = false
 filesystem_scope = "repository"
 
 [profiles.default]
-runners = ["example"]
-# test_resources = ["example"]
+runners = ["python"]
+test_resources = ["postgres"]
+standard = true
+
+[profiles.unit]
+runners = ["python"]
 standard = true
 
 [selection]
-fallback_paths = [".harness/", "AGENTS.md"]
+fallback_paths = [
+  ".harness/",
+  "AGENTS.md",
+  "compose.test.yaml",
+  "docs/dokumentation/",
+  "pyproject.toml",
+]
 
 [[selection.components]]
-name = "example"
-source_paths = ["src/example/", "tests/example/"]
-test_paths = ["tests/example/"]
-targets = ["example"]
+name = "domain"
+source_paths = ["src/story_game/domain/", "tests/domain/"]
+test_paths = ["tests/domain/", "tests/architecture/"]
+targets = ["python"]
+
+[[selection.components]]
+name = "application"
+source_paths = ["src/story_game/application/", "tests/application/"]
+test_paths = ["tests/application/", "tests/architecture/"]
+targets = ["python"]
+
+[[selection.components]]
+name = "api"
+source_paths = ["src/story_game/api/", "tests/api/"]
+test_paths = ["tests/api/", "tests/architecture/"]
+targets = ["python"]
+
+[[selection.components]]
+name = "persistence"
+source_paths = [
+  "src/story_game/infrastructure/",
+  "tests/persistence/",
+]
+test_paths = ["tests/persistence/", "tests/architecture/"]
+targets = ["python"]

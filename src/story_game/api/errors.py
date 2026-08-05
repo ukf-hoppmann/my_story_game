@@ -5,26 +5,37 @@ from __future__ import annotations
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from story_game.domain.errors import DomainError, RevisionConflictError
-from story_game.infrastructure.persistence.errors import (
-    PersistenceConflictError,
-    PersistenceConsistencyError,
-    PersistenceError,
-    PersistenceNotFoundError,
+from story_game.api.results import OperationFailed
+from story_game.application.game_state import (
+    RunConflict,
+    RunNotFound,
+    StateRejected,
+    StateStoreUnavailable,
+    StoredStateInvalid,
 )
+from story_game.domain.errors import DomainError, RevisionConflictError
 
 
 def register_error_handlers(app: FastAPI) -> None:
-    app.add_exception_handler(PersistenceNotFoundError, _not_found)
-    app.add_exception_handler(PersistenceConflictError, _conflict)
+    app.add_exception_handler(OperationFailed, _operation_failed)
     app.add_exception_handler(RevisionConflictError, _conflict)
-    app.add_exception_handler(PersistenceConsistencyError, _consistency)
     app.add_exception_handler(DomainError, _domain_error)
-    app.add_exception_handler(PersistenceError, _persistence_error)
 
 
-async def _not_found(request: Request, exc: Exception) -> JSONResponse:
-    return _error_response(404, "not_found", exc)
+async def _operation_failed(request: Request, exc: Exception) -> JSONResponse:
+    assert isinstance(exc, OperationFailed)
+    error = exc.error
+    if isinstance(error, RunNotFound):
+        return _error_response(404, "not_found", error.detail)
+    if isinstance(error, RunConflict):
+        return _error_response(409, "revision_conflict", error.detail)
+    if isinstance(error, StateRejected):
+        return _error_response(422, "domain_validation_failed", error.detail)
+    if isinstance(error, StoredStateInvalid):
+        return _error_response(500, "persistence_consistency_failed", error.detail)
+    if isinstance(error, StateStoreUnavailable):
+        return _error_response(503, "persistence_unavailable", error.detail)
+    raise exc
 
 
 async def _conflict(request: Request, exc: Exception) -> JSONResponse:
@@ -35,19 +46,13 @@ async def _domain_error(request: Request, exc: Exception) -> JSONResponse:
     return _error_response(422, "domain_validation_failed", exc)
 
 
-async def _consistency(request: Request, exc: Exception) -> JSONResponse:
-    return _error_response(500, "persistence_consistency_failed", exc)
-
-
-async def _persistence_error(request: Request, exc: Exception) -> JSONResponse:
-    return _error_response(503, "persistence_unavailable", exc)
-
-
-def _error_response(status_code: int, error_type: str, exc: Exception) -> JSONResponse:
+def _error_response(
+    status_code: int, error_type: str, detail: Exception | str
+) -> JSONResponse:
     return JSONResponse(
         status_code=status_code,
         content={
             "error": error_type,
-            "detail": str(exc),
+            "detail": str(detail),
         },
     )

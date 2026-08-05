@@ -6,7 +6,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Query, status
 
-from story_game.api.dependencies import get_game_state_service
+from story_game.api.dependencies import ApiDependencies, get_api_dependencies
 from story_game.api.mappers import (
     approved_changes_to_domain,
     state_from_api,
@@ -14,7 +14,11 @@ from story_game.api.mappers import (
 )
 from story_game.api.schemas.changes import ApprovedChangeSetRequest
 from story_game.api.schemas.state import StateDocument
-from story_game.application.game_state_service import GameStateService
+from story_game.api.results import unwrap
+from story_game.application.game_state import (
+    CommitGameStateRequest,
+    LoadGameStateRequest,
+)
 from story_game.domain import StableId, StateRevision
 
 
@@ -39,10 +43,11 @@ def health() -> dict[str, str]:
 )
 def create_run(
     document: StateDocument,
-    service: Annotated[GameStateService, Depends(get_game_state_service)],
+    dependencies: Annotated[ApiDependencies, Depends(get_api_dependencies)],
 ) -> StateDocument:
-    state = service.create_initial(state_from_api(document))
-    return state_to_api(state)
+    state = state_from_api(document, dependencies.state_codec)
+    created = unwrap(dependencies.operations.create_initial.apply(state))
+    return state_to_api(created, dependencies.state_codec)
 
 
 @runs_router.get(
@@ -52,14 +57,18 @@ def create_run(
 )
 def load_state(
     run_id: Annotated[str, Path(min_length=1)],
-    service: Annotated[GameStateService, Depends(get_game_state_service)],
+    dependencies: Annotated[ApiDependencies, Depends(get_api_dependencies)],
     revision: Annotated[int | None, Query(ge=1)] = None,
 ) -> StateDocument:
-    state = service.load(
-        StableId(run_id),
-        revision=None if revision is None else StateRevision(revision),
+    state = unwrap(
+        dependencies.operations.load.apply(
+            LoadGameStateRequest(
+                StableId(run_id),
+                None if revision is None else StateRevision(revision),
+            )
+        )
     )
-    return state_to_api(state)
+    return state_to_api(state, dependencies.state_codec)
 
 
 @runs_router.post(
@@ -74,13 +83,17 @@ def load_state(
 def commit_changes(
     run_id: Annotated[str, Path(min_length=1)],
     request: ApprovedChangeSetRequest,
-    service: Annotated[GameStateService, Depends(get_game_state_service)],
+    dependencies: Annotated[ApiDependencies, Depends(get_api_dependencies)],
 ) -> StateDocument:
-    state = service.commit(
-        StableId(run_id),
-        approved_changes_to_domain(request),
+    state = unwrap(
+        dependencies.operations.commit.apply(
+            CommitGameStateRequest(
+                StableId(run_id),
+                approved_changes_to_domain(request),
+            )
+        )
     )
-    return state_to_api(state)
+    return state_to_api(state, dependencies.state_codec)
 
 
 router.include_router(runs_router)

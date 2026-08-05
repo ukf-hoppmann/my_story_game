@@ -1,0 +1,95 @@
+# Binding application architecture
+
+This document is the authoritative architecture contract for `my_story_game`.
+Its purpose is to keep changes local, behavior explicit, and components
+independently testable. Rules use `MUST`, `SHOULD`, and `MAY` in their normative
+sense.
+
+## 1. Organize by cohesive use case
+
+- Application behavior MUST be grouped by a fachlich named capability or use
+  case, for example `game_state`, `world_extraction`, or `story_generation`.
+- A use case MUST expose focused operations with one cohesive responsibility.
+  A growing function or class MUST be split when its parts have distinct
+  reasons to change, but trivial helpers MUST NOT be wrapped in speculative
+  interfaces merely to satisfy a pattern.
+- A larger use case MAY compose smaller use cases. Its sequence and data flow
+  MUST remain explicit and testable.
+- A module MUST NOT become a general service facade that accumulates unrelated
+  operations merely because they concern the same aggregate or adapter.
+
+## 2. Typed operation contract
+
+- Executable application operations MUST provide an `apply` method with a
+  use-case-specific typed request and result.
+- Construction or a dedicated composition function MAY prepare an operation by
+  injecting its collaborators. `apply` executes the already prepared operation;
+  it MUST NOT become a hidden service locator or dependency factory.
+- Expected outcomes MUST use the closed result contract
+  `Success[DataT] | Failure[ErrorT]`. Success and failure values MUST be
+  immutable and their payloads MUST be specifically typed.
+- A generic response object with optional `data`, `error`, status, or extension
+  fields MUST NOT replace the closed result variants.
+- Expected boundary and domain failures SHOULD become typed failure values at
+  the responsible application operation. Unexpected programming defects MUST
+  remain observable and MUST NOT be converted into an unspecified failure.
+
+## 3. Ports and adapters
+
+- Ports MUST be owned by the consuming inner layer and describe a narrow,
+  domain-relevant capability such as `GameStateReader`, `GameStateWriter`, or a
+  model invocation. A universal `IDataSource`, untyped `IData`, or generic
+  `apply(request) -> response` persistence interface MUST NOT be introduced.
+- Infrastructure adapters MUST implement application-owned ports. Domain and
+  application code MUST NOT import API or infrastructure modules.
+- Transport adapters MAY depend on domain and application contracts. They MUST
+  reach infrastructure only through injected ports; only an explicit
+  composition root MAY import both outer adapters and infrastructure.
+- Infrastructure-specific failures MUST be translated to application-owned
+  boundary failures before they reach a use case. HTTP status codes, database
+  exceptions, and model-provider response objects MUST remain in their owning
+  outer adapter.
+
+## 4. Composition, workflow, and policy
+
+- A factory or composition root decides which concrete implementations are
+  wired. It MUST NOT decide when a fachlich optional action occurs or hide a
+  growing workflow in constructor logic.
+- A policy decides when an action occurs, for example whether world extraction
+  runs on a turn. A workflow decides the explicit execution order. An operation
+  executes one concrete step. These responsibilities MUST remain distinguishable.
+- Optional workflow branches MUST be driven by explicit policies or typed input,
+  not by a combinatorial family of factories.
+- Operation order MUST be visible at the workflow level. Generic pipelines MAY
+  be introduced only when they preserve typed transitions and make the concrete
+  fachlich sequence easier to understand.
+
+## 5. State and side effects
+
+- Canonical `GameState` changes MUST continue to pass through approved,
+  revision-checked domain changes. LLM output MUST NOT write canonical state
+  directly.
+- Transactions MUST cover only side effects that can actually be atomic in the
+  responsible adapter. A workflow containing an LLM call MUST NOT present the
+  whole workflow as one database transaction.
+- Retrying, idempotency, and partial-failure behavior MUST be explicit wherever
+  an operation performs an external or persistent side effect.
+
+## 6. Tests and enforcement
+
+- Every operation MUST be independently testable with test doubles at its
+  ports. Workflow tests MUST verify sequence, branching, and failure behavior
+  through observable outcomes.
+- Architecture tests MUST enforce inward dependency direction for domain,
+  application, API adapters, and infrastructure composition boundaries.
+- A behavior-preserving refactor MUST retain characterization tests for the
+  observable contract. New behavior and bug fixes remain subject to the
+  project's test-first rule.
+
+## 7. Changing this architecture
+
+If a concrete requirement cannot be implemented cleanly under this contract,
+an agent MUST NOT add a local exception or bypass an interface. Before changing
+code, it MUST identify the requirement, the conflicting rule, the proposed
+smallest contract amendment, consequences, alternatives, and verification. The
+project owner must explicitly approve the amendment before it becomes binding.

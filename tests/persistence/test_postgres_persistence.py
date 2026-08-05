@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import socket
 from pathlib import Path
 from uuid import uuid4
 
@@ -33,6 +34,15 @@ from story_game.infrastructure.persistence.json.mapper import (  # noqa: E402
 
 FIXTURES = Path(__file__).parents[1] / "fixtures"
 POSTGRES_DSN = os.environ.get("STORY_GAME_POSTGRES_DSN")
+if POSTGRES_DSN is None and os.environ.get("HARNESS_RUN_DIRECTORY"):
+    try:
+        socket.getaddrinfo("postgres", 5432)
+    except socket.gaierror:
+        pass
+    else:
+        POSTGRES_DSN = (
+            "postgresql://story_game:story_game_test@postgres:5432/story_game"
+        )
 
 
 @pytest.fixture

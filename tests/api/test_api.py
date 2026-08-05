@@ -11,7 +11,15 @@ pytest.importorskip("httpx")
 from fastapi.testclient import TestClient  # noqa: E402
 
 from story_game.api.app import create_app  # noqa: E402
-from story_game.application.game_state_service import GameStateService  # noqa: E402
+from story_game.application.game_state import (  # noqa: E402
+    CommitGameStateChanges,
+    CreateInitialGameState,
+    GameStateOperations,
+    LoadGameState,
+)
+from story_game.infrastructure.persistence.json import (  # noqa: E402
+    JsonGameStateDocumentCodec,
+)
 from story_game.infrastructure.persistence.json.store import (  # noqa: E402
     JsonGameStateStore,
 )
@@ -27,8 +35,14 @@ def fixture_document(name: str) -> dict[str, object]:
 @pytest.fixture
 def client(tmp_path: Path):
     store = JsonGameStateStore(tmp_path / "api-state.json")
-    service = GameStateService(store, store)
-    with TestClient(create_app(service)) as test_client:
+    operations = GameStateOperations(
+        CreateInitialGameState(store),
+        LoadGameState(store),
+        CommitGameStateChanges(store),
+    )
+    with TestClient(
+        create_app(operations, JsonGameStateDocumentCodec())
+    ) as test_client:
         yield test_client
 
 

@@ -1,7 +1,7 @@
-"""Composable use cases for canonical game-state access."""
+"""Composable operations for persisted game runs and state revisions."""
 
-from .commit import CommitGameStateChanges, CommitGameStateRequest
-from .create_initial import CreateInitialGameState
+from .commit_completed_turn import CommitCompletedTurn, CommitCompletedTurnRequest
+from .create_game_run import CreateGameRun, CreateGameRunRequest
 from .errors import (
     GameStateOperationError,
     RunConflict,
@@ -10,20 +10,35 @@ from .errors import (
     StateStoreUnavailable,
     StoredStateInvalid,
 )
-from .load import LoadGameState, LoadGameStateRequest
+from .load_game import LoadGame, LoadGameRequest
+from story_game.application.game_models import (
+    CompletedTurnPersistenceRequest,
+    ConfigurationPersistenceRequest,
+    LoadedGame,
+)
 from .operations import GameStateOperations
+from .update_configuration import (
+    UpdateGameConfiguration,
+    UpdateGameConfigurationRequest,
+)
 
 __all__ = [
-    "CommitGameStateChanges",
-    "CommitGameStateRequest",
-    "CreateInitialGameState",
+    "CommitCompletedTurn",
+    "CommitCompletedTurnRequest",
+    "CompletedTurnPersistenceRequest",
+    "ConfigurationPersistenceRequest",
+    "CreateGameRun",
+    "CreateGameRunRequest",
     "GameStateOperationError",
     "GameStateOperations",
-    "LoadGameState",
-    "LoadGameStateRequest",
+    "LoadGame",
+    "LoadGameRequest",
+    "LoadedGame",
     "RunConflict",
     "RunNotFound",
     "StateRejected",
     "StateStoreUnavailable",
     "StoredStateInvalid",
+    "UpdateGameConfiguration",
+    "UpdateGameConfigurationRequest",
 ]

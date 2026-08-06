@@ -1,27 +1,25 @@
-"""Reusable API value models shared by state and change contracts."""
+"""Strict API models for complete game documents."""
 
 from __future__ import annotations
+
+from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from story_game.domain import (
     ActorRole,
-    ChapterStatus,
     EntityKind,
+    GameRole,
+    GameRunStatus,
+    GoalKind,
     GoalStatus,
     RelationKind,
-    ThreadStatus,
     VisibilityScope,
 )
 
 
 class APIModel(BaseModel):
-    """Strict boundary model; unknown fields must not silently disappear."""
-
-    model_config = ConfigDict(
-        extra="forbid",
-        str_strip_whitespace=True,
-    )
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
 
 class VisibilityModel(APIModel):
@@ -67,9 +65,9 @@ class EntityLinkModel(APIModel):
 class FactModel(APIModel):
     id: str = Field(min_length=1)
     statement: str = Field(min_length=1)
-    subject_id: str | None = Field(default=None, min_length=1)
     evidence: EvidenceModel
     visibility: VisibilityModel
+    subject_id: str | None = Field(default=None, min_length=1)
 
 
 class KnowledgeEntryModel(APIModel):
@@ -86,58 +84,55 @@ class WorldRuleModel(APIModel):
     visibility: VisibilityModel
 
 
-class StoryEventModel(APIModel):
-    id: str = Field(min_length=1)
-    sequence: int = Field(ge=1)
-    kind: str = Field(min_length=1)
-    description: str = Field(min_length=1)
-    participant_ids: list[str] = Field(default_factory=list)
-    visibility: VisibilityModel
-
-
-class SceneParticipantModel(APIModel):
-    entity_id: str = Field(min_length=1)
-    role: str = Field(min_length=1)
-    visibility: VisibilityModel
-
-
-class SceneModel(APIModel):
-    id: str = Field(min_length=1)
-    sequence: int = Field(ge=1)
-    location_id: str = Field(min_length=1)
-    participants: list[SceneParticipantModel] = Field(default_factory=list)
-    title: str = ""
-    focus: str = ""
-    focus_entity_id: str | None = Field(default=None, min_length=1)
-
-
-class ChapterModel(APIModel):
-    id: str = Field(min_length=1)
-    sequence: int = Field(ge=1)
-    title: str = Field(min_length=1)
-    status: ChapterStatus
-    summary: str = ""
-
-
-class StoryThreadModel(APIModel):
-    id: str = Field(min_length=1)
-    title: str = Field(min_length=1)
-    status: ThreadStatus
-    progress: int = Field(ge=0, le=100)
-    related_entity_ids: list[str] = Field(default_factory=list)
-
-
 class GoalModel(APIModel):
     id: str = Field(min_length=1)
+    kind: GoalKind
     title: str = Field(min_length=1)
-    owner_id: str | None = Field(default=None, min_length=1)
+    description: str = Field(min_length=1)
     status: GoalStatus
-    progress: int = Field(ge=0, le=100)
     related_entity_ids: list[str] = Field(default_factory=list)
+
+
+class StoryTurnModel(APIModel):
+    id: str = Field(min_length=1)
+    sequence: int = Field(ge=1)
+    player_input: str = Field(min_length=1)
+    narration: str = Field(min_length=1)
+    based_on_revision: int = Field(ge=1)
+    resulting_revision: int = Field(ge=2)
+    completed_at: datetime
 
 
 class StorySummaryModel(APIModel):
-    from_sequence: int = Field(ge=1)
     through_sequence: int = Field(ge=1)
     text: str = Field(min_length=1)
     based_on_revision: int = Field(ge=1)
+
+
+class GameConfigurationModel(APIModel):
+    language: str = Field(min_length=1)
+    narration_style_id: str = Field(min_length=1)
+    perspective_id: str = Field(min_length=1)
+    control_mode_id: str = Field(min_length=1)
+    narrative_boundaries: list[str] = Field(default_factory=list)
+    story_model_id: str = Field(min_length=1)
+    extraction_model_id: str = Field(min_length=1)
+    summary_model_id: str = Field(min_length=1)
+    prompt_package_id: str = Field(min_length=1)
+    prompt_package_version: str = Field(min_length=1)
+
+
+class GameRunMemberModel(APIModel):
+    issuer: str = Field(min_length=1)
+    subject: str = Field(min_length=1)
+    game_role: GameRole
+    player_entity_id: str | None = Field(default=None, min_length=1)
+
+
+class GameRunModel(APIModel):
+    id: str = Field(min_length=1)
+    status: GameRunStatus
+    current_revision: int = Field(ge=1)
+    members: list[GameRunMemberModel] = Field(default_factory=list)
+    created_at: datetime
+    updated_at: datetime

@@ -2,10 +2,10 @@
 
 from .connection import PostgresConnectionFactory
 from .migrations import PostgresSchemaMigrator
-from .store import PostgresGameStateStore
+from .store import PostgresGameStore
 
 __all__ = [
     "PostgresConnectionFactory",
-    "PostgresGameStateStore",
+    "PostgresGameStore",
     "PostgresSchemaMigrator",
 ]

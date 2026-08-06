@@ -1,4 +1,4 @@
-"""Conversions between domain values and PostgreSQL row values."""
+"""Conversions between Domain values and PostgreSQL rows."""
 
 from __future__ import annotations
 
@@ -10,25 +10,19 @@ from psycopg.types.json import Jsonb
 from story_game.domain import (
     ActorProfile,
     ActorRole,
-    Chapter,
-    ChapterStatus,
     Condition,
-    EntityLink,
     EntityKind,
+    EntityLink,
     Evidence,
     Fact,
+    GameConfiguration,
     Goal,
+    GoalKind,
     GoalStatus,
     KnowledgeEntry,
     RelationKind,
-    Scene,
     StableId,
-    StateRevision,
-    StoryEvent,
     StorySequence,
-    StorySummary,
-    StoryThread,
-    ThreadStatus,
     Visibility,
     VisibilityScope,
     WorldEntity,
@@ -39,6 +33,39 @@ from story_game.infrastructure.persistence.errors import PersistenceConsistencyE
 
 def jsonb(value: Any) -> Jsonb:
     return Jsonb(value)
+
+
+def configuration_values(configuration: GameConfiguration) -> dict[str, Any]:
+    return {
+        "language": configuration.language,
+        "narration_style_id": configuration.narration_style_id,
+        "perspective_id": configuration.perspective_id,
+        "control_mode_id": configuration.control_mode_id,
+        "narrative_boundaries": jsonb(list(configuration.narrative_boundaries)),
+        "story_model_id": configuration.story_model_id,
+        "extraction_model_id": configuration.extraction_model_id,
+        "summary_model_id": configuration.summary_model_id,
+        "prompt_package_id": configuration.prompt_package_id,
+        "prompt_package_version": configuration.prompt_package_version,
+    }
+
+
+def configuration_from_row(row: Mapping[str, Any]) -> GameConfiguration:
+    return GameConfiguration(
+        language=_text(row, "language"),
+        narration_style_id=_text(row, "narration_style_id"),
+        perspective_id=_text(row, "perspective_id"),
+        control_mode_id=_text(row, "control_mode_id"),
+        narrative_boundaries=tuple(
+            _value_text(item, "narrative boundary")
+            for item in _json_list(row.get("narrative_boundaries"), "narrative_boundaries")
+        ),
+        story_model_id=_text(row, "story_model_id"),
+        extraction_model_id=_text(row, "extraction_model_id"),
+        summary_model_id=_text(row, "summary_model_id"),
+        prompt_package_id=_text(row, "prompt_package_id"),
+        prompt_package_version=_text(row, "prompt_package_version"),
+    )
 
 
 def visibility_values(visibility: Visibility) -> dict[str, str | None]:
@@ -53,8 +80,8 @@ def visibility_values(visibility: Visibility) -> dict[str, str | None]:
 def visibility_from_row(row: Mapping[str, Any]) -> Visibility:
     actor_id = row.get("visibility_actor_id")
     return Visibility(
-        scope=VisibilityScope(_text(row, "visibility_scope")),
-        actor_id=None if actor_id is None else StableId(str(actor_id)),
+        VisibilityScope(_text(row, "visibility_scope")),
+        None if actor_id is None else StableId(str(actor_id)),
     )
 
 
@@ -72,17 +99,14 @@ def evidence_from_row(row: Mapping[str, Any]) -> Evidence:
     reference = row.get("evidence_reference")
     excerpt = row.get("evidence_excerpt")
     return Evidence(
-        source=_text(row, "evidence_source"),
-        reference=None if reference is None else StableId(str(reference)),
-        excerpt=None if excerpt is None else str(excerpt),
+        _text(row, "evidence_source"),
+        None if reference is None else StableId(str(reference)),
+        None if excerpt is None else str(excerpt),
     )
 
 
 def entity_values(
-    run_id: StableId,
-    revision: int,
-    position: int,
-    entity: WorldEntity,
+    run_id: StableId, revision: int, position: int, entity: WorldEntity
 ) -> dict[str, Any]:
     return {
         "run_id": str(run_id),
@@ -106,19 +130,19 @@ def entity_values(
 def entity_from_row(row: Mapping[str, Any]) -> WorldEntity:
     actor_role = row.get("actor_role")
     return WorldEntity(
-        id=StableId(_text(row, "entity_id")),
-        kind=EntityKind(_text(row, "kind")),
-        label=_text(row, "label"),
-        description=str(row.get("description") or ""),
-        actor=None if actor_role is None else ActorProfile(ActorRole(str(actor_role))),
-        conditions=tuple(
+        StableId(_text(row, "entity_id")),
+        EntityKind(_text(row, "kind")),
+        _text(row, "label"),
+        str(row.get("description") or ""),
+        None if actor_role is None else ActorProfile(ActorRole(str(actor_role))),
+        tuple(
             Condition(
                 _json_text(item, "name"),
                 _json_text(item, "description", default=""),
             )
             for item in _json_list(row.get("conditions"), "conditions")
         ),
-        aliases=tuple(
+        tuple(
             _value_text(item, "alias")
             for item in _json_list(row.get("aliases"), "aliases")
         ),
@@ -126,10 +150,7 @@ def entity_from_row(row: Mapping[str, Any]) -> WorldEntity:
 
 
 def link_values(
-    run_id: StableId,
-    revision: int,
-    position: int,
-    link: EntityLink,
+    run_id: StableId, revision: int, position: int, link: EntityLink
 ) -> dict[str, Any]:
     return {
         "run_id": str(run_id),
@@ -148,21 +169,18 @@ def link_values(
 def link_from_row(row: Mapping[str, Any]) -> EntityLink:
     quantity = row.get("quantity")
     return EntityLink(
-        id=StableId(_text(row, "link_id")),
-        source_id=StableId(_text(row, "source_id")),
-        target_id=StableId(_text(row, "target_id")),
-        kind=RelationKind(_text(row, "kind")),
-        visibility=visibility_from_row(row),
-        quantity=None if quantity is None else int(quantity),
-        description=str(row.get("description") or ""),
+        StableId(_text(row, "link_id")),
+        StableId(_text(row, "source_id")),
+        StableId(_text(row, "target_id")),
+        RelationKind(_text(row, "kind")),
+        visibility_from_row(row),
+        None if quantity is None else int(quantity),
+        str(row.get("description") or ""),
     )
 
 
 def fact_values(
-    run_id: StableId,
-    revision: int,
-    position: int,
-    fact: Fact,
+    run_id: StableId, revision: int, position: int, fact: Fact
 ) -> dict[str, Any]:
     return {
         "run_id": str(run_id),
@@ -179,19 +197,16 @@ def fact_values(
 def fact_from_row(row: Mapping[str, Any]) -> Fact:
     subject_id = row.get("subject_id")
     return Fact(
-        id=StableId(_text(row, "fact_id")),
-        statement=_text(row, "statement"),
-        subject_id=None if subject_id is None else StableId(str(subject_id)),
-        evidence=evidence_from_row(row),
-        visibility=visibility_from_row(row),
+        StableId(_text(row, "fact_id")),
+        _text(row, "statement"),
+        evidence_from_row(row),
+        visibility_from_row(row),
+        None if subject_id is None else StableId(str(subject_id)),
     )
 
 
 def knowledge_values(
-    run_id: StableId,
-    revision: int,
-    position: int,
-    entry: KnowledgeEntry,
+    run_id: StableId, revision: int, position: int, entry: KnowledgeEntry
 ) -> dict[str, Any]:
     return {
         "run_id": str(run_id),
@@ -200,29 +215,22 @@ def knowledge_values(
         "actor_id": str(entry.actor_id),
         "fact_id": str(entry.fact_id),
         "learned_at": entry.learned_at.value,
-        "forgotten_at": (
-            None if entry.forgotten_at is None else entry.forgotten_at.value
-        ),
+        "forgotten_at": None if entry.forgotten_at is None else entry.forgotten_at.value,
     }
 
 
 def knowledge_from_row(row: Mapping[str, Any]) -> KnowledgeEntry:
     forgotten_at = row.get("forgotten_at")
     return KnowledgeEntry(
-        actor_id=StableId(_text(row, "actor_id")),
-        fact_id=StableId(_text(row, "fact_id")),
-        learned_at=StorySequence(int(row["learned_at"])),
-        forgotten_at=(
-            None if forgotten_at is None else StorySequence(int(forgotten_at))
-        ),
+        StableId(_text(row, "actor_id")),
+        StableId(_text(row, "fact_id")),
+        StorySequence(int(row["learned_at"])),
+        None if forgotten_at is None else StorySequence(int(forgotten_at)),
     )
 
 
 def rule_values(
-    run_id: StableId,
-    revision: int,
-    position: int,
-    rule: WorldRule,
+    run_id: StableId, revision: int, position: int, rule: WorldRule
 ) -> dict[str, Any]:
     return {
         "run_id": str(run_id),
@@ -237,232 +245,40 @@ def rule_values(
 
 def rule_from_row(row: Mapping[str, Any]) -> WorldRule:
     return WorldRule(
-        id=StableId(_text(row, "rule_id")),
-        statement=_text(row, "statement"),
-        evidence=evidence_from_row(row),
-        visibility=visibility_from_row(row),
-    )
-
-
-def event_values(
-    run_id: StableId,
-    revision: int,
-    position: int,
-    event: StoryEvent,
-) -> dict[str, Any]:
-    return {
-        "run_id": str(run_id),
-        "revision": revision,
-        "position": position,
-        "event_id": str(event.id),
-        "sequence": event.sequence.value,
-        "kind": event.kind,
-        "description": event.description,
-        "participant_ids": jsonb([str(item) for item in event.participant_ids]),
-        **visibility_values(event.visibility),
-    }
-
-
-def event_from_row(row: Mapping[str, Any]) -> StoryEvent:
-    return StoryEvent(
-        id=StableId(_text(row, "event_id")),
-        sequence=StorySequence(int(row["sequence"])),
-        kind=_text(row, "kind"),
-        description=_text(row, "description"),
-        participant_ids=tuple(
-            StableId(_value_text(item, "participant"))
-            for item in _json_list(row.get("participant_ids"), "participant_ids")
-        ),
-        visibility=visibility_from_row(row),
-    )
-
-
-def scene_values(
-    run_id: StableId,
-    revision: int,
-    position: int,
-    scene: Scene,
-) -> dict[str, Any]:
-    return {
-        "run_id": str(run_id),
-        "revision": revision,
-        "position": position,
-        "scene_id": str(scene.id),
-        "sequence": scene.sequence.value,
-        "location_id": str(scene.location_id),
-        "title": scene.title,
-        "focus": scene.focus,
-        "focus_entity_id": (
-            None if scene.focus_entity_id is None else str(scene.focus_entity_id)
-        ),
-    }
-
-
-def scene_participant_values(
-    run_id: StableId,
-    revision: int,
-    scene_id: StableId,
-    position: int,
-    participant: Any,
-) -> dict[str, Any]:
-    return {
-        "run_id": str(run_id),
-        "revision": revision,
-        "scene_id": str(scene_id),
-        "position": position,
-        "entity_id": str(participant.entity_id),
-        "role": participant.role,
-        **visibility_values(participant.visibility),
-    }
-
-
-def scene_from_rows(
-    scene_row: Mapping[str, Any], participant_rows: list[Mapping[str, Any]]
-) -> Scene:
-    from story_game.domain import SceneParticipant
-
-    return Scene(
-        id=StableId(_text(scene_row, "scene_id")),
-        sequence=StorySequence(int(scene_row["sequence"])),
-        location_id=StableId(_text(scene_row, "location_id")),
-        participants=tuple(
-            SceneParticipant(
-                entity_id=StableId(_text(row, "entity_id")),
-                role=_text(row, "role"),
-                visibility=visibility_from_row(row),
-            )
-            for row in participant_rows
-        ),
-        title=str(scene_row.get("title") or ""),
-        focus=str(scene_row.get("focus") or ""),
-        focus_entity_id=(
-            None
-            if scene_row.get("focus_entity_id") is None
-            else StableId(str(scene_row["focus_entity_id"]))
-        ),
-    )
-
-
-def chapter_values(
-    run_id: StableId,
-    revision: int,
-    position: int,
-    chapter: Chapter,
-) -> dict[str, Any]:
-    return {
-        "run_id": str(run_id),
-        "revision": revision,
-        "position": position,
-        "chapter_id": str(chapter.id),
-        "sequence": chapter.sequence,
-        "title": chapter.title,
-        "status": chapter.status.value,
-        "summary": chapter.summary,
-    }
-
-
-def chapter_from_row(row: Mapping[str, Any]) -> Chapter:
-    return Chapter(
-        id=StableId(_text(row, "chapter_id")),
-        sequence=int(row["sequence"]),
-        title=_text(row, "title"),
-        status=ChapterStatus(_text(row, "status")),
-        summary=str(row.get("summary") or ""),
-    )
-
-
-def thread_values(
-    run_id: StableId,
-    revision: int,
-    position: int,
-    thread: StoryThread,
-) -> dict[str, Any]:
-    return {
-        "run_id": str(run_id),
-        "revision": revision,
-        "position": position,
-        "thread_id": str(thread.id),
-        "title": thread.title,
-        "status": thread.status.value,
-        "progress": thread.progress,
-        "related_entity_ids": jsonb([str(item) for item in thread.related_entity_ids]),
-    }
-
-
-def thread_from_row(row: Mapping[str, Any]) -> StoryThread:
-    return StoryThread(
-        id=StableId(_text(row, "thread_id")),
-        title=_text(row, "title"),
-        status=ThreadStatus(_text(row, "status")),
-        progress=int(row["progress"]),
-        related_entity_ids=tuple(
-            StableId(_value_text(item, "thread reference"))
-            for item in _json_list(
-                row.get("related_entity_ids"), "related_entity_ids"
-            )
-        ),
+        StableId(_text(row, "rule_id")),
+        _text(row, "statement"),
+        evidence_from_row(row),
+        visibility_from_row(row),
     )
 
 
 def goal_values(
-    run_id: StableId,
-    revision: int,
-    position: int,
-    goal: Goal,
+    run_id: StableId, revision: int, position: int, goal: Goal
 ) -> dict[str, Any]:
     return {
         "run_id": str(run_id),
         "revision": revision,
         "position": position,
         "goal_id": str(goal.id),
+        "kind": goal.kind.value,
         "title": goal.title,
-        "owner_id": None if goal.owner_id is None else str(goal.owner_id),
+        "description": goal.description,
         "status": goal.status.value,
-        "progress": goal.progress,
         "related_entity_ids": jsonb([str(item) for item in goal.related_entity_ids]),
     }
 
 
 def goal_from_row(row: Mapping[str, Any]) -> Goal:
-    owner_id = row.get("owner_id")
     return Goal(
-        id=StableId(_text(row, "goal_id")),
-        title=_text(row, "title"),
-        owner_id=None if owner_id is None else StableId(str(owner_id)),
-        status=GoalStatus(_text(row, "status")),
-        progress=int(row["progress"]),
-        related_entity_ids=tuple(
+        StableId(_text(row, "goal_id")),
+        GoalKind(_text(row, "kind")),
+        _text(row, "title"),
+        _text(row, "description"),
+        GoalStatus(_text(row, "status")),
+        tuple(
             StableId(_value_text(item, "goal reference"))
-            for item in _json_list(
-                row.get("related_entity_ids"), "related_entity_ids"
-            )
+            for item in _json_list(row.get("related_entity_ids"), "related_entity_ids")
         ),
-    )
-
-
-def summary_values(
-    run_id: StableId,
-    revision: int,
-    position: int,
-    summary: StorySummary,
-) -> dict[str, Any]:
-    return {
-        "run_id": str(run_id),
-        "revision": revision,
-        "position": position,
-        "from_sequence": summary.from_sequence.value,
-        "through_sequence": summary.through_sequence.value,
-        "text": summary.text,
-        "based_on_revision": summary.based_on_revision.value,
-    }
-
-
-def summary_from_row(row: Mapping[str, Any]) -> StorySummary:
-    return StorySummary(
-        from_sequence=StorySequence(int(row["from_sequence"])),
-        through_sequence=StorySequence(int(row["through_sequence"])),
-        text=_text(row, "text"),
-        based_on_revision=StateRevision(int(row["based_on_revision"])),
     )
 
 
@@ -479,7 +295,9 @@ def _json_list(value: Any, key: str) -> list[Any]:
     return value
 
 
-def _json_text(value: Mapping[str, Any], key: str, *, default: str | None = None) -> str:
+def _json_text(
+    value: Mapping[str, Any], key: str, *, default: str | None = None
+) -> str:
     item = value.get(key, default)
     if not isinstance(item, str):
         raise PersistenceConsistencyError(f"Das JSON-Feld {key} muss Text sein")

@@ -1,76 +1,79 @@
 # Persistenz
 
-Die Persistenz behandelt den `GameState` als kanonischen Zustand. Ein Modell
-darf diesen Zustand nicht direkt schreiben. Es erzeugt Prosa und geprüfte
-Änderungsvorschläge; erst eine Anwendungskomponente baut daraus einen
-`ApprovedChangeSet`, den die Domain mit einer erwarteten `StateRevision`
-anwendet.
+PostgreSQL speichert abgeschlossene `GameRun`- und `GameState`-Daten. Der
+frühere JSON-Persistenzadapter wurde entfernt. Die Application verwendet nur
+schmale Ports und bemerkt daher keine PostgreSQL-Details.
 
-## Kleine Ports und Operationen statt einer God-Klasse
+## Gespeichertes Modell
 
-Die Anwendung kennt schmale, fachlich benannte Ports:
+Die wichtigsten Tabellen sind:
 
-- `GameStateReader.load(run_id, revision)` lädt einen validierten Zustand.
-- `GameStateWriter.create_initial(state)` legt den initialen Zustand an.
-- `GameStateWriter.commit(run_id, changes)` wendet einen geprüften
-  Änderungssatz atomar auf die erwartete Revision an.
-- `GameStateDocumentCodec` übersetzt das versionierte Zustandsdokument, ohne
-  den HTTP-Adapter an die konkrete JSON-Implementierung zu koppeln.
+| Tabelle | Inhalt |
+| --- | --- |
+| `game_runs` | Lauf, Status, aktuelle Revision und Zeitpunkte |
+| `game_run_members` | Keycloak-Identität, Rolle und optionale Spielfigur |
+| `game_state_revisions` | unveränderliche Revisionsfolge |
+| `game_state_configurations` | Konfiguration je Revision |
+| `world_*` | Entitäten, Beziehungen, Fakten, Wissen und Regeln je Revision |
+| `world_goals` | Haupt- und Nebenziele je Revision |
+| `story_state_metadata` | aktuelle Zusammenfassung und Zugnummer je Revision |
+| `story_turns` | jeder abgeschlossene Zug genau einmal |
 
-Darauf aufbauend führen `CreateInitialGameState`, `LoadGameState` und
-`CommitGameStateChanges` jeweils genau einen Anwendungsfall aus. Sie liefern
-ein typisiertes `Success`- oder `Failure`-Ergebnis. Die API setzt diese
-Operationen zusammen und übersetzt die Fehler erst an ihrer HTTP-Grenze.
+Die WorldState-Daten werden je Revision als verständlicher relationaler
+Snapshot abgelegt. Die vollständigen Turntexte werden dagegen nicht in jeder
+Revision kopiert. Beim Laden setzt der Adapter den StoryState aus den bis zur
+gewählten Revision sichtbaren StoryTurns und den Metadaten dieser Revision
+zusammen.
 
-Die JSON-Implementierung besteht aus getrennten Komponenten:
+Es gibt bewusst keine Tabellen für laufende Workflows, Modellaufrufe,
+Rohantworten, Extraktionen, MemorySnapshots, ProposedChangeSets oder
+Validierungsergebnisse.
 
-- `JsonStateReader` liest und validiert ein versioniertes Snapshot-Dokument.
-- `JsonStateWriter` schreibt einen Snapshot über eine temporäre Datei und
-  `os.replace`, damit kein halbes JSON als Zustand sichtbar wird.
-- `mapper.py` übersetzt ausschließlich zwischen JSON und Domainobjekten.
-- `JsonGameStateStore` verbindet Reader, Writer und den Domain-Apply-Schritt.
+## Schreibgrenzen
 
-Der JSON-Adapter ist ein Mockup für lokale Entwicklung und Tests. Er speichert
-nur die aktuelle Revision und keine Historie. Die Beispieldaten in
-`tests/fixtures/` enthalten bereits verschachtelte Item-Beziehungen:
-`mara-backpack` besitzt den Rucksack und `backpack-sword` enthält das Schwert.
+Die Application besitzt getrennte Operationen für:
 
-## PostgreSQL-Adapter
+- einen neuen GameRun mit vollständiger Revision 1 anlegen;
+- GameRun und aktuellen oder historischen GameState laden;
+- eine reine Konfigurationsrevision schreiben;
+- einen abgeschlossenen StoryTurn mit der resultierenden Revision schreiben.
 
-PostgreSQL ist als separater Adapter umgesetzt. Die Datenbank speichert nicht
-eine unstrukturierte God-JSON-Spalte, sondern getrennte fachliche Tabellen für
-Lauf, Revisionen, Entitäten, Beziehungen, Fakten, Wissen und Storydaten. Ein
-Commit erhält die erwartete Revision, sperrt den Laufkopf innerhalb einer
-Transaktion, schreibt die neue Revision und aktualisiert den Kopf nur bei
-erfolgreicher Domainvalidierung. Ein veralteter Kopf führt zu einem
-Concurrency-Konflikt.
+Beim Turn-Abschluss sperrt PostgreSQL kurz den Kopf des GameRuns und prüft die
+erwartete Basisrevision. Neue Revision, WorldState, Story-Metadaten,
+StoryTurn und neuer Laufkopf werden in derselben Transaktion gespeichert. Ein
+Konflikt oder Fehler rollt alles zurück. Ein LLM-Aufruf findet immer vorher und
+außerhalb dieser Transaktion statt.
 
-LLM-Prozessdaten wie Modelllauf, Prosa, Vorschlag, Prüfung und Turn-Historie
-bleiben getrennt vom kanonischen Zustand. Dadurch kann die Anwendung jeden
-Vorschlag ablehnen, ohne den `GameState` zu verändern.
+Revision 1 und reine Konfigurationsrevisionen benötigen keinen StoryTurn.
+
+## Neues Basisschema statt Datenmigration
+
+Das Projekt befindet sich noch am Anfang. Deshalb ersetzt
+`001_initial.sql` das bisherige Schema vollständig; es gibt keine
+Abwärtskompatibilität und keine Migration bestehender Storygame-Daten.
+
+Eine lokale Datenbank mit dem alten Schema muss vor Verwendung dieses Stands
+neu angelegt werden. Das bestehende Volume wird nicht automatisch gelöscht,
+weil es eine persistente Benutzerressource ist. Für einen bewussten lokalen
+Reset können die Container und das Projekt-Volume entfernt und danach neu
+gestartet werden.
 
 ## Lokale PostgreSQL-Umgebung
 
 Die Entwicklungsdatenbank wird über `compose.yaml` gestartet. Der Host-Port
-ist standardmäßig `5433`, damit ein lokaler Standard-PostgreSQL auf `5432`
-nicht kollidiert:
+ist standardmäßig `5433`:
 
 ```bash
 docker compose up --detach --wait postgres
 ```
 
-Danach wird das versionierte Schema einmalig beziehungsweise idempotent
-aktualisiert:
+Danach wird das Basisschema angewendet:
 
 ```bash
 export STORY_GAME_POSTGRES_DSN=postgresql://story_game:story_game_dev@localhost:5433/story_game
 PYTHONPATH=src python -m story_game.infrastructure.persistence.postgres.migrate
 ```
 
-Die Integrationstests verwenden denselben DSN, wenn
-`STORY_GAME_POSTGRES_DSN` gesetzt ist. Ohne DSN bleiben sie bewusst als
-Umgebungstest übersprungen; die JSON-Tests benötigen keinen Dienst.
-
-Die Compose-Volume `story-game-postgres-data` ist eine lokale
-Entwicklungsressource. Sie enthält persistente Daten und wird nicht von den
-isolierten Standardtests verwaltet.
+Die Harness-Standardprüfung erstellt eine eigene kurzlebige PostgreSQL-
+Instanz ohne Host-Port und entfernt Container, internes Netzwerk und Daten
+nach dem Lauf wieder.

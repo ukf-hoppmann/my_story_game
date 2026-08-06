@@ -1,4 +1,4 @@
-"""FastAPI composition root and lifecycle configuration."""
+"""FastAPI composition root for the temporary full-state test API."""
 
 from __future__ import annotations
 
@@ -9,16 +9,15 @@ from fastapi import FastAPI
 
 from story_game.api.dependencies import ApiDependencies
 from story_game.application.game_state import (
-    CommitGameStateChanges,
-    CreateInitialGameState,
+    CommitCompletedTurn,
+    CreateGameRun,
     GameStateOperations,
-    LoadGameState,
+    LoadGame,
+    UpdateGameConfiguration,
 )
-from story_game.application.ports import GameStateDocumentCodec, GameStateStore
-from story_game.infrastructure.persistence.json import JsonGameStateDocumentCodec
 from story_game.infrastructure.persistence.postgres import (
     PostgresConnectionFactory,
-    PostgresGameStateStore,
+    PostgresGameStore,
     PostgresSchemaMigrator,
 )
 
@@ -28,39 +27,27 @@ from .routers import router
 
 
 def create_app(
-    operations: GameStateOperations | None = None,
-    state_codec: GameStateDocumentCodec | None = None,
+    dependencies: ApiDependencies | None = None,
     settings: ApiSettings | None = None,
 ) -> FastAPI:
-    """Build an app with injectable operations and boundary codecs."""
     resolved_settings = settings or ApiSettings.from_environment()
-    if (operations is None) != (state_codec is None):
-        raise ValueError("Operationen und State-Codec müssen gemeinsam gesetzt werden")
 
     @asynccontextmanager
     async def lifespan(application: FastAPI) -> AsyncIterator[None]:
-        if operations is None:
+        resolved = dependencies
+        if resolved is None:
             connections = PostgresConnectionFactory(resolved_settings.postgres_dsn)
             if resolved_settings.auto_migrate:
                 PostgresSchemaMigrator(connections).migrate()
-            store = PostgresGameStateStore(connections)
-            resolved = ApiDependencies(
-                _compose_game_state_operations(store),
-                JsonGameStateDocumentCodec(),
-            )
-        else:
-            assert state_codec is not None
-            resolved = ApiDependencies(operations, state_codec)
+            store = PostgresGameStore(connections)
+            resolved = ApiDependencies(_compose_game_state_operations(store))
         application.state.api_dependencies = resolved
         yield
 
     application = FastAPI(
         title=resolved_settings.title,
         version=resolved_settings.version,
-        description=(
-            "Application-controlled story-game state API. "
-            "Only approved change sets can advance the canonical state."
-        ),
+        description="Temporary API for storing and loading complete story-game states.",
         lifespan=lifespan,
     )
     application.include_router(router)
@@ -68,12 +55,12 @@ def create_app(
     return application
 
 
-def _compose_game_state_operations(store: GameStateStore) -> GameStateOperations:
-    """Wire concrete operation implementations in the composition root."""
+def _compose_game_state_operations(store: PostgresGameStore) -> GameStateOperations:
     return GameStateOperations(
-        create_initial=CreateInitialGameState(store),
-        load=LoadGameState(store),
-        commit=CommitGameStateChanges(store),
+        create=CreateGameRun(store),
+        load=LoadGame(store, store),
+        update_configuration=UpdateGameConfiguration(store),
+        commit_turn=CommitCompletedTurn(store, store),
     )
 
 

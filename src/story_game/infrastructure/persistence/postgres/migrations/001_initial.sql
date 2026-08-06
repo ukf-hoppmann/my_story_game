@@ -1,19 +1,49 @@
-CREATE TABLE story_runs (
+CREATE TABLE game_runs (
     run_id TEXT PRIMARY KEY,
-    player_actor_id TEXT,
+    status TEXT NOT NULL CHECK (status IN ('draft', 'active', 'paused', 'completed')),
     current_revision BIGINT NOT NULL CHECK (current_revision >= 1),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
+    CHECK (updated_at >= created_at)
 );
 
-CREATE TABLE story_state_commits (
-    run_id TEXT NOT NULL REFERENCES story_runs (run_id) ON DELETE CASCADE,
+CREATE TABLE game_run_members (
+    run_id TEXT NOT NULL REFERENCES game_runs (run_id) ON DELETE CASCADE,
+    issuer TEXT NOT NULL CHECK (issuer <> ''),
+    subject TEXT NOT NULL CHECK (subject <> ''),
+    game_role TEXT NOT NULL CHECK (game_role IN ('owner', 'player')),
+    player_entity_id TEXT,
+    PRIMARY KEY (run_id, issuer, subject)
+);
+
+CREATE TABLE game_state_revisions (
+    run_id TEXT NOT NULL REFERENCES game_runs (run_id) ON DELETE CASCADE,
     revision BIGINT NOT NULL CHECK (revision >= 1),
-    proposal_id TEXT NOT NULL,
     previous_revision BIGINT CHECK (previous_revision IS NULL OR previous_revision >= 1),
     committed_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (run_id, revision),
-    UNIQUE (run_id, proposal_id)
+    CHECK (
+        (revision = 1 AND previous_revision IS NULL)
+        OR previous_revision = revision - 1
+    )
+);
+
+CREATE TABLE game_state_configurations (
+    run_id TEXT NOT NULL,
+    revision BIGINT NOT NULL,
+    language TEXT NOT NULL CHECK (language <> ''),
+    narration_style_id TEXT NOT NULL CHECK (narration_style_id <> ''),
+    perspective_id TEXT NOT NULL CHECK (perspective_id <> ''),
+    control_mode_id TEXT NOT NULL CHECK (control_mode_id <> ''),
+    narrative_boundaries JSONB NOT NULL DEFAULT '[]'::jsonb,
+    story_model_id TEXT NOT NULL CHECK (story_model_id <> ''),
+    extraction_model_id TEXT NOT NULL CHECK (extraction_model_id <> ''),
+    summary_model_id TEXT NOT NULL CHECK (summary_model_id <> ''),
+    prompt_package_id TEXT NOT NULL CHECK (prompt_package_id <> ''),
+    prompt_package_version TEXT NOT NULL CHECK (prompt_package_version <> ''),
+    PRIMARY KEY (run_id, revision),
+    FOREIGN KEY (run_id, revision)
+        REFERENCES game_state_revisions (run_id, revision) ON DELETE CASCADE
 );
 
 CREATE TABLE world_entities (
@@ -30,7 +60,7 @@ CREATE TABLE world_entities (
     PRIMARY KEY (run_id, revision, entity_id),
     UNIQUE (run_id, revision, position),
     FOREIGN KEY (run_id, revision)
-        REFERENCES story_state_commits (run_id, revision) ON DELETE CASCADE
+        REFERENCES game_state_revisions (run_id, revision) ON DELETE CASCADE
 );
 
 CREATE TABLE world_links (
@@ -48,7 +78,7 @@ CREATE TABLE world_links (
     PRIMARY KEY (run_id, revision, link_id),
     UNIQUE (run_id, revision, position),
     FOREIGN KEY (run_id, revision)
-        REFERENCES story_state_commits (run_id, revision) ON DELETE CASCADE
+        REFERENCES game_state_revisions (run_id, revision) ON DELETE CASCADE
 );
 
 CREATE TABLE world_facts (
@@ -66,7 +96,7 @@ CREATE TABLE world_facts (
     PRIMARY KEY (run_id, revision, fact_id),
     UNIQUE (run_id, revision, position),
     FOREIGN KEY (run_id, revision)
-        REFERENCES story_state_commits (run_id, revision) ON DELETE CASCADE
+        REFERENCES game_state_revisions (run_id, revision) ON DELETE CASCADE
 );
 
 CREATE TABLE world_knowledge (
@@ -80,7 +110,7 @@ CREATE TABLE world_knowledge (
     PRIMARY KEY (run_id, revision, actor_id, fact_id),
     UNIQUE (run_id, revision, position),
     FOREIGN KEY (run_id, revision)
-        REFERENCES story_state_commits (run_id, revision) ON DELETE CASCADE
+        REFERENCES game_state_revisions (run_id, revision) ON DELETE CASCADE
 );
 
 CREATE TABLE world_rules (
@@ -97,126 +127,66 @@ CREATE TABLE world_rules (
     PRIMARY KEY (run_id, revision, rule_id),
     UNIQUE (run_id, revision, position),
     FOREIGN KEY (run_id, revision)
-        REFERENCES story_state_commits (run_id, revision) ON DELETE CASCADE
+        REFERENCES game_state_revisions (run_id, revision) ON DELETE CASCADE
+);
+
+CREATE TABLE world_goals (
+    run_id TEXT NOT NULL,
+    revision BIGINT NOT NULL,
+    position INTEGER NOT NULL CHECK (position >= 0),
+    goal_id TEXT NOT NULL,
+    kind TEXT NOT NULL CHECK (kind IN ('main', 'side')),
+    title TEXT NOT NULL CHECK (title <> ''),
+    description TEXT NOT NULL CHECK (description <> ''),
+    status TEXT NOT NULL CHECK (status IN ('open', 'completed', 'failed')),
+    related_entity_ids JSONB NOT NULL DEFAULT '[]'::jsonb,
+    PRIMARY KEY (run_id, revision, goal_id),
+    UNIQUE (run_id, revision, position),
+    FOREIGN KEY (run_id, revision)
+        REFERENCES game_state_revisions (run_id, revision) ON DELETE CASCADE
 );
 
 CREATE TABLE story_state_metadata (
     run_id TEXT NOT NULL,
     revision BIGINT NOT NULL,
-    current_scene_id TEXT,
-    current_chapter_id TEXT,
-    current_sequence BIGINT NOT NULL CHECK (current_sequence >= 0),
+    current_turn_sequence BIGINT NOT NULL CHECK (current_turn_sequence >= 0),
+    summary_through_sequence BIGINT CHECK (summary_through_sequence >= 1),
+    summary_text TEXT,
+    summary_based_on_revision BIGINT CHECK (summary_based_on_revision >= 1),
     PRIMARY KEY (run_id, revision),
     FOREIGN KEY (run_id, revision)
-        REFERENCES story_state_commits (run_id, revision) ON DELETE CASCADE
+        REFERENCES game_state_revisions (run_id, revision) ON DELETE CASCADE,
+    CHECK (
+        (summary_through_sequence IS NULL AND summary_text IS NULL AND summary_based_on_revision IS NULL)
+        OR (summary_through_sequence IS NOT NULL AND summary_text IS NOT NULL AND summary_based_on_revision IS NOT NULL)
+    ),
+    CHECK (
+        summary_through_sequence IS NULL
+        OR summary_through_sequence <= current_turn_sequence
+    )
 );
 
-CREATE TABLE story_events (
-    run_id TEXT NOT NULL,
-    revision BIGINT NOT NULL,
-    position INTEGER NOT NULL CHECK (position >= 0),
-    event_id TEXT NOT NULL,
+CREATE TABLE story_turns (
+    run_id TEXT NOT NULL REFERENCES game_runs (run_id) ON DELETE CASCADE,
+    turn_id TEXT NOT NULL,
     sequence BIGINT NOT NULL CHECK (sequence >= 1),
-    kind TEXT NOT NULL,
-    description TEXT NOT NULL,
-    participant_ids JSONB NOT NULL DEFAULT '[]'::jsonb,
-    visibility_scope TEXT NOT NULL,
-    visibility_actor_id TEXT,
-    PRIMARY KEY (run_id, revision, event_id),
-    UNIQUE (run_id, revision, position),
-    FOREIGN KEY (run_id, revision)
-        REFERENCES story_state_commits (run_id, revision) ON DELETE CASCADE
-);
-
-CREATE TABLE story_scenes (
-    run_id TEXT NOT NULL,
-    revision BIGINT NOT NULL,
-    position INTEGER NOT NULL CHECK (position >= 0),
-    scene_id TEXT NOT NULL,
-    sequence BIGINT NOT NULL CHECK (sequence >= 1),
-    location_id TEXT NOT NULL,
-    title TEXT NOT NULL,
-    focus TEXT NOT NULL,
-    focus_entity_id TEXT,
-    PRIMARY KEY (run_id, revision, scene_id),
-    UNIQUE (run_id, revision, position),
-    FOREIGN KEY (run_id, revision)
-        REFERENCES story_state_commits (run_id, revision) ON DELETE CASCADE
-);
-
-CREATE TABLE story_scene_participants (
-    run_id TEXT NOT NULL,
-    revision BIGINT NOT NULL,
-    scene_id TEXT NOT NULL,
-    position INTEGER NOT NULL CHECK (position >= 0),
-    entity_id TEXT NOT NULL,
-    role TEXT NOT NULL,
-    visibility_scope TEXT NOT NULL,
-    visibility_actor_id TEXT,
-    PRIMARY KEY (run_id, revision, scene_id, entity_id),
-    UNIQUE (run_id, revision, scene_id, position),
-    FOREIGN KEY (run_id, revision, scene_id)
-        REFERENCES story_scenes (run_id, revision, scene_id) ON DELETE CASCADE
-);
-
-CREATE TABLE story_chapters (
-    run_id TEXT NOT NULL,
-    revision BIGINT NOT NULL,
-    position INTEGER NOT NULL CHECK (position >= 0),
-    chapter_id TEXT NOT NULL,
-    sequence INTEGER NOT NULL CHECK (sequence >= 1),
-    title TEXT NOT NULL,
-    status TEXT NOT NULL,
-    summary TEXT NOT NULL,
-    PRIMARY KEY (run_id, revision, chapter_id),
-    UNIQUE (run_id, revision, position),
-    FOREIGN KEY (run_id, revision)
-        REFERENCES story_state_commits (run_id, revision) ON DELETE CASCADE
-);
-
-CREATE TABLE story_threads (
-    run_id TEXT NOT NULL,
-    revision BIGINT NOT NULL,
-    position INTEGER NOT NULL CHECK (position >= 0),
-    thread_id TEXT NOT NULL,
-    title TEXT NOT NULL,
-    status TEXT NOT NULL,
-    progress INTEGER NOT NULL CHECK (progress BETWEEN 0 AND 100),
-    related_entity_ids JSONB NOT NULL DEFAULT '[]'::jsonb,
-    PRIMARY KEY (run_id, revision, thread_id),
-    UNIQUE (run_id, revision, position),
-    FOREIGN KEY (run_id, revision)
-        REFERENCES story_state_commits (run_id, revision) ON DELETE CASCADE
-);
-
-CREATE TABLE story_goals (
-    run_id TEXT NOT NULL,
-    revision BIGINT NOT NULL,
-    position INTEGER NOT NULL CHECK (position >= 0),
-    goal_id TEXT NOT NULL,
-    title TEXT NOT NULL,
-    owner_id TEXT,
-    status TEXT NOT NULL,
-    progress INTEGER NOT NULL CHECK (progress BETWEEN 0 AND 100),
-    related_entity_ids JSONB NOT NULL DEFAULT '[]'::jsonb,
-    PRIMARY KEY (run_id, revision, goal_id),
-    UNIQUE (run_id, revision, position),
-    FOREIGN KEY (run_id, revision)
-        REFERENCES story_state_commits (run_id, revision) ON DELETE CASCADE
-);
-
-CREATE TABLE story_summaries (
-    run_id TEXT NOT NULL,
-    revision BIGINT NOT NULL,
-    position INTEGER NOT NULL CHECK (position >= 0),
-    from_sequence BIGINT NOT NULL CHECK (from_sequence >= 1),
-    through_sequence BIGINT NOT NULL CHECK (through_sequence >= 1),
-    text TEXT NOT NULL,
+    player_input TEXT NOT NULL CHECK (player_input <> ''),
+    narration TEXT NOT NULL CHECK (narration <> ''),
     based_on_revision BIGINT NOT NULL CHECK (based_on_revision >= 1),
-    PRIMARY KEY (run_id, revision, position),
-    FOREIGN KEY (run_id, revision)
-        REFERENCES story_state_commits (run_id, revision) ON DELETE CASCADE
+    resulting_revision BIGINT NOT NULL CHECK (resulting_revision >= 2),
+    completed_at TIMESTAMPTZ NOT NULL,
+    PRIMARY KEY (run_id, turn_id),
+    UNIQUE (run_id, sequence),
+    UNIQUE (run_id, resulting_revision),
+    FOREIGN KEY (run_id, based_on_revision)
+        REFERENCES game_state_revisions (run_id, revision),
+    FOREIGN KEY (run_id, resulting_revision)
+        REFERENCES game_state_revisions (run_id, revision),
+    CHECK (resulting_revision = based_on_revision + 1)
 );
 
-CREATE INDEX story_state_commits_run_revision_idx
-    ON story_state_commits (run_id, revision DESC);
+CREATE INDEX game_state_revisions_run_revision_idx
+    ON game_state_revisions (run_id, revision DESC);
+
+CREATE INDEX story_turns_run_resulting_revision_idx
+    ON story_turns (run_id, resulting_revision);

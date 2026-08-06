@@ -1,49 +1,89 @@
 # Domainmodell des Storygames
 
-Die Domain-Schicht bildet den kanonischen Zustand eines Storygame-Laufs ab.
-Sie kennt weder Datenbank, API noch LLM.
+Die Domain-Schicht beschreibt den dauerhaft gültigen Spielstand. Sie kennt
+weder HTTP und PostgreSQL noch Keycloak oder einen konkreten LLM-Anbieter.
 
-## Aggregatgrenze
+## Gesamtstruktur
 
-`GameState` ist die Aggregatwurzel. Er enthält zwei getrennte fachliche
-Bereiche:
+```text
+GameRun
+├── Status
+├── Mitglieder
+├── aktuelle Revision
+└── GameState
+    ├── GameConfiguration
+    ├── WorldState
+    │   └── Goals
+    └── StoryState
+        ├── StoryTurns
+        ├── aktuelle Zusammenfassung
+        └── aktuelle Zugnummer
+```
 
-- `WorldState`: stabile Entitäten, Beziehungen, Fakten, Wissen und Weltregeln.
-- `StoryState`: Ereignisse, Szenen, Kapitel, Threads, Ziele und abgeleitete
-  Zusammenfassungen.
+`GameRun` ist die konkrete Spielpartie. Er hält den Status `draft`, `active`,
+`paused` oder `completed`, die Mitglieder und den Verweis auf die aktuelle
+Revision. Ein Mitglied wird durch `issuer` und `subject` aus Keycloak erkannt,
+hat die Spielrolle `owner` oder `player` und kann einer Spielfigur im
+WorldState zugeordnet sein. Passwörter werden nicht im Storygame gespeichert.
 
-World-Fakten und dramaturgischer Fortschritt werden dadurch nicht zu einem
-unstrukturierten Memory-Dokument vermischt.
+`GameState` ist ein unveränderlicher, revisionierter Stand innerhalb dieses
+Laufs. Er enthält genau die Konfiguration, die strukturierte Welt und die
+konkrete bisher erzählte Geschichte. Eine vollständig gespeicherte Revision
+reicht aus, um das Spiel fortzusetzen.
 
-## Kanonische Daten
+## GameConfiguration
 
-`WorldEntity` besitzt eine stabile Identität und einen typisierten Entitätstyp.
-Aufenthalt, Besitz, Behälter, Zugehörigkeit und soziale Verbindungen werden als
-`EntityLink` modelliert. Das Inventar wird aus Besitzbeziehungen abgeleitet.
+Die `GameConfiguration` hält die für diese Partie aufgelösten Einstellungen:
 
-`Fact` beschreibt ausschließlich bestätigte kanonische Aussagen. `Evidence`
-und `Visibility` machen nachvollziehbar, worauf eine Aussage beruht und wer sie
-kennen darf. `KnowledgeEntry` ordnet einen Fakt einem konkreten Akteur zu.
+- Sprache, Erzählstil, Perspektive und Steuerungsmodus;
+- erzählerische Grenzen;
+- semantische Modell-IDs für Story, Extraktion und Zusammenfassung;
+- ID und Version des verwendeten Prompt-Pakets.
 
-`StoryEvent` ist nach der Übernahme chronologisch und unveränderlich. Eine
-`Scene` führt nur die tatsächlich anwesenden Entitäten. `StoryThread` und
-`Goal` unterscheiden offene Handlungsstränge von konkreten Zielen.
+Provider-URLs, Zugangsdaten, Rohprompts und laufende Modellaufrufe gehören
+nicht in diesen Zustand. Globale Kataloge werden später über austauschbare
+Infrastructure-Adapter angebunden.
+
+## WorldState
+
+Der `WorldState` ist die strukturierte Wahrheit des Spiels. Er enthält
+Entitäten wie Figuren, Orte und Gegenstände sowie ihre Beziehungen, bestätigte
+Fakten, Wissen einzelner Akteure und Weltregeln. Inventar und Aufenthaltsort
+werden aus Beziehungen abgeleitet und nicht doppelt geführt.
+
+`Goal` gehört ausschließlich hierher. Ein Ziel enthält eine stabile ID, die Art
+`main` oder `side`, Titel, Beschreibung, den Status `open`, `completed` oder
+`failed` und optionale Verweise auf beteiligte WorldEntities. Prozentwerte,
+Meilensteine und verschachtelte Teilziele gibt es zunächst nicht.
+
+## StoryState
+
+Der `StoryState` ist die konkrete Prosa-Chronologie. Er enthält nur:
+
+- vollständig abgeschlossene `StoryTurn`-Werte;
+- eine aktuelle rollierende Textzusammenfassung;
+- die Nummer des letzten abgeschlossenen Zugs.
+
+Ein `StoryTurn` verbindet `player_input` und Erzählung mit seiner fortlaufenden
+Sequenz, der Basisrevision, der resultierenden Revision und dem
+Abschlusszeitpunkt. Ein Turn ist erst dann Teil der Domain-Historie, wenn er
+vollständig abgeschlossen wurde.
+
+Goals, Chapters, Scenes, StoryThreads und ein zusätzliches allgemeines
+StoryEvent sind bewusst nicht Teil des StoryState. Strukturierte Tatsachen wie
+Ort, Besitz oder eine geöffnete Tür bleiben im WorldState.
 
 ## Zustandsänderungen
 
-Das Modell liefert Prosa und unbestätigte `ProposedChangeSet`-Objekte. Diese
-sind nicht Teil des kanonischen Zustands. Erst die Anwendung prüft Schema,
-Referenzen, Sichtbarkeit, geschützte Fakten und die Basisrevision und erzeugt
-daraus einen `ApprovedChangeSet`.
+Ein LLM darf den Zustand nicht direkt verändern. Ein unbestätigter
+`ProposedChangeSet` ist ein vorübergehender Application-Wert. Erst die
+Anwendung prüft den Vorschlag und erzeugt daraus einen `ApprovedChangeSet` mit
+typisierten Domain-Operationen.
 
-Nur ein freigegebener Änderungssatz kann über `GameState.apply` eine neue
-State-Revision erzeugen. Ein direktes Anwenden von Modell- oder Roh-JSON ist
-nicht vorgesehen.
+Die Domain akzeptiert nur diesen freigegebenen Änderungssatz auf der erwarteten
+Revision. Beim Abschluss eines Zugs werden World-Änderungen, StoryTurn,
+Zusammenfassung und neue Revision gemeinsam gebildet. Persistiert werden sie
+anschließend in einer Datenbanktransaktion.
 
-## Bewusst außerhalb der Domain-Schicht
-
-Kampfregeln, Würfel, Level, Wirtschaft, Prompt-Konfiguration, LLM-Aufrufe,
-Persistenz und API-Transportmodelle gehören nicht in die Domain-
-Implementierung. Die PostgreSQL- und JSON-Adapter liegen deshalb getrennt in
-der Infrastruktur; die API und die LLM-Anwendungsfälle werden später als
-eigene Schichten ergänzt.
+Prompt-Aufbau, Modellaufruf, Rohantwort, Extraktion, Vorschlag und
+Validierungsergebnis bleiben außerhalb des persistierten Domainzustands.

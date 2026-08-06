@@ -2,93 +2,57 @@ from __future__ import annotations
 
 import pytest
 
-from story_game.domain import (
-    ActorProfile,
-    ActorRole,
-    ApprovedChangeSet,
-    ChangeRejectedError,
-    CreateEntity,
-    EntityKind,
-    GameState,
-    InvalidReferenceError,
-    ProposedChangeSet,
-    RevisionConflictError,
-    StableId,
-    StateRevision,
-    StoryState,
-    WorldEntity,
-    WorldState,
-)
+import story_game.domain as domain
 
 
-def sid(value: str) -> StableId:
-    return StableId(value)
+def sid(value: str) -> domain.StableId:
+    return domain.StableId(value)
 
 
-def empty_game() -> GameState:
-    return GameState(sid("game"), StateRevision(1), WorldState(), StoryState())
-
-
-def test_only_approved_changes_can_advance_the_canonical_state() -> None:
-    game = empty_game()
-    mara = WorldEntity(
-        sid("mara"),
-        EntityKind.CHARACTER,
-        "Mara",
-        actor=ActorProfile(ActorRole.PLAYER),
+def configuration() -> object:
+    assert hasattr(domain, "GameConfiguration"), "GameState requires configuration"
+    return domain.GameConfiguration(
+        language="de",
+        narration_style_id="style.dark",
+        perspective_id="perspective.third-person",
+        control_mode_id="control.player",
+        narrative_boundaries=("Keine sexualisierte Gewalt",),
+        story_model_id="model.story",
+        extraction_model_id="model.extraction",
+        summary_model_id="model.summary",
+        prompt_package_id="story.base",
+        prompt_package_version="1",
     )
 
-    with pytest.raises(ChangeRejectedError):
-        game.apply(
-            ProposedChangeSet(
-                sid("proposal"),
-                game.revision,
-            )  # type: ignore[arg-type]
-        )
 
-    updated = game.apply(
-        ApprovedChangeSet(
-            sid("proposal"),
-            game.revision,
-            changes=(CreateEntity(mara),),
-        )
+def test_game_state_contains_configuration_world_and_story() -> None:
+    state = domain.GameState(
+        run_id=sid("run-1"),
+        revision=domain.StateRevision(1),
+        configuration=configuration(),
+        world=domain.WorldState(),
+        story=domain.StoryState(),
     )
 
-    assert updated.revision == StateRevision(2)
-    assert updated.world.entity(mara.id) == mara
+    assert state.run_id == sid("run-1")
+    assert not hasattr(state, "player_actor_id")
 
 
-def test_stale_approved_changes_are_rejected() -> None:
-    game = empty_game()
-    changes = ApprovedChangeSet(
-        sid("proposal"),
-        StateRevision(1),
-        changes=(),
+def test_game_state_validates_member_player_entity_against_world() -> None:
+    assert hasattr(domain, "GameRunMember")
+    state = domain.GameState(
+        run_id=sid("run-1"),
+        revision=domain.StateRevision(1),
+        configuration=configuration(),
+        world=domain.WorldState(),
+        story=domain.StoryState(),
     )
-    current = game.apply(changes)
+    member = domain.GameRunMember(
+        issuer="issuer",
+        subject="subject",
+        game_role=domain.GameRole.PLAYER,
+        player_entity_id=sid("missing"),
+    )
 
-    with pytest.raises(RevisionConflictError):
-        current.apply(changes)
-
-
-def test_game_state_rejects_a_scene_with_an_unknown_participant() -> None:
-    from story_game.domain import Scene, SceneParticipant, StorySequence
-
-    with pytest.raises(InvalidReferenceError):
-        GameState(
-            sid("game"),
-            StateRevision(1),
-            WorldState(
-                entities=(WorldEntity(sid("harbor"), EntityKind.LOCATION, "Hafen"),)
-            ),
-            StoryState(
-                scenes=(
-                    Scene(
-                        sid("scene"),
-                        StorySequence(1),
-                        sid("harbor"),
-                        participants=(SceneParticipant(sid("unknown"), "intruder"),),
-                    ),
-                )
-            ),
-        )
+    with pytest.raises(domain.InvalidReferenceError):
+        state.validate_members((member,))

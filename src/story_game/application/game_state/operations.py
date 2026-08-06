@@ -1,16 +1,18 @@
-"""Immutable bundle of canonical game-state operations."""
+"""Explicit collection of independently testable game operations."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .commit import CommitGameStateChanges
-from .create_initial import CreateInitialGameState
-from .load import LoadGameState
+from .commit_completed_turn import CommitCompletedTurn
+from .create_game_run import CreateGameRun
+from .load_game import LoadGame
+from .update_configuration import UpdateGameConfiguration
 
 
 @dataclass(frozen=True, slots=True)
 class GameStateOperations:
-    create_initial: CreateInitialGameState
-    load: LoadGameState
-    commit: CommitGameStateChanges
+    create: CreateGameRun
+    load: LoadGame
+    update_configuration: UpdateGameConfiguration
+    commit_turn: CommitCompletedTurn

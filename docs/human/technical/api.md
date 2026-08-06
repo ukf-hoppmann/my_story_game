@@ -1,27 +1,32 @@
 # HTTP-API
 
-Die API ist die äußere Schicht des Backends. Sie verwendet die vorhandenen
-Anwendungs- und Persistenzports, kennt aber keine PostgreSQL-Tabellen. Ein
-LLM kann Prosa und Vorschläge erzeugen; den kanonischen Zustand verändert die
-API nur über einen bereits geprüften `ApprovedChangeSet`.
+Die aktuelle API ist eine bewusst kleine Testgrenze für den vollständigen
+Spielzustand. Sie ist noch keine fertige Spielzug-, LLM- oder
+Konfigurations-API.
 
 ## Endpunkte
 
 | Methode | Pfad | Zweck |
 | --- | --- | --- |
 | `GET` | `/health` | Erreichbarkeit prüfen |
-| `POST` | `/api/v1/runs` | initiale Revision 1 anlegen |
-| `GET` | `/api/v1/runs/{run_id}/state` | aktuellen oder historischen Zustand laden |
-| `POST` | `/api/v1/runs/{run_id}/commits` | freigegebenen Änderungssatz committen |
+| `POST` | `/api/v1/runs` | vollständigen neuen GameRun mit Revision 1 speichern |
+| `GET` | `/api/v1/runs/{run_id}/state` | vollständigen aktuellen GameRun und GameState laden |
+| `GET` | `/api/v1/runs/{run_id}/state?revision=N` | einen historischen GameState laden |
 
-Die Commit-Anfrage enthält `proposal_id`, `base_revision` und eine typisierte,
-discriminierte Liste von Operationen. Unbekannte Felder und unbekannte
-Operationstypen werden am HTTP-Rand abgewiesen. Eine veraltete Revision liefert
-HTTP `409`; fachlich ungültige Referenzen liefern HTTP `422`.
+Das gemeinsame Transportdokument heißt `GameDocument` und enthält sowohl
+`game_run` als auch `game_state`. Der GameState enthält die komplette
+`GameConfiguration`, den `WorldState` einschließlich Goals und den
+`StoryState`. Fremde Felder und fachlich inkonsistente IDs werden abgewiesen.
+
+Der POST-Endpunkt legt absichtlich nur einen neuen Lauf in Revision 1 an.
+Konfigurationsrevisionen und atomare StoryTurn-Commits sind bereits als
+Application- und Persistenzoperationen vorhanden, werden aber noch nicht als
+Produktendpunkte veröffentlicht. Es gibt insbesondere keinen direkten
+HTTP-Endpunkt, über den ein LLM Zustandsänderungen schreiben kann.
 
 ## Swagger UI und OpenAPI
 
-Mit gestarteter API sind die interaktiven API-Verträge verfügbar unter:
+Mit gestarteter API sind die Verträge verfügbar unter:
 
 - Swagger UI: `http://localhost:8000/docs`
 - OpenAPI JSON: `http://localhost:8000/openapi.json`
@@ -35,15 +40,7 @@ PostgreSQL und API können gemeinsam gestartet werden:
 ./story-starter
 ```
 
-Das Skript kann direkt aus dem Projektverzeichnis ausgeführt werden. Es baut
-das API-Image bei Bedarf, startet PostgreSQL und die API und wartet, bis beide
-Dienste bereit sind. Zum Stoppen der Container ohne Löschen des PostgreSQL-
-Volumes:
-
-```bash
-docker compose down
-```
-
-Die API führt beim Start die idempotente PostgreSQL-Migration aus. Für lokale
-Tests kann die FastAPI-App mit einem injizierten `JsonGameStateStore` betrieben
-werden; dadurch bleiben API-Tests deterministisch und benötigen keinen Dienst.
+Die API wendet beim Start das PostgreSQL-Basisschema an. Bei einem lokalen
+Volume mit dem früheren Schema ist wegen der bewusst fehlenden Datenmigration
+zuerst ein manueller Datenbank-Reset erforderlich; Details stehen in
+[`persistence.md`](persistence.md).

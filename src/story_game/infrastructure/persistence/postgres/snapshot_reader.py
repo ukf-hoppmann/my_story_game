@@ -1,4 +1,4 @@
-"""Compose independent world and story readers into the aggregate root."""
+"""Read one complete committed GameState revision."""
 
 from __future__ import annotations
 
@@ -9,13 +9,12 @@ import psycopg
 from story_game.domain import GameState, StableId, StateRevision
 from story_game.infrastructure.persistence.errors import PersistenceNotFoundError
 
+from .row_mapping import configuration_from_row
 from .story_reader import StorySnapshotReader
 from .world_reader import WorldSnapshotReader
 
 
 class PostgresSnapshotReader:
-    """Read a complete, already committed revision using component readers."""
-
     def __init__(self) -> None:
         self.world_reader = WorldSnapshotReader()
         self.story_reader = StorySnapshotReader()
@@ -26,30 +25,23 @@ class PostgresSnapshotReader:
         run_id: StableId,
         revision: StateRevision,
     ) -> GameState:
-        commit = connection.execute(
+        configuration_row = connection.execute(
             """
-            SELECT run_id, revision, player_actor_id
-            FROM story_state_commits
-            JOIN story_runs USING (run_id)
-            WHERE story_state_commits.run_id = %s
-              AND story_state_commits.revision = %s
+            SELECT configuration.*
+            FROM game_state_configurations AS configuration
+            JOIN game_state_revisions USING (run_id, revision)
+            WHERE configuration.run_id = %s AND configuration.revision = %s
             """,
             (str(run_id), revision.value),
         ).fetchone()
-        if commit is None:
+        if configuration_row is None:
             raise PersistenceNotFoundError(
                 f"Die State-Revision {run_id}/{revision.value} existiert nicht"
             )
-        world = self.world_reader.read(connection, str(run_id), revision.value)
-        story = self.story_reader.read(connection, str(run_id), revision.value)
         return GameState(
-            id=StableId(str(commit["run_id"])),
-            revision=StateRevision(int(commit["revision"])),
-            world=world,
-            story=story,
-            player_actor_id=(
-                None
-                if commit["player_actor_id"] is None
-                else StableId(str(commit["player_actor_id"]))
-            ),
+            run_id=run_id,
+            revision=revision,
+            configuration=configuration_from_row(configuration_row),
+            world=self.world_reader.read(connection, str(run_id), revision.value),
+            story=self.story_reader.read(connection, str(run_id), revision.value),
         )

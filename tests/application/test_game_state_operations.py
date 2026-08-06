@@ -1,33 +1,22 @@
 from __future__ import annotations
 
-from dataclasses import replace
+from datetime import UTC, datetime
 
-import pytest
-
-from story_game.application.contracts import Failure, Success
-from story_game.application.game_state import (
-    CommitGameStateChanges,
-    CommitGameStateRequest,
-    CreateInitialGameState,
-    LoadGameState,
-    LoadGameStateRequest,
-    RunConflict,
-    RunNotFound,
-    StateRejected,
-    StateStoreUnavailable,
-    StoredStateInvalid,
-)
+import story_game.application.game_state as operations
+from story_game.application import Failure, Success
+from story_game.application.game_models import ConfigurationPersistenceRequest
 from story_game.application.ports import (
     GameStateConflictError,
-    GameStateConsistencyError,
     GameStateNotFoundError,
-    GameStateStoreError,
 )
 from story_game.domain import (
     ApprovedChangeSet,
-    ChangeRejectedError,
+    GameConfiguration,
+    GameRole,
+    GameRun,
+    GameRunMember,
+    GameRunStatus,
     GameState,
-    RevisionConflictError,
     StableId,
     StateRevision,
     StoryState,
@@ -35,128 +24,174 @@ from story_game.domain import (
 )
 
 
-def state(revision: int = 1) -> GameState:
-    return GameState(
-        id=StableId("run-one"),
-        revision=StateRevision(revision),
-        world=WorldState(),
-        story=StoryState(),
+def sid(value: str) -> StableId:
+    return StableId(value)
+
+
+def configuration(style: str = "style.neutral") -> GameConfiguration:
+    return GameConfiguration(
+        language="de",
+        narration_style_id=style,
+        perspective_id="perspective.third-person",
+        control_mode_id="control.player",
+        narrative_boundaries=(),
+        story_model_id="model.story",
+        extraction_model_id="model.extraction",
+        summary_model_id="model.summary",
+        prompt_package_id="story.base",
+        prompt_package_version="1",
     )
 
 
-class FakeGameStateStore:
-    def __init__(self, current: GameState) -> None:
-        self.current = current
-        self.error: Exception | None = None
-        self.created: GameState | None = None
-        self.loaded: tuple[StableId, StateRevision | None] | None = None
-        self.committed: tuple[StableId, ApprovedChangeSet] | None = None
+def initial() -> tuple[GameRun, GameState]:
+    timestamp = datetime(2026, 8, 6, tzinfo=UTC)
+    member = GameRunMember("issuer", "subject", GameRole.OWNER)
+    run = GameRun(
+        sid("run-1"),
+        GameRunStatus.DRAFT,
+        StateRevision(1),
+        (member,),
+        timestamp,
+        timestamp,
+    )
+    state = GameState(
+        run.id,
+        StateRevision(1),
+        configuration(),
+        WorldState(),
+        StoryState(),
+    )
+    return run, state
 
-    def create_initial(self, initial: GameState) -> None:
-        self._raise_error()
-        self.created = initial
 
-    def load(
-        self,
-        run_id: StableId,
-        *,
-        revision: StateRevision | None = None,
+class FakeStore:
+    def __init__(self) -> None:
+        self.run, self.state = initial()
+        self.created: tuple[GameRun, GameState] | None = None
+        self.configuration_request: object | None = None
+        self.turn_request: object | None = None
+
+    def create(self, run: GameRun, state: GameState) -> None:
+        self.created = run, state
+
+    def load_run(self, run_id: StableId) -> GameRun:
+        if run_id != self.run.id:
+            raise GameStateNotFoundError("missing")
+        return self.run
+
+    def load_state(
+        self, run_id: StableId, *, revision: StateRevision | None = None
     ) -> GameState:
-        self._raise_error()
-        self.loaded = (run_id, revision)
-        return self.current
+        if run_id != self.run.id:
+            raise GameStateNotFoundError("missing")
+        return self.state
 
-    def commit(self, run_id: StableId, changes: ApprovedChangeSet) -> GameState:
-        self._raise_error()
-        self.committed = (run_id, changes)
-        return replace(self.current, revision=self.current.revision.next())
+    def update_configuration(self, request: object) -> GameState:
+        self.configuration_request = request
+        return self.state.reconfigure(
+            request.configuration, base_revision=request.base_revision  # type: ignore[attr-defined]
+        )
 
-    def _raise_error(self) -> None:
-        if self.error is not None:
-            raise self.error
-
-
-def test_create_initial_returns_success_and_calls_writer() -> None:
-    initial = state()
-    store = FakeGameStateStore(initial)
-
-    result = CreateInitialGameState(store).apply(initial)
-
-    assert result == Success(initial)
-    assert store.created == initial
+    def commit_turn(self, request: object) -> GameState:
+        self.turn_request = request
+        return self.state.complete_turn(
+            request.changes,  # type: ignore[attr-defined]
+            request.turn,  # type: ignore[attr-defined]
+            request.summary,  # type: ignore[attr-defined]
+        )
 
 
-def test_create_initial_rejects_non_initial_revision_without_writing() -> None:
-    store = FakeGameStateStore(state())
+def test_create_game_run_validates_and_writes_the_complete_initial_state() -> None:
+    assert hasattr(operations, "CreateGameRun")
+    run, state = initial()
+    store = FakeStore()
 
-    result = CreateInitialGameState(store).apply(state(revision=2))
-
-    assert isinstance(result, Failure)
-    assert isinstance(result.error, RunConflict)
-    assert store.created is None
-
-
-def test_load_returns_the_requested_revision() -> None:
-    current = state()
-    store = FakeGameStateStore(current)
-    request = LoadGameStateRequest(current.id, StateRevision(1))
-
-    result = LoadGameState(store).apply(request)
-
-    assert result == Success(current)
-    assert store.loaded == (current.id, StateRevision(1))
-
-
-@pytest.mark.parametrize(
-    ("raised", "expected"),
-    [
-        (GameStateNotFoundError("missing"), RunNotFound),
-        (GameStateConflictError("conflict"), RunConflict),
-        (GameStateConsistencyError("invalid"), StoredStateInvalid),
-        (GameStateStoreError("offline"), StateStoreUnavailable),
-    ],
-)
-def test_load_maps_port_failures(raised: Exception, expected: type[object]) -> None:
-    current = state()
-    store = FakeGameStateStore(current)
-    store.error = raised
-
-    result = LoadGameState(store).apply(LoadGameStateRequest(current.id))
-
-    assert isinstance(result, Failure)
-    assert isinstance(result.error, expected)
-
-
-def test_commit_returns_the_advanced_state() -> None:
-    current = state()
-    store = FakeGameStateStore(current)
-    changes = ApprovedChangeSet(StableId("proposal"), StateRevision(1))
-
-    result = CommitGameStateChanges(store).apply(
-        CommitGameStateRequest(current.id, changes)
+    result = operations.CreateGameRun(store).apply(
+        operations.CreateGameRunRequest(run, state)
     )
 
-    assert result == Success(replace(current, revision=StateRevision(2)))
-    assert store.committed == (current.id, changes)
+    assert result == Success(operations.LoadedGame(run, state))
+    assert store.created == (run, state)
 
 
-@pytest.mark.parametrize(
-    ("raised", "expected"),
-    [
-        (RevisionConflictError("stale"), RunConflict),
-        (ChangeRejectedError("rejected"), StateRejected),
-    ],
-)
-def test_commit_maps_domain_failures(raised: Exception, expected: type[object]) -> None:
-    current = state()
-    store = FakeGameStateStore(current)
-    store.error = raised
-    request = CommitGameStateRequest(
-        current.id,
-        ApprovedChangeSet(StableId("proposal"), StateRevision(1)),
+def test_load_game_returns_run_metadata_and_requested_state() -> None:
+    assert hasattr(operations, "LoadGame")
+    run, state = initial()
+    store = FakeStore()
+
+    result = operations.LoadGame(store, store).apply(
+        operations.LoadGameRequest(run.id)
     )
 
-    result = CommitGameStateChanges(store).apply(request)
+    assert result == Success(operations.LoadedGame(run, state))
+
+
+def test_load_game_maps_missing_run_to_typed_failure() -> None:
+    assert hasattr(operations, "LoadGame")
+    store = FakeStore()
+
+    result = operations.LoadGame(store, store).apply(
+        operations.LoadGameRequest(sid("missing"))
+    )
 
     assert isinstance(result, Failure)
-    assert isinstance(result.error, expected)
+
+
+def test_configuration_revision_uses_a_dedicated_writer() -> None:
+    assert hasattr(operations, "UpdateGameConfiguration")
+    store = FakeStore()
+    request = operations.UpdateGameConfigurationRequest(
+        sid("run-1"), StateRevision(1), configuration("style.dark")
+    )
+
+    result = operations.UpdateGameConfiguration(store).apply(request)
+
+    assert isinstance(result, Success)
+    assert store.configuration_request == ConfigurationPersistenceRequest(
+        request.run_id,
+        request.base_revision,
+        request.configuration,
+    )
+
+
+def test_completed_turn_is_sent_as_one_atomic_persistence_request() -> None:
+    assert hasattr(operations, "CommitCompletedTurn")
+    store = FakeStore()
+    request = operations.CommitCompletedTurnRequest(
+        run_id=sid("run-1"),
+        changes=ApprovedChangeSet(sid("proposal-1"), StateRevision(1)),
+        turn_id=sid("turn-1"),
+        player_input="Ich öffne die Tür.",
+        narration="Die Tür schwingt auf.",
+        summary_text="Almas hat die Tür geöffnet.",
+        completed_at=datetime(2026, 8, 6, tzinfo=UTC),
+    )
+
+    result = operations.CommitCompletedTurn(store, store).apply(request)
+
+    assert isinstance(result, Success)
+    assert store.turn_request is not None
+    assert store.turn_request.turn.sequence.value == 1  # type: ignore[attr-defined]
+
+
+def test_completed_turn_maps_a_stale_revision_to_conflict() -> None:
+    assert hasattr(operations, "CommitCompletedTurn")
+
+    class ConflictingStore(FakeStore):
+        def commit_turn(self, request: object) -> GameState:
+            raise GameStateConflictError("stale")
+
+    request = operations.CommitCompletedTurnRequest(
+        run_id=sid("run-1"),
+        changes=ApprovedChangeSet(sid("proposal-1"), StateRevision(1)),
+        turn_id=sid("turn-1"),
+        player_input="Weiter.",
+        narration="Die Geschichte geht weiter.",
+        summary_text=None,
+        completed_at=datetime(2026, 8, 6, tzinfo=UTC),
+    )
+
+    store = ConflictingStore()
+    result = operations.CommitCompletedTurn(store, store).apply(request)
+
+    assert isinstance(result, Failure)

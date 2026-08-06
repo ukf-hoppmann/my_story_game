@@ -7,7 +7,6 @@ from dataclasses import dataclass
 from fastapi import Request
 
 from story_game.application.game_state import GameStateOperations
-from story_game.application.ports import GameStateDocumentCodec
 
 
 @dataclass(frozen=True, slots=True)
@@ -15,7 +14,6 @@ class ApiDependencies:
     """Application-facing dependencies required by the HTTP adapter."""
 
     operations: GameStateOperations
-    state_codec: GameStateDocumentCodec
 
 
 def get_api_dependencies(request: Request) -> ApiDependencies:

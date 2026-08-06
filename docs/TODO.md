@@ -148,97 +148,97 @@ After explicit rejection:
 
 - `EPIC-001` **Storygame-Datenmodell neu implementieren**
   - Type: Epic.
-  - Status: Open.
+  - Status: In progress.
   - Created: 2026-08-04.
   - Area: Domainmodell, Persistenz und API.
   - Priority: Wichtig.
   - Dependencies: None.
-  - Goal: Das aus `LLM_Tests` abgeleitete Datenmodell für ein Storygame in einer Onion Architecture neu implementieren. Die Umsetzung erfolgt schrittweise: zuerst fachliche Domain-Entities, danach Datenbankanbindung und anschließend API.
+  - Goal: Das beschlossene Datenmodell für ein Storygame in einer Onion Architecture umsetzen. Die Umsetzung erfolgt schrittweise: zuerst fachliche Domain-Entities, danach Datenbankanbindung und anschließend die produktive API.
   - Completion criteria: Die zentralen Storygame-Daten können über fachliche Domain-Entities modelliert, anschließend dauerhaft gespeichert und schließlich über eine API erstellt, gelesen und verändert werden. Kanonische Zustandsänderungen werden ausschließlich über geprüfte Anwendungslogik übernommen; das LLM erhält keinen direkten Schreibzugriff auf den GameState.
 
 - `STORY-001` **Fachliche Domain-Entities für den Storygame-Zustand**
   - Type: Story.
-  - Status: Open.
+  - Status: Awaiting confirmation.
   - Parent: `EPIC-001`.
   - Required for parent: Yes.
   - Created: 2026-08-04.
   - Area: Domainmodell.
   - Priority: Wichtig.
   - Dependencies: None.
-  - Goal: Einen technologieunabhängigen Domain-Kern für den Storygame-Zustand in der innersten Schicht der Onion Architecture definieren. Der Kern bildet stabile Entitäten, Beziehungen und bestätigte Fakten ab, ohne LLM-, API- oder Persistenzabhängigkeiten.
-  - Completion criteria: Figuren, Orte, Gegenstände, Beziehungen, Fakten und der aggregierte GameState besitzen stabile Identitäten und fachliche Invarianten. Beziehungen referenzieren nur gültige Entitäten; Sichtbarkeit und Evidenz bestätigter Fakten sind modellierbar; automatisierte Domain-Tests prüfen die wesentlichen Regeln.
+  - Goal: Einen technologieunabhängigen Domain-Kern aus `GameRun` und revisioniertem `GameState` definieren. Der GameState trennt die partielle Konfiguration, die strukturierte Welt einschließlich Goals und die konkrete Turn-Chronologie, ohne LLM-, API- oder Persistenzabhängigkeiten.
+  - Completion criteria: GameRun, Mitgliedschaften, GameConfiguration, WorldState, Goals, StoryTurns und StorySummary besitzen verständliche Verantwortlichkeiten und fachliche Invarianten. Goals liegen ausschließlich im WorldState; der StoryState enthält nur abgeschlossene Turns, aktuelle Zusammenfassung und Zugnummer; automatisierte Domain- und Architekturtests sichern die Regeln.
 
 - `TASK-001` **Domain-Grundtypen und Aggregatgrenzen festlegen**
   - Type: Task.
-  - Status: Open.
+  - Status: Awaiting confirmation.
   - Parent: `STORY-001`.
   - Required for parent: Yes.
   - Created: 2026-08-04.
   - Area: Domainmodell.
   - Priority: Wichtig.
   - Dependencies: None.
-  - Goal: Die technologieunabhängigen Grundtypen für stabile Identitäten, State-Revisionen, Sichtbarkeit, Evidenz und fachliche Statuswerte definieren sowie `GameState` als Aggregatwurzel mit getrenntem `WorldState` und `StoryState` festlegen.
-  - Completion criteria: Die Aggregatgrenzen und Verantwortlichkeiten sind dokumentiert und im Domain-Code abbildbar. Ungültige IDs, Revisionen und Sichtbarkeitswerte werden fachlich abgewiesen. Die Domain-Schicht importiert weder Datenbank-, API- noch LLM-spezifische Typen.
+  - Goal: Die technologieunabhängigen Grundtypen und die Grenze zwischen `GameRun` und revisioniertem `GameState` mit `GameConfiguration`, `WorldState` und `StoryState` festlegen.
+  - Completion criteria: IDs, Revisionen, Run-Status, Mitgliedsrollen, Sichtbarkeit und Evidenz sind typisiert und validiert. Die Verantwortlichkeiten sind dokumentiert; die Domain importiert keine Datenbank-, API- oder LLM-spezifischen Typen.
 
 - `TASK-002` **WorldState mit Entitäten und kanonischen Beziehungen modellieren**
   - Type: Task.
-  - Status: Open.
+  - Status: Awaiting confirmation.
   - Parent: `STORY-001`.
   - Required for parent: Yes.
   - Created: 2026-08-04.
   - Area: Domainmodell.
   - Priority: Wichtig.
   - Dependencies: `TASK-001`.
-  - Goal: Figuren, Orte, Gegenstände, Kreaturen und Fraktionen über stabile World-Entities modellieren und deren kanonische Beziehungen, Fakten, akteursbezogenes Wissen und Weltregeln abbilden.
-  - Completion criteria: Entitäten besitzen eindeutige IDs und typisierte Profile. Beziehungen wie Aufenthaltsort, Besitz, Behälter, Zugehörigkeit und soziale Verbindung referenzieren nur vorhandene Entitäten. Fakten enthalten Evidenz und Sichtbarkeit; Wissen ist einem gültigen Akteur und Fakt zugeordnet. Inventar wird aus Besitzbeziehungen abgeleitet und nicht als widersprüchliche Parallelstruktur geführt.
+  - Goal: Figuren, Orte, Gegenstände, Kreaturen und Fraktionen sowie ihre Beziehungen, Fakten, Wissen, Weltregeln und Haupt- beziehungsweise Nebenziele im WorldState abbilden.
+  - Completion criteria: Entitäten und Goal-Referenzen sind konsistent. Beziehungen wie Aufenthaltsort, Besitz, Behälter, Zugehörigkeit und soziale Verbindung referenzieren nur vorhandene Entitäten. Goals unterscheiden `main` und `side` sowie `open`, `completed` und `failed`; Inventar wird aus Besitzbeziehungen abgeleitet.
 
-- `TASK-003` **StoryState mit Chronologie und Handlungsfortschritt modellieren**
+- `TASK-003` **StoryState als konkrete Turn-Chronologie modellieren**
   - Type: Task.
-  - Status: Open.
+  - Status: Awaiting confirmation.
   - Parent: `STORY-001`.
   - Required for parent: Yes.
   - Created: 2026-08-04.
   - Area: Domainmodell.
   - Priority: Wichtig.
   - Dependencies: `TASK-002`.
-  - Goal: Den zeitlichen und dramaturgischen Zustand der Geschichte mit Ereignissen, Szenen, Kapiteln, offenen Threads, Zielen, Story-Zeit und Zusammenfassungen modellieren.
-  - Completion criteria: Ereignisse sind chronologisch und grundsätzlich unveränderlich. Eine Szene kann nur auf vorhandene Orte und tatsächlich zugeordnete Entitäten verweisen. Kapitel, Threads und Ziele besitzen nachvollziehbare Zustände; Zusammenfassungen bleiben als abgeleitete Erinnerung von den kanonischen World-Fakten getrennt.
+  - Goal: Die konkrete Geschichte als Folge vollständig abgeschlossener StoryTurns mit einer aktuellen rollierenden Zusammenfassung und Zugnummer modellieren.
+  - Completion criteria: StoryTurns enthalten `player_input`, Erzählung, Sequenz, Basis- und Ergebnisrevision sowie Abschlusszeitpunkt. Sequenzen sind lückenlos; Goals, Chapters, Scenes, StoryThreads und ein zusätzliches StoryEvent sind nicht Teil des StoryState.
 
 - `TASK-004` **Vorschlags- und Freigabegrenze für Zustandsänderungen definieren**
   - Type: Task.
-  - Status: Open.
+  - Status: Awaiting confirmation.
   - Parent: `STORY-001`.
   - Required for parent: Yes.
   - Created: 2026-08-04.
   - Area: Domainmodell.
   - Priority: Wichtig.
   - Dependencies: `TASK-002`, `TASK-003`.
-  - Goal: Einen fachlichen Änderungsvertrag für vorgeschlagene und geprüfte Zustandsänderungen definieren, der den LLM-Ausgabepfad vom kanonischen GameState trennt.
-  - Completion criteria: Ein Vorschlag enthält mindestens Basisrevision, Zielbereich, typisierte Operation, Zielreferenz, Evidenz und Status. Rohdaten oder Prosa können den GameState nicht direkt verändern. Nur ein von der Anwendung freigegebener Änderungssatz kann fachlich angewendet werden; veraltete Revisionen, ungültige Referenzen und geschützte Fakten werden abgewiesen.
+  - Goal: Unbestätigte LLM-Vorschläge als transiente Application-Daten von freigegebenen Domain-Operationen und dem kanonischen GameState trennen.
+  - Completion criteria: `ProposedChangeSet` liegt ausschließlich in der Application und wird nicht persistiert. Rohdaten oder Prosa können den GameState nicht direkt verändern. Nur ein `ApprovedChangeSet` kann auf der erwarteten Revision angewendet werden; veraltete Revisionen und ungültige Referenzen werden abgewiesen.
 
 - `TASK-005` **Domain-Invarianten und Storygame-Beispielfälle testen**
   - Type: Task.
-  - Status: Open.
+  - Status: Awaiting confirmation.
   - Parent: `STORY-001`.
   - Required for parent: Yes.
   - Created: 2026-08-04.
   - Area: Domainmodell.
   - Priority: Wichtig.
   - Dependencies: `TASK-004`.
-  - Goal: Die fachlichen Regeln des Domain-Kerns mit deterministischen Tests absichern und anhand eines kleinen Storygame-Szenarios den konsistenten Aufbau des GameState prüfen.
-  - Completion criteria: Tests decken stabile IDs, Referenzkonsistenz, Sichtbarkeit, Wissen, Besitz, Chronologie, Szenenbesetzung, Revisionskonflikte und die Ablehnung ungeprüfter LLM-Änderungen ab. Ein Beispielablauf kann eine Figur, einen Ort, einen Gegenstand, eine Besitzänderung, ein Ereignis und einen neuen State-Stand konsistent darstellen.
+  - Goal: Die fachlichen Regeln des Domain-Kerns deterministisch absichern und anhand eines kleinen zielorientierten Storygame-Szenarios prüfen.
+  - Completion criteria: Tests decken IDs, Mitgliedschaften, Referenzkonsistenz, Sichtbarkeit, Wissen, Besitz, Goals, Turn-Chronologie und Revisionskonflikte ab. Das Beispiel kann Almas, ein Hauptziel und einen abgeschlossenen Turn konsistent in den nächsten GameState überführen.
 
 - `STORY-002` **Datenbankanbindung für den Storygame-Zustand**
   - Type: Story.
-  - Status: Open.
+  - Status: Awaiting confirmation.
   - Parent: `EPIC-001`.
   - Required for parent: Yes.
   - Created: 2026-08-04.
   - Area: Persistenz.
   - Priority: Wichtig.
   - Dependencies: `STORY-001`.
-  - Goal: Die fachlichen Domain-Entities dauerhaft und nachvollziehbar speichern, ohne die Domain-Schicht an ein konkretes Datenbanksystem zu koppeln. Der persistierte Stand soll rekonstruierbar und für spätere geprüfte Zustandsänderungen geeignet sein.
-  - Completion criteria: Ein GameState kann über einen Persistenzadapter angelegt, geladen und aktualisiert werden. Entitäten, Beziehungen und Fakten bleiben referenziell konsistent; relevante Zustandsstände sind versionierbar oder anderweitig nachvollziehbar; Persistenzfehler führen nicht zu halb gespeicherten Zuständen; Integrations- und Domain-Tests decken den Ablauf ab.
+  - Goal: GameRun und revisionierten GameState über einen PostgreSQL-Adapter dauerhaft speichern, ohne die Domain an PostgreSQL zu koppeln.
+  - Completion criteria: Ein vollständiger neuer Lauf sowie aktuelle und historische Revisionen können gespeichert und geladen werden. GameConfiguration, WorldState einschließlich Goals und StoryState werden rekonstruiert. Konfigurationsrevisionen benötigen keinen Turn; ein abgeschlossener Turn und seine Ergebnisrevision werden atomar gespeichert. Das alte JSON- und Story-Tabellenmodell ist entfernt; PostgreSQL-Integrationstests bestehen.
 
 - `STORY-003` **API für den Storygame-Zustand**
   - Type: Story.
@@ -251,3 +251,14 @@ After explicit rejection:
   - Dependencies: `STORY-002`.
   - Goal: Den Storygame-Zustand über eine stabile API für die späteren Benutzeroberflächen und Anwendungsfälle zugänglich machen. Die API trennt Lesen, fachliche Änderungsanträge und deren geprüfte Übernahme.
   - Completion criteria: Ein Client kann einen Storygame-Zustand anlegen, laden und fachlich valide Änderungen anfordern. Die API gibt keine direkten LLM-Schreibrechte frei, validiert Referenzen und Zustandsrevisionen und liefert verständliche Fehler bei ungültigen oder veralteten Änderungen. API- und Integrations-Tests prüfen die unterstützten Abläufe.
+
+- `STORY-004` **LLM-, Prompt- und Modellkonfigurationsschicht integrieren**
+  - Type: Story.
+  - Status: Open.
+  - Parent: None.
+  - Created: 2026-08-06.
+  - Area: LLM-Integration.
+  - Priority: Wichtig.
+  - Dependencies: `STORY-001`, `STORY-002`.
+  - Goal: Einen vollständigen Spielzug aus dateibasierten Modell- und Promptkatalogen, tatsächlichen Modellaufrufen, transienter Narrative- und WorldState-Extraktion, fachlicher Freigabe und atomarem Turn-Commit zusammensetzen.
+  - Completion criteria: TOML-basierte globale Konfiguration und versionierte Promptdateien werden hinter Application-eigenen Ports geladen; Provider-Geheimnisse bleiben außerhalb der Domain und des Repository-Katalogs; der Workflow setzt die GameConfiguration in konkrete Aufrufe um, validiert unbestätigte Vorschläge und persistiert ausschließlich den abgeschlossenen StoryTurn mit der resultierenden GameState-Revision. Modellaufrufe, Rohantworten, ProposedChangeSets und Validierungsergebnisse bleiben transient und besitzen keine eigenen Tabellen.

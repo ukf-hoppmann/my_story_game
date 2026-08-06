@@ -8,4 +8,4 @@ revision = "feac7b7cbcb450e0696552e78e22321c5116099f"
 rules_digest = "sha256:760db31b6c69ec195f22117b10eec3e220617fe9cc114b09c22bb80250f8c6d2"
 
 [project]
-agents_digest = "sha256:c2592708df0ba809ee0f2aa048e9e1e8fd093aa583d447b8d42ddebb7b8f9f58"
+agents_digest = "sha256:fd8a054e152b471095f2b54ea47219b6968f303eee8106bf971b80f6f1b80c46"

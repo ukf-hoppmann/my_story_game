@@ -1,8 +1,9 @@
-# Game state and persistence — implementation archive
+# Game state and persistence — canonical implementation contract
 
 Status: Domain and persistence target implemented on 2026-08-06. This is the
-full planning contract retained as an implementation archive. The active
-compact contract is [`../spielzustand-und-persistenz.md`](../spielzustand-und-persistenz.md).
+single canonical contract for the implemented Domain and PostgreSQL model.
+It preserves the settled deferred LLM catalog and workflow decisions without
+claiming that those future capabilities are implemented.
 
 The global model and prompt catalog described in section 8 remains deferred.
 It was intentionally not implemented as part of the state and persistence

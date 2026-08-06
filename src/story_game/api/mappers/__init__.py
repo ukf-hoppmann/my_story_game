@@ -1,6 +1,5 @@
-"""Explicit translations between HTTP models and domain objects."""
+"""Explicit translations between HTTP models and Domain values."""
 
-from .changes import approved_changes_to_domain
-from .state import state_from_api, state_to_api
+from .state import game_from_api, game_to_api
 
-__all__ = ["approved_changes_to_domain", "state_from_api", "state_to_api"]
+__all__ = ["game_from_api", "game_to_api"]

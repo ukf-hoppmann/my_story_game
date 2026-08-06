@@ -7,3 +7,7 @@ Ein Entwurf ist nicht bindend. Vor der Aktivierung muss geklärt werden, ob er
 für das Storygame-LLM oder für den Coding-Agenten gilt. Agenten- und
 Architekturregeln müssen anschließend in ihre autoritative Harness-Quelle
 überführt oder von dort eindeutig referenziert werden.
+
+Aktuell liegt hier kein Entwurf. Die noch nicht implementierte LLM-, Prompt-
+und Modellkatalogschicht ist im aktiven Zustandsvertrag ausdrücklich als
+aufgeschobene Umsetzung abgegrenzt.

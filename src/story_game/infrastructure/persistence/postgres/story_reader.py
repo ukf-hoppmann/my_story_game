@@ -1,131 +1,68 @@
-"""Read the story portion of one immutable PostgreSQL state snapshot."""
+"""Reconstruct StoryState from revision metadata and append-only turns."""
 
 from __future__ import annotations
 
-from collections import defaultdict
 from typing import Any
 
 import psycopg
 
-from story_game.domain import StableId, StoryState
-
-from .row_mapping import (
-    chapter_from_row,
-    event_from_row,
-    goal_from_row,
-    scene_from_rows,
-    summary_from_row,
-    thread_from_row,
+from story_game.domain import (
+    StableId,
+    StateRevision,
+    StorySequence,
+    StoryState,
+    StorySummary,
+    StoryTurn,
 )
 
 
 class StorySnapshotReader:
-    """Reconstruct chronology, scenes and dramaturgical state."""
-
     def read(
         self,
         connection: psycopg.Connection[Any],
         run_id: str,
         revision: int,
     ) -> StoryState:
-        parameters = (run_id, revision)
         metadata = connection.execute(
             """
-            SELECT current_scene_id, current_chapter_id, current_sequence
-            FROM story_state_metadata
+            SELECT * FROM story_state_metadata
             WHERE run_id = %s AND revision = %s
             """,
-            parameters,
+            (run_id, revision),
         ).fetchone()
         if metadata is None:
             raise KeyError("story_state_metadata")
-
-        events = connection.execute(
+        rows = connection.execute(
             """
-            SELECT * FROM story_events
-            WHERE run_id = %s AND revision = %s
-            ORDER BY position
+            SELECT * FROM story_turns
+            WHERE run_id = %s AND resulting_revision <= %s
+            ORDER BY sequence
             """,
-            parameters,
+            (run_id, revision),
         ).fetchall()
-        scenes = connection.execute(
-            """
-            SELECT * FROM story_scenes
-            WHERE run_id = %s AND revision = %s
-            ORDER BY position
-            """,
-            parameters,
-        ).fetchall()
-        participants = connection.execute(
-            """
-            SELECT * FROM story_scene_participants
-            WHERE run_id = %s AND revision = %s
-            ORDER BY scene_id, position
-            """,
-            parameters,
-        ).fetchall()
-        participants_by_scene: dict[str, list[MappingRow]] = defaultdict(list)
-        for participant in participants:
-            participants_by_scene[str(participant["scene_id"])].append(participant)
-
-        chapters = connection.execute(
-            """
-            SELECT * FROM story_chapters
-            WHERE run_id = %s AND revision = %s
-            ORDER BY position
-            """,
-            parameters,
-        ).fetchall()
-        threads = connection.execute(
-            """
-            SELECT * FROM story_threads
-            WHERE run_id = %s AND revision = %s
-            ORDER BY position
-            """,
-            parameters,
-        ).fetchall()
-        goals = connection.execute(
-            """
-            SELECT * FROM story_goals
-            WHERE run_id = %s AND revision = %s
-            ORDER BY position
-            """,
-            parameters,
-        ).fetchall()
-        summaries = connection.execute(
-            """
-            SELECT * FROM story_summaries
-            WHERE run_id = %s AND revision = %s
-            ORDER BY position
-            """,
-            parameters,
-        ).fetchall()
-
-        return StoryState(
-            events=tuple(event_from_row(row) for row in events),
-            scenes=tuple(
-                scene_from_rows(
-                    row,
-                    participants_by_scene.get(str(row["scene_id"]), []),
-                )
-                for row in scenes
-            ),
-            chapters=tuple(chapter_from_row(row) for row in chapters),
-            threads=tuple(thread_from_row(row) for row in threads),
-            goals=tuple(goal_from_row(row) for row in goals),
-            summaries=tuple(summary_from_row(row) for row in summaries),
-            current_scene_id=(
-                None
-                if metadata["current_scene_id"] is None
-                else StableId(str(metadata["current_scene_id"]))
-            ),
-            current_chapter_id=(
-                None
-                if metadata["current_chapter_id"] is None
-                else StableId(str(metadata["current_chapter_id"]))
-            ),
-            current_sequence=int(metadata["current_sequence"]),
+        turns = tuple(
+            StoryTurn(
+                StableId(str(row["turn_id"])),
+                StorySequence(int(row["sequence"])),
+                str(row["player_input"]),
+                str(row["narration"]),
+                StateRevision(int(row["based_on_revision"])),
+                StateRevision(int(row["resulting_revision"])),
+                row["completed_at"],
+            )
+            for row in rows
         )
-
-
-MappingRow = dict[str, Any]
+        summary = (
+            None
+            if metadata["summary_text"] is None
+            else StorySummary(
+                StorySequence(int(metadata["summary_through_sequence"])),
+                str(metadata["summary_text"]),
+                StateRevision(int(metadata["summary_based_on_revision"])),
+            )
+        )
+        return StoryState(
+            turns=turns,
+            summary=summary,
+            current_turn_sequence=int(metadata["current_turn_sequence"]),
+        )

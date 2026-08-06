@@ -9,6 +9,8 @@ from .value_objects import (
     ActorRole,
     EntityKind,
     Evidence,
+    GoalKind,
+    GoalStatus,
     RelationKind,
     StableId,
     StorySequence,
@@ -154,6 +156,26 @@ class WorldRule:
 
 
 @dataclass(frozen=True, slots=True)
+class Goal:
+    """A main or side objective in the structured canonical game state."""
+
+    id: StableId
+    kind: GoalKind
+    title: str
+    description: str
+    status: GoalStatus = GoalStatus.OPEN
+    related_entity_ids: tuple[StableId, ...] = ()
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "title", _require_text(self.title, "Der Zieltitel"))
+        object.__setattr__(
+            self, "description", _require_text(self.description, "Die Zielbeschreibung")
+        )
+        if len(self.related_entity_ids) != len(set(self.related_entity_ids)):
+            raise ValidationError("Zielreferenzen müssen eindeutig sein")
+
+
+@dataclass(frozen=True, slots=True)
 class WorldState:
     """Canonical world data with referential and relationship invariants."""
 
@@ -162,12 +184,14 @@ class WorldState:
     facts: tuple[Fact, ...] = ()
     knowledge: tuple[KnowledgeEntry, ...] = ()
     rules: tuple[WorldRule, ...] = ()
+    goals: tuple[Goal, ...] = ()
 
     def __post_init__(self) -> None:
         _unique_ids(self.entities, "Entitäten")
         _unique_ids(self.links, "Beziehungen")
         _unique_ids(self.facts, "Fakten")
         _unique_ids(self.rules, "Weltregeln")
+        _unique_ids(self.goals, "Ziele")
 
         entities = {entity.id: entity for entity in self.entities}
         facts = {fact.id: fact for fact in self.facts}
@@ -235,11 +259,38 @@ class WorldState:
                 )
             knowledge_keys.add(key)
 
+        for goal in self.goals:
+            if not set(goal.related_entity_ids).issubset(entities):
+                raise InvalidReferenceError(
+                    "Ein Ziel muss auf vorhandene Entitäten verweisen"
+                )
+
     def entity(self, entity_id: StableId) -> WorldEntity:
         for entity in self.entities:
             if entity.id == entity_id:
                 return entity
         raise InvalidReferenceError(f"Unbekannte Entität: {entity_id}")
+
+    def goal(self, goal_id: StableId) -> Goal:
+        for goal in self.goals:
+            if goal.id == goal_id:
+                return goal
+        raise InvalidReferenceError(f"Unbekanntes Ziel: {goal_id}")
+
+    def add_goal(self, goal: Goal) -> WorldState:
+        if any(existing.id == goal.id for existing in self.goals):
+            raise ValidationError(f"Die Ziel-ID existiert bereits: {goal.id}")
+        return replace(self, goals=(*self.goals, goal))
+
+    def update_goal(self, goal: Goal) -> WorldState:
+        if not any(existing.id == goal.id for existing in self.goals):
+            raise InvalidReferenceError(f"Unbekanntes Ziel: {goal.id}")
+        return replace(
+            self,
+            goals=tuple(
+                goal if existing.id == goal.id else existing for existing in self.goals
+            ),
+        )
 
     def fact(self, fact_id: StableId) -> Fact:
         for fact in self.facts:

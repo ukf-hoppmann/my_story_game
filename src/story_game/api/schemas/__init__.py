@@ -1,6 +1,5 @@
-"""Typed HTTP request and response contracts."""
+"""Typed HTTP contracts for complete game documents."""
 
-from .changes import ApprovedChangeSetRequest
-from .state import StateDocument
+from .state import GameDocument
 
-__all__ = ["ApprovedChangeSetRequest", "StateDocument"]
+__all__ = ["GameDocument"]

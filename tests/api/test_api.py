@@ -1,138 +1,165 @@
 from __future__ import annotations
 
-import json
-from pathlib import Path
+from collections.abc import Iterator
 
 import pytest
+from fastapi.testclient import TestClient
 
-pytest.importorskip("fastapi")
-pytest.importorskip("httpx")
-
-from fastapi.testclient import TestClient  # noqa: E402
-
-from story_game.api.app import create_app  # noqa: E402
-from story_game.application.game_state import (  # noqa: E402
-    CommitGameStateChanges,
-    CreateInitialGameState,
+from story_game.api import create_app
+from story_game.api.dependencies import ApiDependencies
+from story_game.application.game_state import (
+    CommitCompletedTurn,
+    CreateGameRun,
     GameStateOperations,
-    LoadGameState,
+    LoadGame,
+    UpdateGameConfiguration,
 )
-from story_game.infrastructure.persistence.json import (  # noqa: E402
-    JsonGameStateDocumentCodec,
+from story_game.application.game_models import (
+    CompletedTurnPersistenceRequest,
+    ConfigurationPersistenceRequest,
 )
-from story_game.infrastructure.persistence.json.store import (  # noqa: E402
-    JsonGameStateStore,
-)
+from story_game.application.ports import GameStateConflictError, GameStateNotFoundError
+from story_game.domain import GameRun, GameState, StableId, StateRevision
 
 
-FIXTURES = Path(__file__).parents[1] / "fixtures"
+class MemoryGameStore:
+    def __init__(self) -> None:
+        self.run: GameRun | None = None
+        self.states: dict[StateRevision, GameState] = {}
 
+    def create(self, run: GameRun, state: GameState) -> None:
+        if self.run is not None:
+            raise GameStateConflictError("exists")
+        self.run = run
+        self.states[state.revision] = state
 
-def fixture_document(name: str) -> dict[str, object]:
-    return json.loads((FIXTURES / name).read_text(encoding="utf-8"))
+    def load_run(self, run_id: StableId) -> GameRun:
+        if self.run is None or self.run.id != run_id:
+            raise GameStateNotFoundError("missing")
+        return self.run
+
+    def load_state(
+        self, run_id: StableId, *, revision: StateRevision | None = None
+    ) -> GameState:
+        run = self.load_run(run_id)
+        selected = revision or run.current_revision
+        try:
+            return self.states[selected]
+        except KeyError as error:
+            raise GameStateNotFoundError("missing revision") from error
+
+    def update_configuration(
+        self, request: ConfigurationPersistenceRequest
+    ) -> GameState:
+        raise AssertionError("The test API does not expose configuration updates")
+
+    def commit_turn(self, request: CompletedTurnPersistenceRequest) -> GameState:
+        raise AssertionError("The test API does not expose completed turns")
 
 
 @pytest.fixture
-def client(tmp_path: Path):
-    store = JsonGameStateStore(tmp_path / "api-state.json")
+def client() -> Iterator[TestClient]:
+    store = MemoryGameStore()
     operations = GameStateOperations(
-        CreateInitialGameState(store),
-        LoadGameState(store),
-        CommitGameStateChanges(store),
+        create=CreateGameRun(store),
+        load=LoadGame(store, store),
+        update_configuration=UpdateGameConfiguration(store),
+        commit_turn=CommitCompletedTurn(store, store),
     )
-    with TestClient(
-        create_app(operations, JsonGameStateDocumentCodec())
-    ) as test_client:
+    with TestClient(create_app(ApiDependencies(operations))) as test_client:
         yield test_client
 
 
-def test_api_creates_and_loads_a_state(client: TestClient) -> None:
-    initial = fixture_document("game_state_initial.json")
-
-    created = client.post("/api/v1/runs", json=initial)
-    loaded = client.get("/api/v1/runs/run-ashfall/state")
-
-    assert created.status_code == 201
-    assert created.json() == initial
-    assert loaded.status_code == 200
-    assert loaded.json() == initial
-
-
-def test_api_commits_only_typed_approved_changes(client: TestClient) -> None:
-    initial = fixture_document("game_state_initial.json")
-    expected = fixture_document("game_state_revision_2.json")
-    assert isinstance(initial["world"], dict)
-    assert isinstance(expected["world"], dict)
-    assert isinstance(expected["story"], dict)
-
-    assert client.post("/api/v1/runs", json=initial).status_code == 201
-    world = expected["world"]
-    story = expected["story"]
-    assert isinstance(world, dict)
-    assert isinstance(story, dict)
-    changes = {
-        "proposal_id": "proposal-api",
-        "base_revision": 1,
-        "changes": [
-            {"type": "create_entity", "entity": world["entities"][-1]},
-            {"type": "add_link", "link": world["links"][-1]},
-            {"type": "add_fact", "fact": world["facts"][-1]},
-            {"type": "grant_knowledge", "entry": world["knowledge"][-1]},
-            {"type": "record_event", "event": story["events"][-1]},
-        ],
+def complete_state_document() -> dict[str, object]:
+    timestamp = "2026-08-06T00:00:00Z"
+    return {
+        "schema_version": 1,
+        "game_run": {
+            "id": "run-1",
+            "status": "draft",
+            "current_revision": 1,
+            "members": [
+                {
+                    "issuer": "issuer",
+                    "subject": "subject",
+                    "game_role": "owner",
+                    "player_entity_id": "almas",
+                }
+            ],
+            "created_at": timestamp,
+            "updated_at": timestamp,
+        },
+        "game_state": {
+            "run_id": "run-1",
+            "revision": 1,
+            "configuration": {
+                "language": "de",
+                "narration_style_id": "style.dark",
+                "perspective_id": "perspective.third-person",
+                "control_mode_id": "control.player",
+                "narrative_boundaries": ["Keine sexualisierte Gewalt"],
+                "story_model_id": "model.story",
+                "extraction_model_id": "model.extraction",
+                "summary_model_id": "model.summary",
+                "prompt_package_id": "story.base",
+                "prompt_package_version": "1",
+            },
+            "world": {
+                "entities": [
+                    {
+                        "id": "almas",
+                        "kind": "character",
+                        "label": "Almas",
+                        "description": "",
+                        "actor": {"role": "player"},
+                        "conditions": [],
+                        "aliases": [],
+                    }
+                ],
+                "links": [],
+                "facts": [],
+                "knowledge": [],
+                "rules": [],
+                "goals": [
+                    {
+                        "id": "find-sword",
+                        "kind": "main",
+                        "title": "Finde das magische Schwert",
+                        "description": "Almas muss das Schwert finden.",
+                        "status": "open",
+                        "related_entity_ids": ["almas"],
+                    }
+                ],
+            },
+            "story": {
+                "turns": [],
+                "summary": None,
+                "current_turn_sequence": 0,
+            },
+        },
     }
 
-    committed = client.post(
-        "/api/v1/runs/run-ashfall/commits",
-        json=changes,
-    )
 
-    assert committed.status_code == 200
-    assert committed.json() == expected
+def test_api_saves_and_loads_the_complete_state_document(client: TestClient) -> None:
+    document = complete_state_document()
+
+    created = client.post("/api/v1/runs", json=document)
+    loaded = client.get("/api/v1/runs/run-1/state")
+
+    assert created.status_code == 201
+    assert created.json() == document
+    assert loaded.status_code == 200
+    assert loaded.json() == document
 
 
-def test_api_returns_conflict_for_a_stale_revision(client: TestClient) -> None:
-    initial = fixture_document("game_state_initial.json")
-    assert client.post("/api/v1/runs", json=initial).status_code == 201
-    first_commit = client.post(
-        "/api/v1/runs/run-ashfall/commits",
-        json={
-            "proposal_id": "first-proposal",
-            "base_revision": 1,
-            "changes": [],
-        },
-    )
-    stale_commit = client.post(
-        "/api/v1/runs/run-ashfall/commits",
-        json={
-            "proposal_id": "stale-proposal",
-            "base_revision": 1,
-            "changes": [],
-        },
-    )
+def test_api_rejects_inconsistent_run_and_state_ids(client: TestClient) -> None:
+    document = complete_state_document()
+    document["game_state"]["run_id"] = "another-run"  # type: ignore[index]
 
-    assert first_commit.status_code == 200
-    assert stale_commit.status_code == 409
-    assert stale_commit.json()["error"] == "revision_conflict"
+    response = client.post("/api/v1/runs", json=document)
+
+    assert response.status_code == 422
 
 
 def test_health_endpoint_is_independent_of_persistence(client: TestClient) -> None:
-    response = client.get("/health")
-
-    assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
-
-
-def test_api_rejects_unreviewed_operation_shapes_at_the_http_boundary(
-    client: TestClient,
-) -> None:
-    response = client.post(
-        "/api/v1/runs/run-ashfall/commits",
-        json={
-            "proposal_id": "unreviewed",
-            "base_revision": 1,
-            "changes": [{"type": "proposed_change_set", "content": "write it"}],
-        },
-    )
-
-    assert response.status_code == 422
+    assert client.get("/health").json() == {"status": "ok"}

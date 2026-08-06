@@ -1,15 +1,19 @@
-"""Persistence ports owned by the application layer."""
+"""Narrow persistence ports owned by the application layer."""
 
 from __future__ import annotations
 
-from collections.abc import Mapping
 from typing import Protocol
 
-from story_game.domain import ApprovedChangeSet, GameState, StableId, StateRevision
+from story_game.domain import GameRun, GameState, StableId, StateRevision
+
+from .game_models import (
+    CompletedTurnPersistenceRequest,
+    ConfigurationPersistenceRequest,
+)
 
 
 class GameStateStoreError(Exception):
-    """Base failure exposed by the canonical-state persistence port."""
+    """Base failure exposed by game persistence ports."""
 
 
 class GameStateNotFoundError(GameStateStoreError):
@@ -17,17 +21,23 @@ class GameStateNotFoundError(GameStateStoreError):
 
 
 class GameStateConflictError(GameStateStoreError):
-    """A canonical-state write lost its concurrency race."""
+    """A write lost its revision or uniqueness race."""
 
 
 class GameStateConsistencyError(GameStateStoreError):
-    """Stored data cannot be reconstructed as a valid domain state."""
+    """Stored rows cannot be reconstructed as valid Domain values."""
+
+
+class GameRunCreator(Protocol):
+    def create(self, run: GameRun, state: GameState) -> None: ...
+
+
+class GameRunReader(Protocol):
+    def load_run(self, run_id: StableId) -> GameRun: ...
 
 
 class GameStateReader(Protocol):
-    """Load one canonical game-state revision."""
-
-    def load(
+    def load_state(
         self,
         run_id: StableId,
         *,
@@ -35,25 +45,11 @@ class GameStateReader(Protocol):
     ) -> GameState: ...
 
 
-class GameStateWriter(Protocol):
-    """Create or atomically advance one canonical game-state stream."""
-
-    def create_initial(self, state: GameState) -> None: ...
-
-    def commit(
-        self,
-        run_id: StableId,
-        changes: ApprovedChangeSet,
+class ConfigurationRevisionWriter(Protocol):
+    def update_configuration(
+        self, request: ConfigurationPersistenceRequest
     ) -> GameState: ...
 
 
-class GameStateStore(GameStateReader, GameStateWriter, Protocol):
-    """Combined canonical-state port for adapters supporting reads and writes."""
-
-
-class GameStateDocumentCodec(Protocol):
-    """Translate canonical state documents without coupling consumers to JSON."""
-
-    def decode(self, document: Mapping[str, object]) -> GameState: ...
-
-    def encode(self, state: GameState) -> dict[str, object]: ...
+class CompletedTurnWriter(Protocol):
+    def commit_turn(self, request: CompletedTurnPersistenceRequest) -> GameState: ...

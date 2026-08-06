@@ -147,20 +147,30 @@ class Evidence:
             object.__setattr__(self, "excerpt", excerpt or None)
 
 
-class ThreadStatus(StrEnum):
-    OPEN = "open"
-    RESOLVED = "resolved"
-    ABANDONED = "abandoned"
+class GameRunStatus(StrEnum):
+    """Lifecycle of one playable game run."""
+
+    DRAFT = "draft"
+    ACTIVE = "active"
+    PAUSED = "paused"
+    COMPLETED = "completed"
+
+
+class GameRole(StrEnum):
+    """Application-owned membership roles for a game run."""
+
+    OWNER = "owner"
+    PLAYER = "player"
+
+
+class GoalKind(StrEnum):
+    """Priority of an objective in the structured world state."""
+
+    MAIN = "main"
+    SIDE = "side"
 
 
 class GoalStatus(StrEnum):
     OPEN = "open"
-    ACTIVE = "active"
     COMPLETED = "completed"
     FAILED = "failed"
-
-
-class ChapterStatus(StrEnum):
-    PLANNED = "planned"
-    ACTIVE = "active"
-    COMPLETED = "completed"

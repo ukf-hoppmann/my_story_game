@@ -11,6 +11,7 @@ from story_game.domain import StateRevision, StableId, WorldState
 from .row_mapping import (
     entity_values,
     fact_values,
+    goal_values,
     knowledge_values,
     link_values,
     rule_values,
@@ -101,4 +102,18 @@ class WorldSnapshotWriter:
                 )
                 """,
                 rule_values(run_id, revision.value, position, rule),
+            )
+        for position, goal in enumerate(world.goals):
+            connection.execute(
+                """
+                INSERT INTO world_goals (
+                    run_id, revision, position, goal_id, kind, title,
+                    description, status, related_entity_ids
+                ) VALUES (
+                    %(run_id)s, %(revision)s, %(position)s, %(goal_id)s,
+                    %(kind)s, %(title)s, %(description)s, %(status)s,
+                    %(related_entity_ids)s
+                )
+                """,
+                goal_values(run_id, revision.value, position, goal),
             )

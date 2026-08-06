@@ -1,9 +1,10 @@
 # Entscheidung: Spielzustand und Persistenz
 
-Status: Beschlossener Entwurf zur Prüfung der späteren Ablage
+Status: Beschlossen. Domain- und Persistenzmodell umgesetzt am 2026-08-06.
 
 Dieses Dokument erklärt die gemeinsam getroffenen fachlichen Entscheidungen.
-Es beschreibt das Zielbild, nicht den vollständig implementierten Ist-Zustand.
+Das beschriebene Domain- und PostgreSQL-Modell ist umgesetzt. Die eigentliche
+LLM-, Prompt- und Modellkatalogintegration bleibt ein späterer Arbeitsschritt.
 
 ## Warum wir das Modell ändern
 

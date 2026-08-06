@@ -15,3 +15,7 @@ getrennt sein.
 
 Für das eigentliche Storygame-LLM sollten hier später insbesondere Prompt-
 Verträge, strukturierte Ausgabeformate, Zustandsgrenzen und Beispiele liegen.
+
+Aktive Verträge:
+
+- [`spielzustand-und-persistenz.md`](spielzustand-und-persistenz.md)

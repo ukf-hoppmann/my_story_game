@@ -11,6 +11,9 @@ path = "../Agent_Harness"
 [rules]
 project_rules = ".harness/project-rules.md"
 
+[modules.daily-development]
+enabled = true
+
 [modules.isolated-changes]
 enabled = true
 

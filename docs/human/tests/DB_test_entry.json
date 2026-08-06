@@ -1,0 +1,146 @@
+{
+  "schema_version": 1,
+  "game_run": {
+    "id": "test-dungeon-run",
+    "status": "active",
+    "current_revision": 1,
+    "members": [
+      {
+        "issuer": "https://keycloak.example/realms/story-game",
+        "subject": "test-player-almas",
+        "game_role": "owner",
+        "player_entity_id": "almas"
+      }
+    ],
+    "created_at": "2026-08-06T10:00:00Z",
+    "updated_at": "2026-08-06T10:00:00Z"
+  },
+  "game_state": {
+    "run_id": "test-dungeon-run",
+    "revision": 1,
+    "configuration": {
+      "language": "de",
+      "narration_style_id": "style.dark-fantasy",
+      "perspective_id": "perspective.third-person",
+      "control_mode_id": "control.player",
+      "narrative_boundaries": [
+        "Keine sexualisierte Gewalt",
+        "Keine explizite Gewalt gegen Kinder"
+      ],
+      "story_model_id": "model.story.default",
+      "extraction_model_id": "model.extraction.default",
+      "summary_model_id": "model.summary.default",
+      "prompt_package_id": "story.base",
+      "prompt_package_version": "1"
+    },
+    "world": {
+      "entities": [
+        {
+          "id": "almas",
+          "kind": "character",
+          "label": "Almas",
+          "description": "Eine entschlossene Abenteurerin auf der Suche nach einem magischen Schwert.",
+          "actor": {
+            "role": "player"
+          },
+          "conditions": [],
+          "aliases": [
+            "die Abenteurerin"
+          ]
+        },
+        {
+          "id": "old-dungeon",
+          "kind": "location",
+          "label": "Der alte Dungeon",
+          "description": "Ein kalter, verlassener Dungeon unter den Ruinen von Velar.",
+          "actor": null,
+          "conditions": [],
+          "aliases": [
+            "Dungeon"
+          ]
+        },
+        {
+          "id": "magic-sword",
+          "kind": "item",
+          "label": "Das magische Schwert",
+          "description": "Ein silbernes Schwert, das schwach blau leuchtet.",
+          "actor": null,
+          "conditions": [],
+          "aliases": [
+            "Mondklinge"
+          ]
+        }
+      ],
+      "links": [
+        {
+          "id": "almas-in-dungeon",
+          "source_id": "almas",
+          "target_id": "old-dungeon",
+          "kind": "located_in",
+          "visibility": {
+            "scope": "public"
+          },
+          "quantity": null,
+          "description": "Almas steht am Eingang des Dungeons."
+        },
+        {
+          "id": "sword-in-dungeon",
+          "source_id": "magic-sword",
+          "target_id": "old-dungeon",
+          "kind": "located_in",
+          "visibility": {
+            "scope": "public"
+          },
+          "quantity": null,
+          "description": "Das Schwert liegt irgendwo im Dungeon."
+        }
+      ],
+      "facts": [
+        {
+          "id": "dungeon-holds-sword",
+          "statement": "Das magische Schwert befindet sich im alten Dungeon.",
+          "evidence": {
+            "source": "initial_setup",
+            "excerpt": "Ausgangslage der Spielpartie."
+          },
+          "visibility": {
+            "scope": "public"
+          },
+          "subject_id": "magic-sword"
+        }
+      ],
+      "knowledge": [],
+      "rules": [
+        {
+          "id": "dungeon-rule",
+          "statement": "Der Dungeon ist dunkel und gefährlich, aber nicht tödlich unfair.",
+          "evidence": {
+            "source": "initial_setup"
+          },
+          "visibility": {
+            "scope": "public"
+          }
+        }
+      ],
+      "goals": [
+        {
+          "id": "find-magic-sword",
+          "kind": "main",
+          "title": "Finde das magische Schwert",
+          "description": "Almas muss das magische Schwert im alten Dungeon finden.",
+          "status": "open",
+          "related_entity_ids": [
+            "almas",
+            "old-dungeon",
+            "magic-sword"
+          ]
+        }
+      ]
+    },
+    "story": {
+      "turns": [],
+      "summary": null,
+      "current_turn_sequence": 0
+    }
+  }
+}

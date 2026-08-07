@@ -1,10 +1,14 @@
 # Geplante LLM-Anbindung
 
-Status: In Diskussion; der allgemeine Rahmen und der Story-Vertrag sind
-fachlich geklärt, Extraction ist der nächste Planungsabschnitt.
+Status: Der allgemeine Rahmen und die Story-Grenze sind implementiert; die
+LM-Studio-Anbindung ist als erster Provider umgesetzt. Story-Workflow und
+Extraction bleiben geplant.
 
-Verbindlichkeit: Nicht aktiv; dieses Dokument beschreibt den gemeinsam
-bestätigten Planungsstand und noch keine implementierte Schnittstelle.
+Verbindlichkeit: Der Architekturvertrag bleibt unter
+[`.harness/architecture/llm-integration.md`](../../../.harness/architecture/llm-integration.md)
+autoritativ. Die konkrete Umsetzung ist im Abschlussdokument
+[`docs/llm/done/2026-08-07-lmstudio-provider-connection.md`](../done/2026-08-07-lmstudio-provider-connection.md)
+dokumentiert.
 
 Die verbindliche Regelquelle für diesen Bereich ist
 [`.harness/architecture/llm-integration.md`](../../../.harness/architecture/llm-integration.md).

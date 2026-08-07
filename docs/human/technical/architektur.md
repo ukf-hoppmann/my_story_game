@@ -3,7 +3,9 @@
 Eine grobe Übersicht ist als editierbares [Draw.io-Diagramm](architektur.drawio)
 verfügbar. Der zweite Tab `Domain – konkret` zeigt den Aufbau des kanonischen
 Spielzustands und die wichtigsten Zustandsinvarianten. Der dritte Tab
-`Application – konkret` zeigt Use Cases, Abläufe, Fehler-Mapping und Ports.
+`Application – konkret` zeigt Use Cases, Abläufe, Fehler-Mapping und Ports. Die
+LLM-Darstellung ist getrennt: `LLM-Ablauf` zeigt den zeitlichen Story-Zug,
+`LLM-Architektur` die statischen Ports, Adapter und Provider-Abhängigkeiten.
 
 Unser Ziel ist kein möglichst kompliziertes Architekturmuster. Unser Ziel ist,
 dass eine Änderung möglichst wenige Stellen berührt und dass jeder Baustein

@@ -252,13 +252,60 @@ After explicit rejection:
   - Goal: Den Storygame-Zustand über eine stabile API für die späteren Benutzeroberflächen und Anwendungsfälle zugänglich machen. Die API trennt Lesen, fachliche Änderungsanträge und deren geprüfte Übernahme.
   - Completion criteria: Ein Client kann einen Storygame-Zustand anlegen, laden und fachlich valide Änderungen anfordern. Die API gibt keine direkten LLM-Schreibrechte frei, validiert Referenzen und Zustandsrevisionen und liefert verständliche Fehler bei ungültigen oder veralteten Änderungen. API- und Integrations-Tests prüfen die unterstützten Abläufe.
 
-- `STORY-004` **LLM-, Prompt- und Modellkonfigurationsschicht integrieren**
+- `EPIC-002` **LLM-Anbindung und Storyzug-Workflow**
+  - Type: Epic.
+  - Status: Open.
+  - Created: 2026-08-07.
+  - Area: LLM-Integration und Story-Workflow.
+  - Priority: Wichtig.
+  - Dependencies: `EPIC-001`.
+  - Goal: Einen vollständigen, providerunabhängigen Storyzug aus Modell- und Promptkatalogen, tatsächlichen Modellaufrufen, Story-Erzeugung, WorldState-Extraktion, fachlicher Freigabe und atomarem Turn-Commit zusammensetzen.
+  - Completion criteria: Die vier zugehörigen Stories sind umgesetzt und integriert. Ein vollständiger Storyzug kann den relevanten GameState-Kontext verwenden, normalisierte Story-Prosa erzeugen, strukturierte Extraktionsvorschläge fachlich prüfen und ausschließlich einen abgeschlossenen StoryTurn mit der resultierenden GameState-Revision persistieren. Modellaufrufe, Rohantworten, ProposedChangeSets und Validierungsergebnisse bleiben transient.
+
+- `STORY-004` **Anbindungsverträge definieren**
   - Type: Story.
   - Status: Open.
-  - Parent: None.
+  - Parent: `EPIC-002`.
+  - Required for parent: Yes.
   - Created: 2026-08-06.
   - Area: LLM-Integration.
   - Priority: Wichtig.
-  - Dependencies: `STORY-001`, `STORY-002`.
-  - Goal: Einen vollständigen Spielzug aus dateibasierten Modell- und Promptkatalogen, tatsächlichen Modellaufrufen, transienter Narrative- und WorldState-Extraktion, fachlicher Freigabe und atomarem Turn-Commit zusammensetzen.
-  - Completion criteria: TOML-basierte globale Konfiguration und versionierte Promptdateien werden hinter Application-eigenen Ports geladen; Provider-Geheimnisse bleiben außerhalb der Domain und des Repository-Katalogs; der Workflow setzt die GameConfiguration in konkrete Aufrufe um, validiert unbestätigte Vorschläge und persistiert ausschließlich den abgeschlossenen StoryTurn mit der resultierenden GameState-Revision. Modellaufrufe, Rohantworten, ProposedChangeSets und Validierungsergebnisse bleiben transient und besitzen keine eigenen Tabellen.
+  - Dependencies: None.
+  - Goal: Die providerunabhängigen, typisierten Verträge für Story-Erzeugung, Extraktion und Modellaufrufe als Application-eigene Ports festlegen.
+  - Completion criteria: Task-spezifische Requests und Success-Daten, eine geeignete typisierte Generation-Call-Hülle sowie die gemeinsame `Success`-/`Failure`- und `LLMError`-Grenze sind dokumentiert, implementiert und unabhängig testbar. Providerobjekte, Rohantworten und konkrete Providerformate überschreiten die Application-Grenze nicht.
+
+- `STORY-005` **LLM anbinden**
+  - Type: Story.
+  - Status: Open.
+  - Parent: `EPIC-002`.
+  - Required for parent: Yes.
+  - Created: 2026-08-07.
+  - Area: LLM-Integration.
+  - Priority: Wichtig.
+  - Dependencies: `STORY-004`, `STORY-001`, `STORY-002`.
+  - Goal: Die vereinbarten Modellverträge mit dateibasierten Modell- und Promptkatalogen sowie einem austauschbaren Provider-Adapter und Provider-Client ausführbar verbinden.
+  - Completion criteria: TOML-basierte globale Konfiguration und versionierte Promptdateien werden über Application-Ports geladen. Provider-Geheimnisse kommen aus einer zugelassenen externen Laufzeitquelle. Ein tatsächlicher Modellaufruf kann über einen Testdouble und den vorgesehenen Providerpfad ausgeführt werden; Rohantworten und Providerfehler bleiben transient beziehungsweise werden in die Application-eigene Fehlerfamilie übersetzt.
+
+- `STORY-006` **Story Generation erstellen**
+  - Type: Story.
+  - Status: Open.
+  - Parent: `EPIC-002`.
+  - Required for parent: Yes.
+  - Created: 2026-08-07.
+  - Area: Story-Workflow.
+  - Priority: Wichtig.
+  - Dependencies: `STORY-005`.
+  - Goal: Aus GameConfiguration, relevantem WorldState, StoryState und aktuellem Spielerprompt eine fachlich definierte Story-Generation-Anfrage zusammensetzen und daraus normalisierte Story-Prosa erzeugen.
+  - Completion criteria: Der Workflow wählt und strukturiert den Kontext in der Application, ruft den Story-Port auf und liefert bei Erfolg nichtleere, valide Prosa. Adapter wählen keine Spieldaten aus und verändern keinen kanonischen GameState. Provider-, Timeout-, Leer- und Fehlerszenarien sind über beobachtbares Workflowverhalten getestet.
+
+- `STORY-007` **Extraktion erstellen**
+  - Type: Story.
+  - Status: Open.
+  - Parent: `EPIC-002`.
+  - Required for parent: Yes.
+  - Created: 2026-08-07.
+  - Area: WorldState-Extraktion und Story-Workflow.
+  - Priority: Wichtig.
+  - Dependencies: `STORY-006`, `STORY-001`, `STORY-002`.
+  - Goal: Aus der erzeugten Story-Prosa strukturierte WorldState-Änderungskandidaten extrahieren, fachlich validieren und gemeinsam mit dem abgeschlossenen StoryTurn atomar übernehmen.
+  - Completion criteria: Technisch valide Extraktionsdaten werden in typisierte, noch nicht freigegebene Kandidaten überführt. Referenzen, Domain-Invarianten, Revisionen und fachliche Plausibilität werden geprüft; unbestätigte oder teilweise fehlerhafte Ergebnisse schreiben keinen kanonischen Zustand. Nur ein vollständiger, freigegebener Turn persistiert den StoryTurn und die resultierende GameState-Revision gemeinsam.

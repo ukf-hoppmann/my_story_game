@@ -372,4 +372,239 @@
       </root>
     </mxGraphModel>
   </diagram>
+  <diagram id="llm-integration" name="LLM-Ablauf">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1250" math="0" shadow="0">
+      <root>
+        <mxCell id="llmDetail0" />
+        <mxCell id="llmDetail1" parent="llmDetail0" />
+
+        <mxCell id="llmTitle" value="LLM-Ablauf – Story-Zug" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=28;fontStyle=1;fontColor=#26364D;" vertex="1" parent="llmDetail1">
+          <mxGeometry x="60" y="30" width="850" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="llmStatus" value="&lt;b&gt;Geplant · noch nicht implementiert&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;font-weight:normal&quot;&gt;Die Grenze ist entschieden; konkrete Klassen, Providerdetails und Extraction-Variante folgen später.&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8E8;strokeColor=#D7A65C;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="llmDetail1">
+          <mxGeometry x="980" y="30" width="540" height="58" as="geometry" />
+        </mxCell>
+
+        <mxCell id="llmApplication" value="&lt;b&gt;Application / Modell-Workflows&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:13px;font-weight:normal&quot;&gt;Die Application bestimmt Bedeutung, Kontext und erwartetes Ergebnis.&lt;/font&gt;" style="swimlane;html=1;rounded=1;horizontal=1;startSize=48;fillColor=#F6C3C0;strokeColor=#D97A73;strokeWidth=2;fontColor=#26364D;fontSize=18;fontStyle=1;spacingTop=10;" vertex="1" parent="llmDetail1">
+          <mxGeometry x="60" y="130" width="1460" height="270" as="geometry" />
+        </mxCell>
+        <mxCell id="llmContext" value="&lt;b&gt;Kontext zusammenstellen&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;Configuration · WorldState&lt;br&gt;StoryState · Userprompt&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE1DF;strokeColor=#D97A73;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="llmApplication">
+          <mxGeometry x="30" y="75" width="285" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="llmStoryPort" value="&lt;b&gt;Story-Port&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;LLMGenerationCall&lt;br&gt;[StoryGenerationRequest]&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE1DF;strokeColor=#D97A73;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="llmApplication">
+          <mxGeometry x="350" y="75" width="285" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="llmStoryResult" value="&lt;b&gt;StoryGenerationData&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;normalisierte Prosa&lt;br&gt;oder LLMError&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE1DF;strokeColor=#D97A73;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="llmApplication">
+          <mxGeometry x="670" y="75" width="285" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="llmExtractionPort" value="&lt;b&gt;Extraction-Port&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;LLMGenerationCall&lt;br&gt;[ExtractionGenerationRequest]&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE1DF;strokeColor=#D97A73;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="llmApplication">
+          <mxGeometry x="990" y="75" width="330" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="llmCallEnvelope" value="&lt;b&gt;Call-Hülle&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;Modell · Optionen&lt;br&gt;fachlicher Request&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE1DF;strokeColor=#D97A73;strokeWidth=1.5;fontColor=#26364D;fontSize=13;align=left;verticalAlign=middle;spacingLeft=10;" vertex="1" parent="llmApplication">
+          <mxGeometry x="1320" y="75" width="110" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="llmStoryFlow" value="Story" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#A35A54;strokeWidth=1.5;endArrow=block;endFill=1;fontSize=11;fontColor=#A35A54;" edge="1" parent="llmDetail1" source="llmContext" target="llmStoryPort">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="llmStoryResultFlow" value="Prosa" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#A35A54;strokeWidth=1.5;endArrow=block;endFill=1;fontSize=11;fontColor=#A35A54;" edge="1" parent="llmDetail1" source="llmStoryPort" target="llmStoryResult">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="llmExtractionFlow" value="Extraction" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#A35A54;strokeWidth=1.5;endArrow=block;endFill=1;fontSize=11;fontColor=#A35A54;" edge="1" parent="llmDetail1" source="llmStoryResult" target="llmExtractionPort">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="llmValidation" value="&lt;b&gt;Application + Domain-Prüfung&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:13px;font-weight:normal&quot;&gt;LLM-Ergebnisse sind Vorschläge – niemals direkt kanonischer Zustand.&lt;/font&gt;" style="swimlane;html=1;rounded=1;horizontal=1;startSize=48;fillColor=#F9DDA1;strokeColor=#D7A65C;strokeWidth=2;fontColor=#26364D;fontSize=18;fontStyle=1;spacingTop=10;" vertex="1" parent="llmDetail1">
+          <mxGeometry x="60" y="440" width="1460" height="235" as="geometry" />
+        </mxCell>
+        <mxCell id="llmCandidates" value="&lt;b&gt;Extraction-Kandidaten&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;Entities · Links · Facts&lt;br&gt;Knowledge · Goals&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3D6;strokeColor=#D7A65C;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="llmValidation">
+          <mxGeometry x="30" y="75" width="285" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="llmSemanticValidation" value="&lt;b&gt;Fachlich prüfen&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;Referenzen · Domain-Regeln&lt;br&gt;Plausibilität · Aggregation&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3D6;strokeColor=#D7A65C;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="llmValidation">
+          <mxGeometry x="350" y="75" width="285" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="llmApproved" value="&lt;b&gt;ApprovedChangeSet&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;base_revision&lt;br&gt;typisierte Änderungen&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3D6;strokeColor=#D7A65C;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="llmValidation">
+          <mxGeometry x="670" y="75" width="285" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="llmCommit" value="&lt;b&gt;Atomarer Turn-Commit&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;StoryTurn + neue GameState-Revision&lt;br&gt;gemeinsam persistieren&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3D6;strokeColor=#D7A65C;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="llmValidation">
+          <mxGeometry x="990" y="75" width="330" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="llmNoDirectWrite" value="&lt;b&gt;Kein direkter State-Zugriff&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;Rohantworten, Prompts und Vorschläge bleiben transient.&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8E8;strokeColor=#D7A65C;strokeWidth=1.2;fontColor=#26364D;fontSize=13;align=left;verticalAlign=middle;spacingLeft=12;" vertex="1" parent="llmValidation">
+          <mxGeometry x="1350" y="75" width="80" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="llmToCandidates" value="Kandidaten" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#B8863A;strokeWidth=1.5;endArrow=block;endFill=1;fontSize=11;fontColor=#7A5A20;" edge="1" parent="llmDetail1" source="llmExtractionPort" target="llmCandidates">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="llmValidationFlow" value="freigeben" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#B8863A;strokeWidth=1.5;endArrow=block;endFill=1;fontSize=11;fontColor=#7A5A20;" edge="1" parent="llmDetail1" source="llmCandidates" target="llmSemanticValidation">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="llmApprovalFlow" value="approved" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#B8863A;strokeWidth=1.5;endArrow=block;endFill=1;fontSize=11;fontColor=#7A5A20;" edge="1" parent="llmDetail1" source="llmSemanticValidation" target="llmApproved">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="llmCommitFlow" value="commit" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#B8863A;strokeWidth=1.5;endArrow=block;endFill=1;fontSize=11;fontColor=#7A5A20;" edge="1" parent="llmDetail1" source="llmApproved" target="llmCommit">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="llmInfrastructure" value="&lt;b&gt;Infrastructure / LLM-Adapter&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:13px;font-weight:normal&quot;&gt;Technik übersetzen, transportieren und Fehler normalisieren&lt;/font&gt;" style="swimlane;html=1;rounded=1;horizontal=1;startSize=48;fillColor=#C5E5B5;strokeColor=#7EB463;strokeWidth=2;fontColor=#26364D;fontSize=18;fontStyle=1;spacingTop=10;" vertex="1" parent="llmDetail1">
+          <mxGeometry x="60" y="715" width="1460" height="215" as="geometry" />
+        </mxCell>
+        <mxCell id="llmStoryAdapter" value="&lt;b&gt;Story-Adapter&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;Request darstellen&lt;br&gt;Storytext extrahieren&lt;br&gt;LLMError normalisieren&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E1;strokeColor=#7EB463;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="llmInfrastructure">
+          <mxGeometry x="30" y="72" width="300" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="llmExtractionAdapter" value="&lt;b&gt;Extraction-Adapter&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;Struktur parsen&lt;br&gt;Kandidaten normalisieren&lt;br&gt;LLMError normalisieren&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E1;strokeColor=#7EB463;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="llmInfrastructure">
+          <mxGeometry x="365" y="72" width="300" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="llmCatalog" value="&lt;b&gt;Model- &amp;amp; Prompt-Katalog&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;TOML · versionierte Prompts&lt;br&gt;Secrets aus Laufzeitumgebung&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E1;strokeColor=#7EB463;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="llmInfrastructure">
+          <mxGeometry x="700" y="72" width="300" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="llmProviderClient" value="&lt;b&gt;Provider-Client&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;HTTP / SDK · Auth&lt;br&gt;Timeouts · Rohformat&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E1;strokeColor=#7EB463;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="llmInfrastructure">
+          <mxGeometry x="1035" y="72" width="260" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="llmBoundaryNote" value="&lt;b&gt;Nur Technik&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;keine Fachlogik&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E1;strokeColor=#7EB463;strokeWidth=1.2;fontColor=#26364D;fontSize=12;align=left;verticalAlign=middle;spacingLeft=10;" vertex="1" parent="llmInfrastructure">
+          <mxGeometry x="1320" y="72" width="110" height="95" as="geometry" />
+        </mxCell>
+
+        <mxCell id="llmProviderBand" value="&lt;b&gt;Externe Modelltechnik&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:13px;font-weight:normal&quot;&gt;Austauschbare Provider – Business-Logik kennt keine Sonderfälle&lt;/font&gt;" style="swimlane;html=1;rounded=1;horizontal=1;startSize=48;fillColor=#E8ECF1;strokeColor=#A9B6C8;strokeWidth=2;fontColor=#26364D;fontSize=18;fontStyle=1;spacingTop=10;" vertex="1" parent="llmDetail1">
+          <mxGeometry x="60" y="965" width="1460" height="155" as="geometry" />
+        </mxCell>
+        <mxCell id="llmStudio" value="&lt;b&gt;LM Studio&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;lokaler Provider&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#A9B6C8;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="llmProviderBand">
+          <mxGeometry x="330" y="67" width="250" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="llmApiProviders" value="&lt;b&gt;OpenAI · Groq · weitere&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;API-basierte Provider&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#A9B6C8;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="llmProviderBand">
+          <mxGeometry x="880" y="67" width="300" height="58" as="geometry" />
+        </mxCell>
+
+        <mxCell id="llmPortToStoryAdapter" value="Port" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;strokeColor=#A35A54;strokeWidth=1.5;endArrow=block;endFill=0;fontSize=10;fontColor=#A35A54;" edge="1" parent="llmDetail1" source="llmStoryPort" target="llmStoryAdapter">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="llmPortToExtractionAdapter" value="Port" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;strokeColor=#A35A54;strokeWidth=1.5;endArrow=block;endFill=0;fontSize=10;fontColor=#A35A54;" edge="1" parent="llmDetail1" source="llmExtractionPort" target="llmExtractionAdapter">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="llmCatalogToContext" value="Kontext / Auswahl" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;strokeColor=#5C8D4D;strokeWidth=1.3;endArrow=block;endFill=0;fontSize=10;fontColor=#5C8D4D;" edge="1" parent="llmDetail1" source="llmCatalog" target="llmContext">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="llmStoryAdapterToClient" value="technischer Call" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#5C8D4D;strokeWidth=1.5;endArrow=block;endFill=1;fontSize=10;fontColor=#5C8D4D;" edge="1" parent="llmDetail1" source="llmStoryAdapter" target="llmProviderClient">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="llmExtractionAdapterToClient" value="technischer Call" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#5C8D4D;strokeWidth=1.5;endArrow=block;endFill=1;fontSize=10;fontColor=#5C8D4D;" edge="1" parent="llmDetail1" source="llmExtractionAdapter" target="llmProviderClient">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="llmClientToStudio" value="lokal" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6C7B8D;strokeWidth=1.5;endArrow=block;endFill=1;fontSize=10;fontColor=#6C7B8D;" edge="1" parent="llmDetail1" source="llmProviderClient" target="llmStudio">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="llmClientToApis" value="API" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6C7B8D;strokeWidth=1.5;endArrow=block;endFill=1;fontSize=10;fontColor=#6C7B8D;" edge="1" parent="llmDetail1" source="llmProviderClient" target="llmApiProviders">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="llm-architecture" name="LLM-Architektur">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1050" math="0" shadow="0">
+      <root>
+        <mxCell id="llmArchitecture0" />
+        <mxCell id="llmArchitecture1" parent="llmArchitecture0" />
+
+        <mxCell id="llmArchitectureTitle" value="LLM-Architektur" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=28;fontStyle=1;fontColor=#26364D;" vertex="1" parent="llmArchitecture1">
+          <mxGeometry x="60" y="30" width="620" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="llmArchitectureSubtitle" value="Statische Abhängigkeiten: Application-Ports bleiben stabil, Provider und Modelltechnik sind austauschbar." style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=14;fontColor=#52647D;" vertex="1" parent="llmArchitecture1">
+          <mxGeometry x="62" y="75" width="1050" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="llmArchitectureStatus" value="&lt;b&gt;Architekturzielbild&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;font-weight:normal&quot;&gt;noch nicht implementiert&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8E8;strokeColor=#D7A65C;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="llmArchitecture1">
+          <mxGeometry x="1260" y="32" width="240" height="58" as="geometry" />
+        </mxCell>
+
+        <mxCell id="llmArchitectureApplication" value="&lt;b&gt;Application&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:13px;font-weight:normal&quot;&gt;fachliche Bedeutung und stabile Ports&lt;/font&gt;" style="swimlane;html=1;rounded=1;horizontal=1;startSize=48;fillColor=#F6C3C0;strokeColor=#D97A73;strokeWidth=2;fontColor=#26364D;fontSize=18;fontStyle=1;spacingTop=10;" vertex="1" parent="llmArchitecture1">
+          <mxGeometry x="60" y="140" width="420" height="620" as="geometry" />
+        </mxCell>
+        <mxCell id="llmArchitectureResponsibilities" value="&lt;b&gt;Application entscheidet&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;Kontextauswahl · Promptbedeutung&lt;br&gt;Aufgabe · erwartetes Ergebnis&lt;br&gt;fachliche Prüfung&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE1DF;strokeColor=#D97A73;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="llmArchitectureApplication">
+          <mxGeometry x="25" y="70" width="370" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="llmArchitectureStoryPort" value="&lt;b&gt;Story-Port&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;StoryRequest → StoryData&lt;br&gt;oder LLMError&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE1DF;strokeColor=#D97A73;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="llmArchitectureApplication">
+          <mxGeometry x="25" y="205" width="170" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="llmArchitectureExtractionPort" value="&lt;b&gt;Extraction-Port&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;ExtractionRequest → Candidates&lt;br&gt;oder LLMError&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE1DF;strokeColor=#D97A73;strokeWidth=1.5;fontColor=#26364D;fontSize=13;align=left;verticalAlign=middle;spacingLeft=12;" vertex="1" parent="llmArchitectureApplication">
+          <mxGeometry x="225" y="205" width="170" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="llmArchitectureCatalogPort" value="&lt;b&gt;Catalog-Ports&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;ModelCatalog&lt;br&gt;PromptCatalog&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE1DF;strokeColor=#D97A73;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="llmArchitectureApplication">
+          <mxGeometry x="25" y="340" width="170" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="llmArchitectureDomainBoundary" value="&lt;b&gt;Domain-Grenze&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;LLM liefert Vorschläge&lt;br&gt;Domain gibt Änderungen frei&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE1DF;strokeColor=#D97A73;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="llmArchitectureApplication">
+          <mxGeometry x="225" y="340" width="170" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="llmArchitectureRule" value="&lt;b&gt;Keine Provider-Sonderfälle&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;Use Cases kennen weder LM Studio&lt;br&gt;noch OpenAI, Groq oder SDKs.&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE1DF;strokeColor=#D97A73;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="llmArchitectureApplication">
+          <mxGeometry x="25" y="465" width="370" height="95" as="geometry" />
+        </mxCell>
+
+        <mxCell id="llmArchitectureInfrastructure" value="&lt;b&gt;Infrastructure&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:13px;font-weight:normal&quot;&gt;Adapter und technische Übersetzung&lt;/font&gt;" style="swimlane;html=1;rounded=1;horizontal=1;startSize=48;fillColor=#C5E5B5;strokeColor=#7EB463;strokeWidth=2;fontColor=#26364D;fontSize=18;fontStyle=1;spacingTop=10;" vertex="1" parent="llmArchitecture1">
+          <mxGeometry x="540" y="140" width="480" height="620" as="geometry" />
+        </mxCell>
+        <mxCell id="llmArchitectureStoryAdapter" value="&lt;b&gt;Story-Adapter&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;Request darstellen&lt;br&gt;Prosa extrahieren&lt;br&gt;Fehler normalisieren&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E1;strokeColor=#7EB463;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="llmArchitectureInfrastructure">
+          <mxGeometry x="25" y="70" width="200" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="llmArchitectureExtractionAdapter" value="&lt;b&gt;Extraction-Adapter&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;Antwort parsen&lt;br&gt;Kandidaten normalisieren&lt;br&gt;Fehler normalisieren&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E1;strokeColor=#7EB463;strokeWidth=1.5;fontColor=#26364D;fontSize=13;align=left;verticalAlign=middle;spacingLeft=12;" vertex="1" parent="llmArchitectureInfrastructure">
+          <mxGeometry x="255" y="70" width="200" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="llmArchitectureCatalogAdapter" value="&lt;b&gt;Catalog-Adapter&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;TOML · Prompt-Dateien&lt;br&gt;versionierte Einträge&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E1;strokeColor=#7EB463;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="llmArchitectureInfrastructure">
+          <mxGeometry x="25" y="220" width="200" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="llmArchitectureProviderClient" value="&lt;b&gt;Provider-Client&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;HTTP / SDK · Auth&lt;br&gt;Timeouts · Rohformat&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E1;strokeColor=#7EB463;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="llmArchitectureInfrastructure">
+          <mxGeometry x="255" y="220" width="200" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="llmArchitectureNormalizer" value="&lt;b&gt;Normalisierung&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;nur bei nachgewiesenem Modellbedarf&lt;br&gt;keine fachliche Entscheidung&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E1;strokeColor=#7EB463;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="llmArchitectureInfrastructure">
+          <mxGeometry x="25" y="350" width="430" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="llmArchitectureSecretBoundary" value="&lt;b&gt;Secrets&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;kommen aus der Laufzeitumgebung&lt;br&gt;und nicht aus GameState oder Requests&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E1;strokeColor=#7EB463;strokeWidth=1.5;fontColor=#26364D;fontSize=13;align=left;verticalAlign=middle;spacingLeft=12;" vertex="1" parent="llmArchitectureInfrastructure">
+          <mxGeometry x="25" y="480" width="430" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="llmArchitectureExternal" value="&lt;b&gt;Externe Modelltechnik&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:13px;font-weight:normal&quot;&gt;Austauschbare Provider und Ressourcen&lt;/font&gt;" style="swimlane;html=1;rounded=1;horizontal=1;startSize=48;fillColor=#E8ECF1;strokeColor=#A9B6C8;strokeWidth=2;fontColor=#26364D;fontSize=18;fontStyle=1;spacingTop=10;" vertex="1" parent="llmArchitecture1">
+          <mxGeometry x="1080" y="140" width="420" height="620" as="geometry" />
+        </mxCell>
+        <mxCell id="llmArchitectureLmStudio" value="&lt;b&gt;LM Studio&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;lokaler Provider&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#A9B6C8;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="llmArchitectureExternal">
+          <mxGeometry x="35" y="85" width="350" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="llmArchitectureApiProviders" value="&lt;b&gt;OpenAI · Groq · weitere&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;API-basierte Provider&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#A9B6C8;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="llmArchitectureExternal">
+          <mxGeometry x="35" y="205" width="350" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="llmArchitectureFiles" value="&lt;b&gt;Versionierte Katalogdateien&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;TOML · Prompttexte · JSON-Schemata&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#A9B6C8;strokeWidth=1.5;fontColor=#26364D;fontSize=13;align=left;verticalAlign=middle;spacingLeft=12;" vertex="1" parent="llmArchitectureExternal">
+          <mxGeometry x="35" y="325" width="350" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="llmArchitectureRuntimeSecrets" value="&lt;b&gt;Runtime Secret Source&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;API-Schlüssel und Zugangsdaten&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#A9B6C8;strokeWidth=1.5;fontColor=#26364D;fontSize=13;align=left;verticalAlign=middle;spacingLeft=12;" vertex="1" parent="llmArchitectureExternal">
+          <mxGeometry x="35" y="445" width="350" height="72" as="geometry" />
+        </mxCell>
+
+        <mxCell id="llmArchitectureStoryConnection" value="stabiler Vertrag" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#A35A54;strokeWidth=1.6;dashed=1;endArrow=block;endFill=0;fontSize=10;fontColor=#A35A54;" edge="1" parent="llmArchitecture1" source="llmArchitectureStoryPort" target="llmArchitectureStoryAdapter">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="llmArchitectureExtractionConnection" value="stabiler Vertrag" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#A35A54;strokeWidth=1.6;dashed=1;endArrow=block;endFill=0;fontSize=10;fontColor=#A35A54;" edge="1" parent="llmArchitecture1" source="llmArchitectureExtractionPort" target="llmArchitectureExtractionAdapter">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="llmArchitectureCatalogConnection" value="Port" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#A35A54;strokeWidth=1.6;dashed=1;endArrow=block;endFill=0;fontSize=10;fontColor=#A35A54;" edge="1" parent="llmArchitecture1" source="llmArchitectureCatalogPort" target="llmArchitectureCatalogAdapter">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="llmArchitectureStoryToClient" value="Providerformat" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#5C8D4D;strokeWidth=1.5;endArrow=block;endFill=1;fontSize=10;fontColor=#5C8D4D;" edge="1" parent="llmArchitecture1" source="llmArchitectureStoryAdapter" target="llmArchitectureProviderClient">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="llmArchitectureExtractionToClient" value="Providerformat" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#5C8D4D;strokeWidth=1.5;endArrow=block;endFill=1;fontSize=10;fontColor=#5C8D4D;" edge="1" parent="llmArchitecture1" source="llmArchitectureExtractionAdapter" target="llmArchitectureProviderClient">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="llmArchitectureCatalogToFiles" value="liest" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#5C8D4D;strokeWidth=1.3;endArrow=block;endFill=1;fontSize=10;fontColor=#5C8D4D;" edge="1" parent="llmArchitecture1" source="llmArchitectureCatalogAdapter" target="llmArchitectureFiles">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="llmArchitectureClientToLmStudio" value="lokal" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6C7B8D;strokeWidth=1.5;endArrow=block;endFill=1;fontSize=10;fontColor=#6C7B8D;" edge="1" parent="llmArchitecture1" source="llmArchitectureProviderClient" target="llmArchitectureLmStudio">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="llmArchitectureClientToApi" value="API" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6C7B8D;strokeWidth=1.5;endArrow=block;endFill=1;fontSize=10;fontColor=#6C7B8D;" edge="1" parent="llmArchitecture1" source="llmArchitectureProviderClient" target="llmArchitectureApiProviders">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="llmArchitectureSecretsToClient" value="Secret" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;strokeColor=#6C7B8D;strokeWidth=1.3;endArrow=block;endFill=1;fontSize=10;fontColor=#6C7B8D;" edge="1" parent="llmArchitecture1" source="llmArchitectureRuntimeSecrets" target="llmArchitectureProviderClient">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="llmArchitecturePrinciple" value="&lt;b&gt;Abhängigkeitsrichtung&lt;/b&gt;&lt;br&gt;Application definiert die Bedeutung. Infrastructure implementiert die Ports. Provider-Clients sprechen mit LM Studio oder APIs. Kein rohes Providerobjekt und keine Providerlogik überschreiten die Application-Grenze." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8E8;strokeColor=#D7A65C;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;spacingTop=12;" vertex="1" parent="llmArchitecture1">
+          <mxGeometry x="60" y="815" width="1440" height="100" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
 </mxfile>

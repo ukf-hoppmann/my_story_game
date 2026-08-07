@@ -6,6 +6,13 @@ fachlich geklärt, Extraction ist der nächste Planungsabschnitt.
 Verbindlichkeit: Nicht aktiv; dieses Dokument beschreibt den gemeinsam
 bestätigten Planungsstand und noch keine implementierte Schnittstelle.
 
+Die verbindliche Regelquelle für diesen Bereich ist
+[`.harness/architecture/llm-integration.md`](../../../.harness/architecture/llm-integration.md).
+Das verständliche Entscheidungsdokument steht unter
+[`docs/human/decisions/llm-anbindung.md`](../../human/decisions/llm-anbindung.md),
+das technische Story-Zielbild unter
+[`docs/human/technical/planned/story-generation.md`](../../human/technical/planned/story-generation.md).
+
 Das Dokument bewahrt zwei Detailebenen. Der allgemeine Vertrag enthält die
 bereits bestätigten, für alle Modellaufgaben geltenden Grenzen. Die Abschnitte
 der einzelnen Aufgaben halten zusätzlich ihre bestätigten Besonderheiten und

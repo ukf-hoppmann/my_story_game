@@ -2,9 +2,12 @@
 
 ## Binding architecture contract
 
-`.harness/architecture-rules.md` is the single authoritative source for the
-project architecture. An agent MUST read it before planning or implementing a
-code change and MUST apply it together with the generated Harness rules.
+`.harness/architecture-rules.md` is the authoritative root for the project
+architecture. It MAY delegate named, non-overlapping scopes to files below
+`.harness/architecture/`. A delegated file is authoritative only for the scope
+named by the root. An agent MUST read the root and every delegated file that
+applies before planning or implementing a change and MUST apply them together
+with the generated Harness rules.
 
 An agent MUST NOT bypass the contract when a requested change does not fit it.
 The agent MUST stop before implementation, explain the concrete mismatch, and

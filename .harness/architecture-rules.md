@@ -86,7 +86,14 @@ sense.
   observable contract. New behavior and bug fixes remain subject to the
   project's test-first rule.
 
-## 7. Changing this architecture
+## 7. Delegated architecture scopes
+
+For model invocation, prompt preparation, provider and model adapters, and
+model-derived outputs, `.harness/architecture/llm-integration.md` is the
+authoritative scoped contract. An agent MUST read and apply it before planning
+or implementing work in that scope.
+
+## 8. Changing this architecture
 
 If a concrete requirement cannot be implemented cleanly under this contract,
 an agent MUST NOT add a local exception or bypass an interface. Before changing

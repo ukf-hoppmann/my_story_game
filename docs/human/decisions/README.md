@@ -12,3 +12,8 @@ Normative Regeln werden nicht hier dupliziert. Wenn eine Entscheidung durch
 den Harness oder den Agenten verbindlich erzwungen werden muss, bleibt die
 Regelquelle in `.harness/`; dieses Dokument erklärt dann ihren fachlichen
 Hintergrund.
+
+Entscheidungen:
+
+- [`spielzustand-und-persistenz.md`](spielzustand-und-persistenz.md)
+- [`llm-anbindung.md`](llm-anbindung.md)

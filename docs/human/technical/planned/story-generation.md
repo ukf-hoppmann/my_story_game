@@ -1,6 +1,7 @@
 # Geplante Story-Erzeugung über austauschbare Modelle
 
-Status: Technisches Zielbild; noch nicht implementiert.  
+Status: Der Provider-Anschluss und die technische Story-Grenze sind
+implementiert; der Story-Workflow ist noch nicht implementiert.
 Grundlage: [Entscheidung zur LLM-Anbindung](../../decisions/llm-anbindung.md) und
 der verbindliche
 [LLM-Architekturvertrag](../../../../.harness/architecture/llm-integration.md).
@@ -10,7 +11,10 @@ der verbindliche
 Das Domain- und Persistenzmodell kennt bereits `GameConfiguration`,
 `WorldState`, `StoryState`, abgeschlossene `StoryTurn`-Werte und die atomare
 Turn-Commit-Grenze. Modell- und Promptkataloge, tatsächliche Modellaufrufe,
-Story-Erzeugung und WorldState-Extraction sind noch nicht implementiert.
+Die LM-Studio-Infrastruktur kann die definierte Story-Grenze bereits live
+aufrufen und normalisierte Prosa oder einen `LLMError` liefern. Modell- und
+Promptkataloge, die Story-Operation und WorldState-Extraction sind noch nicht
+implementiert.
 
 `GameConfiguration` speichert bereits semantische Modellreferenzen und die
 Version des Promptpakets. Provider-URLs, Zugangsdaten, Rohprompts und laufende

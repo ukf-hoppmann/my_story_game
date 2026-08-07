@@ -1,5 +1,10 @@
 # Wie wir die Anwendung aufbauen
 
+Eine grobe Übersicht ist als editierbares [Draw.io-Diagramm](architektur.drawio)
+verfügbar. Der zweite Tab `Domain – konkret` zeigt den Aufbau des kanonischen
+Spielzustands und die wichtigsten Zustandsinvarianten. Der dritte Tab
+`Application – konkret` zeigt Use Cases, Abläufe, Fehler-Mapping und Ports.
+
 Unser Ziel ist kein möglichst kompliziertes Architekturmuster. Unser Ziel ist,
 dass eine Änderung möglichst wenige Stellen berührt und dass jeder Baustein
 für sich verständlich und testbar bleibt.

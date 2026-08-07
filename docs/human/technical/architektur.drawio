@@ -1,0 +1,375 @@
+<mxfile host="app.diagrams.net" modified="2026-08-07T00:00:00.000Z" agent="Codex" version="24.7.17" type="device">
+  <diagram id="story-game-architecture" name="Architektur">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="Story Game – Grobe Architektur" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=28;fontStyle=1;fontColor=#26364D;" vertex="1" parent="1">
+          <mxGeometry x="60" y="30" width="720" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" value="Die Domain ist ein unabhängiger fachlicher Kern. Adapter verbinden die äußere Welt mit der Application." style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=14;fontColor=#52647D;" vertex="1" parent="1">
+          <mxGeometry x="62" y="75" width="950" height="28" as="geometry" />
+        </mxCell>
+
+        <mxCell id="legendTitle" value="Darstellungsformen" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EEF2F7;strokeColor=#A9B6C8;strokeWidth=1;fontStyle=1;fontColor=#26364D;align=left;verticalAlign=middle;spacingLeft=12;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1080" y="32" width="460" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="legendOnionPanel" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FAFBFD;strokeColor=#D3DCE7;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="1080" y="76" width="220" height="205" as="geometry" />
+        </mxCell>
+        <mxCell id="legendOnionLabel" value="&lt;b&gt;Onion&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#26364D;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="1090" y="82" width="200" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="legendOnionOuter" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#B9D4F4;gradientColor=#C5E5B5;gradientDirection=south;strokeColor=#6B93C6;strokeWidth=1.2;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="108" width="180" height="145" as="geometry" />
+        </mxCell>
+        <mxCell id="legendOnionApplication" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#F6C3C0;strokeColor=#D97A73;strokeWidth=1.2;" vertex="1" parent="1">
+          <mxGeometry x="1130" y="133" width="120" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="legendOnionDomain" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#F9DDA1;strokeColor=#D7A65C;strokeWidth=1.2;" vertex="1" parent="1">
+          <mxGeometry x="1163" y="163" width="54" height="43" as="geometry" />
+        </mxCell>
+        <mxCell id="legendOnionOuterLabel" value="UI-API / Driving" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#26364D;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1110" y="111" width="160" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="legendOnionApplicationLabel" value="Use Cases / Application" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#26364D;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="1138" y="139" width="104" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legendOnionDomainLabel" value="Entities" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#26364D;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="1161" y="176" width="58" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="legendOnionInfrastructureLabel" value="Infrastructure / Driven" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#26364D;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="1105" y="226" width="170" height="21" as="geometry" />
+        </mxCell>
+
+        <mxCell id="legendLayerPanel" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FAFBFD;strokeColor=#D3DCE7;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="1320" y="76" width="220" height="205" as="geometry" />
+        </mxCell>
+        <mxCell id="legendLayerLabel" value="&lt;b&gt;Ebenen&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#26364D;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="1330" y="82" width="200" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="legendLayerDrivingA" value="UI-API /&lt;br&gt;Driving" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#B9D4F4;strokeColor=#6B93C6;strokeWidth=1.2;fontColor=#26364D;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="1332" y="111" width="88" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="legendLayerDrivingB" value="Infrastructure /&lt;br&gt;Driven" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C5E5B5;strokeColor=#7EB463;strokeWidth=1.2;fontColor=#26364D;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="1440" y="111" width="88" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="legendLayerApplication" value="Use Cases / Application" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F6C3C0;strokeColor=#D97A73;strokeWidth=1.2;fontColor=#26364D;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1332" y="166" width="196" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="legendLayerDomain" value="Entities" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F9DDA1;strokeColor=#D7A65C;strokeWidth=1.2;fontColor=#26364D;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1365" y="222" width="130" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="legendLayerArrowA" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#52647D;strokeWidth=1;endArrow=block;endFill=1;" edge="1" parent="1" source="legendLayerDrivingA" target="legendLayerApplication">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="legendLayerArrowB" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#52647D;strokeWidth=1;endArrow=block;endFill=1;" edge="1" parent="1" source="legendLayerDrivingB" target="legendLayerApplication">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="legendLayerArrowC" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#52647D;strokeWidth=1;endArrow=block;endFill=1;" edge="1" parent="1" source="legendLayerApplication" target="legendLayerDomain">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="apiBand" value="&lt;b&gt;UI / Driving&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:13px;font-weight:normal&quot;&gt;Eingang&lt;/font&gt;" style="swimlane;html=1;rounded=1;horizontal=1;startSize=48;fillColor=#B9D4F4;strokeColor=#6B93C6;strokeWidth=2;fontColor=#26364D;fontSize=18;fontStyle=1;spacingTop=10;" vertex="1" parent="1">
+          <mxGeometry x="60" y="130" width="620" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="restApi" value="&lt;b&gt;REST API&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;FastAPI / HTTP&lt;br&gt;health · runs · state&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EAF3FF;strokeColor=#6B93C6;strokeWidth=1.5;fontColor=#26364D;fontSize=15;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="apiBand">
+          <mxGeometry x="35" y="70" width="260" height="68" as="geometry" />
+        </mxCell>
+        <mxCell id="apiSchemas" value="&lt;b&gt;Schemas &amp;amp; Mapper&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;Validieren · übersetzen&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EAF3FF;strokeColor=#6B93C6;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="apiBand">
+          <mxGeometry x="335" y="70" width="245" height="68" as="geometry" />
+        </mxCell>
+        <mxCell id="uiClientExternal" value="&lt;b&gt;UI / Client&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;externer Aufrufer&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8ECF1;strokeColor=#A9B6C8;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="1">
+          <mxGeometry x="760" y="205" width="260" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="clientToApi" value="HTTP" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#52647D;strokeWidth=1.5;endArrow=block;endFill=1;fontSize=11;fontColor=#52647D;" edge="1" parent="1" source="uiClientExternal" target="restApi">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="appBand" value="&lt;b&gt;Application / Use Cases&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:13px;font-weight:normal&quot;&gt;Abläufe koordinieren&lt;/font&gt;" style="swimlane;html=1;rounded=1;horizontal=1;startSize=48;fillColor=#F6C3C0;strokeColor=#D97A73;strokeWidth=2;fontColor=#26364D;fontSize=18;fontStyle=1;spacingTop=10;" vertex="1" parent="1">
+          <mxGeometry x="60" y="350" width="760" height="250" as="geometry" />
+        </mxCell>
+        <mxCell id="useCases" value="&lt;b&gt;Use Cases&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;Spiel starten&lt;br&gt;Spielstand laden&lt;br&gt;Konfiguration ändern&lt;br&gt;Zug abschließen&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE1DF;strokeColor=#D97A73;strokeWidth=1.5;fontColor=#26364D;fontSize=15;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="appBand">
+          <mxGeometry x="30" y="72" width="245" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="workflows" value="&lt;b&gt;Ablauf &amp;amp; Regeln&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;Workflow · Policy&lt;br&gt;fachliche Reihenfolge&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE1DF;strokeColor=#D97A73;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="appBand">
+          <mxGeometry x="300" y="72" width="190" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="ports" value="&lt;b&gt;Ports&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;Fachliche Verträge&lt;br&gt;ohne Technikdetails&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE1DF;strokeColor=#D97A73;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="appBand">
+          <mxGeometry x="515" y="72" width="205" height="92" as="geometry" />
+        </mxCell>
+
+        <mxCell id="infraBand" value="&lt;b&gt;Infrastructure / Driven Adapters&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:13px;font-weight:normal&quot;&gt;Technische Implementierungen&lt;/font&gt;" style="swimlane;html=1;rounded=1;horizontal=1;startSize=48;fillColor=#C5E5B5;strokeColor=#7EB463;strokeWidth=2;fontColor=#26364D;fontSize=18;fontStyle=1;spacingTop=10;" vertex="1" parent="1">
+          <mxGeometry x="60" y="640" width="760" height="190" as="geometry" />
+        </mxCell>
+        <mxCell id="postgresAdapter" value="&lt;b&gt;PostgreSQL-Adapter&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;Reader · Writer · Store&lt;br&gt;Turn-Transaktion&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E1;strokeColor=#7EB463;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="infraBand">
+          <mxGeometry x="50" y="72" width="270" height="76" as="geometry" />
+        </mxCell>
+        <mxCell id="migration" value="&lt;b&gt;Migration &amp;amp; Connection&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;Schema · Verbindung&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E1;strokeColor=#7EB463;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="infraBand">
+          <mxGeometry x="385" y="72" width="235" height="76" as="geometry" />
+        </mxCell>
+        <mxCell id="infraNote" value="&lt;font style=&quot;font-size:12px&quot;&gt;Austauschbar&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E1;strokeColor=#7EB463;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=center;verticalAlign=middle;" vertex="1" parent="infraBand">
+          <mxGeometry x="655" y="72" width="70" height="76" as="geometry" />
+        </mxCell>
+
+        <mxCell id="domainBand" value="&lt;b&gt;Domain / unabhängiger Kern&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:13px;font-weight:normal&quot;&gt;Fachliche Wahrheit · ohne Adapter&lt;/font&gt;" style="swimlane;html=1;rounded=1;horizontal=1;startSize=48;fillColor=#F9DDA1;strokeColor=#D7A65C;strokeWidth=2;fontColor=#26364D;fontSize=18;fontStyle=1;spacingTop=10;" vertex="1" parent="1">
+          <mxGeometry x="880" y="350" width="550" height="480" as="geometry" />
+        </mxCell>
+        <mxCell id="gameRun" value="&lt;b&gt;GameRun&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;Status · Mitglieder · Revision&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3D6;strokeColor=#D7A65C;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="domainBand">
+          <mxGeometry x="35" y="80" width="215" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="gameState" value="&lt;b&gt;GameState&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;Configuration&lt;br&gt;World · Story · Goals&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3D6;strokeColor=#D7A65C;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="domainBand">
+          <mxGeometry x="290" y="80" width="215" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="domainRules" value="&lt;b&gt;Domain-Regeln&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;Typisiert · revisioniert&lt;br&gt;testbar · invariant&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3D6;strokeColor=#D7A65C;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="domainBand">
+          <mxGeometry x="125" y="240" width="300" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="runToState" value="enthält" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#B8863A;strokeWidth=1.3;endArrow=block;endFill=1;fontSize=11;fontColor=#7A5A20;" edge="1" parent="domainBand" source="gameRun" target="gameState">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="externalBand" value="&lt;b&gt;Externe Ressource&lt;/b&gt;" style="swimlane;html=1;rounded=1;horizontal=1;startSize=42;fillColor=#E8ECF1;strokeColor=#A9B6C8;strokeWidth=2;fontColor=#26364D;fontSize=16;fontStyle=1;spacingTop=10;" vertex="1" parent="1">
+          <mxGeometry x="60" y="870" width="1370" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="postgresResource" value="&lt;b&gt;PostgreSQL&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;GameRun · GameState · Revisionen&lt;/font&gt;" style="shape=cylinder;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;fillColor=#FFFFFF;strokeColor=#A9B6C8;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="externalBand">
+          <mxGeometry x="275" y="55" width="250" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="resourceNote" value="&lt;font style=&quot;font-size:12px&quot;&gt;persistenter Datenspeicher&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=12;fontColor=#52647D;" vertex="1" parent="externalBand">
+          <mxGeometry x="570" y="65" width="260" height="28" as="geometry" />
+        </mxCell>
+
+        <mxCell id="apiToApp" value="Aufruf" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#52647D;strokeWidth=1.8;endArrow=block;endFill=1;fontSize=11;fontColor=#52647D;" edge="1" parent="1" source="restApi" target="useCases">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="appToDomain" value="nutzt Domain" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#A35A54;strokeWidth=1.8;endArrow=block;endFill=1;fontSize=11;fontColor=#A35A54;" edge="1" parent="1" source="useCases" target="gameState">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="appToAdapter" value="Port" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;strokeColor=#A35A54;strokeWidth=1.6;endArrow=block;endFill=0;fontSize=11;fontColor=#A35A54;" edge="1" parent="1" source="ports" target="postgresAdapter">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="adapterToDb" value="SQL" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#5C8D4D;strokeWidth=1.6;endArrow=block;endFill=1;fontSize=11;fontColor=#5C8D4D;" edge="1" parent="1" source="postgresAdapter" target="postgresResource">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="migrationToDb" value="Schema" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;strokeColor=#5C8D4D;strokeWidth=1.2;endArrow=block;endFill=0;fontSize=11;fontColor=#5C8D4D;" edge="1" parent="1" source="migration" target="postgresResource">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="note" value="&lt;b&gt;Architekturprinzip&lt;/b&gt;&lt;br&gt;Die Domain ist unabhängig. Die Application steuert Abläufe; Infrastructure implementiert Ports." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8E8;strokeColor=#D7A65C;strokeWidth=1;fontColor=#52647D;fontSize=13;align=left;verticalAlign=middle;spacingLeft=14;spacingRight=14;" vertex="1" parent="1">
+          <mxGeometry x="60" y="1010" width="1370" height="70" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="domain-detail" name="Domain – konkret">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="domainDetail0" />
+        <mxCell id="domainDetail1" parent="domainDetail0" />
+
+        <mxCell id="domainDetailTitle" value="Domain – konkret" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=28;fontStyle=1;fontColor=#26364D;" vertex="1" parent="domainDetail1">
+          <mxGeometry x="60" y="30" width="600" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="domainDetailSubtitle" value="Der kanonische, revisionierte Spielzustand und seine fachlichen Beziehungen" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=14;fontColor=#52647D;" vertex="1" parent="domainDetail1">
+          <mxGeometry x="62" y="75" width="850" height="28" as="geometry" />
+        </mxCell>
+
+        <mxCell id="domainDetailRun" value="&lt;b&gt;GameRun&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:13px;font-weight:normal&quot;&gt;Eine konkrete Spielpartie&lt;/font&gt;" style="swimlane;html=1;rounded=1;horizontal=1;startSize=48;fillColor=#F9DDA1;strokeColor=#D7A65C;strokeWidth=2;fontColor=#26364D;fontSize=18;fontStyle=1;spacingTop=10;" vertex="1" parent="domainDetail1">
+          <mxGeometry x="60" y="130" width="1460" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="domainDetailRunMeta" value="&lt;b&gt;Run-Metadaten&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;id · Status&lt;br&gt;created_at · updated_at&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3D6;strokeColor=#D7A65C;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="domainDetailRun">
+          <mxGeometry x="35" y="72" width="285" height="78" as="geometry" />
+        </mxCell>
+        <mxCell id="domainDetailMembers" value="&lt;b&gt;GameRunMember&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;issuer · subject&lt;br&gt;Rolle · Spielfigur (optional)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3D6;strokeColor=#D7A65C;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="domainDetailRun">
+          <mxGeometry x="365" y="72" width="330" height="78" as="geometry" />
+        </mxCell>
+        <mxCell id="domainDetailRevision" value="&lt;b&gt;current_revision&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;Verweis auf den aktuellen&lt;br&gt;kanonischen Stand&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3D6;strokeColor=#D7A65C;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="domainDetailRun">
+          <mxGeometry x="740" y="72" width="300" height="78" as="geometry" />
+        </mxCell>
+        <mxCell id="domainDetailStatus" value="&lt;b&gt;Status&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;draft · active · paused · completed&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3D6;strokeColor=#D7A65C;strokeWidth=1.5;fontColor=#26364D;fontSize=13;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="domainDetailRun">
+          <mxGeometry x="1085" y="72" width="330" height="78" as="geometry" />
+        </mxCell>
+
+        <mxCell id="domainDetailState" value="&lt;b&gt;GameState&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:13px;font-weight:normal&quot;&gt;Unveränderlich · revisioniert · vollständig fortsetzbar&lt;/font&gt;" style="swimlane;html=1;rounded=1;horizontal=1;startSize=48;fillColor=#FFF3D6;strokeColor=#D7A65C;strokeWidth=2;fontColor=#26364D;fontSize=18;fontStyle=1;spacingTop=10;" vertex="1" parent="domainDetail1">
+          <mxGeometry x="60" y="350" width="1460" height="470" as="geometry" />
+        </mxCell>
+        <mxCell id="domainDetailConfig" value="&lt;b&gt;GameConfiguration&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;Sprache · Erzählstil&lt;br&gt;Perspektive · Steuerung&lt;br&gt;Grenzen · Modell-IDs&lt;br&gt;Prompt-Paket + Version&lt;/font&gt;" style="swimlane;html=1;rounded=1;horizontal=1;startSize=38;fillColor=#F9DDA1;strokeColor=#D7A65C;strokeWidth=1.5;fontColor=#26364D;fontSize=15;fontStyle=1;spacingTop=8;" vertex="1" parent="domainDetailState">
+          <mxGeometry x="30" y="68" width="310" height="250" as="geometry" />
+        </mxCell>
+        <mxCell id="domainDetailConfigNote" value="&lt;font style=&quot;font-size:11px&quot;&gt;pro Lauf aufgelöst&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=11;fontColor=#52647D;" vertex="1" parent="domainDetailConfig">
+          <mxGeometry x="18" y="190" width="260" height="25" as="geometry" />
+        </mxCell>
+
+        <mxCell id="domainDetailWorld" value="&lt;b&gt;WorldState&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;font-weight:normal&quot;&gt;Strukturierte Wahrheit der Welt&lt;/font&gt;" style="swimlane;html=1;rounded=1;horizontal=1;startSize=38;fillColor=#F9DDA1;strokeColor=#D7A65C;strokeWidth=1.5;fontColor=#26364D;fontSize=15;fontStyle=1;spacingTop=8;" vertex="1" parent="domainDetailState">
+          <mxGeometry x="370" y="68" width="650" height="350" as="geometry" />
+        </mxCell>
+        <mxCell id="domainDetailEntities" value="&lt;b&gt;WorldEntities&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;Figuren · Orte · Gegenstände&lt;br&gt;Kreaturen · Fraktionen&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8E8;strokeColor=#D7A65C;strokeWidth=1;fontColor=#26364D;fontSize=13;align=left;verticalAlign=middle;spacingLeft=12;" vertex="1" parent="domainDetailWorld">
+          <mxGeometry x="22" y="62" width="270" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="domainDetailLinks" value="&lt;b&gt;EntityLinks&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;located_in · possesses&lt;br&gt;contains · knows · related&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8E8;strokeColor=#D7A65C;strokeWidth=1;fontColor=#26364D;fontSize=13;align=left;verticalAlign=middle;spacingLeft=12;" vertex="1" parent="domainDetailWorld">
+          <mxGeometry x="320" y="62" width="290" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="domainDetailFacts" value="&lt;b&gt;Facts &amp;amp; Evidence&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;bestätigte Aussagen&lt;br&gt;mit Sichtbarkeit&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8E8;strokeColor=#D7A65C;strokeWidth=1;fontColor=#26364D;fontSize=13;align=left;verticalAlign=middle;spacingLeft=12;" vertex="1" parent="domainDetailWorld">
+          <mxGeometry x="22" y="162" width="270" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="domainDetailKnowledge" value="&lt;b&gt;Knowledge&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;Akteur kennt Fakt&lt;br&gt;ab Sequenz / optional vergessen&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;;html=1;fillColor=#FFF8E8;strokeColor=#D7A65C;strokeWidth=1;fontColor=#26364D;fontSize=13;align=left;verticalAlign=middle;spacingLeft=12;" vertex="1" parent="domainDetailWorld">
+          <mxGeometry x="320" y="162" width="290" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="domainDetailRules" value="&lt;b&gt;WorldRules&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;Regeln und Grenzen&lt;br&gt;mit Evidenz / Sichtbarkeit&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8E8;strokeColor=#D7A65C;strokeWidth=1;fontColor=#26364D;fontSize=13;align=left;verticalAlign=middle;spacingLeft=12;" vertex="1" parent="domainDetailWorld">
+          <mxGeometry x="22" y="262" width="270" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="domainDetailGoals" value="&lt;b&gt;Goals&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;main / side&lt;br&gt;open · completed · failed&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8E8;strokeColor=#D7A65C;strokeWidth=1;fontColor=#26364D;fontSize=13;align=left;verticalAlign=middle;spacingLeft=12;" vertex="1" parent="domainDetailWorld">
+          <mxGeometry x="320" y="262" width="290" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="domainDetailStory" value="&lt;b&gt;StoryState&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;font-weight:normal&quot;&gt;Abgeschlossene Prosa-Chronologie&lt;/font&gt;" style="swimlane;html=1;rounded=1;horizontal=1;startSize=38;fillColor=#F9DDA1;strokeColor=#D7A65C;strokeWidth=1.5;fontColor=#26364D;fontSize=15;fontStyle=1;spacingTop=8;" vertex="1" parent="domainDetailState">
+          <mxGeometry x="1050" y="68" width="380" height="350" as="geometry" />
+        </mxCell>
+        <mxCell id="domainDetailTurns" value="&lt;b&gt;StoryTurns&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;Spielereingabe&lt;br&gt;+ Erzählung&lt;br&gt;based_on → resulting revision&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8E8;strokeColor=#D7A65C;strokeWidth=1;fontColor=#26364D;fontSize=13;align=left;verticalAlign=middle;spacingLeft=12;" vertex="1" parent="domainDetailStory">
+          <mxGeometry x="25" y="62" width="330" height="104" as="geometry" />
+        </mxCell>
+        <mxCell id="domainDetailSummary" value="&lt;b&gt;StorySummary&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;rollierende Zusammenfassung&lt;br&gt;bis Zug / Revision&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8E8;strokeColor=#D7A65C;strokeWidth=1;fontColor=#26364D;fontSize=13;align=left;verticalAlign=middle;spacingLeft=12;" vertex="1" parent="domainDetailStory">
+          <mxGeometry x="25" y="190" width="330" height="78" as="geometry" />
+        </mxCell>
+        <mxCell id="domainDetailSequence" value="&lt;b&gt;current_turn_sequence&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;0, 1, 2, … ohne Lücken&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8E8;strokeColor=#D7A65C;strokeWidth=1;fontColor=#26364D;fontSize=12;align=left;verticalAlign=middle;spacingLeft=12;" vertex="1" parent="domainDetailStory">
+          <mxGeometry x="25" y="292" width="330" height="42" as="geometry" />
+        </mxCell>
+
+        <mxCell id="domainDetailChanges" value="&lt;b&gt;Zustandsänderung&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:13px;font-weight:normal&quot;&gt;Nur freigegebene, revisionsgebundene Änderungen gelangen in den State&lt;/font&gt;" style="swimlane;html=1;rounded=1;horizontal=1;startSize=48;fillColor=#F6C3C0;strokeColor=#D97A73;strokeWidth=2;fontColor=#26364D;fontSize=18;fontStyle=1;spacingTop=10;" vertex="1" parent="domainDetail1">
+          <mxGeometry x="60" y="860" width="920" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="domainDetailApproved" value="&lt;b&gt;ApprovedChangeSet&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;proposal_id&lt;br&gt;base_revision&lt;br&gt;typed operations&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE1DF;strokeColor=#D97A73;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="domainDetailChanges">
+          <mxGeometry x="30" y="72" width="270" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="domainDetailOperations" value="&lt;b&gt;Typisierte Operationen&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;Create / Update Entity&lt;br&gt;Add / Remove Link&lt;br&gt;Add Fact · Grant Knowledge&lt;br&gt;Add / Update Goal&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE1DF;strokeColor=#D97A73;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="domainDetailChanges">
+          <mxGeometry x="335" y="72" width="360" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="domainDetailChangeFlow" value="apply / complete_turn" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#A35A54;strokeWidth=1.6;endArrow=block;endFill=1;fontSize=11;fontColor=#A35A54;" edge="1" parent="domainDetail1" source="domainDetailOperations" target="domainDetailState">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="domainDetailRulesPanel" value="&lt;b&gt;Zentrale Invarianten&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;• Revisionen steigen genau um 1&lt;br&gt;• Referenzen zeigen auf vorhandene Entitäten&lt;br&gt;• StoryTurns sind lückenlos und abgeschlossen&lt;br&gt;• Domain kennt weder HTTP noch PostgreSQL&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8ECF1;strokeColor=#A9B6C8;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;spacingTop=12;" vertex="1" parent="domainDetail1">
+          <mxGeometry x="1030" y="860" width="490" height="220" as="geometry" />
+        </mxCell>
+
+        <mxCell id="domainDetailRunToState" value="aktueller Stand" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#B8863A;strokeWidth=1.8;endArrow=block;endFill=1;fontSize=11;fontColor=#7A5A20;" edge="1" parent="domainDetail1" source="domainDetailRevision" target="domainDetailState">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="application-detail" name="Application – konkret">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1150" math="0" shadow="0">
+      <root>
+        <mxCell id="applicationDetail0" />
+        <mxCell id="applicationDetail1" parent="applicationDetail0" />
+
+        <mxCell id="applicationDetailTitle" value="Application – konkret" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=28;fontStyle=1;fontColor=#26364D;" vertex="1" parent="applicationDetail1">
+          <mxGeometry x="60" y="30" width="650" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="applicationDetailSubtitle" value="Use Cases koordinieren Abläufe, nutzen Domain-Modelle und sprechen über schmale Ports mit der Infrastruktur" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=14;fontColor=#52647D;" vertex="1" parent="applicationDetail1">
+          <mxGeometry x="62" y="75" width="1100" height="28" as="geometry" />
+        </mxCell>
+
+        <mxCell id="applicationDetailDriving" value="&lt;b&gt;Driving / Eingang&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:13px;font-weight:normal&quot;&gt;Requests kommen von außen in die Application&lt;/font&gt;" style="swimlane;html=1;rounded=1;horizontal=1;startSize=48;fillColor=#B9D4F4;strokeColor=#6B93C6;strokeWidth=2;fontColor=#26364D;fontSize=18;fontStyle=1;spacingTop=10;" vertex="1" parent="applicationDetail1">
+          <mxGeometry x="60" y="130" width="1460" height="175" as="geometry" />
+        </mxCell>
+        <mxCell id="applicationDetailApi" value="&lt;b&gt;REST API / Router&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;HTTP-Adapter&lt;br&gt;validiert Transportdaten&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EAF3FF;strokeColor=#6B93C6;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="applicationDetailDriving">
+          <mxGeometry x="35" y="72" width="290" height="76" as="geometry" />
+        </mxCell>
+        <mxCell id="applicationDetailRequests" value="&lt;b&gt;Typed Requests&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;Create · Load · Configure&lt;br&gt;Commit Turn&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EAF3FF;strokeColor=#6B93C6;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="applicationDetailDriving">
+          <mxGeometry x="370" y="72" width="300" height="76" as="geometry" />
+        </mxCell>
+        <mxCell id="applicationDetailContract" value="&lt;b&gt;Operation.apply(request)&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;Success&lt;Data&gt; oder Failure&lt;Error&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EAF3FF;strokeColor=#6B93C6;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="applicationDetailDriving">
+          <mxGeometry x="720" y="72" width="350" height="76" as="geometry" />
+        </mxCell>
+        <mxCell id="applicationDetailBoundary" value="&lt;b&gt;Application Boundary&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;keine HTTP-Details im Use Case&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DDEBFA;strokeColor=#6B93C6;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="applicationDetailDriving">
+          <mxGeometry x="1120" y="72" width="290" height="76" as="geometry" />
+        </mxCell>
+        <mxCell id="applicationDetailApiToUseCase" value="Request" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#52647D;strokeWidth=1.6;endArrow=block;endFill=1;fontSize=11;fontColor=#52647D;" edge="1" parent="applicationDetail1" source="applicationDetailApi" target="applicationDetailUseCases">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="applicationDetailCore" value="&lt;b&gt;Application Core&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:13px;font-weight:normal&quot;&gt;Ablaufsteuerung und Übersetzung an Grenzen&lt;/font&gt;" style="swimlane;html=1;rounded=1;horizontal=1;startSize=48;fillColor=#F6C3C0;strokeColor=#D97A73;strokeWidth=2;fontColor=#26364D;fontSize=18;fontStyle=1;spacingTop=10;" vertex="1" parent="applicationDetail1">
+          <mxGeometry x="60" y="350" width="1460" height="430" as="geometry" />
+        </mxCell>
+        <mxCell id="applicationDetailUseCases" value="&lt;b&gt;Use Cases&lt;/b&gt;" style="swimlane;html=1;rounded=1;horizontal=1;startSize=36;fillColor=#FFE1DF;strokeColor=#D97A73;strokeWidth=1.5;fontColor=#26364D;fontSize=15;fontStyle=1;spacingTop=8;" vertex="1" parent="applicationDetailCore">
+          <mxGeometry x="25" y="62" width="1010" height="330" as="geometry" />
+        </mxCell>
+        <mxCell id="applicationDetailCreate" value="&lt;b&gt;CreateGameRun&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;Revision 1 prüfen&lt;br&gt;Run + State anlegen&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8F7;strokeColor=#D97A73;strokeWidth=1;fontColor=#26364D;fontSize=13;align=left;verticalAlign=middle;spacingLeft=12;" vertex="1" parent="applicationDetailUseCases">
+          <mxGeometry x="20" y="58" width="225" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="applicationDetailLoad" value="&lt;b&gt;LoadGame&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;Run + State laden&lt;br&gt;Mitglieder validieren&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8F7;strokeColor=#D97A73;strokeWidth=1;fontColor=#26364D;fontSize=13;align=left;verticalAlign=middle;spacingLeft=12;" vertex="1" parent="applicationDetailUseCases">
+          <mxGeometry x="265" y="58" width="225" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="applicationDetailConfigure" value="&lt;b&gt;UpdateGameConfiguration&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;Configuration-Revision&lt;br&gt;persistieren&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8F7;strokeColor=#D97A73;strokeWidth=1;fontColor=#26364D;fontSize=13;align=left;verticalAlign=middle;spacingLeft=12;" vertex="1" parent="applicationDetailUseCases">
+          <mxGeometry x="510" y="58" width="225" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="applicationDetailCommit" value="&lt;b&gt;CommitCompletedTurn&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;Turn bauen&lt;br&gt;Änderungen + Story gemeinsam committen&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8F7;strokeColor=#D97A73;strokeWidth=1;fontColor=#26364D;fontSize=13;align=left;verticalAlign=middle;spacingLeft=12;" vertex="1" parent="applicationDetailUseCases">
+          <mxGeometry x="755" y="58" width="230" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="applicationDetailWorkflow" value="&lt;b&gt;Ablauf&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;lesen → Domain anwenden → schreiben&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8F7;strokeColor=#D97A73;strokeWidth=1;fontColor=#26364D;fontSize=13;align=left;verticalAlign=middle;spacingLeft=12;" vertex="1" parent="applicationDetailUseCases">
+          <mxGeometry x="20" y="190" width="300" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="applicationDetailErrorMapping" value="&lt;b&gt;Error Mapping&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;Domain- und Store-Fehler&lt;br&gt;→ typed Application-Fehler&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8F7;strokeColor=#D97A73;strokeWidth=1;fontColor=#26364D;fontSize=13;align=left;verticalAlign=middle;spacingLeft=12;" vertex="1" parent="applicationDetailUseCases">
+          <mxGeometry x="345" y="190" width="300" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="applicationDetailOperations" value="&lt;b&gt;GameStateOperations&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;create · load · update_configuration&lt;br&gt;commit_turn&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8F7;strokeColor=#D97A73;strokeWidth=1;fontColor=#26364D;fontSize=13;align=left;verticalAlign=middle;spacingLeft=12;" vertex="1" parent="applicationDetailUseCases">
+          <mxGeometry x="670" y="190" width="315" height="72" as="geometry" />
+        </mxCell>
+
+        <mxCell id="applicationDetailTransient" value="&lt;b&gt;Transient Proposal&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;ProposedChangeSet&lt;br&gt;pending · accepted · rejected · needs_review&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE1DF;strokeColor=#D97A73;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="applicationDetailCore">
+          <mxGeometry x="1070" y="62" width="355" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="applicationDetailModels" value="&lt;b&gt;Application Models&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;LoadedGame&lt;br&gt;ConfigurationPersistenceRequest&lt;br&gt;CompletedTurnPersistenceRequest&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE1DF;strokeColor=#D97A73;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="applicationDetailCore">
+          <mxGeometry x="1070" y="205" width="355" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="applicationDetailContractFlow" value="Success / Failure" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#A35A54;strokeWidth=1.4;dashed=1;endArrow=block;endFill=0;fontSize=11;fontColor=#A35A54;" edge="1" parent="applicationDetail1" source="applicationDetailUseCases" target="applicationDetailContract">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="applicationDetailPorts" value="&lt;b&gt;Application Ports&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:13px;font-weight:normal&quot;&gt;Schmale Verträge – konkrete Adapter liegen außerhalb&lt;/font&gt;" style="swimlane;html=1;rounded=1;horizontal=1;startSize=48;fillColor=#C5E5B5;strokeColor=#7EB463;strokeWidth=2;fontColor=#26364D;fontSize=18;fontStyle=1;spacingTop=10;" vertex="1" parent="applicationDetail1">
+          <mxGeometry x="60" y="830" width="1460" height="190" as="geometry" />
+        </mxCell>
+        <mxCell id="applicationDetailRunCreator" value="&lt;b&gt;GameRunCreator&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;create(run, state)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E1;strokeColor=#7EB463;strokeWidth=1;fontColor=#26364D;fontSize=13;align=left;verticalAlign=middle;spacingLeft=12;" vertex="1" parent="applicationDetailPorts">
+          <mxGeometry x="25" y="72" width="245" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="applicationDetailRunReader" value="&lt;b&gt;GameRunReader&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;load_run(run_id)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E1;strokeColor=#7EB463;strokeWidth=1;fontColor=#26364D;fontSize=13;align=left;verticalAlign=middle;spacingLeft=12;" vertex="1" parent="applicationDetailPorts">
+          <mxGeometry x="300" y="72" width="245" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="applicationDetailStateReader" value="&lt;b&gt;GameStateReader&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;load_state(run_id, revision)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E1;strokeColor=#7EB463;strokeWidth=1;fontColor=#26364D;fontSize=13;align=left;verticalAlign=middle;spacingLeft=12;" vertex="1" parent="applicationDetailPorts">
+          <mxGeometry x="575" y="72" width="245" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="applicationDetailConfigWriter" value="&lt;b&gt;ConfigurationRevisionWriter&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;update_configuration(request)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E1;strokeColor=#7EB463;strokeWidth=1;fontColor=#26364D;fontSize=13;align=left;verticalAlign=middle;spacingLeft=12;" vertex="1" parent="applicationDetailPorts">
+          <mxGeometry x="850" y="72" width="270" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="applicationDetailTurnWriter" value="&lt;b&gt;CompletedTurnWriter&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;commit_turn(request)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E1;strokeColor=#7EB463;strokeWidth=1;fontColor=#26364D;fontSize=13;align=left;verticalAlign=middle;spacingLeft=12;" vertex="1" parent="applicationDetailPorts">
+          <mxGeometry x="1150" y="72" width="255" height="65" as="geometry" />
+        </mxCell>
+
+        <mxCell id="applicationDetailCreateToPort" value="Port" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;strokeColor=#5C8D4D;strokeWidth=1.3;endArrow=block;endFill=0;fontSize=10;fontColor=#5C8D4D;" edge="1" parent="applicationDetail1" source="applicationDetailCreate" target="applicationDetailRunCreator">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="applicationDetailLoadToRunReader" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;strokeColor=#5C8D4D;strokeWidth=1.2;endArrow=block;endFill=0;" edge="1" parent="applicationDetail1" source="applicationDetailLoad" target="applicationDetailRunReader">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="applicationDetailLoadToStateReader" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;strokeColor=#5C8D4D;strokeWidth=1.2;endArrow=block;endFill=0;" edge="1" parent="applicationDetail1" source="applicationDetailLoad" target="applicationDetailStateReader">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="applicationDetailConfigureToPort" value="Port" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;strokeColor=#5C8D4D;strokeWidth=1.3;endArrow=block;endFill=0;fontSize=10;fontColor=#5C8D4D;" edge="1" parent="applicationDetail1" source="applicationDetailConfigure" target="applicationDetailConfigWriter">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="applicationDetailCommitToStateReader" value="liest" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;strokeColor=#5C8D4D;strokeWidth=1.2;endArrow=block;endFill=0;fontSize=10;fontColor=#5C8D4D;" edge="1" parent="applicationDetail1" source="applicationDetailCommit" target="applicationDetailStateReader">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="applicationDetailCommitToWriter" value="schreibt" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;strokeColor=#5C8D4D;strokeWidth=1.2;endArrow=block;endFill=0;fontSize=10;fontColor=#5C8D4D;" edge="1" parent="applicationDetail1" source="applicationDetailCommit" target="applicationDetailTurnWriter">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="applicationDetailNote" value="&lt;b&gt;Abgrenzung&lt;/b&gt;&lt;br&gt;Die Application kennt Domain-Typen und eigene Ports. PostgreSQL-, HTTP- und Modell-Details bleiben in Adaptern außerhalb dieser Schicht." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8ECF1;strokeColor=#A9B6C8;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;spacingTop=12;" vertex="1" parent="applicationDetail1">
+          <mxGeometry x="60" y="1050" width="1460" height="70" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

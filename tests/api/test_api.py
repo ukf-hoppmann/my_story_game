@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -12,6 +13,7 @@ from story_game.application.game_state import (
     CreateGameRun,
     GameStateOperations,
     LoadGame,
+    PromptProfileValidator,
     UpdateGameConfiguration,
 )
 from story_game.application.game_models import (
@@ -20,6 +22,7 @@ from story_game.application.game_models import (
 )
 from story_game.application.ports import GameStateConflictError, GameStateNotFoundError
 from story_game.domain import GameRun, GameState, StableId, StateRevision
+from story_game.infrastructure.llm import FilePromptPackageCatalog
 
 
 class MemoryGameStore:
@@ -60,10 +63,13 @@ class MemoryGameStore:
 @pytest.fixture
 def client() -> Iterator[TestClient]:
     store = MemoryGameStore()
+    validator = PromptProfileValidator(
+        FilePromptPackageCatalog(Path(__file__).resolve().parents[2] / "prompts")
+    )
     operations = GameStateOperations(
-        create=CreateGameRun(store),
+        create=CreateGameRun(store, validator),
         load=LoadGame(store, store),
-        update_configuration=UpdateGameConfiguration(store),
+        update_configuration=UpdateGameConfiguration(store, validator),
         commit_turn=CommitCompletedTurn(store, store),
     )
     with TestClient(create_app(ApiDependencies(operations))) as test_client:
@@ -94,13 +100,19 @@ def complete_state_document() -> dict[str, object]:
             "revision": 1,
             "configuration": {
                 "language": "de",
-                "narration_style_id": "style.dark",
-                "perspective_id": "perspective.third-person",
-                "control_mode_id": "control.player",
+                "prompt_profile": {
+                    "genre": "dark_fantasy",
+                    "tone": "balanced",
+                    "prose_style": "balanced",
+                    "perspective": "third_person_limited",
+                    "pacing": "balanced",
+                    "control_mode": "player",
+                    "player_agency": "strict",
+                    "consequence": "balanced",
+                    "challenge": "balanced",
+                    "content_profile": "teen",
+                },
                 "narrative_boundaries": ["Keine sexualisierte Gewalt"],
-                "story_model_id": "model.story",
-                "extraction_model_id": "model.extraction",
-                "summary_model_id": "model.summary",
                 "prompt_package_id": "story.base",
                 "prompt_package_version": "1",
             },
@@ -155,6 +167,32 @@ def test_api_saves_and_loads_the_complete_state_document(client: TestClient) -> 
 def test_api_rejects_inconsistent_run_and_state_ids(client: TestClient) -> None:
     document = complete_state_document()
     document["game_state"]["run_id"] = "another-run"  # type: ignore[index]
+
+    response = client.post("/api/v1/runs", json=document)
+
+    assert response.status_code == 422
+
+
+def test_api_reports_the_prompt_field_that_requires_a_new_selection(
+    client: TestClient,
+) -> None:
+    document = complete_state_document()
+    document["game_state"]["configuration"]["prompt_profile"]["tone"] = "unknown"  # type: ignore[index]
+
+    response = client.post("/api/v1/runs", json=document)
+
+    assert response.status_code == 422
+    assert response.json() == {
+        "error": "invalid_prompt_selection",
+        "detail": "Die Option 'unknown' ist für die Kategorie 'tone' nicht verfügbar",
+        "category": "tone",
+        "option_id": "unknown",
+    }
+
+
+def test_api_rejects_removed_configuration_fields(client: TestClient) -> None:
+    document = complete_state_document()
+    document["game_state"]["configuration"]["narration_style_id"] = "style.dark"  # type: ignore[index]
 
     response = client.post("/api/v1/runs", json=document)
 

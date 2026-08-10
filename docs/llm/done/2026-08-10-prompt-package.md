@@ -31,12 +31,11 @@ ungültigem TOML, falscher Identität, unbekannten Feldern oder Typen, leeren
 Texten, doppelten IDs, fehlenden Optionen und ungültigen Defaults ab. IDs in
 Paket- und Versionsreferenzen dürfen keine Pfadbestandteile enthalten.
 
-`GameConfiguration` wurde nicht verändert. Sie speichert bereits
-`narration_style_id`, `perspective_id`, `control_mode_id` und
-`narrative_boundaries`, aber noch keine persistierten Auswahlfelder für Genre,
-Tone, Pacing, Player Agency, Consequence, Challenge oder Content Profile. Die
-Zuordnung dieser Werte wird erst vor dem Story-Use-Case entschieden und nicht
-im Loader versteckt.
+`GameConfiguration` speichert inzwischen das vollständige explizite
+`PromptProfile` samt `narrative_boundaries`, Paket-ID und Paketversion. Die
+Application validiert dessen zehn Story-Auswahlen vor dem Schreiben gegen den
+Catalog und löst sie für die Story-Aufgabe in Beschreibungen auf. Der Loader
+selbst trifft weiterhin keine fachliche Auswahl.
 
 Die Directive `narrative_boundaries` darf das gewählte Content Profile
 verschärfen, aber nicht lockern. Die Content-Profile sind im Paket mit ihren

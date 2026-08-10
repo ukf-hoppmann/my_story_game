@@ -14,7 +14,9 @@ from story_game.application.game_state import (
     GameStateOperations,
     LoadGame,
     UpdateGameConfiguration,
+    PromptProfileValidator,
 )
+from story_game.infrastructure.llm import FilePromptPackageCatalog
 from story_game.infrastructure.persistence.postgres import (
     PostgresConnectionFactory,
     PostgresGameStore,
@@ -40,7 +42,9 @@ def create_app(
             if resolved_settings.auto_migrate:
                 PostgresSchemaMigrator(connections).migrate()
             store = PostgresGameStore(connections)
-            resolved = ApiDependencies(_compose_game_state_operations(store))
+            resolved = ApiDependencies(
+                _compose_game_state_operations(store, resolved_settings.prompt_root)
+            )
         application.state.api_dependencies = resolved
         yield
 
@@ -55,11 +59,14 @@ def create_app(
     return application
 
 
-def _compose_game_state_operations(store: PostgresGameStore) -> GameStateOperations:
+def _compose_game_state_operations(
+    store: PostgresGameStore, prompt_root: str
+) -> GameStateOperations:
+    validator = PromptProfileValidator(FilePromptPackageCatalog(prompt_root))
     return GameStateOperations(
-        create=CreateGameRun(store),
+        create=CreateGameRun(store, validator),
         load=LoadGame(store, store),
-        update_configuration=UpdateGameConfiguration(store),
+        update_configuration=UpdateGameConfiguration(store, validator),
         commit_turn=CommitCompletedTurn(store, store),
     )
 

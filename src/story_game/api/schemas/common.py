@@ -109,15 +109,23 @@ class StorySummaryModel(APIModel):
     based_on_revision: int = Field(ge=1)
 
 
+class PromptProfileModel(APIModel):
+    genre: str = Field(min_length=1)
+    tone: str = Field(min_length=1)
+    prose_style: str = Field(min_length=1)
+    perspective: str = Field(min_length=1)
+    pacing: str = Field(min_length=1)
+    control_mode: str = Field(min_length=1)
+    player_agency: str = Field(min_length=1)
+    consequence: str = Field(min_length=1)
+    challenge: str = Field(min_length=1)
+    content_profile: str = Field(min_length=1)
+
+
 class GameConfigurationModel(APIModel):
     language: str = Field(min_length=1)
-    narration_style_id: str = Field(min_length=1)
-    perspective_id: str = Field(min_length=1)
-    control_mode_id: str = Field(min_length=1)
+    prompt_profile: PromptProfileModel
     narrative_boundaries: list[str] = Field(default_factory=list)
-    story_model_id: str = Field(min_length=1)
-    extraction_model_id: str = Field(min_length=1)
-    summary_model_id: str = Field(min_length=1)
     prompt_package_id: str = Field(min_length=1)
     prompt_package_version: str = Field(min_length=1)
 

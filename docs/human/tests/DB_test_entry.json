@@ -20,16 +20,22 @@
     "revision": 1,
     "configuration": {
       "language": "de",
-      "narration_style_id": "style.dark-fantasy",
-      "perspective_id": "perspective.third-person",
-      "control_mode_id": "control.player",
+      "prompt_profile": {
+        "genre": "dark_fantasy",
+        "tone": "balanced",
+        "prose_style": "balanced",
+        "perspective": "third_person_limited",
+        "pacing": "balanced",
+        "control_mode": "player",
+        "player_agency": "strict",
+        "consequence": "balanced",
+        "challenge": "balanced",
+        "content_profile": "teen"
+      },
       "narrative_boundaries": [
         "Keine sexualisierte Gewalt",
         "Keine explizite Gewalt gegen Kinder"
       ],
-      "story_model_id": "model.story.default",
-      "extraction_model_id": "model.extraction.default",
-      "summary_model_id": "model.summary.default",
       "prompt_package_id": "story.base",
       "prompt_package_version": "1"
     },

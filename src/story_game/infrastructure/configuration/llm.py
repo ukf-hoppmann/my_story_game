@@ -18,7 +18,7 @@ class LlmConfigurationError(ValueError):
 
 
 class LlmTask(StrEnum):
-    """Model-backed tasks with a persisted selection in a game configuration."""
+    """Model-backed tasks with one active system-level selection."""
 
     STORY = "story"
     EXTRACTION = "extraction"

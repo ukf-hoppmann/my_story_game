@@ -161,16 +161,16 @@ Status: Vertrag auf Architekturebene geklärt.
 
 ### Promptprofil und Auflösung
 
-`GameConfiguration` soll ein vollständiges Promptprofil mit `genre`, `tone`,
+`GameConfiguration` enthält ein vollständiges Promptprofil mit `genre`, `tone`,
 `prose_style`, `perspective`, `pacing`, `control_mode`, `player_agency`,
 `consequence`, `challenge` und `content_profile` speichern. Paket-ID und
 Paketversion bleiben Teil der Konfiguration.
 
 Die Application lädt das referenzierte Paket, prüft jede Options-ID in ihrer
-bekannten Kategorie und ersetzt die IDs durch die im Paket hinterlegten
-verständlichen Beschreibungen. Erst danach entsteht der vollständige
-`StoryGenerationRequest`. Der Adapter erhält keine unaufgelösten Profil-IDs und
-setzt keine Defaults.
+bekannten Kategorie und stellt die aufgelösten Beschreibungen für die spätere
+Request-Erzeugung bereit. Der noch geplante Story-Workflow bildet daraus den
+vollständigen `StoryGenerationRequest`. Der Adapter erhält keine
+unaufgelösten Profil-IDs und setzt keine Defaults.
 
 Paketdefaults belegen nur ein neues Profil vor. Das vollständige effektive
 Profil wird gespeichert. Eine unbekannte Option ergibt einen konkreten

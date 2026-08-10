@@ -13,6 +13,7 @@ class ApiSettings:
     postgres_dsn: str = (
         "postgresql://story_game:story_game_dev@localhost:5433/story_game"
     )
+    prompt_root: str = "prompts"
     auto_migrate: bool = True
 
     @classmethod
@@ -24,6 +25,7 @@ class ApiSettings:
             postgres_dsn=os.environ.get(
                 "STORY_GAME_POSTGRES_DSN", defaults.postgres_dsn
             ),
+            prompt_root=os.environ.get("STORY_GAME_PROMPT_ROOT", defaults.prompt_root),
             auto_migrate=_boolean_environment(
                 "STORY_GAME_AUTO_MIGRATE", default=defaults.auto_migrate
             ),

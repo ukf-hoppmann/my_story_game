@@ -22,16 +22,16 @@ class PostgresSnapshotWriter:
         connection.execute(
             """
             INSERT INTO game_state_configurations (
-                run_id, revision, language, narration_style_id,
-                perspective_id, control_mode_id, narrative_boundaries,
-                story_model_id, extraction_model_id, summary_model_id,
+                run_id, revision, language, genre, tone, prose_style,
+                perspective, pacing, control_mode, player_agency,
+                consequence, challenge, content_profile, narrative_boundaries,
                 prompt_package_id, prompt_package_version
             ) VALUES (
                 %(run_id)s, %(revision)s, %(language)s,
-                %(narration_style_id)s, %(perspective_id)s,
-                %(control_mode_id)s, %(narrative_boundaries)s,
-                %(story_model_id)s, %(extraction_model_id)s,
-                %(summary_model_id)s, %(prompt_package_id)s,
+                %(genre)s, %(tone)s, %(prose_style)s, %(perspective)s,
+                %(pacing)s, %(control_mode)s, %(player_agency)s,
+                %(consequence)s, %(challenge)s, %(content_profile)s,
+                %(narrative_boundaries)s, %(prompt_package_id)s,
                 %(prompt_package_version)s
             )
             """,

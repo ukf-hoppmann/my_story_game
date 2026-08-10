@@ -10,6 +10,13 @@ from .contracts import (
     StoryGenerationRequest,
 )
 from .ports import ModelSelectionResolver, PromptPackageCatalog, StoryGenerationPort
+from .prompt_selection import (
+    ExtractionPromptSelection,
+    ExtractionPromptSelectionResolver,
+    ResolvedPromptOption,
+    StoryPromptSelection,
+    StoryPromptSelectionResolver,
+)
 from .prompts import (
     InvalidPromptPackageError,
     PromptCategory,
@@ -27,6 +34,8 @@ from .prompts import (
 
 __all__ = [
     "GenerationOptions",
+    "ExtractionPromptSelection",
+    "ExtractionPromptSelectionResolver",
     "LLMError",
     "LLMErrorKind",
     "LLMGenerationCall",
@@ -45,7 +54,10 @@ __all__ = [
     "PromptPackageNotFoundError",
     "PromptTask",
     "PromptTaskNotFoundError",
+    "ResolvedPromptOption",
     "StoryGenerationData",
     "StoryGenerationPort",
     "StoryGenerationRequest",
+    "StoryPromptSelection",
+    "StoryPromptSelectionResolver",
 ]

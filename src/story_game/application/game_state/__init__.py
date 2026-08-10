@@ -4,6 +4,9 @@ from .commit_completed_turn import CommitCompletedTurn, CommitCompletedTurnReque
 from .create_game_run import CreateGameRun, CreateGameRunRequest
 from .errors import (
     GameStateOperationError,
+    InvalidPromptPackageReference,
+    InvalidPromptSelection,
+    PromptPackageConfigurationInvalid,
     RunConflict,
     RunNotFound,
     StateRejected,
@@ -21,6 +24,7 @@ from .update_configuration import (
     UpdateGameConfiguration,
     UpdateGameConfigurationRequest,
 )
+from .prompt_profile_validation import PromptProfileValidator
 
 __all__ = [
     "CommitCompletedTurn",
@@ -34,6 +38,10 @@ __all__ = [
     "LoadGame",
     "LoadGameRequest",
     "LoadedGame",
+    "InvalidPromptPackageReference",
+    "InvalidPromptSelection",
+    "PromptPackageConfigurationInvalid",
+    "PromptProfileValidator",
     "RunConflict",
     "RunNotFound",
     "StateRejected",

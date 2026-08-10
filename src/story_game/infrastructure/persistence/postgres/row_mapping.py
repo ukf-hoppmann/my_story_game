@@ -20,6 +20,7 @@ from story_game.domain import (
     GoalKind,
     GoalStatus,
     KnowledgeEntry,
+    PromptProfile,
     RelationKind,
     StableId,
     StorySequence,
@@ -38,13 +39,17 @@ def jsonb(value: Any) -> Jsonb:
 def configuration_values(configuration: GameConfiguration) -> dict[str, Any]:
     return {
         "language": configuration.language,
-        "narration_style_id": configuration.narration_style_id,
-        "perspective_id": configuration.perspective_id,
-        "control_mode_id": configuration.control_mode_id,
+        "genre": configuration.prompt_profile.genre,
+        "tone": configuration.prompt_profile.tone,
+        "prose_style": configuration.prompt_profile.prose_style,
+        "perspective": configuration.prompt_profile.perspective,
+        "pacing": configuration.prompt_profile.pacing,
+        "control_mode": configuration.prompt_profile.control_mode,
+        "player_agency": configuration.prompt_profile.player_agency,
+        "consequence": configuration.prompt_profile.consequence,
+        "challenge": configuration.prompt_profile.challenge,
+        "content_profile": configuration.prompt_profile.content_profile,
         "narrative_boundaries": jsonb(list(configuration.narrative_boundaries)),
-        "story_model_id": configuration.story_model_id,
-        "extraction_model_id": configuration.extraction_model_id,
-        "summary_model_id": configuration.summary_model_id,
         "prompt_package_id": configuration.prompt_package_id,
         "prompt_package_version": configuration.prompt_package_version,
     }
@@ -53,16 +58,22 @@ def configuration_values(configuration: GameConfiguration) -> dict[str, Any]:
 def configuration_from_row(row: Mapping[str, Any]) -> GameConfiguration:
     return GameConfiguration(
         language=_text(row, "language"),
-        narration_style_id=_text(row, "narration_style_id"),
-        perspective_id=_text(row, "perspective_id"),
-        control_mode_id=_text(row, "control_mode_id"),
+        prompt_profile=PromptProfile(
+            genre=_text(row, "genre"),
+            tone=_text(row, "tone"),
+            prose_style=_text(row, "prose_style"),
+            perspective=_text(row, "perspective"),
+            pacing=_text(row, "pacing"),
+            control_mode=_text(row, "control_mode"),
+            player_agency=_text(row, "player_agency"),
+            consequence=_text(row, "consequence"),
+            challenge=_text(row, "challenge"),
+            content_profile=_text(row, "content_profile"),
+        ),
         narrative_boundaries=tuple(
             _value_text(item, "narrative boundary")
             for item in _json_list(row.get("narrative_boundaries"), "narrative_boundaries")
         ),
-        story_model_id=_text(row, "story_model_id"),
-        extraction_model_id=_text(row, "extraction_model_id"),
-        summary_model_id=_text(row, "summary_model_id"),
         prompt_package_id=_text(row, "prompt_package_id"),
         prompt_package_version=_text(row, "prompt_package_version"),
     )

@@ -16,7 +16,7 @@ from .prompts import PromptPackage
 
 
 class ModelSelectionResolver(Protocol):
-    """Resolve a persisted logical model reference for one invocation."""
+    """Resolve a configured logical model reference for one invocation."""
 
     def resolve(self, logical_model_id: str) -> ModelSelection: ...
 

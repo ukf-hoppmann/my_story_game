@@ -19,21 +19,20 @@ Ein-Datei-Promptpaket und der validierende dateibasierte Catalog sind umgesetzt;
 Story-Operation, Story-API und WorldState-Extraction-Workflow bleiben noch
 nicht implementiert.
 
-`GameConfiguration` speichert derzeit noch semantische Modellreferenzen und die
-Version des Promptpakets. Der beschlossene Zielstand entfernt die drei
-Modellreferenzen aus der Partie und ersetzt die bisherigen Erzählfelder durch
-ein explizites Promptprofil. Provider-URLs, Zugangsdaten, Rohprompts und
-laufende Aufrufe gehören weiterhin nicht in den GameState.
+`GameConfiguration` speichert ein vollständiges explizites Promptprofil,
+erzählerische Grenzen sowie Paket-ID und -version. Die drei Modellreferenzen
+liegen ausschließlich in der zentralen Laufzeitkonfiguration. Provider-URLs,
+Zugangsdaten, Rohprompts und laufende Aufrufe gehören weiterhin nicht in den
+GameState.
 
 Das Paket `story.base`/`1` enthält die Tasks `story_generation` und
 `worldstate_extraction`, alle vereinbarten Auswahlkategorien samt Defaults und
 die nicht auswählbare Directive `narrative_boundaries`. Die Auswahlfelder für
 Genre, Tone, Pacing, Player Agency, Consequence, Challenge und Content Profile
-sind noch nicht Teil von `GameConfiguration`. Im beschlossenen Zielstand
-enthält das Promptprofil außerdem die bereits vorhandenen Konzepte Prose Style,
-Perspective und Control Mode. Die Application löst diese Auswahl vor dem
-Adapter gegen das referenzierte Paket auf; der Loader trifft keine fachliche
-Auswahl.
+sind Teil von `GameConfiguration`. Das Profil enthält außerdem Prose Style,
+Perspective und Control Mode. Die Application validiert und löst diese Auswahl
+vor dem Adapter gegen das referenzierte Paket auf; der Loader trifft keine
+fachliche Auswahl.
 
 Die zentrale LLM-Laufzeitkonfiguration bleibt maßgeblich für das aktive Story-,
 Extraction- und Summary-Modell. Sie löst die zum Auftrag gehörende logische

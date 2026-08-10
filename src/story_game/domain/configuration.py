@@ -15,29 +15,64 @@ def _required(value: str, label: str) -> str:
 
 
 @dataclass(frozen=True, slots=True)
+class PromptProfile:
+    """The complete explicit story-prompt selection for one game revision."""
+
+    genre: str
+    tone: str
+    prose_style: str
+    perspective: str
+    pacing: str
+    control_mode: str
+    player_agency: str
+    consequence: str
+    challenge: str
+    content_profile: str
+
+    def __post_init__(self) -> None:
+        for field_name, label in (
+            ("genre", "Das Genre"),
+            ("tone", "Der Ton"),
+            ("prose_style", "Der Prosa-Stil"),
+            ("perspective", "Die Perspektive"),
+            ("pacing", "Das Erzähltempo"),
+            ("control_mode", "Der Steuerungsmodus"),
+            ("player_agency", "Die Spielerautonomie"),
+            ("consequence", "Die Konsequenz"),
+            ("challenge", "Die Herausforderung"),
+            ("content_profile", "Das Inhaltsprofil"),
+        ):
+            object.__setattr__(self, field_name, _required(getattr(self, field_name), label))
+
+    def selections(self) -> tuple[tuple[str, str], ...]:
+        """Return the explicit categories in their stable prompt-assembly order."""
+        return (
+            ("genre", self.genre),
+            ("tone", self.tone),
+            ("prose_style", self.prose_style),
+            ("perspective", self.perspective),
+            ("pacing", self.pacing),
+            ("control_mode", self.control_mode),
+            ("player_agency", self.player_agency),
+            ("consequence", self.consequence),
+            ("challenge", self.challenge),
+            ("content_profile", self.content_profile),
+        )
+
+
+@dataclass(frozen=True, slots=True)
 class GameConfiguration:
     """Fully resolved behavior references required to resume a game unchanged."""
 
     language: str
-    narration_style_id: str
-    perspective_id: str
-    control_mode_id: str
+    prompt_profile: PromptProfile
     narrative_boundaries: tuple[str, ...]
-    story_model_id: str
-    extraction_model_id: str
-    summary_model_id: str
     prompt_package_id: str
     prompt_package_version: str
 
     def __post_init__(self) -> None:
         for field_name, label in (
             ("language", "Die Sprache"),
-            ("narration_style_id", "Der Erzählstil"),
-            ("perspective_id", "Die Perspektive"),
-            ("control_mode_id", "Der Steuerungsmodus"),
-            ("story_model_id", "Das Story-Modell"),
-            ("extraction_model_id", "Das Extraktionsmodell"),
-            ("summary_model_id", "Das Zusammenfassungsmodell"),
             ("prompt_package_id", "Das Prompt-Paket"),
             ("prompt_package_version", "Die Prompt-Paket-Version"),
         ):

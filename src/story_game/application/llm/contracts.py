@@ -71,6 +71,22 @@ class GenerationOptions:
             raise ValueError("max_output_tokens muss positiv sein")
 
 
+class GenerationTask(StrEnum):
+    """Stable application task names used to resolve runtime generation settings."""
+
+    STORY = "story"
+    EXTRACTION = "extraction"
+    SUMMARY = "summary"
+
+
+@dataclass(frozen=True, slots=True)
+class GenerationConfiguration:
+    """One coherent model selection and option set for a single call."""
+
+    model_selection: ModelSelection
+    generation_options: GenerationOptions
+
+
 @dataclass(frozen=True, slots=True)
 class StoryGenerationRequest:
     """The stable story boundary, before provider-specific serialization."""
@@ -103,6 +119,39 @@ class StoryGenerationData:
         text = self.text.strip()
         if not text:
             raise ValueError("Story-Ergebnisse dürfen nicht leer sein")
+        object.__setattr__(self, "text", text)
+
+
+@dataclass(frozen=True, slots=True)
+class StoryInitializationRequest:
+    """Prepared opening request that deliberately has no game-state context."""
+
+    system_prompts: tuple[str, ...]
+    configuration: str
+    initial_prompt: str
+
+    def __post_init__(self) -> None:
+        prompts = tuple(prompt.strip() for prompt in self.system_prompts if prompt.strip())
+        if not prompts:
+            raise ValueError("Mindestens ein Systemprompt ist erforderlich")
+        object.__setattr__(self, "system_prompts", prompts)
+        for name in ("configuration", "initial_prompt"):
+            value = getattr(self, name).strip()
+            if not value:
+                raise ValueError(f"{name} darf nicht leer sein")
+            object.__setattr__(self, name, value)
+
+
+@dataclass(frozen=True, slots=True)
+class InitialStoryText:
+    """Normalized prose returned by a successful opening-generation call."""
+
+    text: str
+
+    def __post_init__(self) -> None:
+        text = self.text.strip()
+        if not text:
+            raise ValueError("Eröffnungsprosa darf nicht leer sein")
         object.__setattr__(self, "text", text)
 
 

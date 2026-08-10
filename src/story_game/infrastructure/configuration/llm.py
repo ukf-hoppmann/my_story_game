@@ -10,7 +10,17 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
-from story_game.application.llm import ModelSelection, ModelSelectionResolver
+from story_game.application import Failure, OperationResult, Success
+from story_game.application.llm import (
+    GenerationConfiguration,
+    GenerationConfigurationResolver,
+    GenerationOptions,
+    GenerationTask,
+    LLMError,
+    LLMErrorKind,
+    ModelSelection,
+    ModelSelectionResolver,
+)
 
 
 class LlmConfigurationError(ValueError):
@@ -72,6 +82,7 @@ class LlmConfiguration(ModelSelectionResolver):
     providers: tuple[ProviderConfiguration, ...]
     models: tuple[ModelDefinition, ...]
     task_models: TaskModelReferences
+    generation_options: dict[LlmTask, GenerationOptions]
 
     def resolve(self, logical_model_id: str) -> ModelSelection:
         model = self._model(logical_model_id)
@@ -79,6 +90,9 @@ class LlmConfiguration(ModelSelectionResolver):
 
     def model_for_task(self, task: LlmTask) -> ModelSelection:
         return self.resolve(self.task_models.for_task(task))
+
+    def generation_for_task(self, task: LlmTask) -> GenerationConfiguration:
+        return GenerationConfiguration(self.model_for_task(task), self.generation_options[task])
 
     def provider_for_model(self, logical_model_id: str) -> ProviderConfiguration:
         model = self._model(logical_model_id)
@@ -123,12 +137,36 @@ class TomlLlmConfigurationLoader:
         return self._parse(document, config_path)
 
     def _parse(self, document: dict[str, Any], path: Path) -> LlmConfiguration:
-        _keys(document, {"providers", "task_models", "models"}, "die Hauptkonfiguration")
+        _keys(document, {"providers", "task_models", "generation_options", "models"}, "die Hauptkonfiguration")
         providers = self._providers(_table(document, "providers", path), path)
         task_models = self._task_models(_table(document, "task_models", path), path)
         models = self._models(document.get("models"), providers, path)
+        generation_options = self._generation_options(
+            _table(document, "generation_options", path), path
+        )
         _validate_active_models(task_models, models)
-        return LlmConfiguration(tuple(providers), tuple(models), task_models)
+        return LlmConfiguration(tuple(providers), tuple(models), task_models, generation_options)
+
+    def _generation_options(
+        self, document: dict[str, Any], path: Path
+    ) -> dict[LlmTask, GenerationOptions]:
+        _keys(document, {task.value for task in LlmTask}, "generation_options")
+        values: dict[LlmTask, GenerationOptions] = {}
+        for task in LlmTask:
+            table = _table(document, task.value, path)
+            _keys(table, {"temperature", "max_output_tokens"}, f"generation_options.{task.value}")
+            temperature = table.get("temperature")
+            max_output_tokens = table.get("max_output_tokens")
+            if temperature is not None and (isinstance(temperature, bool) or not isinstance(temperature, (int, float))):
+                raise LlmConfigurationError(f"{path}: generation_options.{task.value}.temperature muss eine Zahl sein")
+            if max_output_tokens is not None and (isinstance(max_output_tokens, bool) or not isinstance(max_output_tokens, int)):
+                raise LlmConfigurationError(f"{path}: generation_options.{task.value}.max_output_tokens muss eine ganze Zahl sein")
+            values[task] = GenerationOptions(
+                temperature=None if temperature is None else float(temperature),
+                max_output_tokens=max_output_tokens,
+            )
+        return values
+
 
     def _providers(
         self, document: dict[str, Any], path: Path
@@ -207,6 +245,22 @@ class TomlLlmConfigurationLoader:
                 )
             )
         return models
+
+
+class TomlGenerationConfigurationResolver(GenerationConfigurationResolver):
+    """Reload project-owned TOML so changes affect the next model invocation."""
+
+    def __init__(self, path: str | Path) -> None:
+        self._path = Path(path)
+
+    def resolve(
+        self, task: GenerationTask
+    ) -> OperationResult[GenerationConfiguration, LLMError]:
+        try:
+            configuration = TomlLlmConfigurationLoader().load(self._path)
+            return Success(configuration.generation_for_task(LlmTask(task.value)))
+        except (LlmConfigurationError, ValueError) as error:
+            return Failure(LLMError(LLMErrorKind.CONFIGURATION, str(error)))
 
 
 def _validate_active_models(

@@ -3,6 +3,17 @@ id = "story.base"
 version = "1"
 
 [[tasks]]
+id = "story_initialization"
+text = """
+Erzeuge eine zusammenhängende Eröffnung aus dem Initialprompt und den
+bereitgestellten erzählerischen Vorgaben. Etabliere nur nachvollziehbare
+Figuren, Orte und Situationen, ohne eine spätere Spielerentscheidung
+vorwegzunehmen. Es gibt noch keine frühere Story und keinen kanonischen
+WorldState. Behandle die Inhaltsgrenze und erzählerischen Direktiven als
+verbindlich.
+"""
+
+[[tasks]]
 id = "story_generation"
 text = """
 Erzeuge den nächsten zusammenhängenden Storyabschnitt aus den vom Spiel

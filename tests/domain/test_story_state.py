@@ -44,6 +44,35 @@ def test_story_state_contains_completed_turns_summary_and_sequence_only() -> Non
     assert state.summary == summary
 
 
+def test_story_initialization_preserves_the_premise_before_the_first_turn() -> None:
+    initialization = domain.StoryInitialization(
+        prompt="Maren und Almas gehen in den Dungeon.",
+        narration="Maren hält die Fackel hoch, als sie die Stufen hinabsteigen.",
+        completed_at=datetime(2026, 8, 10, tzinfo=UTC),
+    )
+
+    state = domain.StoryState(initialization=initialization)
+
+    assert state.initialization == initialization
+    assert state.turns == ()
+    assert state.current_turn_sequence == 0
+
+
+@pytest.mark.parametrize("field", ["prompt", "narration"])
+def test_story_initialization_rejects_empty_text(field: str) -> None:
+    values = {
+        "prompt": "Maren geht in den Dungeon.",
+        "narration": "Die Fackel flackert.",
+    }
+    values[field] = "  "
+
+    with pytest.raises(domain.ValidationError):
+        domain.StoryInitialization(
+            completed_at=datetime(2026, 8, 10, tzinfo=UTC),
+            **values,
+        )
+
+
 def test_story_state_rejects_non_contiguous_turns() -> None:
     assert hasattr(domain, "StoryTurn")
     turn = domain.StoryTurn(

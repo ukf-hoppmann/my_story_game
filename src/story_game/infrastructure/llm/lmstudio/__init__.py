@@ -2,5 +2,11 @@
 
 from .adapter import LmStudioStoryGenerationAdapter
 from .client import LmStudioClient, LmStudioSettings
+from .initialization_adapter import LmStudioStoryInitializationAdapter
 
-__all__ = ["LmStudioClient", "LmStudioSettings", "LmStudioStoryGenerationAdapter"]
+__all__ = [
+    "LmStudioClient",
+    "LmStudioSettings",
+    "LmStudioStoryGenerationAdapter",
+    "LmStudioStoryInitializationAdapter",
+]

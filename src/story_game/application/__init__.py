@@ -3,9 +3,13 @@
 from .contracts import Failure, OperationResult, Success
 from .llm import (
     GenerationOptions,
+    GenerationConfiguration,
+    GenerationConfigurationResolver,
+    GenerationTask,
     LLMError,
     LLMErrorKind,
     LLMGenerationCall,
+    InitialStoryText,
     ModelSelectionResolver,
     ModelSelection,
     InvalidPromptPackageError,
@@ -24,15 +28,21 @@ from .llm import (
     StoryGenerationData,
     StoryGenerationPort,
     StoryGenerationRequest,
+    StoryInitializationPort,
+    StoryInitializationRequest,
 )
 from .proposals import ProposalStatus, ProposedChange, ProposedChangeSet
 
 __all__ = [
     "Failure",
     "GenerationOptions",
+    "GenerationConfiguration",
+    "GenerationConfigurationResolver",
+    "GenerationTask",
     "LLMError",
     "LLMErrorKind",
     "LLMGenerationCall",
+    "InitialStoryText",
     "ModelSelectionResolver",
     "ModelSelection",
     "InvalidPromptPackageError",
@@ -56,4 +66,6 @@ __all__ = [
     "StoryGenerationData",
     "StoryGenerationPort",
     "StoryGenerationRequest",
+    "StoryInitializationPort",
+    "StoryInitializationRequest",
 ]

@@ -21,7 +21,7 @@ from .errors import (
 )
 from .game_run import GameRun, GameRunMember
 from .game_state import GameState
-from .story import StoryState, StorySummary, StoryTurn
+from .story import StoryInitialization, StoryState, StorySummary, StoryTurn
 from .value_objects import (
     ActorRole,
     EntityKind,
@@ -83,6 +83,7 @@ __all__ = [
     "StableId",
     "StateRevision",
     "StorySequence",
+    "StoryInitialization",
     "StoryState",
     "StorySummary",
     "StoryTurn",

@@ -5,10 +5,12 @@ from pathlib import Path
 import pytest
 
 from story_game.application import ModelSelection
+from story_game.application.llm import GenerationTask
 from story_game.infrastructure.configuration import (
     LlmConfigurationError,
     LlmTask,
     TomlLlmConfigurationLoader,
+    TomlGenerationConfigurationResolver,
 )
 
 
@@ -28,6 +30,15 @@ timeout_seconds = 60
 story = "model.story.default"
 extraction = "model.extraction.default"
 summary = "model.summary.default"
+
+[generation_options.story]
+temperature = 0.5
+
+[generation_options.extraction]
+temperature = 0.5
+
+[generation_options.summary]
+temperature = 0.5
 
 [[models]]
 id = "model.story.default"
@@ -64,6 +75,20 @@ def test_loader_reads_three_task_models_and_resolves_concrete_selection(
     assert configuration.resolve("model.story.default") == ModelSelection(
         "lmstudio", "mistralai/mistral-small-3.2"
     )
+    assert configuration.generation_for_task(LlmTask.STORY).generation_options.temperature == 0.5
+    assert configuration.generation_for_task(LlmTask.STORY).generation_options.max_output_tokens is None
+
+
+def test_runtime_resolver_reads_current_task_settings_for_each_call(tmp_path: Path) -> None:
+    path = write_config(tmp_path, valid_document())
+    resolver = TomlGenerationConfigurationResolver(path)
+
+    first = resolver.resolve(GenerationTask.STORY)
+    path.write_text(valid_document().replace("temperature = 0.5", "temperature = 0.7", 1), encoding="utf-8")
+    second = resolver.resolve(GenerationTask.STORY)
+
+    assert first.data.generation_options.temperature == 0.5
+    assert second.data.generation_options.temperature == 0.7
 
 
 def test_repository_configuration_defines_all_three_active_tasks() -> None:

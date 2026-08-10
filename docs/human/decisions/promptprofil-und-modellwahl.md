@@ -1,6 +1,7 @@
 # Entscheidung: Promptprofil und aktuelle Modellwahl
 
-Status: Auswahlsemantik umgesetzt am 2026-08-10; Story-Workflow bleibt geplant.
+Status: Auswahlsemantik umgesetzt am 2026-08-10; die bedingte Control-Mode-
+Semantik ist beschlossen und für die nächste Story-Init-Erweiterung geplant.
 
 Diese Entscheidung konkretisiert die frühere Entscheidung zu Spielzustand und
 Persistenz für `GameConfiguration` und die Entscheidung zur
@@ -105,13 +106,28 @@ Beschreibungen auf. Sie bestimmt damit Reihenfolge und Bedeutung; der spätere
 Story- oder Extraction-Workflow ergänzt seinen Kontext und erzeugt den
 vollständigen, aufgabenspezifischen Request.
 
-Story-Erzeugung verwendet:
+Story-Erzeugung verwendet grundsätzlich:
 
 - den Task `story_generation`;
-- alle zehn Werte aus `PromptProfile`;
+- alle im gewählten Control Mode wirksamen Werte aus `PromptProfile`;
 - Sprache und erzählerische Grenzen;
 - relevante WorldState- und StoryState-Daten;
 - die aktuelle Spielereingabe.
+
+Eine spätere Entscheidung präzisiert `control_mode`: Im Player Mode kontrolliert
+der User genau eine selbst angelegte Spielerfigur. Im Director Mode dirigiert
+der User Szene oder Cast und besitzt keine Spielerfigur. First und Second Person
+sind deshalb mit Director Mode ungültig. Third Person mit Player Mode bleibt
+regulärer Singleplayer und ist kein Multiplayer-Signal.
+
+`player_agency` bleibt vollständig in der GameConfiguration gespeichert, wird
+aber nur im Player Mode in den Story-Prompt projiziert. Der Director Mode darf
+diese Anweisung nicht erhalten. Der bestehende Prompttext, der Director bisher
+als zusätzlichen Handlungsspielraum des Erzählmodells beschreibt, muss mit der
+nächsten Story-Init-Erweiterung an diese Bedeutung angepasst werden.
+
+Damit bleiben weiterhin alle zehn Auswahlwerte persistent und validierbar,
+obwohl ein konkreter Director-Aufruf nur die dafür wirksamen Werte projiziert.
 
 WorldState-Extraction verwendet dagegen:
 

@@ -3,6 +3,15 @@
 Dieses Dokument enthält experimentelle, direkt in LM Studio einsetzbare
 Prompts und erwartete JSON-Antworten für die WorldState-Extraction.
 
+> **Historischer Hinweis:** Das hier getestete ChangeSet-Schema ist nicht der
+> Vertrag für `STORY-009`. Die beschlossene Initial-Extraction verwendet nur
+> Entitäten, Beziehungen und Fakten mit lokalen Referenzen. Evidenz,
+> Sichtbarkeit, Wissen, Weltregeln und Goals sind dort kein Modelloutput. Der
+> verbindliche Vertrag steht in
+> [`.harness/architecture/llm-integration.md`](../../.harness/architecture/llm-integration.md)
+> und der aktuelle Umsetzungsplan in
+> [`docs/llm/planned/story-initialization.md`](../llm/planned/story-initialization.md).
+
 Die Modellantwort ist immer nur ein ungeprüfter Änderungsvorschlag. Sie darf
 niemals direkt in den kanonischen `WorldState` geschrieben werden. Die
 Anwendung muss Schema, Referenzen, Sichtbarkeit, Basisrevision und fachliche

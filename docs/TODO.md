@@ -178,7 +178,7 @@ After explicit rejection:
   - Priority: Wichtig.
   - Dependencies: None.
   - Goal: Die technologieunabhängigen Grundtypen und die Grenze zwischen `GameRun` und revisioniertem `GameState` mit `GameConfiguration`, `WorldState` und `StoryState` festlegen.
-  - Completion criteria: IDs, Revisionen, Run-Status, Mitgliedsrollen, Sichtbarkeit und Evidenz sind typisiert und validiert. Die Verantwortlichkeiten sind dokumentiert; die Domain importiert keine Datenbank-, API- oder LLM-spezifischen Typen.
+  - Completion criteria: IDs, Revisionen, Run-Status, Mitgliedsrollen und Sichtbarkeit sind typisiert und validiert. Evidenz gehört ausschließlich zu transienten Application-Vorschlägen und nicht zu kanonischen Facts oder WorldRules. Die Verantwortlichkeiten sind dokumentiert; die Domain importiert keine Datenbank-, API- oder LLM-spezifischen Typen.
 
 - `TASK-002` **WorldState mit Entitäten und kanonischen Beziehungen modellieren**
   - Type: Task.
@@ -319,8 +319,20 @@ After explicit rejection:
   - Area: Story-Initialisierung.
   - Priority: Wichtig.
   - Dependencies: `STORY-005`.
-  - Goal: Aus GameConfiguration und einem anfänglichen freien Userprompt eine normalisierte Eröffnungsprosa und daraus einen vollständigen transienten StoryState erzeugen, bevor ein WorldState existiert.
-  - Completion criteria: `StoryInitialization` trennt Initialprompt von regulären Spielerzügen; ein eigener typisierter Modellport erhält keine WorldState- oder StoryState-Eingabe; die Application liefert einen vollständigen StoryState ohne Turns und ohne Persistenz; ein explizit aktivierter LM-Studio-Live-Test prüft den StoryState und gibt ihn als JSON aus; technische Modellfehler bleiben sichtbare typed Failures.
+  - Goal: Aus GameConfiguration, einem anfänglichen freien Userprompt und dem im Player Mode vom User angelegten Charakter eine normalisierte Eröffnungsprosa und daraus einen vollständigen transienten StoryState erzeugen, bevor ein WorldState existiert.
+  - Completion criteria: `StoryInitialization` trennt Initialprompt von regulären Spielerzügen; Player Mode verlangt genau einen PlayerCharacterSeed und Director Mode verbietet ihn; First und Second Person sind im Director Mode ungültig; ungültige Kombinationen scheitern vor dem Modellaufruf; ein eigener typisierter Modellport erhält keine WorldState- oder StoryState-Eingabe; die Application liefert einen vollständigen StoryState ohne Turns und ohne Persistenz; ein explizit aktivierter LM-Studio-Live-Test verwendet den erforderlichen Charakter, prüft den StoryState und gibt Request und Ergebnis als JSON aus; technische Modellfehler bleiben sichtbare typed Failures.
+
+- `TASK-007` **Spielercharakter und Control-Policy in STORY-008 ergänzen**
+  - Type: Task.
+  - Status: Open.
+  - Parent: `STORY-008`.
+  - Required for parent: Yes.
+  - Created: 2026-08-10.
+  - Area: Story-Initialisierung und Promptprojektion.
+  - Priority: Wichtig.
+  - Dependencies: `STORY-005`.
+  - Goal: Den bestehenden Story-Init um einen User-definierten PlayerCharacterSeed, gültige Perspective-/Control-Kombinationen und die klare Director-Semantik erweitern.
+  - Completion criteria: Player-Aufrufe enthalten genau einen vertrauenswürdigen Charakter; Director-Aufrufe enthalten weder Charakter noch Player-Agency-Anweisung; First und Second Person mit Director sowie fehlende oder unerwartete Seeds werden vor jedem Modellaufruf abgewiesen; Prompt-, Application-, Adapter- und Live-Test-Inputs sind angepasst.
 
 - `STORY-009` **Initialen WorldState extrahieren**
   - Type: Story.
@@ -331,8 +343,68 @@ After explicit rejection:
   - Area: WorldState-Initialisierung.
   - Priority: Wichtig.
   - Dependencies: `STORY-008`, `STORY-005`.
-  - Goal: Aus dem initialen StoryState einen transienten, fachlich validierten WorldState bilden, ohne einen GameRun oder GameState teilweise zu persistieren.
-  - Completion criteria: Ein eigener Initial-Extraction-Vertrag unterscheidet Initialprompt und erzeugte Erzählung; der Adapter liefert nur strukturierten Kandidateninhalt; die Application prüft Referenzen und Domain-Invarianten und bildet einen vollständigen WorldState; Fehler erzeugen keinen kanonischen Zustand. Die spätere atomare Anlage von Revision 1 bleibt als sichtbarer Folgeschritt dokumentiert.
+  - Goal: Aus der Eröffnungsprosa, den erforderlichen Modusdaten und dem im Player Mode vorhandenen vertrauenswürdigen Spielercharakter einen transienten, fachlich validierten WorldState bilden, ohne einen GameRun oder GameState teilweise zu persistieren.
+  - Completion criteria: Ein eigener Initial-Extraction-Port erhält weder ursprünglichen Initialprompt noch Storyprofil oder vorhandenen WorldState; sein strukturiertes Schema enthält nur Entitäten, Beziehungen und Fakten mit lokalen Referenzen; das Modell erzeugt keine Spielerfigur, StableIds, Sichtbarkeit, Evidenz, KnowledgeEntries, WorldRules oder Goals; die Application erzeugt im Player Mode die Spielerfigur sowie in allen Modi StableIds und neutrale weitere Charaktere, validiert alle Referenzen und Domain-Invarianten und übernimmt nur einen vollständigen WorldState; Provider-, Schema-, Referenz- oder Domainfehler erzeugen keinen Teilzustand und keinen Retry. Eine übergeordnete Operation liefert StoryState und WorldState gemeinsam, persistiert aber nichts; der Live-Test gibt beide Requests und Ergebnisse aus.
+
+- `TASK-008` **Kanonische Evidenz entfernen**
+  - Type: Task.
+  - Status: Open.
+  - Parent: `STORY-009`.
+  - Required for parent: Yes.
+  - Created: 2026-08-10.
+  - Area: Domainmodell, API und Persistenz.
+  - Priority: Wichtig.
+  - Dependencies: `STORY-001`, `STORY-002`.
+  - Goal: Evidenz aus kanonischen Facts und WorldRules sowie ihren API- und PostgreSQL-Repräsentationen entfernen und ausschließlich als transiente Application-Reviewinformation beibehalten.
+  - Completion criteria: Domain, API und PostgreSQL können Facts und Rules ohne Evidence round-trip verarbeiten; die Initialmigration enthält keine Evidence-Spalten und bestehende Entwicklungsdatenbanken müssen ohne Rückwärtskompatibilität neu angelegt werden; ProposedChange kann weiterhin transiente Review-Evidenz tragen; Visibility, Knowledge, Rules und Goals bleiben ansonsten unverändert.
+
+- `TASK-009` **Initial-Extraction-Port und JSON-Schema anbinden**
+  - Type: Task.
+  - Status: Open.
+  - Parent: `STORY-009`.
+  - Required for parent: Yes.
+  - Created: 2026-08-10.
+  - Area: LLM-Verträge und LM-Studio-Adapter.
+  - Priority: Wichtig.
+  - Dependencies: `TASK-007`, `STORY-005`.
+  - Goal: Einen providerneutralen Initial-Extraction-Vertrag und einen LM-Studio-Structured-Output-Pfad für Entitäten, Beziehungen und Fakten implementieren.
+  - Completion criteria: Der technische Request übermittelt das geschlossene JSON-Schema; der Adapter liefert ausschließlich typisierte Candidates oder sichtbare LLMErrors; unbekannte Felder, falsche Typen, ungültige Enums, Text statt JSON, leere oder abgeschnittene Antworten und Providerfehler sind getestet; Rohantworten überschreiten die Adaptergrenze nicht.
+
+- `TASK-010` **Initial-Candidate in WorldState überführen**
+  - Type: Task.
+  - Status: Open.
+  - Parent: `STORY-009`.
+  - Required for parent: Yes.
+  - Created: 2026-08-10.
+  - Area: WorldState-Initialisierung.
+  - Priority: Wichtig.
+  - Dependencies: `TASK-008`, `TASK-009`.
+  - Goal: Lokale Candidate-Referenzen und den vertrauenswürdigen PlayerCharacterSeed all-or-nothing in einen vollständigen transienten WorldState überführen.
+  - Completion criteria: Die Application erzeugt StableIds und im Player Mode die einzige PLAYER-Entität; Modellcharaktere sind optional und neutral; reservierte, doppelte oder unbekannte Referenzen sowie Domainfehler verwerfen den gesamten Candidate; Visibility nutzt nur den technischen Public-Default und Knowledge, Rules und Goals bleiben leer.
+
+- `TASK-011` **Zweistufige Initialisierung orchestrieren**
+  - Type: Task.
+  - Status: Open.
+  - Parent: `STORY-009`.
+  - Required for parent: Yes.
+  - Created: 2026-08-10.
+  - Area: Application-Orchestrierung.
+  - Priority: Wichtig.
+  - Dependencies: `TASK-007`, `TASK-010`.
+  - Goal: StoryState-Erzeugung und initiale WorldState-Extraction als getrennte Operationen unter einem transienten Gesamtworkflow ausführen.
+  - Completion criteria: Extraction startet ausschließlich nach erfolgreicher Story-Erzeugung; Initialprompt wird nur dem Story-Aufruf übergeben; Fehler identifizieren ihre Stage und stoppen den Ablauf; Erfolg liefert genau einen StoryState und WorldState; kein Repository, GameRun oder GameState wird geschrieben.
+
+- `TASK-012` **Live-Diagnose und Gesamtverifikation ergänzen**
+  - Type: Task.
+  - Status: Open.
+  - Parent: `STORY-009`.
+  - Required for parent: Yes.
+  - Created: 2026-08-10.
+  - Area: LLM-Live-Test und Integration.
+  - Priority: Wichtig.
+  - Dependencies: `TASK-011`.
+  - Goal: Den vollständigen transienten Initialisierungsablauf mit bewusst aktiviertem LM Studio nachvollziehbar prüfen und offline reproduzierbar absichern.
+  - Completion criteria: Der Opt-in-Live-Test druckt beide exakten Requests einschließlich Modell, Optionen und Response-Schema, beide Modellantworten sowie StoryState und WorldState; Extraction verwendet Temperatur 0.1 ohne Tokenlimit; ohne Aktivierungsflag erfolgt kein externer Aufruf; mit Aktivierungsflag läuft der Test erfolgreich gegen das bereitgestellte LM Studio und ein Skip zählt nicht als Live-Nachweis; deterministische Tests und das vollständige Standardprofil bestehen.
 
 - `STORY-010` **Initialen GameRun atomar anlegen**
   - Type: Story.

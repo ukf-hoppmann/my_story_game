@@ -66,6 +66,34 @@ class StoryPromptSelectionResolver:
         )
 
 
+class StoryInitializationPromptResolver:
+    """Resolve the same narrative profile for an opening without state context."""
+
+    def __init__(self, catalog: PromptPackageCatalog) -> None:
+        self.catalog = catalog
+
+    def resolve(self, configuration: GameConfiguration) -> StoryPromptSelection:
+        package = self.catalog.load(
+            configuration.prompt_package_id,
+            configuration.prompt_package_version,
+        )
+        options = tuple(
+            _resolved_option(
+                category_id,
+                option_id,
+                package.category(category_id).option(option_id),
+            )
+            for category_id, option_id in configuration.prompt_profile.selections()
+        )
+        return StoryPromptSelection(
+            task=package.task("story_initialization"),
+            options=options,
+            language=configuration.language,
+            narrative_boundaries=configuration.narrative_boundaries,
+            boundary_directive=package.directive("narrative_boundaries"),
+        )
+
+
 class ExtractionPromptSelectionResolver:
     """Resolve the dedicated combined Extraction option for one package."""
 
@@ -92,5 +120,6 @@ __all__ = [
     "ExtractionPromptSelectionResolver",
     "ResolvedPromptOption",
     "StoryPromptSelection",
+    "StoryInitializationPromptResolver",
     "StoryPromptSelectionResolver",
 ]

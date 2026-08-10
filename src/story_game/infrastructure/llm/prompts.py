@@ -18,7 +18,7 @@ from story_game.application.llm import (
 )
 
 
-_TASK_IDS = {"story_generation", "worldstate_extraction"}
+_TASK_IDS = {"story_initialization", "story_generation", "worldstate_extraction"}
 _CATEGORY_IDS = {
     "genre",
     "tone",
@@ -104,7 +104,10 @@ def _tasks(raw: Any, path: Path) -> list[PromptTask]:
         task_id = _unique_id(_text(entry, "id", label, path), seen, label, path)
         values.append(PromptTask(task_id, _text(entry, "text", label, path)))
     if set(seen) != _TASK_IDS:
-        raise _invalid(path, "tasks müssen genau story_generation und worldstate_extraction enthalten")
+        raise _invalid(
+            path,
+            "tasks müssen genau story_initialization, story_generation und worldstate_extraction enthalten",
+        )
     return values
 
 

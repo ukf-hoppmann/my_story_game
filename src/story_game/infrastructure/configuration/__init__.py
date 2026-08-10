@@ -7,6 +7,7 @@ from .llm import (
     ModelDefinition,
     ProviderConfiguration,
     TaskModelReferences,
+    TomlGenerationConfigurationResolver,
     TomlLlmConfigurationLoader,
 )
 
@@ -17,5 +18,6 @@ __all__ = [
     "ModelDefinition",
     "ProviderConfiguration",
     "TaskModelReferences",
+    "TomlGenerationConfigurationResolver",
     "TomlLlmConfigurationLoader",
 ]

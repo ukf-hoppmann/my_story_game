@@ -46,15 +46,15 @@ Testlauf starten.
 
 ## Fachliches Modell
 
-`StoryState` besitzt künftig eine verpflichtende `StoryInitialization`. Sie
+`StoryState` besitzt zunächst eine optionale `StoryInitialization`. Die
+neue Operation liefert bei Erfolg trotzdem immer eine vorhandene
+Initialisierung. Die Option erhält bestehende persistierte Draft-Zustände bis
+`STORY-010` Schema, Mapping und Persistenz gemeinsam auf die verpflichtende
+Invariante migriert. Sie
 enthält den ursprünglichen Initialprompt, die normalisierte Erzählung und den
 Erzeugungszeitpunkt. Sie ist kein `StoryTurn`: Der erste reguläre Spielerzug
 bleibt somit Zugnummer 1 und enthält weiterhin eine tatsächliche
 Spielereingabe.
-
-Vor der erfolgreichen Story-Initialisierung existiert kein StoryState. Ein
-leerer Ersatzwert mit `initialization = None` wird nicht eingeführt, weil er
-die fachliche Invariante verwässern würde.
 
 ## Spätere Gesamtorchestrierung
 

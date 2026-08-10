@@ -38,7 +38,7 @@ StoryInitialization
     completed_at
 
 StoryState
-    initialization: StoryInitialization
+    initialization: StoryInitialization | None
     turns: ()
     summary: None
     current_turn_sequence: 0
@@ -88,9 +88,10 @@ Konfigurationsdokument ausgelassen.
 
 ## Kleine Umsetzungs-Subtasks
 
-### 1. Domain-Invariante für die Eröffnung
+### 1. Domainwert für die Eröffnung
 
-- Ziel: Einen `StoryState` mit verpflichtender `StoryInitialization` ausdrücken.
+- Ziel: Einen `StoryState` mit `StoryInitialization` ausdrücken, ohne bestehende
+  persistierte Draft-Zustände zu brechen.
 - Scope: Domainwerte, Mapping und vorhandene Fixtures, die einen StoryState
   bauen.
 - Nicht-Ziele: Keine LLM-Aufrufe, keine Datenbankmigration und keine
@@ -98,8 +99,10 @@ Konfigurationsdokument ausgelassen.
 - Kontext: Ein Initialprompt ist keine Spieleraktion; der erste `StoryTurn`
   bleibt Sequenz 1.
 - Abhängigkeiten: Keine.
-- Akzeptanz: Ein StoryState ohne Initialisierung ist ungültig; ein
-  initialisierter StoryState ohne Turns ist gültig.
+- Akzeptanz: Ein initialisierter StoryState ohne Turns ist gültig;
+  `GenerateInitialStoryState` liefert bei Erfolg stets eine vorhandene
+  Initialisierung. Die verpflichtende Persistenzinvariante folgt in
+  `STORY-010`.
 - Verifikation: Deterministische Domain- und Mapper-Tests.
 - Abschluss: Alle betroffenen bestehenden Konstruktionen verwenden eine
   fachlich vollständige Initialisierung.

@@ -52,12 +52,28 @@ class StorySummary:
 
 
 @dataclass(frozen=True, slots=True)
+class StoryInitialization:
+    """The user premise and normalized opening prose before the first turn."""
+
+    prompt: str
+    narration: str
+    completed_at: datetime
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "prompt", _required(self.prompt, "Der Initialprompt"))
+        object.__setattr__(self, "narration", _required(self.narration, "Die Eröffnung"))
+        if self.completed_at.tzinfo is None:
+            raise ValidationError("Der Initialisierungszeitpunkt benötigt eine Zeitzone")
+
+
+@dataclass(frozen=True, slots=True)
 class StoryState:
     """Concrete completed story history without structured world facts."""
 
     turns: tuple[StoryTurn, ...] = ()
     summary: StorySummary | None = None
     current_turn_sequence: int = 0
+    initialization: StoryInitialization | None = None
 
     def __post_init__(self) -> None:
         if self.current_turn_sequence < 0:

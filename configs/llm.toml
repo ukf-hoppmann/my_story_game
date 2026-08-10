@@ -10,6 +10,15 @@ story = "model.story.default"
 extraction = "model.extraction.default"
 summary = "model.summary.default"
 
+[generation_options.story]
+temperature = 0.5
+
+[generation_options.extraction]
+temperature = 0.5
+
+[generation_options.summary]
+temperature = 0.5
+
 [[models]]
 id = "model.story.default"
 task = "story"

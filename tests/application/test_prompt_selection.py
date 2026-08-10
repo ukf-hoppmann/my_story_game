@@ -4,6 +4,7 @@ from pathlib import Path
 
 from story_game.application.llm import (
     ExtractionPromptSelectionResolver,
+    StoryInitializationPromptResolver,
     StoryPromptSelectionResolver,
 )
 from story_game.domain import GameConfiguration, PromptProfile
@@ -56,6 +57,15 @@ def test_story_selection_resolves_all_profile_options_before_the_adapter() -> No
     assert selection.language == "de"
     assert selection.narrative_boundaries == ("Keine sexualisierte Gewalt",)
     assert selection.boundary_directive.id == "narrative_boundaries"
+
+
+def test_initialization_selection_uses_the_profile_without_story_context() -> None:
+    resolver = StoryInitializationPromptResolver(FilePromptPackageCatalog(PROMPT_ROOT))
+
+    selection = resolver.resolve(configuration())
+
+    assert selection.task.id == "story_initialization"
+    assert selection.options[0].category_id == "genre"
 
 
 def test_extraction_selection_uses_only_the_combined_extraction_option() -> None:

@@ -19,6 +19,8 @@ und Prompt-Vertrag.
 
 Aktueller Entwurf:
 
+- [`story-initialization.md`](story-initialization.md): LLM-Vertrag und
+  gestufte Umsetzung für die Eröffnung ohne bestehenden GameState.
 - [`llm-connection.md`](llm-connection.md): detaillierter maschinenorientierter
   Arbeitsstand für den allgemeinen Modellvertrag, Story und Extraction.
 

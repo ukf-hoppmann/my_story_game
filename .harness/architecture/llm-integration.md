@@ -76,6 +76,19 @@ contract remains binding together with this scope.
   Empty, incomplete, or technically invalid output MUST NOT be represented as a
   successful story.
 
+## 5a. Story-initialization boundary
+
+- A Story-initialization request MUST distinguish system prompts, relevant
+  narrative configuration, and the initial user prompt. Because it executes
+  before canonical WorldState and StoryState values exist, it MUST NOT require
+  or fabricate either context.
+- The Application layer MUST assemble the request and create a complete
+  transient StoryState from successful normalized opening prose. The provider
+  adapter MUST only render and transport the prepared request.
+- Story initialization alone MUST NOT persist a GameState. Canonical
+  persistence remains unavailable until the separate initial WorldState
+  extraction and validation workflow has completed successfully.
+
 ## 6. Extraction boundary
 
 - An Extraction request MUST distinguish system prompts, the latest generated

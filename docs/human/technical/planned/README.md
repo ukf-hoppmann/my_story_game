@@ -10,6 +10,8 @@ autoritativen [`docs/TODO.md`](../../../TODO.md) geführt.
 
 Offene technische Zielbilder:
 
+- [`story-initialization.md`](story-initialization.md): initialen StoryState
+  aus einem Userprompt erzeugen, bevor ein WorldState existiert.
 - [`story-generation.md`](story-generation.md): anbieterunabhängige
   Story-Erzeugung über den gemeinsamen Modellaufruf.
 

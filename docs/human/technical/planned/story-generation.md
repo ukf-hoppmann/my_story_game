@@ -10,11 +10,11 @@ der verbindliche
 
 Das Domain- und Persistenzmodell kennt bereits `GameConfiguration`,
 `WorldState`, `StoryState`, abgeschlossene `StoryTurn`-Werte und die atomare
-Turn-Commit-Grenze. Modell- und Promptkataloge, tatsächliche Modellaufrufe,
-Die LM-Studio-Infrastruktur kann die definierte Story-Grenze bereits live
-aufrufen und normalisierte Prosa oder einen `LLMError` liefern. Modell- und
-Promptkataloge, die Story-Operation und WorldState-Extraction sind noch nicht
-implementiert.
+Turn-Commit-Grenze. Die zentrale Laufzeitkonfiguration unter
+`configs/llm.toml` definiert je ein Modell für Story, Extraction und Summary.
+Die LM-Studio-Infrastruktur kann die definierte Story-Grenze live aufrufen und
+normalisierte Prosa oder einen `LLMError` liefern. Promptkataloge, die
+Story-Operation und WorldState-Extraction sind noch nicht implementiert.
 
 `GameConfiguration` speichert bereits semantische Modellreferenzen und die
 Version des Promptpakets. Provider-URLs, Zugangsdaten, Rohprompts und laufende
@@ -223,7 +223,7 @@ als Providerobjekt die Application-Grenze überschreiten.
 - konkrete Python-Typen und Modulpfade;
 - genaue Struktur der Kontextprojektionen;
 - erste verbindliche `LLMError`-Varianten und Retryregeln;
-- Auflösung von Modell- und Promptkatalogen;
+- Auflösung des Promptkatalogs;
 - LM-Studio-Endpoint und dessen Providerformat;
 - tatsächlich benötigte Generierungsoptionen;
 - Streaming ja oder nein;

@@ -8,6 +8,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY pyproject.toml ./
 COPY src ./src
+COPY configs ./configs
 
 RUN pip install --no-cache-dir --no-deps .
 

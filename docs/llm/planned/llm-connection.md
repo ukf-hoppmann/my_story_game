@@ -395,7 +395,7 @@ den allgemeinen LLM-Vertrag nicht.
 
 ## Später zu betrachten
 
-- Modellkatalog und Modellabfrage;
+- Promptkatalog und Promptabfrage;
 - konkrete UI-Konfiguration für lokale und API-basierte Modelle;
 - Bildbeschreibung für Text-zu-Bild;
 - tatsächliche Szenenbilderzeugung;

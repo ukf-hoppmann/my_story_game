@@ -3,8 +3,10 @@
 Status: Beschlossen. Domain- und Persistenzmodell umgesetzt am 2026-08-06.
 
 Dieses Dokument erklärt die gemeinsam getroffenen fachlichen Entscheidungen.
-Das beschriebene Domain- und PostgreSQL-Modell ist umgesetzt. Die eigentliche
-LLM-, Prompt- und Modellkatalogintegration bleibt ein späterer Arbeitsschritt.
+Das beschriebene Domain- und PostgreSQL-Modell ist umgesetzt. Promptkatalog,
+Story-Workflow und die fachliche LLM-Integration bleiben spätere
+Arbeitsschritte; die zentrale Provider- und Modellkonfiguration ist separat
+unter `configs/llm.toml` umgesetzt.
 
 ## Warum wir das Modell ändern
 

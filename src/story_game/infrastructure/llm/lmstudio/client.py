@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 from dataclasses import dataclass, field
 from typing import Any
 from urllib.parse import urlparse
@@ -32,22 +31,6 @@ class LmStudioSettings:
         if self.api_token is not None:
             token = self.api_token.strip()
             object.__setattr__(self, "api_token", token or None)
-
-    @classmethod
-    def from_environment(cls) -> LmStudioSettings:
-        """Resolve connection settings from the runtime environment."""
-
-        timeout = os.environ.get("STORY_GAME_LMSTUDIO_TIMEOUT_SECONDS", "60")
-        try:
-            timeout_seconds = float(timeout)
-        except ValueError as error:
-            raise ValueError("STORY_GAME_LMSTUDIO_TIMEOUT_SECONDS muss numerisch sein") from error
-        return cls(
-            base_url=os.environ.get("STORY_GAME_LMSTUDIO_BASE_URL", cls.base_url),
-            api_token=os.environ.get("STORY_GAME_LMSTUDIO_API_TOKEN"),
-            timeout_seconds=timeout_seconds,
-        )
-
 
 class LmStudioClient:
     """Perform transport and wire parsing without exposing HTTP to the application."""

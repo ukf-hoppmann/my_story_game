@@ -9,13 +9,14 @@ from .contracts import (
     StoryGenerationData,
     StoryGenerationRequest,
 )
-from .ports import StoryGenerationPort
+from .ports import ModelSelectionResolver, StoryGenerationPort
 
 __all__ = [
     "GenerationOptions",
     "LLMError",
     "LLMErrorKind",
     "LLMGenerationCall",
+    "ModelSelectionResolver",
     "ModelSelection",
     "StoryGenerationData",
     "StoryGenerationPort",

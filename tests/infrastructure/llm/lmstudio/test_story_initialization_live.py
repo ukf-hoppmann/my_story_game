@@ -29,6 +29,8 @@ from story_game.infrastructure.llm.lmstudio.models import (
     LmStudioChatResponse,
 )
 
+from .live_settings import live_base_url
+
 
 class PrintingClient:
     """Print the exact prepared request while delegating transport to LM Studio."""
@@ -38,15 +40,26 @@ class PrintingClient:
 
     def complete(self, request: LmStudioChatRequest) -> LmStudioChatResponse:
         print(json.dumps(_request_document(request), ensure_ascii=False, indent=2))
-        return self._client.complete(request)
+        response = self._client.complete(request)
+        print(
+            json.dumps(
+                {
+                    "response": response.text,
+                    "finish_reason": response.finish_reason,
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
+        return response
 
 
 @pytest.mark.lmstudio_live
 def test_live_generates_and_prints_an_initial_story_state(
     request: pytest.FixtureRequest,
 ) -> None:
-    # if not request.config.getoption("--run-lmstudio-live"):
-    #     pytest.skip("Live LM-Studio-Test nur mit --run-lmstudio-live")
+    if not request.config.getoption("--run-lmstudio-live"):
+        pytest.skip("Live LM-Studio-Test nur mit --run-lmstudio-live")
 
     repository_root = Path(__file__).resolve().parents[4]
     configuration_path = repository_root / "configs" / "llm.toml"
@@ -56,7 +69,10 @@ def test_live_generates_and_prints_an_initial_story_state(
         pytest.fail("Das Story-Modell muss für diesen Live-Test LM Studio verwenden")
 
     client = LmStudioClient(
-        LmStudioSettings(provider.base_url, timeout_seconds=provider.timeout_seconds)
+        LmStudioSettings(
+            live_base_url(provider.base_url),
+            timeout_seconds=provider.timeout_seconds,
+        )
     )
     try:
         operation = GenerateInitialStoryState(

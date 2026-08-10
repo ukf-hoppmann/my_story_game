@@ -3,6 +3,13 @@
 Status: Beschlossenes Architekturziel, noch nicht implementiert.  
 Datum: 2026-08-07.
 
+Die spätere Entscheidung
+[`Promptprofil und aktuelle Modellwahl`](promptprofil-und-modellwahl.md)
+konkretisiert, wie Promptoptionen vor dem Adapter aufgelöst und die aktuell
+konfigurierten Modelle je Aufgabe in einen Call übernommen werden. Die hier
+festgelegten aufgabenspezifischen Ports und Verantwortungsgrenzen bleiben
+unverändert.
+
 Die verbindlichen Regeln stehen in
 [`.harness/architecture/llm-integration.md`](../../../.harness/architecture/llm-integration.md).
 Dieses Dokument erklärt die Entscheidung verständlich und ist keine zweite

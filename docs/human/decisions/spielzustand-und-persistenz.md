@@ -75,6 +75,13 @@ Jeder erfolgreich abgeschlossene Zug erzeugt eine neue Revision.
 Die `GameConfiguration` gehört zum GameState, weil ihre Werte für genau diese
 Spielpartie gelten und beim Fortsetzen erhalten bleiben müssen.
 
+Die spätere Entscheidung
+[`Promptprofil und aktuelle Modellwahl`](promptprofil-und-modellwahl.md)
+konkretisiert und ersetzt die folgende ursprüngliche Feldaufteilung: Die
+Erzählvorgaben sollen künftig als explizites Promptprofil gespeichert werden,
+während die aktive Modellwahl eine globale Systemeinstellung je Aufgabe bleibt.
+Dieser Zielstand ist noch nicht umgesetzt.
+
 Sie enthält beispielsweise:
 
 - Sprache;

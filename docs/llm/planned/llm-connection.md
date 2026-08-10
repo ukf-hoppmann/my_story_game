@@ -14,6 +14,8 @@ Die verbindliche Regelquelle für diesen Bereich ist
 [`.harness/architecture/llm-integration.md`](../../../.harness/architecture/llm-integration.md).
 Das verständliche Entscheidungsdokument steht unter
 [`docs/human/decisions/llm-anbindung.md`](../../human/decisions/llm-anbindung.md),
+die Entscheidung zu Promptprofil und Modellwahl unter
+[`docs/human/decisions/promptprofil-und-modellwahl.md`](../../human/decisions/promptprofil-und-modellwahl.md),
 das technische Story-Zielbild unter
 [`docs/human/technical/planned/story-generation.md`](../../human/technical/planned/story-generation.md).
 
@@ -67,6 +69,14 @@ LLMGenerationCall[RequestT]
 kann später lokale oder API-basierte Ausführung, Provider, Modell und die dafür
 benötigte technische Zuordnung abbilden. Zugangsdaten bleiben außerhalb des
 fachlichen Vertrags und werden durch die Laufzeitumgebung bereitgestellt.
+
+Die zentrale Laufzeitkonfiguration speichert je Aufgabe die aktive logische
+Modellreferenz. Vor dem Modellport wird die zum Story-, Extraction- oder
+Summary-Auftrag passende Referenz in eine konkrete `ModelSelection` aufgelöst.
+Der Call transportiert diese fertige Auswahl; Adapter und Provider-Client
+wählen kein Modell und benötigen keine Aufgabenkennung für diese Entscheidung.
+Die drei logischen Modellreferenzen werden im Zielstand nicht mehr in
+`GameConfiguration` dupliziert.
 
 `generation_options` ist als Platz für technische Erzeugungsoptionen vorgesehen.
 Welche Optionen benötigt werden, welche davon anbieterunabhängig sind und ob
@@ -148,6 +158,24 @@ Prompt darstellen.
 ## Story-Erzeugung
 
 Status: Vertrag auf Architekturebene geklärt.
+
+### Promptprofil und Auflösung
+
+`GameConfiguration` soll ein vollständiges Promptprofil mit `genre`, `tone`,
+`prose_style`, `perspective`, `pacing`, `control_mode`, `player_agency`,
+`consequence`, `challenge` und `content_profile` speichern. Paket-ID und
+Paketversion bleiben Teil der Konfiguration.
+
+Die Application lädt das referenzierte Paket, prüft jede Options-ID in ihrer
+bekannten Kategorie und ersetzt die IDs durch die im Paket hinterlegten
+verständlichen Beschreibungen. Erst danach entsteht der vollständige
+`StoryGenerationRequest`. Der Adapter erhält keine unaufgelösten Profil-IDs und
+setzt keine Defaults.
+
+Paketdefaults belegen nur ein neues Profil vor. Das vollständige effektive
+Profil wird gespeichert. Eine unbekannte Option ergibt einen konkreten
+Application-Fehler, den die API für eine erneute Auswahl an die UI weitergibt;
+es gibt keinen stillen Fallback.
 
 ### Aufgabe
 
@@ -272,6 +300,12 @@ allgemeine Vertrag lediglich die Existenz von `generation_options` festlegt.
 Status: Der allgemeine Ein- und Ausgabevertrag ist bestätigt; fachliche
 Extraction-Details und konkrete Schnittstellentypen bleiben zu klären.
 
+Das Paket verwendet für Extraction ausschließlich den Task
+`worldstate_extraction` und die Option `extraction.combined`. Die zehn
+Story-Kategorien des Promptprofils werden nicht in den Extraction-Prompt
+übernommen. Umgekehrt ist `extraction.combined` kein Feld des gespeicherten
+Story-Promptprofils.
+
 ### Bereits gesetzter Rahmen
 
 Extraction folgt auf die erzeugte Story-Prosa. Sie ermittelt strukturierte
@@ -395,7 +429,6 @@ Umsetzungsentscheidung erweitert den allgemeinen LLM-Vertrag nicht.
 
 ## Später zu betrachten
 
-- Auswahlzuordnung aus `GameConfiguration` und Promptabfrage im Story-Use-Case;
 - konkrete UI-Konfiguration für lokale und API-basierte Modelle;
 - Bildbeschreibung für Text-zu-Bild;
 - tatsächliche Szenenbilderzeugung;

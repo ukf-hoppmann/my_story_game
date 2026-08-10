@@ -2,8 +2,9 @@
 
 Status: Der Provider-Anschluss und die technische Story-Grenze sind
 implementiert; der Story-Workflow ist noch nicht implementiert.
-Grundlage: [Entscheidung zur LLM-Anbindung](../../decisions/llm-anbindung.md) und
-der verbindliche
+Grundlage: [Entscheidung zur LLM-Anbindung](../../decisions/llm-anbindung.md),
+die [Entscheidung zu Promptprofil und Modellwahl](../../decisions/promptprofil-und-modellwahl.md)
+und der verbindliche
 [LLM-Architekturvertrag](../../../../.harness/architecture/llm-integration.md).
 
 ## Aktueller Stand
@@ -18,16 +19,26 @@ Ein-Datei-Promptpaket und der validierende dateibasierte Catalog sind umgesetzt;
 Story-Operation, Story-API und WorldState-Extraction-Workflow bleiben noch
 nicht implementiert.
 
-`GameConfiguration` speichert bereits semantische Modellreferenzen und die
-Version des Promptpakets. Provider-URLs, Zugangsdaten, Rohprompts und laufende
-Aufrufe gehören weiterhin nicht in den GameState.
+`GameConfiguration` speichert derzeit noch semantische Modellreferenzen und die
+Version des Promptpakets. Der beschlossene Zielstand entfernt die drei
+Modellreferenzen aus der Partie und ersetzt die bisherigen Erzählfelder durch
+ein explizites Promptprofil. Provider-URLs, Zugangsdaten, Rohprompts und
+laufende Aufrufe gehören weiterhin nicht in den GameState.
 
 Das Paket `story.base`/`1` enthält die Tasks `story_generation` und
 `worldstate_extraction`, alle vereinbarten Auswahlkategorien samt Defaults und
 die nicht auswählbare Directive `narrative_boundaries`. Die Auswahlfelder für
 Genre, Tone, Pacing, Player Agency, Consequence, Challenge und Content Profile
-sind noch nicht Teil von `GameConfiguration`; ihre Zuordnung erfolgt erst vor
-dem Story-Use-Case und nicht im Loader.
+sind noch nicht Teil von `GameConfiguration`. Im beschlossenen Zielstand
+enthält das Promptprofil außerdem die bereits vorhandenen Konzepte Prose Style,
+Perspective und Control Mode. Die Application löst diese Auswahl vor dem
+Adapter gegen das referenzierte Paket auf; der Loader trifft keine fachliche
+Auswahl.
+
+Die zentrale LLM-Laufzeitkonfiguration bleibt maßgeblich für das aktive Story-,
+Extraction- und Summary-Modell. Sie löst die zum Auftrag gehörende logische
+Referenz in eine konkrete `ModelSelection` auf. Diese Auswahl wird nicht mehr
+in der Partie eingefroren.
 
 ## Ziel
 
@@ -58,6 +69,10 @@ aktuellen GameState und Userprompt laden
 relevante Story-, World- und Konfigurationsdaten auswählen
     ↓
 versionierte Systemprompts laden
+    ↓
+Promptprofil-IDs zu verständlichen Story-Anweisungen auflösen
+    ↓
+aktives Story-Modell aus der zentralen Konfiguration übernehmen
     ↓
 StoryGenerationRequest erstellen
     ↓
@@ -93,6 +108,10 @@ LLMGenerationCall[StoryGenerationRequest]
 LLM-Gateway transportieren können. Die Story-Operation darf daraus keine
 Provider-Sonderfälle ableiten.
 
+Die Auswahl wird vor dem Modellport anhand des Auftrags aus der zentralen
+Konfiguration aufgelöst. Adapter und Provider-Client erhalten bereits die
+konkrete `ModelSelection` und wählen kein Modell erneut aus.
+
 `generation_options` ist als Erweiterungspunkt vorgesehen. Bei der späteren
 Ausarbeitung werden nur tatsächlich benötigte Optionen mit klarer Semantik
 aufgenommen. Bereits als mögliche Kandidaten notiert sind `temperature`,
@@ -111,8 +130,9 @@ StoryGenerationRequest
 ```
 
 - `system_prompts` enthält die geladenen fachlichen Story-Anweisungen.
-- `configuration` enthält relevante Sprache, Stil, Perspektive und
-  Erzählvorgaben.
+- `configuration` enthält Sprache, erzählerische Grenzen und die bereits aus
+  dem Promptprofil aufgelösten verständlichen Erzählvorgaben. Technische
+  Options-IDs werden nicht erst im Adapter interpretiert.
 - `world_state` enthält den vollständigen WorldState oder ausgewählte
   vollständige Werte, die für den nächsten Text relevant sind.
 - `story_state` enthält den vollständigen StoryState oder die relevante
@@ -147,7 +167,9 @@ immer ausschließlich normalisierte Story-Prosa.
 ### Application
 
 - relevante Daten bestimmen;
-- Promptpaket und Modellreferenz aus der Konfiguration auflösen lassen;
+- Promptpaket aus der GameConfiguration laden und die Story-Auswahloptionen zu
+  verständlichen Anweisungen auflösen;
+- das aktive Story-Modell aus der zentralen Laufzeitkonfiguration übernehmen;
 - den fachlichen Request bilden;
 - Story-Erzeugung in den Turn-Workflow einordnen;
 - normierte Fehler in sichtbares Workflowverhalten übersetzen;
@@ -232,7 +254,6 @@ als Providerobjekt die Application-Grenze überschreiten.
 - konkrete Python-Typen und Modulpfade;
 - genaue Struktur der Kontextprojektionen;
 - erste verbindliche `LLMError`-Varianten und Retryregeln;
-- Auswahlzuordnung aus `GameConfiguration` und Promptabfrage im Story-Use-Case;
 - LM-Studio-Endpoint und dessen Providerformat;
 - tatsächlich benötigte Generierungsoptionen;
 - Streaming ja oder nein;

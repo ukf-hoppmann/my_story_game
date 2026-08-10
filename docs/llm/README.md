@@ -25,3 +25,4 @@ Aktive Verträge:
 Abschlussarchive:
 
 - [`done/2026-08-06-spielzustand-und-persistenz.md`](done/2026-08-06-spielzustand-und-persistenz.md)
+- [`done/2026-08-10-prompt-package.md`](done/2026-08-10-prompt-package.md)

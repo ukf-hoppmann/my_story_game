@@ -13,12 +13,21 @@ Das Domain- und Persistenzmodell kennt bereits `GameConfiguration`,
 Turn-Commit-Grenze. Die zentrale Laufzeitkonfiguration unter
 `configs/llm.toml` definiert je ein Modell für Story, Extraction und Summary.
 Die LM-Studio-Infrastruktur kann die definierte Story-Grenze live aufrufen und
-normalisierte Prosa oder einen `LLMError` liefern. Promptkataloge, die
-Story-Operation und WorldState-Extraction sind noch nicht implementiert.
+normalisierte Prosa oder einen `LLMError` liefern. Das versionierte
+Ein-Datei-Promptpaket und der validierende dateibasierte Catalog sind umgesetzt;
+Story-Operation, Story-API und WorldState-Extraction-Workflow bleiben noch
+nicht implementiert.
 
 `GameConfiguration` speichert bereits semantische Modellreferenzen und die
 Version des Promptpakets. Provider-URLs, Zugangsdaten, Rohprompts und laufende
 Aufrufe gehören weiterhin nicht in den GameState.
+
+Das Paket `story.base`/`1` enthält die Tasks `story_generation` und
+`worldstate_extraction`, alle vereinbarten Auswahlkategorien samt Defaults und
+die nicht auswählbare Directive `narrative_boundaries`. Die Auswahlfelder für
+Genre, Tone, Pacing, Player Agency, Consequence, Challenge und Content Profile
+sind noch nicht Teil von `GameConfiguration`; ihre Zuordnung erfolgt erst vor
+dem Story-Use-Case und nicht im Loader.
 
 ## Ziel
 
@@ -223,7 +232,7 @@ als Providerobjekt die Application-Grenze überschreiten.
 - konkrete Python-Typen und Modulpfade;
 - genaue Struktur der Kontextprojektionen;
 - erste verbindliche `LLMError`-Varianten und Retryregeln;
-- Auflösung des Promptkatalogs;
+- Auswahlzuordnung aus `GameConfiguration` und Promptabfrage im Story-Use-Case;
 - LM-Studio-Endpoint und dessen Providerformat;
 - tatsächlich benötigte Generierungsoptionen;
 - Streaming ja oder nein;

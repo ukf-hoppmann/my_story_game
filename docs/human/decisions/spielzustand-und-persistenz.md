@@ -237,9 +237,11 @@ Globale Anbieter-, Modell- und Standardkonfigurationen werden zunächst aus
 TOML-Dateien geladen. System-Prompts werden als versionierter Dateikatalog im
 Repository verwaltet.
 
-- TOML enthält Katalogdaten und Zuordnungen.
-- Textdateien enthalten längere Prompttexte.
-- JSON beschreibt strukturierte Ausgabeformate für Modelle.
+- Das vollständige Promptpaket enthält Katalogdaten, Zuordnungen und Texte in
+  einer versionierten TOML-Datei.
+- Separate Prompt-Textdateien werden für dieses Paket nicht verwendet.
+- JSON beschreibt weiterhin strukturierte Ausgabeformate für Modelle, sofern
+  ein späterer Application-Vertrag sie benötigt.
 - Statische Einträge verwenden lesbare IDs wie `story.base`.
 - Geheimnisse werden getrennt über die Laufzeitumgebung bereitgestellt.
 

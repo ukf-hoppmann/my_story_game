@@ -8,8 +8,10 @@ für das Storygame-LLM oder für den Coding-Agenten gilt. Agenten- und
 Architekturregeln müssen anschließend in ihre autoritative Harness-Quelle
 überführt oder von dort eindeutig referenziert werden.
 
-Die noch nicht implementierte LLM-, Prompt- und Story-Workflowschicht ist im
-aktiven Zustandsvertrag ausdrücklich als aufgeschobene Umsetzung abgegrenzt.
+Die noch nicht implementierte LLM- und Story-Workflowschicht ist im aktiven
+Zustandsvertrag ausdrücklich als aufgeschobene Umsetzung abgegrenzt. Das
+versionierte Prompt-Paket und der dateibasierte Catalog sind dagegen umgesetzt
+und im Abschlussarchiv dokumentiert.
 Ihre frühere vollständige Planung ist als Abschlussarchiv unter
 [`../done/2026-08-06-spielzustand-und-persistenz.md`](../done/2026-08-06-spielzustand-und-persistenz.md)
 erhalten. Sie ist kein Ersatz für einen konkreten zukünftigen Implementierungs-

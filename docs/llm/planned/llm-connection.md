@@ -389,13 +389,13 @@ persistiert. Teilergebnisse dürfen transient gesammelt und fehlgeschlagene
 Bereiche wiederholt werden; erst das vollständige, gemeinsam geprüfte Ergebnis
 darf in den atomaren Turn-Abschluss eingehen.
 
-Welche Variante die erste Umsetzung nutzt und ob eine spätere Konfiguration
-zwischen ihnen wählen kann, bleibt offen. Diese Umsetzungsentscheidung erweitert
-den allgemeinen LLM-Vertrag nicht.
+Die erste Paketversion nutzt ausschließlich die gemeinsame Extraction. Die
+Auswahl einer späteren spezialisierten Variante bleibt offen; diese
+Umsetzungsentscheidung erweitert den allgemeinen LLM-Vertrag nicht.
 
 ## Später zu betrachten
 
-- Promptkatalog und Promptabfrage;
+- Auswahlzuordnung aus `GameConfiguration` und Promptabfrage im Story-Use-Case;
 - konkrete UI-Konfiguration für lokale und API-basierte Modelle;
 - Bildbeschreibung für Text-zu-Bild;
 - tatsächliche Szenenbilderzeugung;

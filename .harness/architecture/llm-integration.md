@@ -79,9 +79,19 @@ contract remains binding together with this scope.
 ## 5a. Story-initialization boundary
 
 - A Story-initialization request MUST distinguish system prompts, relevant
-  narrative configuration, and the initial user prompt. Because it executes
-  before canonical WorldState and StoryState values exist, it MUST NOT require
-  or fabricate either context.
+  narrative configuration, the initial user prompt, and any caller-provided
+  player-character seed. Because it executes before canonical WorldState and
+  StoryState values exist, it MUST NOT require or fabricate either context.
+- Player identity MUST be selected by the caller, never inferred or created by
+  a model. Player control MUST require exactly one player-character seed;
+  director control MUST reject a player-character seed. First- and
+  second-person narration MUST be invalid with director control.
+- Player agency MUST affect only player control. Director control MUST describe
+  user control over a scene or cast and MUST NOT be implemented as permission
+  for the model to pre-empt a player character's decisions.
+- Until those player-character and mode rules are implemented, the existing
+  transient opening operation MUST NOT be exposed as a complete supported game
+  start or persisted as one.
 - The Application layer MUST assemble the request and create a complete
   transient StoryState from successful normalized opening prose. The provider
   adapter MUST only render and transport the prepared request.
@@ -106,6 +116,43 @@ contract remains binding together with this scope.
 - Specialized partial results MAY remain transient while failed calls are
   handled, but they MUST enter the root architecture's canonical-state boundary
   only as one complete, validated turn result.
+- Supporting evidence MAY be retained on transient review proposals. Initial
+  Extraction MUST NOT be completed until canonical Fact and WorldRule values no
+  longer require or persist that evidence, and model-produced evidence MUST NOT
+  be copied into canonical state merely because a model produced it.
+
+## 6a. Initial WorldState extraction
+
+- Initial extraction MUST be a separate task-specific call after successful
+  Story initialization. Its model input MUST distinguish Extraction system
+  prompts, opening narration, response schema, language, perspective, control
+  mode, and the caller-provided player-character seed when player control is
+  active.
+- Opening narration MUST be the authoritative description of what happened.
+  The original initial user prompt, Story prompt categories such as genre or
+  tone, an existing WorldState, and an invented story history MUST NOT enter
+  the initial Extraction model request.
+- The structured model result MUST be limited to candidate entities, links,
+  and facts with local entity references. It MUST NOT contain stable IDs,
+  visibility, evidence, actor knowledge, world rules, goals, or a model-created
+  player character.
+- A model MAY return zero or more non-player characters in every supported
+  perspective. Extracted characters MUST be assigned the neutral actor role by
+  the Application. The caller-provided player character MUST be created by the
+  Application with the player role and MAY be referenced through a reserved
+  local reference, but it MUST NOT be duplicated or altered by model output.
+- The adapter MUST perform provider JSON mapping and strict structural schema
+  validation. The Application MUST resolve local references, create stable IDs,
+  reject duplicate or reserved entities, and construct one complete WorldState
+  under Domain invariants. Any model, schema, reference, or Domain failure MUST
+  return a typed error and MUST NOT expose a partial WorldState.
+- Initial extraction MUST produce empty knowledge, rules, and goals. It MUST use
+  the existing public visibility default without asking the model to classify
+  visibility. That default MUST NOT be treated as an implemented UI access
+  policy.
+- Initial extraction MUST NOT retry automatically or persist any result. The
+  initial orchestration MAY return StoryState and WorldState only after both
+  task-specific operations have succeeded.
 
 ## 7. Extensibility without a universal model service
 
@@ -129,5 +176,12 @@ contract remains binding together with this scope.
 - Extraction workflow tests MUST cover structural failure, semantic rejection,
   cross-result aggregation where used, and the absence of partial canonical
   state writes.
+- Story-initialization tests MUST cover every supported perspective/control
+  combination, required or forbidden player-character seeds, and the absence
+  of a model call after configuration rejection.
+- Initial-Extraction tests MUST cover empty candidate collections, optional
+  non-player characters in first person, reserved player references, duplicate
+  player rejection, local-reference failures, Domain rejection, and empty
+  knowledge, rules, and goals.
 - Architecture tests MUST enforce inward dependency direction for model ports,
   adapters, provider clients, and composition.

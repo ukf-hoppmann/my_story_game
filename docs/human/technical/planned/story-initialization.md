@@ -1,99 +1,249 @@
-# Geplante Story-Initialisierung
+# Story-Initialisierung und initiale WorldState-Extraction
 
-Status: Zielbild und Umsetzungsplanung. Es ist noch kein Produktcode für die
-Story-Initialisierung implementiert.
+Status: `STORY-008` erzeugt bereits einen transienten StoryState. Die
+Spielercharakter- und Modusregeln sowie `STORY-009` sind beschlossen und für
+die nächste Umsetzung geplant. Persistenz und öffentlicher Startendpunkt bleiben
+Folgearbeiten.
 
-## Ziel
+## Zielbild
 
-Ein User kann einen anfänglichen freien Prompt wie „Maren und Almas gehen in
-den Dungeon“ eingeben. Das System erzeugt daraus mit den Systemprompts und
-der GameConfiguration einen vollständigen, aber zunächst transienten
-StoryState. Zu diesem Zeitpunkt gibt es weder einen kanonischen WorldState noch
-eine bisherige Story-Chronologie.
-
-Die spätere Initial-Extraction leitet aus diesem StoryState einen WorldState
-ab. Erst wenn beide Ergebnisse erfolgreich und fachlich validiert vorliegen,
-legt ein separater Workflow einen GameRun und dessen GameState in Revision 1
-an.
-
-## Phasen und Grenzen
+Ein User startet eine Geschichte mit einer GameConfiguration, einem freien
+Initialprompt und – im Player Mode – einem selbst angelegten Charakter. Eine
+übergeordnete Application-Operation führt danach zwei getrennte Modellprozesse
+aus:
 
 ```text
-Phase 1 — jetzt geplant
-Initialprompt + Konfiguration
-    -> initiale Story-Prosa
-    -> transienter StoryState
-    -> opt-in Live-Test gibt JSON aus
-
-Phase 2 — später
-StoryState
-    -> initiale WorldState-Extraction
-    -> transienter, validierter WorldState
-
-Phase 3 — später
-StoryState + WorldState
-    -> atomare Anlage eines GameRun mit Revision 1
-
-Phase 4 — außerhalb dieses Vorhabens
-persistierter StoryState + WorldState + Spieleraktion
-    -> regulärer StoryTurn
+InitializeStory
+├── GenerateInitialStoryState
+│   └── transienter StoryState mit Eröffnungsprosa
+└── ExtractInitialWorldState
+    └── transienter, validierter WorldState
 ```
 
-Phase 1 erzeugt keinen GameRun, keinen GameState und keine Datenbankzeile.
-Sie führt keine automatische Wiederholung durch. Ein Mensch kann die im
-Live-Test ausgegebene Prosa prüfen und bei Bedarf einen neuen expliziten
-Testlauf starten.
+Erst ein späterer Workflow darf beide Ergebnisse gemeinsam als GameRun und
+GameState in Revision 1 persistieren. Der erste reguläre Spielerzug bleibt
+StoryTurn 1.
 
-## Fachliches Modell
+## Perspektive und Control Mode
 
-`StoryState` besitzt zunächst eine optionale `StoryInitialization`. Die
-neue Operation liefert bei Erfolg trotzdem immer eine vorhandene
-Initialisierung. Die Option erhält bestehende persistierte Draft-Zustände bis
-`STORY-010` Schema, Mapping und Persistenz gemeinsam auf die verpflichtende
-Invariante migriert. Sie
-enthält den ursprünglichen Initialprompt, die normalisierte Erzählung und den
-Erzeugungszeitpunkt. Sie ist kein `StoryTurn`: Der erste reguläre Spielerzug
-bleibt somit Zugnummer 1 und enthält weiterhin eine tatsächliche
-Spielereingabe.
+Die beiden Auswahlachsen haben verschiedene Aufgaben:
 
-## Spätere Gesamtorchestrierung
+- `perspective` bestimmt, wie erzählt wird.
+- `control_mode` bestimmt, was der User kontrolliert.
+- `player_agency` bestimmt nur im Player Mode, wie stark das Modell Handlungen
+  der Spielerfigur vorwegnehmen darf.
 
-`StoryInitialization` wird erst mit Phase 2 als übergeordnete Application-
-Operation eingeführt. Sie orchestriert sichtbar und testbar:
+Multiplayer ist keine Perspektive und kein Control Mode. Eine spätere
+Mehrspielerunterstützung benötigt eigene Mitgliedschafts- und
+Charakterzuordnungen.
 
-1. `GenerateInitialStoryState` erzeugt den transienten StoryState.
-2. `ExtractInitialWorldState` erhält den StoryState als fachlichen Input und
-   projiziert daraus Initialprompt und Erzählung für den Modellrequest.
-3. Der spätere Initialisierungsworkflow gibt beide Werte gemeinsam zurück.
+Für die vorhandenen Perspektiven gelten:
 
-Der Extraction-Adapter erhält keinen Domainbaum. Die Application entscheidet,
-welche vollständigen Werte aus der `StoryInitialization` für den konkreten
-Request benötigt werden.
+| Perspektive | Player Mode | Director Mode |
+|---|---|---|
+| `first_person` | erlaubt, genau ein Spielercharakter | ungültig |
+| `second_person` | erlaubt, genau ein Spielercharakter | ungültig |
+| `third_person_limited` | erlaubt, genau ein Spielercharakter | erlaubt, kein Spielercharakter |
+| `third_person_omniscient` | erlaubt, genau ein Spielercharakter | erlaubt, kein Spielercharakter |
 
-## Laufzeitverhalten
+`third_person_limited + player` bleibt ein normaler Singleplayer-Modus. Er
+bezeichnet nicht automatisch Multiplayer.
 
-Die Modell- und Generierungsparameter werden für jeden Modellaufruf aus der
-zentralen Laufzeitkonfiguration aufgelöst. Eine Änderung zwischen zwei Zügen
-gilt daher für den nächsten Aufruf, während ein bereits begonnener Aufruf seine
-zu Beginn aufgelöste Konfiguration behält.
+Der bisherige Director-Prompt beschreibt nur einen Handlungsspielraum des
+Erzählmodells und überschneidet sich damit mit `player_agency`. Die Umsetzung
+muss seine Bedeutung korrigieren:
 
-Story-Initialisierung und reguläre Story Generation verwenden zunächst die
-aktive Aufgabe `story`. Die Startkonfiguration ist `temperature = 0.5`.
-`max_output_tokens` wird nicht gesetzt; die resultierende
-`GenerationOptions.max_output_tokens` bleibt `None`.
+- `player`: Der User kontrolliert genau eine Spielerfigur.
+- `director`: Der User dirigiert die Szene oder mehrere Figuren; es gibt keine
+  dedizierte Spielerfigur.
 
-## Nicht-Ziele von Phase 1
+Im Director Mode wird `player_agency` nicht an das Modell übergeben und später
+in der UI ausgeblendet oder deaktiviert. Die GameConfiguration darf den Wert
+vorerst weiterhin vollständig speichern.
 
-- keine initiale WorldState-Extraction;
-- keine Persistenz oder HTTP-API;
-- kein regulärer Spielerzug;
-- keine automatische Qualitätsbewertung oder Wiederholung;
-- kein Streaming, keine Summary und keine Providerverwaltung.
+## Vom User angelegter Spielercharakter
 
-## Dokumentationsfolgen
+Der Spielercharakter ist ein vertrauenswürdiger Initialisierungsinput und kein
+Modellergebnis:
 
-Der autoritative Backlog in `docs/TODO.md` verfolgt die Stories und
-Abhängigkeiten. Der verbindliche LLM-Architekturvertrag enthält die neue
-Initialisierungsgrenze. Das maschinenorientierte Detaildesign und die
-Subtasks stehen in
+```text
+PlayerCharacterSeed
+├── name: erforderlich
+└── description: optional
+```
+
+Im Player Mode ist genau ein Seed erforderlich. Im Director Mode ist ein Seed
+ungültig. Eine ungültige Kombination erzeugt einen typisierten, blockierenden
+Application-Fehler, bevor ein Modell aufgerufen wird. Die spätere UI kann
+diesen Fehler als verständliche Warnung darstellen; ohne gültige Auswahl geht
+der Workflow nicht weiter.
+
+Der Seed gehört nicht in den StoryState. Die übergeordnete Operation hält ihn
+zwischen Story-Erzeugung und WorldState-Extraction und erstellt daraus im
+WorldState eine `WorldEntity` vom Typ `character` mit `ActorRole.PLAYER`.
+
+## Story-Erzeugung
+
+`GenerateInitialStoryState` bleibt ein eigener providerneutraler Prozess. Sein
+Modellrequest enthält:
+
+- Story-Initialisierungs-Systemprompts;
+- die aufgelöste GameConfiguration einschließlich Sprache und gültiger
+  Erzähloptionen;
+- den freien Initialprompt;
+- den PlayerCharacterSeed im Player Mode.
+
+Er enthält keinen WorldState und keine bisherige Story-Chronologie. Das Modell
+darf den vorgegebenen Spielercharakter erzählerisch verwenden, aber weder
+auswählen noch umbenennen.
+
+## Initiale Extraction
+
+`ExtractInitialWorldState` ist ein anderer Modellauftrag mit eigenem Port,
+Prompt und strukturiertem Ergebnis. Der Modellrequest enthält ausschließlich:
+
+- Extraction-Systemprompts;
+- die Eröffnungsprosa als Goldstandard dafür, was passiert ist;
+- das JSON-Response-Schema;
+- Sprache, Perspektive und Control Mode;
+- den PlayerCharacterSeed als bekannte Entität im Player Mode.
+
+Der ursprüngliche Initialprompt wird nicht erneut übergeben. Genre, Ton,
+Prosa-Stil und typische Fantasy-Konventionen dürfen nicht als Weltfakten oder
+Weltregeln einfließen. Es gibt noch keinen vorhandenen WorldState, mit dem das
+Modell vergleichen könnte.
+
+Das minimale Modellergebnis ist ein `WorldInitializationCandidate`:
+
+```text
+WorldInitializationCandidate
+├── entities
+│   ├── local_ref
+│   ├── kind
+│   ├── label
+│   ├── description
+│   ├── conditions
+│   └── aliases
+├── links
+│   ├── source_ref
+│   ├── target_ref
+│   ├── kind
+│   ├── quantity
+│   └── description
+└── facts
+    ├── statement
+    └── subject_ref
+```
+
+Das Modell erzeugt keine StableIds. Die Application löst lokale Referenzen auf
+und vergibt IDs erst nach erfolgreicher Strukturprüfung.
+
+## Charaktere im Extraction-Ergebnis
+
+Das Modell darf in jeder Perspektive weitere Charaktere extrahieren, muss aber
+keinen zurückgeben. Auch `entities = []` ist gültig.
+
+- Der vorgegebene Spielercharakter ist kein Extraction-Ergebnis.
+- Beziehungen und Fakten dürfen ihn über die reservierte Referenz
+  `player_character` ansprechen.
+- Eine Modell-Entität darf diese Referenz nicht selbst belegen.
+- Eine exakte Namens- oder Aliasduplikation des Spielercharakters wird
+  abgewiesen.
+- Vom Modell gelieferte Entitäten vom Typ `character` erhalten durch die
+  Application automatisch `ActorRole.NEUTRAL`.
+- Andere Entitätsarten erhalten in dieser ersten Version kein ActorProfile.
+
+Eine semantische Duplikation unter völlig anderer Bezeichnung lässt sich ohne
+weitere Modellbewertung nicht sicher ausschließen. Der Extraction-Prompt und
+der Live-Test müssen dieses verbleibende Risiko sichtbar machen.
+
+## Bewusst leere Bereiche
+
+Die initiale Extraction erzeugt:
+
+```text
+knowledge = ()
+rules = ()
+goals = ()
+```
+
+- `KnowledgeEntry.learned_at` wird erst relevant, wenn Charakterwissen
+  tatsächlich spielmechanisch ausgewertet wird.
+- Weltregeln werden nicht aus Genre, Ton oder Konventionen abgeleitet. Sie sind
+  für den jetzigen Storyfokus nicht erforderlich.
+- Goals und die vorhandenen `AddGoal`-/`UpdateGoal`-Operationen bleiben für
+  spätere Haupt- und Nebenquests vorbereitet, sind aber kein Teil des initialen
+  Schemas.
+
+## Evidenz und Sichtbarkeit
+
+Evidenz beweist nicht, dass ein extrahierter Fakt wahr ist. Ohne späteren
+Review- oder Auditprozess erzeugt ihre kanonische Persistenz Scheinsicherheit.
+Deshalb wird Evidenz aus `Fact`, `WorldRule`, API und PostgreSQL entfernt. Da
+das Projekt noch früh in der Entwicklung ist, wird dafür die Initialmigration
+direkt angepasst. Bestehende Entwicklungsdatenbanken werden neu angelegt; es
+gibt keine rückwärtskompatible Upgrade-Migration.
+
+Ein späterer Review-Workflow darf Evidenz transient an einem `ProposedChange`
+halten. Sie wird nach Annahme nicht automatisch in den WorldState kopiert.
+
+Das Modell bestimmt zunächst auch keine Sichtbarkeit. Links und Fakten erhalten
+den vorhandenen Domain-Default `public`. Dieser Wert ist ein technischer
+Default und noch keine umgesetzte UI-Zugriffsentscheidung. Vor einer
+wissensabhängigen Anzeige muss die Sichtbarkeitssemantik erneut bewertet
+werden.
+
+## Validierung und Fehler
+
+Der LM-Studio-Adapter übermittelt ein JSON-Schema und wandelt technisch gültige
+Antworten in typisierte Kandidaten um. Die Application prüft anschließend:
+
+- reservierte und doppelte lokale Referenzen;
+- alle Link- und Fact-Referenzen;
+- eine mögliche Duplikation des vorgegebenen Spielercharakters;
+- erlaubte Entitäts- und Beziehungstypen;
+- sämtliche WorldState-Domain-Invarianten.
+
+Die Übernahme ist all-or-nothing. Provider-, Parsing-, Schema-, Referenz- oder
+Domainfehler liefern einen sichtbaren typisierten Fehler. Es gibt zunächst
+keinen automatischen Retry und niemals einen partiellen WorldState.
+
+Für Extraction gilt zunächst:
+
+```text
+temperature = 0.1
+max_output_tokens = None
+```
+
+## Live-Test und Persistenzgrenze
+
+Der ausdrücklich aktivierte Live-Test verwendet einen konkreten
+PlayerCharacterSeed, führt beide Modellprozesse aus und gibt aus:
+
+- beide tatsächlich versendeten Modellrequests einschließlich Response-Schema;
+- die Modell- und Generationseinstellungen;
+- die Modellantworten;
+- den fertigen StoryState und WorldState als JSON.
+
+Der Test persistiert nichts. Standardtests bleiben offline und müssen den
+Live-Test ohne Aktivierungsflag überspringen. Die manuelle Verifikation führt
+ihn anschließend ausdrücklich mit Aktivierungsflag gegen das bereitgestellte
+LM Studio aus und verlangt einen erfolgreichen Lauf; ein bloßes Skip-Ergebnis
+ist kein Live-Nachweis.
+
+## Konkrete Umsetzungsreihenfolge
+
+1. PlayerCharacterSeed und gültige Perspective-/Control-Kombinationen in
+   STORY-008 ergänzen.
+2. Persistierte Evidenz geschlossen aus Domain, API und PostgreSQL entfernen;
+   transiente Review-Evidenz in der Application belassen.
+3. Den strukturierten Initial-Extraction-Port und den LM-Studio-JSON-Schema-
+   Adapter implementieren.
+4. Kandidaten all-or-nothing in einen transienten WorldState überführen.
+5. Beide Prozesse in `InitializeStory` orchestrieren.
+6. Deterministische Tests, expliziten Live-Test und vollständige
+   Integrationsverifikation abschließen.
+
+Die maschinenorientierten Subtasks mit Abhängigkeiten und Akzeptanzkriterien
+stehen in
 [`docs/llm/planned/story-initialization.md`](../../../llm/planned/story-initialization.md).

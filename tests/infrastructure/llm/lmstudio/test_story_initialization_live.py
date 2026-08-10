@@ -24,14 +24,29 @@ from story_game.infrastructure.llm.lmstudio import (
     LmStudioSettings,
     LmStudioStoryInitializationAdapter,
 )
+from story_game.infrastructure.llm.lmstudio.models import (
+    LmStudioChatRequest,
+    LmStudioChatResponse,
+)
+
+
+class PrintingClient:
+    """Print the exact prepared request while delegating transport to LM Studio."""
+
+    def __init__(self, client: LmStudioClient) -> None:
+        self._client = client
+
+    def complete(self, request: LmStudioChatRequest) -> LmStudioChatResponse:
+        print(json.dumps(_request_document(request), ensure_ascii=False, indent=2))
+        return self._client.complete(request)
 
 
 @pytest.mark.lmstudio_live
 def test_live_generates_and_prints_an_initial_story_state(
     request: pytest.FixtureRequest,
 ) -> None:
-    if not request.config.getoption("--run-lmstudio-live"):
-        pytest.skip("Live LM-Studio-Test nur mit --run-lmstudio-live")
+    # if not request.config.getoption("--run-lmstudio-live"):
+    #     pytest.skip("Live LM-Studio-Test nur mit --run-lmstudio-live")
 
     repository_root = Path(__file__).resolve().parents[4]
     configuration_path = repository_root / "configs" / "llm.toml"
@@ -49,7 +64,7 @@ def test_live_generates_and_prints_an_initial_story_state(
                 FilePromptPackageCatalog(repository_root / "prompts")
             ),
             TomlGenerationConfigurationResolver(configuration_path),
-            LmStudioStoryInitializationAdapter(client),
+            LmStudioStoryInitializationAdapter(PrintingClient(client)),
             lambda: datetime.now(UTC),
         )
         result = operation.apply(
@@ -90,4 +105,16 @@ def _debug_document(state: StoryState) -> dict[str, object]:
         "turn_count": len(state.turns),
         "current_turn_sequence": state.current_turn_sequence,
         "summary": None if state.summary is None else state.summary.text,
+    }
+
+
+def _request_document(request: LmStudioChatRequest) -> dict[str, object]:
+    return {
+        "model": request.model,
+        "temperature": request.temperature,
+        "max_tokens": request.max_tokens,
+        "messages": [
+            {"role": message.role, "content": message.content}
+            for message in request.messages
+        ],
     }

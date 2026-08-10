@@ -3,9 +3,9 @@ lock_version = 1
 [harness]
 source_kind = "local"
 source_path = "../Agent_Harness"
-version = "4.2.0"
-revision = "feac7b7cbcb450e0696552e78e22321c5116099f"
-rules_digest = "sha256:760db31b6c69ec195f22117b10eec3e220617fe9cc114b09c22bb80250f8c6d2"
+version = "4.2.1"
+revision = "15f0fdfd6eda779e152a2d16ad2cdab17ed2b7f0"
+rules_digest = "sha256:e73a4eb6988bfc2506fbfc9f822d2551f9b9fbc5c5dce4da37dd13039b7d1ee1"
 
 [project]
-agents_digest = "sha256:d057fc28bb2fd1222ce9939b27b53a00370db918313cdd46bb3d6eee3eddab51"
+agents_digest = "sha256:159c3ccad45b842b6713e709638267e0b1efa93043fa84ecfb7353055d5b2b7e"

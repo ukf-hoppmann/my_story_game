@@ -2,7 +2,7 @@
 # Replace the three concrete model IDs when the local LM Studio model differs.
 
 [providers.lmstudio]
-base_url = "http://localhost:1234/v1"
+base_url = "http://host.docker.internal:1234/v1"
 timeout_seconds = 60
 
 [task_models]

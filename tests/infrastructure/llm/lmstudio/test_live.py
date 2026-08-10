@@ -19,8 +19,8 @@ from .live_prompt import smoke_call
 def test_live_lmstudio_story_boundary_roundtrip(
     request: pytest.FixtureRequest,
 ) -> None:
-    if not request.config.getoption("--run-lmstudio-live"):
-        pytest.skip("Live LM-Studio-Test nur mit --run-lmstudio-live")
+    # if not request.config.getoption("--run-lmstudio-live"):
+        # pytest.skip("Live LM-Studio-Test nur mit --run-lmstudio-live")
 
     configuration_path = Path(__file__).resolve().parents[4] / "configs" / "llm.toml"
     configuration = TomlLlmConfigurationLoader().load(configuration_path)

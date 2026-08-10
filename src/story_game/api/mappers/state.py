@@ -38,6 +38,7 @@ from story_game.domain import (
     GameState,
     Goal,
     KnowledgeEntry,
+    PromptProfile,
     StableId,
     StateRevision,
     StorySequence,
@@ -118,29 +119,41 @@ def game_to_api(game: LoadedGame) -> GameDocument:
 
 def _configuration_from_api(model: GameConfigurationModel) -> GameConfiguration:
     return GameConfiguration(
-        model.language,
-        model.narration_style_id,
-        model.perspective_id,
-        model.control_mode_id,
-        tuple(model.narrative_boundaries),
-        model.story_model_id,
-        model.extraction_model_id,
-        model.summary_model_id,
-        model.prompt_package_id,
-        model.prompt_package_version,
+        language=model.language,
+        prompt_profile=PromptProfile(
+            genre=model.prompt_profile.genre,
+            tone=model.prompt_profile.tone,
+            prose_style=model.prompt_profile.prose_style,
+            perspective=model.prompt_profile.perspective,
+            pacing=model.prompt_profile.pacing,
+            control_mode=model.prompt_profile.control_mode,
+            player_agency=model.prompt_profile.player_agency,
+            consequence=model.prompt_profile.consequence,
+            challenge=model.prompt_profile.challenge,
+            content_profile=model.prompt_profile.content_profile,
+        ),
+        narrative_boundaries=tuple(model.narrative_boundaries),
+        prompt_package_id=model.prompt_package_id,
+        prompt_package_version=model.prompt_package_version,
     )
 
 
 def _configuration_to_api(value: GameConfiguration) -> GameConfigurationModel:
     return GameConfigurationModel(
         language=value.language,
-        narration_style_id=value.narration_style_id,
-        perspective_id=value.perspective_id,
-        control_mode_id=value.control_mode_id,
+        prompt_profile={
+            "genre": value.prompt_profile.genre,
+            "tone": value.prompt_profile.tone,
+            "prose_style": value.prompt_profile.prose_style,
+            "perspective": value.prompt_profile.perspective,
+            "pacing": value.prompt_profile.pacing,
+            "control_mode": value.prompt_profile.control_mode,
+            "player_agency": value.prompt_profile.player_agency,
+            "consequence": value.prompt_profile.consequence,
+            "challenge": value.prompt_profile.challenge,
+            "content_profile": value.prompt_profile.content_profile,
+        },
         narrative_boundaries=list(value.narrative_boundaries),
-        story_model_id=value.story_model_id,
-        extraction_model_id=value.extraction_model_id,
-        summary_model_id=value.summary_model_id,
         prompt_package_id=value.prompt_package_id,
         prompt_package_version=value.prompt_package_version,
     )

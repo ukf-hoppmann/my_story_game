@@ -11,7 +11,7 @@ from .changes import (
     UpdateEntity,
     UpdateGoal,
 )
-from .configuration import GameConfiguration
+from .configuration import GameConfiguration, PromptProfile
 from .errors import (
     ChangeRejectedError,
     DomainError,
@@ -76,6 +76,7 @@ __all__ = [
     "GrantKnowledge",
     "InvalidReferenceError",
     "KnowledgeEntry",
+    "PromptProfile",
     "RelationKind",
     "RemoveLink",
     "RevisionConflictError",

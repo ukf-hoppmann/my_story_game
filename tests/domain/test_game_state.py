@@ -11,18 +11,63 @@ def sid(value: str) -> domain.StableId:
 
 def configuration() -> object:
     assert hasattr(domain, "GameConfiguration"), "GameState requires configuration"
+    assert hasattr(domain, "PromptProfile"), "GameConfiguration requires a prompt profile"
     return domain.GameConfiguration(
         language="de",
-        narration_style_id="style.dark",
-        perspective_id="perspective.third-person",
-        control_mode_id="control.player",
+        prompt_profile=domain.PromptProfile(
+            genre="dark_fantasy",
+            tone="balanced",
+            prose_style="balanced",
+            perspective="third_person_limited",
+            pacing="balanced",
+            control_mode="player",
+            player_agency="strict",
+            consequence="balanced",
+            challenge="balanced",
+            content_profile="teen",
+        ),
         narrative_boundaries=("Keine sexualisierte Gewalt",),
-        story_model_id="model.story",
-        extraction_model_id="model.extraction",
-        summary_model_id="model.summary",
         prompt_package_id="story.base",
         prompt_package_version="1",
     )
+
+
+def test_prompt_profile_normalizes_its_explicit_option_ids() -> None:
+    assert hasattr(domain, "PromptProfile")
+
+    profile = domain.PromptProfile(
+        genre=" dark_fantasy ",
+        tone=" balanced ",
+        prose_style=" balanced ",
+        perspective=" third_person_limited ",
+        pacing=" balanced ",
+        control_mode=" player ",
+        player_agency=" strict ",
+        consequence=" balanced ",
+        challenge=" balanced ",
+        content_profile=" teen ",
+    )
+
+    assert profile.genre == "dark_fantasy"
+    assert profile.content_profile == "teen"
+
+
+def test_prompt_profile_rejects_an_empty_category_selection() -> None:
+    assert hasattr(domain, "PromptProfile")
+
+    with pytest.raises(domain.ValidationError):
+        domain.PromptProfile(
+            genre="dark_fantasy",
+            tone="",
+            prose_style="balanced",
+            perspective="third_person_limited",
+            pacing="balanced",
+            control_mode="player",
+            player_agency="strict",
+            consequence="balanced",
+            challenge="balanced",
+            content_profile="teen",
+        )
 
 
 def test_game_state_contains_configuration_world_and_story() -> None:

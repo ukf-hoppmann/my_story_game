@@ -25,6 +25,10 @@ Revision kopiert. Beim Laden setzt der Adapter den StoryState aus den bis zur
 gewählten Revision sichtbaren StoryTurns und den Metadaten dieser Revision
 zusammen.
 
+`game_state_configurations` speichert `language`, die zehn expliziten
+`PromptProfile`-Options-IDs, `narrative_boundaries` sowie Paket-ID und
+Paketversion. Es speichert weder allgemeine Stil-IDs noch Modellreferenzen.
+
 Es gibt bewusst keine Tabellen für laufende Workflows, Modellaufrufe,
 Rohantworten, Extraktionen, MemorySnapshots, ProposedChangeSets oder
 Validierungsergebnisse.

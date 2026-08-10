@@ -28,6 +28,7 @@ from story_game.domain import (  # noqa: E402
     Goal,
     GoalKind,
     GoalStatus,
+    PromptProfile,
     StableId,
     StateRevision,
     StorySequence,
@@ -64,16 +65,22 @@ def sid(value: str) -> StableId:
     return StableId(value)
 
 
-def configuration(style: str = "style.neutral") -> GameConfiguration:
+def configuration(tone: str = "balanced") -> GameConfiguration:
     return GameConfiguration(
         language="de",
-        narration_style_id=style,
-        perspective_id="perspective.third-person",
-        control_mode_id="control.player",
+        prompt_profile=PromptProfile(
+            genre="dark_fantasy",
+            tone=tone,
+            prose_style="balanced",
+            perspective="third_person_limited",
+            pacing="balanced",
+            control_mode="player",
+            player_agency="strict",
+            consequence="balanced",
+            challenge="balanced",
+            content_profile="teen",
+        ),
         narrative_boundaries=("Keine sexualisierte Gewalt",),
-        story_model_id="model.story",
-        extraction_model_id="model.extraction",
-        summary_model_id="model.summary",
         prompt_package_id="story.base",
         prompt_package_version="1",
     )
@@ -149,12 +156,12 @@ def test_configuration_revision_does_not_create_a_story_turn(
         store.create(run, state)
         updated = store.update_configuration(
             ConfigurationPersistenceRequest(
-                run_id, StateRevision(1), configuration("style.dark")
+                run_id, StateRevision(1), configuration("dark")
             )
         )
 
         assert updated.revision == StateRevision(2)
-        assert updated.configuration.narration_style_id == "style.dark"
+        assert updated.configuration.prompt_profile.tone == "dark"
         assert updated.story == StoryState()
         assert store.load_state(run_id, revision=StateRevision(1)) == state
         assert store.load_run(run_id).current_revision == StateRevision(2)

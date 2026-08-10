@@ -18,6 +18,13 @@ Das gemeinsame Transportdokument heißt `GameDocument` und enthält sowohl
 `GameConfiguration`, den `WorldState` einschließlich Goals und den
 `StoryState`. Fremde Felder und fachlich inkonsistente IDs werden abgewiesen.
 
+`GameConfiguration.prompt_profile` ist ein vollständiges Objekt mit zehn
+Pflichtfeldern. Die API ergänzt keine Paketdefaults. Vor dem Speichern prüft
+die Application jede Options-ID gegen `prompt_package_id` und
+`prompt_package_version`. Eine unbekannte Auswahl ergibt HTTP 422 mit
+`error = "invalid_prompt_selection"`, `category`, `option_id` und einer
+lesbaren Beschreibung, damit eine UI genau dieses Feld erneut abfragen kann.
+
 Der POST-Endpunkt legt absichtlich nur einen neuen Lauf in Revision 1 an.
 Konfigurationsrevisionen und atomare StoryTurn-Commits sind bereits als
 Application- und Persistenzoperationen vorhanden, werden aber noch nicht als
@@ -44,3 +51,6 @@ Die API wendet beim Start das PostgreSQL-Basisschema an. Bei einem lokalen
 Volume mit dem früheren Schema ist wegen der bewusst fehlenden Datenmigration
 zuerst ein manueller Datenbank-Reset erforderlich; Details stehen in
 [`persistence.md`](persistence.md).
+
+Der Paketroot ist standardmäßig `prompts` und kann für eine Laufzeitumgebung
+über `STORY_GAME_PROMPT_ROOT` gesetzt werden.

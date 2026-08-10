@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 import story_game.application.game_state as operations
 from story_game.application import Failure, Success
 from story_game.application.game_models import ConfigurationPersistenceRequest
+from story_game.application.llm import PromptCategory, PromptOption, PromptPackage
 from story_game.application.ports import (
     GameStateConflictError,
     GameStateNotFoundError,
@@ -17,6 +18,7 @@ from story_game.domain import (
     GameRunMember,
     GameRunStatus,
     GameState,
+    PromptProfile,
     StableId,
     StateRevision,
     StoryState,
@@ -28,19 +30,71 @@ def sid(value: str) -> StableId:
     return StableId(value)
 
 
-def configuration(style: str = "style.neutral") -> GameConfiguration:
+def configuration(tone: str = "balanced") -> GameConfiguration:
     return GameConfiguration(
         language="de",
-        narration_style_id=style,
-        perspective_id="perspective.third-person",
-        control_mode_id="control.player",
+        prompt_profile=PromptProfile(
+            genre="dark_fantasy",
+            tone=tone,
+            prose_style="balanced",
+            perspective="third_person_limited",
+            pacing="balanced",
+            control_mode="player",
+            player_agency="strict",
+            consequence="balanced",
+            challenge="balanced",
+            content_profile="teen",
+        ),
         narrative_boundaries=(),
-        story_model_id="model.story",
-        extraction_model_id="model.extraction",
-        summary_model_id="model.summary",
         prompt_package_id="story.base",
         prompt_package_version="1",
     )
+
+
+class PromptCatalog:
+    def __init__(self) -> None:
+        options = {
+            "genre": "dark_fantasy",
+            "tone": "balanced",
+            "prose_style": "balanced",
+            "perspective": "third_person_limited",
+            "pacing": "balanced",
+            "control_mode": "player",
+            "player_agency": "strict",
+            "consequence": "balanced",
+            "challenge": "balanced",
+            "content_profile": "teen",
+        }
+        self.package = PromptPackage(
+            id="story.base",
+            version="1",
+            tasks=(),
+            categories=tuple(
+                PromptCategory(
+                    category_id,
+                    option_id,
+                    (
+                        PromptOption(option_id, f"{category_id} instruction"),
+                        *(
+                            (PromptOption("dark", "dark tone"),)
+                            if category_id == "tone"
+                            else ()
+                        ),
+                    ),
+                )
+                for category_id, option_id in options.items()
+            ),
+            directives=(),
+        )
+
+    def load(self, package_id: str, version: str) -> PromptPackage:
+        assert (package_id, version) == ("story.base", "1")
+        return self.package
+
+
+def validator() -> object:
+    assert hasattr(operations, "PromptProfileValidator")
+    return operations.PromptProfileValidator(PromptCatalog())
 
 
 def initial() -> tuple[GameRun, GameState]:
@@ -106,7 +160,7 @@ def test_create_game_run_validates_and_writes_the_complete_initial_state() -> No
     run, state = initial()
     store = FakeStore()
 
-    result = operations.CreateGameRun(store).apply(
+    result = operations.CreateGameRun(store, validator()).apply(
         operations.CreateGameRunRequest(run, state)
     )
 
@@ -141,10 +195,10 @@ def test_configuration_revision_uses_a_dedicated_writer() -> None:
     assert hasattr(operations, "UpdateGameConfiguration")
     store = FakeStore()
     request = operations.UpdateGameConfigurationRequest(
-        sid("run-1"), StateRevision(1), configuration("style.dark")
+        sid("run-1"), StateRevision(1), configuration("dark")
     )
 
-    result = operations.UpdateGameConfiguration(store).apply(request)
+    result = operations.UpdateGameConfiguration(store, validator()).apply(request)
 
     assert isinstance(result, Success)
     assert store.configuration_request == ConfigurationPersistenceRequest(
@@ -152,6 +206,39 @@ def test_configuration_revision_uses_a_dedicated_writer() -> None:
         request.base_revision,
         request.configuration,
     )
+
+
+def test_create_game_run_rejects_an_unknown_prompt_option_before_writing() -> None:
+    assert hasattr(operations, "InvalidPromptSelection")
+    run, state = initial()
+    invalid = GameState(
+        state.run_id,
+        state.revision,
+        configuration("unknown"),
+        state.world,
+        state.story,
+    )
+    store = FakeStore()
+
+    result = operations.CreateGameRun(store, validator()).apply(
+        operations.CreateGameRunRequest(run, invalid)
+    )
+
+    assert result == Failure(operations.InvalidPromptSelection("tone", "unknown"))
+    assert store.created is None
+
+
+def test_configuration_update_rejects_an_unknown_prompt_option_before_writing() -> None:
+    assert hasattr(operations, "InvalidPromptSelection")
+    store = FakeStore()
+    request = operations.UpdateGameConfigurationRequest(
+        sid("run-1"), StateRevision(1), configuration("unknown")
+    )
+
+    result = operations.UpdateGameConfiguration(store, validator()).apply(request)
+
+    assert result == Failure(operations.InvalidPromptSelection("tone", "unknown"))
+    assert store.configuration_request is None
 
 
 def test_completed_turn_is_sent_as_one_atomic_persistence_request() -> None:

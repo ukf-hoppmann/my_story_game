@@ -22,6 +22,32 @@ class StateRejected:
 
 
 @dataclass(frozen=True, slots=True)
+class InvalidPromptSelection:
+    category: str
+    option_id: str
+
+    @property
+    def detail(self) -> str:
+        return (
+            f"Die Option {self.option_id!r} ist für die Kategorie {self.category!r} "
+            "nicht verfügbar"
+        )
+
+    def __str__(self) -> str:
+        return self.detail
+
+
+@dataclass(frozen=True, slots=True)
+class InvalidPromptPackageReference:
+    detail: str
+
+
+@dataclass(frozen=True, slots=True)
+class PromptPackageConfigurationInvalid:
+    detail: str
+
+
+@dataclass(frozen=True, slots=True)
 class StoredStateInvalid:
     detail: str
 
@@ -35,6 +61,9 @@ GameStateOperationError: TypeAlias = (
     RunNotFound
     | RunConflict
     | StateRejected
+    | InvalidPromptSelection
+    | InvalidPromptPackageReference
+    | PromptPackageConfigurationInvalid
     | StoredStateInvalid
     | StateStoreUnavailable
 )

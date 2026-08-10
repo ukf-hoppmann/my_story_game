@@ -35,10 +35,17 @@ reicht aus, um das Spiel fortzusetzen.
 
 Die `GameConfiguration` hält die für diese Partie aufgelösten Einstellungen:
 
-- Sprache, Erzählstil, Perspektive und Steuerungsmodus;
+- Sprache;
+- ein vollständiges `PromptProfile` mit Genre, Ton, Prosa-Stil, Perspektive,
+  Tempo, Steuerungsmodus, Spielerautonomie, Konsequenz, Herausforderung und
+  Inhaltsprofil;
 - erzählerische Grenzen;
-- semantische Modell-IDs für Story, Extraktion und Zusammenfassung;
 - ID und Version des verwendeten Prompt-Pakets.
+
+Die zehn lokalen Options-IDs werden vollständig je Revision gespeichert und
+vor dem Schreiben gegen das referenzierte Paket validiert. Globale aktive
+Modelle für Story, Extraction und Summary gehören dagegen zu
+`configs/llm.toml`, nicht zu einer Partie.
 
 Provider-URLs, Zugangsdaten, Rohprompts und laufende Modellaufrufe gehören
 nicht in diesen Zustand. Globale Kataloge werden später über austauschbare
@@ -85,5 +92,5 @@ Revision. Beim Abschluss eines Zugs werden World-Änderungen, StoryTurn,
 Zusammenfassung und neue Revision gemeinsam gebildet. Persistiert werden sie
 anschließend in einer Datenbanktransaktion.
 
-Prompt-Aufbau, Modellaufruf, Rohantwort, Extraktion, Vorschlag und
+Prompt-Auflösung, Modellaufruf, Rohantwort, Extraktion, Vorschlag und
 Validierungsergebnis bleiben außerhalb des persistierten Domainzustands.

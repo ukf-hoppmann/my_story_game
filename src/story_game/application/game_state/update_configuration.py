@@ -10,6 +10,7 @@ from story_game.domain import DomainError, GameConfiguration, GameState, StableI
 
 from .error_mapping import map_game_state_error
 from .errors import GameStateOperationError
+from .prompt_profile_validation import PromptProfileValidator
 from story_game.application.game_models import ConfigurationPersistenceRequest
 
 
@@ -21,12 +22,16 @@ class UpdateGameConfigurationRequest:
 
 
 class UpdateGameConfiguration:
-    def __init__(self, writer: ConfigurationRevisionWriter) -> None:
+    def __init__(self, writer: ConfigurationRevisionWriter, validator: PromptProfileValidator) -> None:
         self.writer = writer
+        self.validator = validator
 
     def apply(
         self, request: UpdateGameConfigurationRequest
     ) -> OperationResult[GameState, GameStateOperationError]:
+        validation_error = self.validator.validate(request.configuration)
+        if validation_error is not None:
+            return Failure(validation_error)
         persistence_request = ConfigurationPersistenceRequest(
             request.run_id, request.base_revision, request.configuration
         )

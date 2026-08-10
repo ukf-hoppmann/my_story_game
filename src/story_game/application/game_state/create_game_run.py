@@ -10,6 +10,7 @@ from story_game.domain import DomainError, GameRun, GameState, StateRevision, Va
 
 from .error_mapping import map_game_state_error
 from .errors import GameStateOperationError
+from .prompt_profile_validation import PromptProfileValidator
 from story_game.application.game_models import LoadedGame
 
 
@@ -20,12 +21,16 @@ class CreateGameRunRequest:
 
 
 class CreateGameRun:
-    def __init__(self, creator: GameRunCreator) -> None:
+    def __init__(self, creator: GameRunCreator, validator: PromptProfileValidator) -> None:
         self.creator = creator
+        self.validator = validator
 
     def apply(
         self, request: CreateGameRunRequest
     ) -> OperationResult[LoadedGame, GameStateOperationError]:
+        validation_error = self.validator.validate(request.state.configuration)
+        if validation_error is not None:
+            return Failure(validation_error)
         try:
             if request.run.id != request.state.run_id:
                 raise ValidationError("GameRun und GameState benötigen dieselbe Run-ID")

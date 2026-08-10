@@ -1,6 +1,6 @@
 # Entscheidung: Promptprofil und aktuelle Modellwahl
 
-Status: Beschlossen am 2026-08-10, noch nicht umgesetzt.
+Status: Auswahlsemantik umgesetzt am 2026-08-10; Story-Workflow bleibt geplant.
 
 Diese Entscheidung konkretisiert die frühere Entscheidung zu Spielzustand und
 Persistenz für `GameConfiguration` und die Entscheidung zur
@@ -101,8 +101,9 @@ Es gibt keinen stillen Ersatz und keinen automatischen Fallback.
 Gespeicherte Options-IDs sind keine ausreichenden Anweisungen für ein Modell.
 Vor dem Adapter lädt die Application das referenzierte Promptpaket und löst die
 für den jeweiligen Auftrag relevanten IDs in ihre verständlichen
-Beschreibungen auf. Sie bestimmt Reihenfolge, Bedeutung und Kontext und erzeugt
-den vollständigen, aufgabenspezifischen Request.
+Beschreibungen auf. Sie bestimmt damit Reihenfolge und Bedeutung; der spätere
+Story- oder Extraction-Workflow ergänzt seinen Kontext und erzeugt den
+vollständigen, aufgabenspezifischen Request.
 
 Story-Erzeugung verwendet:
 
@@ -196,8 +197,7 @@ Darstellung, Transport und technische Ergebnisnormalisierung.
 
 ## Folgen
 
-Die spätere Umsetzung ändert den bestehenden Domain-, API- und
-Persistenzvertrag bewusst ohne Legacy-Schicht. Aktuelle technische Dokumente
-werden erst zusammen mit dieser Umsetzung auf den neuen Ist-Zustand gebracht.
-Die vorliegende Entscheidung und die geplanten Zielbilder dürfen bis dahin
-nicht als bereits implementiertes Verhalten beschrieben werden.
+Die Umsetzung ersetzt den bestehenden Domain-, API- und Persistenzvertrag
+bewusst ohne Legacy-Schicht. Technische Dokumente beschreiben den neuen
+Ist-Zustand; Story-Orchestrierung, Summary-Promptvorbereitung und eine UI für
+Paketoptionen oder globale Modellwahl bleiben davon getrennte Folgearbeiten.

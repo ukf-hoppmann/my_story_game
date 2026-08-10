@@ -9,6 +9,9 @@ from story_game.api.results import OperationFailed
 from story_game.application.game_state import (
     RunConflict,
     RunNotFound,
+    InvalidPromptPackageReference,
+    InvalidPromptSelection,
+    PromptPackageConfigurationInvalid,
     StateRejected,
     StateStoreUnavailable,
     StoredStateInvalid,
@@ -31,6 +34,18 @@ async def _operation_failed(request: Request, exc: Exception) -> JSONResponse:
         return _error_response(409, "revision_conflict", error.detail)
     if isinstance(error, StateRejected):
         return _error_response(422, "domain_validation_failed", error.detail)
+    if isinstance(error, InvalidPromptSelection):
+        return _error_response(
+            422,
+            "invalid_prompt_selection",
+            error.detail,
+            category=error.category,
+            option_id=error.option_id,
+        )
+    if isinstance(error, InvalidPromptPackageReference):
+        return _error_response(422, "invalid_prompt_package_reference", error.detail)
+    if isinstance(error, PromptPackageConfigurationInvalid):
+        return _error_response(500, "prompt_package_configuration_invalid", error.detail)
     if isinstance(error, StoredStateInvalid):
         return _error_response(500, "persistence_consistency_failed", error.detail)
     if isinstance(error, StateStoreUnavailable):
@@ -47,12 +62,13 @@ async def _domain_error(request: Request, exc: Exception) -> JSONResponse:
 
 
 def _error_response(
-    status_code: int, error_type: str, detail: Exception | str
+    status_code: int, error_type: str, detail: Exception | str, **context: str
 ) -> JSONResponse:
     return JSONResponse(
         status_code=status_code,
         content={
             "error": error_type,
             "detail": str(detail),
+            **context,
         },
     )

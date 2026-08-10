@@ -260,7 +260,7 @@ After explicit rejection:
   - Priority: Wichtig.
   - Dependencies: `EPIC-001`.
   - Goal: Einen vollständigen, providerunabhängigen Storyzug aus Modell- und Promptkatalogen, tatsächlichen Modellaufrufen, Story-Erzeugung, WorldState-Extraktion, fachlicher Freigabe und atomarem Turn-Commit zusammensetzen.
-  - Completion criteria: Die vier zugehörigen Stories sind umgesetzt und integriert. Ein vollständiger Storyzug kann den relevanten GameState-Kontext verwenden, normalisierte Story-Prosa erzeugen, strukturierte Extraktionsvorschläge fachlich prüfen und ausschließlich einen abgeschlossenen StoryTurn mit der resultierenden GameState-Revision persistieren. Modellaufrufe, Rohantworten, ProposedChangeSets und Validierungsergebnisse bleiben transient.
+  - Completion criteria: Die sieben zugehörigen Stories sind umgesetzt und integriert. Ein vollständiger Storyzug kann zuerst aus einem Initialprompt einen StoryState und danach einen WorldState bilden, den initialen GameState atomar anlegen, den relevanten fortlaufenden GameState-Kontext verwenden, normalisierte Story-Prosa erzeugen, strukturierte Extraktionsvorschläge fachlich prüfen und ausschließlich einen abgeschlossenen StoryTurn mit der resultierenden GameState-Revision persistieren. Modellaufrufe, Rohantworten, ProposedChangeSets und Validierungsergebnisse bleiben transient.
 
 - `STORY-004` **Anbindungsverträge definieren**
   - Type: Story.
@@ -294,7 +294,7 @@ After explicit rejection:
   - Created: 2026-08-07.
   - Area: Story-Workflow.
   - Priority: Wichtig.
-  - Dependencies: `STORY-005`.
+  - Dependencies: `STORY-005`, `STORY-010`.
   - Goal: Aus GameConfiguration, relevantem WorldState, StoryState und aktuellem Spielerprompt eine fachlich definierte Story-Generation-Anfrage zusammensetzen und daraus normalisierte Story-Prosa erzeugen.
   - Completion criteria: Der Workflow wählt und strukturiert den Kontext in der Application, ruft den Story-Port auf und liefert bei Erfolg nichtleere, valide Prosa. Adapter wählen keine Spieldaten aus und verändern keinen kanonischen GameState. Provider-, Timeout-, Leer- und Fehlerszenarien sind über beobachtbares Workflowverhalten getestet.
 
@@ -309,3 +309,39 @@ After explicit rejection:
   - Dependencies: `STORY-006`, `STORY-001`, `STORY-002`.
   - Goal: Aus der erzeugten Story-Prosa strukturierte WorldState-Änderungskandidaten extrahieren, fachlich validieren und gemeinsam mit dem abgeschlossenen StoryTurn atomar übernehmen.
   - Completion criteria: Technisch valide Extraktionsdaten werden in typisierte, noch nicht freigegebene Kandidaten überführt. Referenzen, Domain-Invarianten, Revisionen und fachliche Plausibilität werden geprüft; unbestätigte oder teilweise fehlerhafte Ergebnisse schreiben keinen kanonischen Zustand. Nur ein vollständiger, freigegebener Turn persistiert den StoryTurn und die resultierende GameState-Revision gemeinsam.
+
+- `STORY-008` **Initialen StoryState erzeugen**
+  - Type: Story.
+  - Status: Open.
+  - Parent: `EPIC-002`.
+  - Required for parent: Yes.
+  - Created: 2026-08-10.
+  - Area: Story-Initialisierung.
+  - Priority: Wichtig.
+  - Dependencies: `STORY-005`.
+  - Goal: Aus GameConfiguration und einem anfänglichen freien Userprompt eine normalisierte Eröffnungsprosa und daraus einen vollständigen transienten StoryState erzeugen, bevor ein WorldState existiert.
+  - Completion criteria: `StoryInitialization` trennt Initialprompt von regulären Spielerzügen; ein eigener typisierter Modellport erhält keine WorldState- oder StoryState-Eingabe; die Application liefert einen vollständigen StoryState ohne Turns und ohne Persistenz; ein explizit aktivierter LM-Studio-Live-Test prüft den StoryState und gibt ihn als JSON aus; technische Modellfehler bleiben sichtbare typed Failures.
+
+- `STORY-009` **Initialen WorldState extrahieren**
+  - Type: Story.
+  - Status: Open.
+  - Parent: `EPIC-002`.
+  - Required for parent: Yes.
+  - Created: 2026-08-10.
+  - Area: WorldState-Initialisierung.
+  - Priority: Wichtig.
+  - Dependencies: `STORY-008`, `STORY-005`.
+  - Goal: Aus dem initialen StoryState einen transienten, fachlich validierten WorldState bilden, ohne einen GameRun oder GameState teilweise zu persistieren.
+  - Completion criteria: Ein eigener Initial-Extraction-Vertrag unterscheidet Initialprompt und erzeugte Erzählung; der Adapter liefert nur strukturierten Kandidateninhalt; die Application prüft Referenzen und Domain-Invarianten und bildet einen vollständigen WorldState; Fehler erzeugen keinen kanonischen Zustand. Die spätere atomare Anlage von Revision 1 bleibt als sichtbarer Folgeschritt dokumentiert.
+
+- `STORY-010` **Initialen GameRun atomar anlegen**
+  - Type: Story.
+  - Status: Open.
+  - Parent: `EPIC-002`.
+  - Required for parent: Yes.
+  - Created: 2026-08-10.
+  - Area: Story-Initialisierung und Persistenz.
+  - Priority: Wichtig.
+  - Dependencies: `STORY-008`, `STORY-009`, `STORY-002`.
+  - Goal: Den erfolgreich erzeugten transienten StoryState und WorldState zu einem vollständigen initialen GameState zusammenführen und zusammen mit dem GameRun als Revision 1 atomar anlegen.
+  - Completion criteria: Ein sichtbarer Application-Workflow orchestriert Story- und WorldState-Initialisierung; Modell- oder Validierungsfehler hinterlassen keinen GameRun; Erfolg persistiert genau einen vollständigen GameRun mit Revision 1; Wiederholungs- und Konfliktverhalten sind getestet. Ein öffentlicher HTTP-Startendpunkt bleibt Teil von `STORY-003`.

@@ -13,6 +13,7 @@ from story_game.infrastructure.llm.lmstudio.errors import (
 from story_game.infrastructure.llm.lmstudio.models import (
     LmStudioChatMessage,
     LmStudioChatRequest,
+    LmStudioJsonSchema,
 )
 
 
@@ -22,6 +23,16 @@ def request() -> LmStudioChatRequest:
         messages=(LmStudioChatMessage("user", "Hallo"),),
         temperature=0.0,
         max_tokens=16,
+        response_format=LmStudioJsonSchema(
+            name="answer",
+            strict=True,
+            schema={
+                "type": "object",
+                "properties": {"answer": {"type": "string"}},
+                "required": ["answer"],
+                "additionalProperties": False,
+            },
+        ),
     )
 
 
@@ -54,6 +65,19 @@ def test_client_posts_openai_compatible_payload_and_parses_response() -> None:
     assert observed["url"] == "http://lmstudio.test/v1/chat/completions"
     assert observed["authorization"] == "Bearer secret"
     assert observed["payload"]["model"] == "local/story-model"  # type: ignore[index]
+    assert observed["payload"]["response_format"] == {  # type: ignore[index]
+        "type": "json_schema",
+        "json_schema": {
+            "name": "answer",
+            "strict": True,
+            "schema": {
+                "type": "object",
+                "properties": {"answer": {"type": "string"}},
+                "required": ["answer"],
+                "additionalProperties": False,
+            },
+        },
+    }
     http_client.close()
 
 

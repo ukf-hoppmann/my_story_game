@@ -105,10 +105,6 @@
         {
           "id": "dungeon-holds-sword",
           "statement": "Das magische Schwert befindet sich im alten Dungeon.",
-          "evidence": {
-            "source": "initial_setup",
-            "excerpt": "Ausgangslage der Spielpartie."
-          },
           "visibility": {
             "scope": "public"
           },
@@ -120,9 +116,6 @@
         {
           "id": "dungeon-rule",
           "statement": "Der Dungeon ist dunkel und gefährlich, aber nicht tödlich unfair.",
-          "evidence": {
-            "source": "initial_setup"
-          },
           "visibility": {
             "scope": "public"
           }

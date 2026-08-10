@@ -6,7 +6,6 @@ from story_game.api.schemas.common import (
     ActorProfileModel,
     ConditionModel,
     EntityLinkModel,
-    EvidenceModel,
     FactModel,
     GameConfigurationModel,
     GameRunMemberModel,
@@ -30,7 +29,6 @@ from story_game.domain import (
     ActorProfile,
     Condition,
     EntityLink,
-    Evidence,
     Fact,
     GameConfiguration,
     GameRun,
@@ -173,22 +171,6 @@ def _visibility_to_api(value: Visibility) -> VisibilityModel:
     )
 
 
-def _evidence_from_api(model: EvidenceModel) -> Evidence:
-    return Evidence(
-        model.source,
-        None if model.reference is None else StableId(model.reference),
-        model.excerpt,
-    )
-
-
-def _evidence_to_api(value: Evidence) -> EvidenceModel:
-    return EvidenceModel(
-        source=value.source,
-        reference=None if value.reference is None else str(value.reference),
-        excerpt=value.excerpt,
-    )
-
-
 def _world_from_api(model: WorldStateModel) -> WorldState:
     return WorldState(
         entities=tuple(
@@ -217,11 +199,12 @@ def _world_from_api(model: WorldStateModel) -> WorldState:
         ),
         facts=tuple(
             Fact(
-                StableId(item.id),
-                item.statement,
-                _evidence_from_api(item.evidence),
-                _visibility_from_api(item.visibility),
-                None if item.subject_id is None else StableId(item.subject_id),
+                id=StableId(item.id),
+                statement=item.statement,
+                visibility=_visibility_from_api(item.visibility),
+                subject_id=(
+                    None if item.subject_id is None else StableId(item.subject_id)
+                ),
             )
             for item in model.facts
         ),
@@ -238,10 +221,9 @@ def _world_from_api(model: WorldStateModel) -> WorldState:
         ),
         rules=tuple(
             WorldRule(
-                StableId(item.id),
-                item.statement,
-                _evidence_from_api(item.evidence),
-                _visibility_from_api(item.visibility),
+                id=StableId(item.id),
+                statement=item.statement,
+                visibility=_visibility_from_api(item.visibility),
             )
             for item in model.rules
         ),
@@ -294,7 +276,6 @@ def _world_to_api(world: WorldState) -> WorldStateModel:
             FactModel(
                 id=str(item.id),
                 statement=item.statement,
-                evidence=_evidence_to_api(item.evidence),
                 visibility=_visibility_to_api(item.visibility),
                 subject_id=None if item.subject_id is None else str(item.subject_id),
             )
@@ -315,7 +296,6 @@ def _world_to_api(world: WorldState) -> WorldStateModel:
             WorldRuleModel(
                 id=str(item.id),
                 statement=item.statement,
-                evidence=_evidence_to_api(item.evidence),
                 visibility=_visibility_to_api(item.visibility),
             )
             for item in world.rules

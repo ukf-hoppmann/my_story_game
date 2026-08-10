@@ -25,7 +25,6 @@ from .story import StoryInitialization, StoryState, StorySummary, StoryTurn
 from .value_objects import (
     ActorRole,
     EntityKind,
-    Evidence,
     GameRole,
     GameRunStatus,
     GoalKind,
@@ -62,7 +61,6 @@ __all__ = [
     "DomainError",
     "EntityKind",
     "EntityLink",
-    "Evidence",
     "Fact",
     "GameConfiguration",
     "GameRole",

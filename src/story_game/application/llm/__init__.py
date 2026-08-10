@@ -13,10 +13,26 @@ from .contracts import (
     StoryGenerationRequest,
     StoryInitializationRequest,
 )
-from .ports import GenerationConfigurationResolver, ModelSelectionResolver, PromptPackageCatalog, StoryGenerationPort, StoryInitializationPort
+from .initial_extraction import (
+    CandidateCondition,
+    CandidateEntity,
+    CandidateFact,
+    CandidateLink,
+    InitialWorldExtractionRequest,
+    WorldInitializationCandidate,
+)
+from .ports import (
+    GenerationConfigurationResolver,
+    InitialWorldExtractionPort,
+    ModelSelectionResolver,
+    PromptPackageCatalog,
+    StoryGenerationPort,
+    StoryInitializationPort,
+)
 from .prompt_selection import (
     ExtractionPromptSelection,
     ExtractionPromptSelectionResolver,
+    InitialExtractionPromptSelectionResolver,
     ResolvedPromptOption,
     StoryPromptSelection,
     StoryInitializationPromptResolver,
@@ -42,12 +58,19 @@ __all__ = [
     "GenerationConfiguration",
     "GenerationConfigurationResolver",
     "GenerationTask",
+    "CandidateCondition",
+    "CandidateEntity",
+    "CandidateFact",
+    "CandidateLink",
     "ExtractionPromptSelection",
     "ExtractionPromptSelectionResolver",
+    "InitialExtractionPromptSelectionResolver",
     "LLMError",
     "LLMErrorKind",
     "LLMGenerationCall",
     "InitialStoryText",
+    "InitialWorldExtractionPort",
+    "InitialWorldExtractionRequest",
     "ModelSelectionResolver",
     "ModelSelection",
     "InvalidPromptPackageError",
@@ -72,4 +95,5 @@ __all__ = [
     "StoryInitializationPromptResolver",
     "StoryPromptSelection",
     "StoryPromptSelectionResolver",
+    "WorldInitializationCandidate",
 ]

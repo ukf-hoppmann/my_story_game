@@ -67,6 +67,16 @@ class LmStudioClient:
             payload["temperature"] = request.temperature
         if request.max_tokens is not None:
             payload["max_tokens"] = request.max_tokens
+        if request.response_format is not None:
+            response_format = request.response_format
+            payload["response_format"] = {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": response_format.name,
+                    "strict": response_format.strict,
+                    "schema": response_format.schema,
+                },
+            }
 
         headers = {"Content-Type": "application/json"}
         if self._settings.api_token:

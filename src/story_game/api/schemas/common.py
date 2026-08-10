@@ -27,12 +27,6 @@ class VisibilityModel(APIModel):
     actor_id: str | None = Field(default=None, min_length=1)
 
 
-class EvidenceModel(APIModel):
-    source: str = Field(min_length=1)
-    reference: str | None = Field(default=None, min_length=1)
-    excerpt: str | None = None
-
-
 class ConditionModel(APIModel):
     name: str = Field(min_length=1)
     description: str = ""
@@ -65,7 +59,6 @@ class EntityLinkModel(APIModel):
 class FactModel(APIModel):
     id: str = Field(min_length=1)
     statement: str = Field(min_length=1)
-    evidence: EvidenceModel
     visibility: VisibilityModel
     subject_id: str | None = Field(default=None, min_length=1)
 
@@ -80,7 +73,6 @@ class KnowledgeEntryModel(APIModel):
 class WorldRuleModel(APIModel):
     id: str = Field(min_length=1)
     statement: str = Field(min_length=1)
-    evidence: EvidenceModel
     visibility: VisibilityModel
 
 

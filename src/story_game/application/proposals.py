@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 from story_game.domain.changes import StateOperation
-from story_game.domain.value_objects import Evidence, StableId, StateRevision, Visibility
+from story_game.domain.value_objects import StableId, StateRevision, Visibility
 
 
 class ProposalStatus(StrEnum):
@@ -17,12 +17,30 @@ class ProposalStatus(StrEnum):
 
 
 @dataclass(frozen=True, slots=True)
+class ProposalEvidence:
+    """Transient source context available only while reviewing a proposal."""
+
+    source: str
+    reference: StableId | None = None
+    excerpt: str | None = None
+
+    def __post_init__(self) -> None:
+        source = self.source.strip()
+        if not source:
+            raise ValueError("Vorschlagsevidenz benötigt eine Quellenangabe")
+        object.__setattr__(self, "source", source)
+        if self.excerpt is not None:
+            excerpt = self.excerpt.strip()
+            object.__setattr__(self, "excerpt", excerpt or None)
+
+
+@dataclass(frozen=True, slots=True)
 class ProposedChange:
     """One untrusted typed suggestion with its supporting evidence."""
 
     id: StableId
     operation: StateOperation
-    evidence: Evidence
+    evidence: ProposalEvidence
     visibility: Visibility
 
 

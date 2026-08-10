@@ -1,9 +1,16 @@
 # Story-Initialisierung und initiale WorldState-Extraction
 
-Status: `STORY-008` erzeugt bereits einen transienten StoryState. Die
-Spielercharakter- und Modusregeln sowie `STORY-009` sind beschlossen und für
-die nächste Umsetzung geplant. Persistenz und öffentlicher Startendpunkt bleiben
+Status: `STORY-008` und `STORY-009` sind am 2026-08-10 umgesetzt und
+verifiziert. `InitializeStory` liefert StoryState und WorldState transient als
+gemeinsames Ergebnis. Persistenz und öffentlicher Startendpunkt bleiben
 Folgearbeiten.
+
+Der echte LM-Studio-Test führt beide Aufrufe aus und druckt Eingaben,
+Rohantworten und Endzustände. Das lokale Modell erzeugt technisch nutzbare
+Candidates, verletzt in der Eröffnungsprosa aber noch sichtbar die strenge
+Player-Agency und zerlegt Prosa teilweise in zu viele Fakten. Die Application
+behält deshalb ihre strikte all-or-nothing-Prüfung; es gibt weder automatischen
+Retry noch stilles Reparieren eines ungültigen Candidates.
 
 ## Zielbild
 

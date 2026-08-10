@@ -17,6 +17,7 @@ from .contracts import (
     StoryInitializationRequest,
 )
 from .prompts import PromptPackage
+from .initial_extraction import InitialWorldExtractionRequest, WorldInitializationCandidate
 
 
 class ModelSelectionResolver(Protocol):
@@ -55,3 +56,12 @@ class StoryInitializationPort(Protocol):
         self,
         call: LLMGenerationCall[StoryInitializationRequest],
     ) -> OperationResult[InitialStoryText, LLMError]: ...
+
+
+class InitialWorldExtractionPort(Protocol):
+    """Extract a structurally valid initial WorldState candidate."""
+
+    def extract(
+        self,
+        call: LLMGenerationCall[InitialWorldExtractionRequest],
+    ) -> OperationResult[WorldInitializationCandidate, LLMError]: ...

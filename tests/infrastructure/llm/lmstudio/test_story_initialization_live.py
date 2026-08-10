@@ -6,13 +6,21 @@ from pathlib import Path
 
 import pytest
 
-from story_game.application import Success
+from story_game.application import (
+    ExtractInitialWorldState,
+    InitializeStory,
+    InitializeStoryRequest,
+    PlayerCharacterSeed,
+    Success,
+)
 from story_game.application.story_initialization import (
     GenerateInitialStoryState,
-    GenerateInitialStoryStateRequest,
 )
-from story_game.application.llm import StoryInitializationPromptResolver
-from story_game.domain import GameConfiguration, PromptProfile, StoryState
+from story_game.application.llm import (
+    InitialExtractionPromptSelectionResolver,
+    StoryInitializationPromptResolver,
+)
+from story_game.domain import GameConfiguration, PromptProfile, StoryState, WorldState
 from story_game.infrastructure.configuration import (
     LlmTask,
     TomlGenerationConfigurationResolver,
@@ -21,6 +29,7 @@ from story_game.infrastructure.configuration import (
 from story_game.infrastructure.llm import FilePromptPackageCatalog
 from story_game.infrastructure.llm.lmstudio import (
     LmStudioClient,
+    LmStudioInitialWorldExtractionAdapter,
     LmStudioSettings,
     LmStudioStoryInitializationAdapter,
 )
@@ -39,12 +48,12 @@ class PrintingClient:
         self._client = client
 
     def complete(self, request: LmStudioChatRequest) -> LmStudioChatResponse:
-        print(json.dumps(_request_document(request), ensure_ascii=False, indent=2))
+        print(json.dumps({"llm_request": _request_document(request)}, ensure_ascii=False, indent=2))
         response = self._client.complete(request)
         print(
             json.dumps(
                 {
-                    "response": response.text,
+                    "llm_response": response.text,
                     "finish_reason": response.finish_reason,
                 },
                 ensure_ascii=False,
@@ -55,7 +64,7 @@ class PrintingClient:
 
 
 @pytest.mark.lmstudio_live
-def test_live_generates_and_prints_an_initial_story_state(
+def test_live_initializes_and_prints_story_and_world_state(
     request: pytest.FixtureRequest,
 ) -> None:
     if not request.config.getoption("--run-lmstudio-live"):
@@ -67,6 +76,8 @@ def test_live_generates_and_prints_an_initial_story_state(
     provider = runtime_configuration.provider("lmstudio")
     if runtime_configuration.model_for_task(LlmTask.STORY).provider_id != "lmstudio":
         pytest.fail("Das Story-Modell muss für diesen Live-Test LM Studio verwenden")
+    if runtime_configuration.model_for_task(LlmTask.EXTRACTION).provider_id != "lmstudio":
+        pytest.fail("Das Extraction-Modell muss für diesen Live-Test LM Studio verwenden")
 
     client = LmStudioClient(
         LmStudioSettings(
@@ -75,26 +86,49 @@ def test_live_generates_and_prints_an_initial_story_state(
         )
     )
     try:
-        operation = GenerateInitialStoryState(
-            StoryInitializationPromptResolver(
-                FilePromptPackageCatalog(repository_root / "prompts")
+        catalog = FilePromptPackageCatalog(repository_root / "prompts")
+        resolver = TomlGenerationConfigurationResolver(configuration_path)
+        printing_client = PrintingClient(client)
+        operation = InitializeStory(
+            GenerateInitialStoryState(
+                StoryInitializationPromptResolver(catalog),
+                resolver,
+                LmStudioStoryInitializationAdapter(printing_client),
+                lambda: datetime.now(UTC),
             ),
-            TomlGenerationConfigurationResolver(configuration_path),
-            LmStudioStoryInitializationAdapter(PrintingClient(client)),
-            lambda: datetime.now(UTC),
+            ExtractInitialWorldState(
+                InitialExtractionPromptSelectionResolver(catalog),
+                resolver,
+                LmStudioInitialWorldExtractionAdapter(printing_client),
+            ),
         )
         result = operation.apply(
-            GenerateInitialStoryStateRequest(
+            InitializeStoryRequest(
                 configuration=_configuration(),
-                initial_prompt="Maren und Almas gehen in den Dungeon.",
+                initial_prompt=(
+                    "Maren und Alma stehen gemeinsam in einer einzigen "
+                    "verschlossenen Dungeonkammer. Noch bewegt sich niemand."
+                ),
+                player_character=PlayerCharacterSeed(
+                    "Maren", "Eine vorsichtige Kartografin."
+                ),
             )
         )
     finally:
         client.close()
 
     assert isinstance(result, Success), result
-    assert result.data.initialization is not None
-    print(json.dumps(_debug_document(result.data), ensure_ascii=False, indent=2))
+    assert result.data.story_state.initialization is not None
+    print(
+        json.dumps(
+            {
+                "story_state": _story_document(result.data.story_state),
+                "world_state": _world_document(result.data.world_state),
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
 
 
 def _configuration() -> GameConfiguration:
@@ -110,7 +144,7 @@ def _configuration() -> GameConfiguration:
     )
 
 
-def _debug_document(state: StoryState) -> dict[str, object]:
+def _story_document(state: StoryState) -> dict[str, object]:
     assert state.initialization is not None
     return {
         "initialization": {
@@ -125,7 +159,7 @@ def _debug_document(state: StoryState) -> dict[str, object]:
 
 
 def _request_document(request: LmStudioChatRequest) -> dict[str, object]:
-    return {
+    document = {
         "model": request.model,
         "temperature": request.temperature,
         "max_tokens": request.max_tokens,
@@ -133,4 +167,53 @@ def _request_document(request: LmStudioChatRequest) -> dict[str, object]:
             {"role": message.role, "content": message.content}
             for message in request.messages
         ],
+    }
+    if request.response_format is not None:
+        document["response_format"] = {
+            "type": "json_schema",
+            "json_schema": {
+                "name": request.response_format.name,
+                "strict": request.response_format.strict,
+                "schema": request.response_format.schema,
+            },
+        }
+    return document
+
+
+def _world_document(state: WorldState) -> dict[str, object]:
+    return {
+        "entities": [
+            {
+                "id": str(entity.id),
+                "kind": entity.kind.value,
+                "label": entity.label,
+                "description": entity.description,
+                "actor_role": None if entity.actor is None else entity.actor.role.value,
+                "conditions": [condition.name for condition in entity.conditions],
+                "aliases": list(entity.aliases),
+            }
+            for entity in state.entities
+        ],
+        "links": [
+            {
+                "id": str(link.id),
+                "source_id": str(link.source_id),
+                "target_id": str(link.target_id),
+                "kind": link.kind.value,
+                "quantity": link.quantity,
+                "description": link.description,
+            }
+            for link in state.links
+        ],
+        "facts": [
+            {
+                "id": str(fact.id),
+                "statement": fact.statement,
+                "subject_id": None if fact.subject_id is None else str(fact.subject_id),
+            }
+            for fact in state.facts
+        ],
+        "knowledge": [],
+        "rules": [],
+        "goals": [],
     }

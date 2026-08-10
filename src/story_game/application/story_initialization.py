@@ -7,11 +7,17 @@ from datetime import datetime
 from typing import Callable
 
 from story_game.application.contracts import Failure, OperationResult, Success
+from story_game.application.initialization_errors import (
+    StoryInitializationError,
+    StoryInitializationErrorKind,
+    StoryInitializationStage,
+    model_failure,
+)
+from story_game.application.initialization_models import PlayerCharacterSeed
+from story_game.application.initialization_policy import validate_initialization_choices
 from story_game.application.llm import (
     GenerationConfigurationResolver,
     GenerationTask,
-    LLMError,
-    LLMErrorKind,
     LLMGenerationCall,
     StoryInitializationPort,
     StoryInitializationPromptResolver,
@@ -27,6 +33,7 @@ class GenerateInitialStoryStateRequest:
 
     configuration: GameConfiguration
     initial_prompt: str
+    player_character: PlayerCharacterSeed | None = None
 
     def __post_init__(self) -> None:
         prompt = self.initial_prompt.strip()
@@ -53,14 +60,26 @@ class GenerateInitialStoryState:
     def apply(
         self,
         request: GenerateInitialStoryStateRequest,
-    ) -> OperationResult[StoryState, LLMError]:
+    ) -> OperationResult[StoryState, StoryInitializationError]:
+        invalid = validate_initialization_choices(
+            request.configuration,
+            request.player_character,
+            StoryInitializationStage.STORY_GENERATION,
+        )
+        if invalid is not None:
+            return Failure(invalid)
         try:
             selection = self._prompt_resolver.resolve(request.configuration)
             generation_configuration = self._generation_configuration_resolver.resolve(
                 GenerationTask.STORY
             )
             if isinstance(generation_configuration, Failure):
-                return generation_configuration
+                return Failure(
+                    model_failure(
+                        StoryInitializationStage.STORY_GENERATION,
+                        generation_configuration.error,
+                    )
+                )
             call = LLMGenerationCall(
                 model_selection=generation_configuration.data.model_selection,
                 generation_options=generation_configuration.data.generation_options,
@@ -68,14 +87,26 @@ class GenerateInitialStoryState:
                     system_prompts=(selection.task.text, selection.boundary_directive.text),
                     configuration=_configuration_text(selection),
                     initial_prompt=request.initial_prompt,
+                    player_character=request.player_character,
                 ),
             )
         except (KeyError, ValueError) as error:
-            return Failure(LLMError(LLMErrorKind.CONFIGURATION, str(error)))
+            return Failure(
+                StoryInitializationError(
+                    StoryInitializationErrorKind.INVALID_CONFIGURATION,
+                    StoryInitializationStage.STORY_GENERATION,
+                    str(error),
+                )
+            )
 
         generated = self._generator.generate(call)
         if isinstance(generated, Failure):
-            return generated
+            return Failure(
+                model_failure(
+                    StoryInitializationStage.STORY_GENERATION,
+                    generated.error,
+                )
+            )
 
         initialization = StoryInitialization(
             prompt=request.initial_prompt,

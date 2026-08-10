@@ -129,24 +129,6 @@ class Visibility:
         return cls(VisibilityScope.DIRECTOR_ONLY)
 
 
-@dataclass(frozen=True, slots=True)
-class Evidence:
-    """Trace explaining which accepted source supports a canonical fact/change."""
-
-    source: str
-    reference: StableId | None = None
-    excerpt: str | None = None
-
-    def __post_init__(self) -> None:
-        source = self.source.strip()
-        if not source:
-            raise ValidationError("Evidenz benötigt eine Quellenangabe")
-        object.__setattr__(self, "source", source)
-        if self.excerpt is not None:
-            excerpt = self.excerpt.strip()
-            object.__setattr__(self, "excerpt", excerpt or None)
-
-
 class GameRunStatus(StrEnum):
     """Lifecycle of one playable game run."""
 

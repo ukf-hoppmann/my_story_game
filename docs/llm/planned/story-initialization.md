@@ -1,9 +1,29 @@
 # Story-Initialisierung: Vertrag und konkreter Umsetzungsplan
 
-Status: `GenerateInitialStoryState` ist ohne Spielercharakter- und Modusregeln
-implementiert. Die folgende Planung erweitert STORY-008 um diese Regeln und
-setzt anschließend STORY-009 als initiale WorldState-Extraction um. Persistenz,
-HTTP-API und der erste reguläre Spielzug bleiben außerhalb dieses Increments.
+Status: `STORY-008`, `STORY-009` und `TASK-007` bis `TASK-012` sind am
+2026-08-10 umgesetzt und verifiziert. Der vollständige Workflow liefert
+transient StoryState und WorldState. Persistenz, HTTP-API und der erste reguläre
+Spielzug bleiben außerhalb dieses Increments.
+
+## Umsetzungsergebnis
+
+- `InitializeStory` orchestriert `GenerateInitialStoryState` und
+  `ExtractInitialWorldState` in dieser Reihenfolge und liefert nur bei komplettem
+  Erfolg ein `InitializedStory`.
+- Der Initial-Extraction-Port, das geschlossene Candidate-Schema und der
+  LM-Studio-Structured-Output-Adapter sind implementiert. Der Initialprompt und
+  Storyprofilwerte wie Genre oder Ton gelangen nicht in den zweiten Aufruf.
+- Der PlayerCharacterSeed wird ausschließlich von der Application zur
+  PLAYER-Entität; Modellcharaktere werden neutral. Lokale Referenzen und alle
+  Domain-Invarianten werden all-or-nothing geprüft.
+- Kanonische Evidenz wurde aus Domain, API und initialem PostgreSQL-Schema
+  entfernt. `ProposalEvidence` bleibt transient. Bestehende Entwicklungs-
+  datenbanken werden nicht automatisch verändert und müssen bewusst neu
+  angelegt werden.
+- Das lokale Modell benötigt sehr konkrete Spieler- und Beziehungsinstruktionen.
+  Der erfolgreiche Livetest zeigt weiterhin qualitative Schwächen bei
+  Player-Agency und zu kleinteiligen Fakten; diese werden nicht durch einen
+  Retry oder stilles Filtern verdeckt.
 
 ## Verbindliche Entscheidungen
 

@@ -297,11 +297,12 @@ allgemeine Vertrag lediglich die Existenz von `generation_options` festlegt.
 
 ## Extraction
 
-Status: Der allgemeine Ein- und Ausgabevertrag ist bestätigt; fachliche
-Extraction-Details und konkrete Schnittstellentypen bleiben zu klären.
+Status: Der allgemeine Vertrag und der eigene Initial-Extraction-Vertrag sind
+umgesetzt; die Extraction nach regulären Spielzügen bleibt Folgearbeit.
 
-Das Paket verwendet für Extraction ausschließlich den Task
-`worldstate_extraction` und die Option `extraction.combined`. Die zehn
+Die initiale Extraction verwendet `worldstate_initialization`, eine spätere
+Turn-Extraction `worldstate_extraction`; beide verwenden ausschließlich die
+Option `extraction.combined`. Die zehn
 Story-Kategorien des Promptprofils werden nicht in den Extraction-Prompt
 übernommen. Umgekehrt ist `extraction.combined` kein Feld des gespeicherten
 Story-Promptprofils.

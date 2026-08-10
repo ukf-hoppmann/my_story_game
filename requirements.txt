@@ -1,0 +1,7 @@
+# Derived from pyproject.toml; keep this installation manifest in sync with
+# [project.dependencies] and [project.optional-dependencies.test].
+fastapi>=0.115,<1
+httpx>=0.27,<1
+psycopg[binary]>=3.2,<4
+uvicorn[standard]>=0.30,<1
+pytest>=8,<9

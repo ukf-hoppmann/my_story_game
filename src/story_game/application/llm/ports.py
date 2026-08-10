@@ -12,12 +12,19 @@ from .contracts import (
     StoryGenerationData,
     StoryGenerationRequest,
 )
+from .prompts import PromptPackage
 
 
 class ModelSelectionResolver(Protocol):
     """Resolve a persisted logical model reference for one invocation."""
 
     def resolve(self, logical_model_id: str) -> ModelSelection: ...
+
+
+class PromptPackageCatalog(Protocol):
+    """Load a validated prompt package without exposing its storage medium."""
+
+    def load(self, package_id: str, version: str) -> PromptPackage: ...
 
 
 class StoryGenerationPort(Protocol):

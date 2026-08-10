@@ -9,7 +9,21 @@ from .contracts import (
     StoryGenerationData,
     StoryGenerationRequest,
 )
-from .ports import ModelSelectionResolver, StoryGenerationPort
+from .ports import ModelSelectionResolver, PromptPackageCatalog, StoryGenerationPort
+from .prompts import (
+    InvalidPromptPackageError,
+    PromptCategory,
+    PromptCategoryNotFoundError,
+    PromptDirective,
+    PromptDirectiveNotFoundError,
+    PromptOption,
+    PromptOptionNotFoundError,
+    PromptPackage,
+    PromptPackageError,
+    PromptPackageNotFoundError,
+    PromptTask,
+    PromptTaskNotFoundError,
+)
 
 __all__ = [
     "GenerationOptions",
@@ -18,6 +32,19 @@ __all__ = [
     "LLMGenerationCall",
     "ModelSelectionResolver",
     "ModelSelection",
+    "InvalidPromptPackageError",
+    "PromptCategory",
+    "PromptCategoryNotFoundError",
+    "PromptDirective",
+    "PromptDirectiveNotFoundError",
+    "PromptOption",
+    "PromptOptionNotFoundError",
+    "PromptPackage",
+    "PromptPackageCatalog",
+    "PromptPackageError",
+    "PromptPackageNotFoundError",
+    "PromptTask",
+    "PromptTaskNotFoundError",
     "StoryGenerationData",
     "StoryGenerationPort",
     "StoryGenerationRequest",

@@ -1,0 +1,223 @@
+[package]
+id = "story.base"
+version = "1"
+
+[[tasks]]
+id = "story_generation"
+text = """
+Erzeuge den nächsten zusammenhängenden Storyabschnitt aus den vom Spiel
+bereitgestellten Informationen. Beschreibe nur nachvollziehbare Ereignisse,
+Reaktionen und Wahrnehmungen, wahre die bekannten Weltfakten und lasse die
+Handlung auf die aktuelle Eingabe des Spielers reagieren. Lege keine
+Spielerentscheidung fest, wenn der gewählte Steuerungs- oder Agency-Modus sie
+dem Spieler überlässt. Behandle die Inhaltsgrenze als Mindestschutz und die
+erzählerischen Direktiven als verbindlich.
+"""
+
+[[tasks]]
+id = "worldstate_extraction"
+text = """
+Prüfe den erzeugten Storytext gegen den bereitgestellten aktuellen WorldState
+und formuliere ausschließlich unbestätigte Vorschläge für beobachtbare
+Änderungen. Kennzeichne Unsicherheit und Belege, erfinde keine nicht belegten
+Fakten und schreibe niemals kanonischen Zustand. Ein Vorschlag darf nicht als
+bereits geprüft, übernommen oder aktualisiert bezeichnet werden. Verwende die
+gemeinsame Extraction und liefere keine spezialisierten Teilvarianten.
+"""
+
+[[categories]]
+id = "genre"
+default = "dark_fantasy"
+
+[[categories.options]]
+id = "dark_fantasy"
+description = "Bedrohliche Fantasy mit moralischen Grauzonen, alten Mächten und spürbaren Risiken."
+
+[[categories.options]]
+id = "fantasy"
+description = "Abenteuerliche Fantasy mit Magie, eigenen Kulturen und nachvollziehbaren Wundern."
+
+[[categories.options]]
+id = "science_fiction"
+description = "Zukunftsorientierte Spekulation mit Technik, Raumfahrt oder fremden Welten."
+
+[[categories.options]]
+id = "mystery"
+description = "Rätselhafte Handlung, in der Hinweise aufgebaut und Erkenntnisse schrittweise gewonnen werden."
+
+[[categories.options]]
+id = "steam_punk"
+description = "Alternativhistorische Welt mit dampfbetriebener Technik, Erfindungen und gesellschaftlichen Spannungen."
+
+[[categories]]
+id = "tone"
+default = "balanced"
+
+[[categories.options]]
+id = "balanced"
+description = "Ausgewogene Stimmung, die Spannung und Leichtigkeit passend zur Szene verbindet."
+
+[[categories.options]]
+id = "dark"
+description = "Schwere, unheilvolle Stimmung mit ernst genommenen Gefahren und Verlusten."
+
+[[categories.options]]
+id = "hopeful"
+description = "Zuversichtliche Stimmung, in der selbst unter Druck erreichbare Hoffnung sichtbar bleibt."
+
+[[categories.options]]
+id = "comedic"
+description = "Leichte, humorvolle Stimmung, ohne Gefahr, Figuren oder ernste Folgen vollständig zu entwerten."
+
+[[categories.options]]
+id = "serious"
+description = "Ernste, konzentrierte Stimmung mit wenig Ablenkung und nachvollziehbaren Konsequenzen."
+
+[[categories]]
+id = "prose_style"
+default = "balanced"
+
+[[categories.options]]
+id = "balanced"
+description = "Klarer Wechsel aus Handlung, Atmosphäre und Dialog mit angemessener Detailtiefe."
+
+[[categories.options]]
+id = "concise"
+description = "Knappes Erzählen, das den nächsten relevanten Moment ohne unnötige Ausschmückung erreicht."
+
+[[categories.options]]
+id = "descriptive"
+description = "Anschauliche Sinneseindrücke und präzise Umgebungsschilderung, ohne den Fortgang zu verlieren."
+
+[[categories.options]]
+id = "dialogue_driven"
+description = "Dialoge tragen den Abschnitt, während Gestik und Umgebung nur die Verständlichkeit stützen."
+
+[[categories]]
+id = "perspective"
+default = "third_person_limited"
+
+[[categories.options]]
+id = "third_person_limited"
+description = "Erzähle in der dritten Person und gib nur Wahrnehmungen und Wissen der fokussierten Figur frei."
+
+[[categories.options]]
+id = "first_person"
+description = "Erzähle aus der Ich-Perspektive und beschränke Wissen und Wahrnehmung auf die erzählende Figur."
+
+[[categories.options]]
+id = "second_person"
+description = "Sprich die Spielfigur direkt an und beschreibe ihre Wahrnehmung, ohne ihre Entscheidungen vorwegzunehmen."
+
+[[categories.options]]
+id = "third_person_omniscient"
+description = "Erzähle in der dritten Person mit übergreifendem Wissen, ohne unbelegte Informationen zu behaupten."
+
+[[categories]]
+id = "pacing"
+default = "balanced"
+
+[[categories.options]]
+id = "balanced"
+description = "Wechsle zwischen ruhigen Entscheidungsmomenten und Bewegung, sodass die Szene verständlich vorankommt."
+
+[[categories.options]]
+id = "slow"
+description = "Lass Beobachtung, Atmosphäre und Entscheidungen mehr Raum, bevor ein neuer Schritt erfolgt."
+
+[[categories.options]]
+id = "fast"
+description = "Führe zügig durch Handlung und Reaktion und halte nur entscheidende Details fest."
+
+[[categories]]
+id = "control_mode"
+default = "player"
+
+[[categories.options]]
+id = "player"
+description = "Der Spieler bestimmt die Handlungen seiner Figur; der Text endet offen genug für eine Antwort."
+
+[[categories.options]]
+id = "director"
+description = "Der Erzähler darf einen kurzen Handlungsimpuls vorgeben, aber keine wichtigen Spielerentscheidungen entziehen."
+
+[[categories]]
+id = "player_agency"
+default = "strict"
+
+[[categories.options]]
+id = "strict"
+description = "Lege weder Gedanken noch Absichten oder Handlungen der Spielerfigur ohne ausdrückliche Eingabe fest."
+
+[[categories.options]]
+id = "guided"
+description = "Biete erkennbare Handlungsmöglichkeiten an, ohne eine davon als bereits gewählt zu schreiben."
+
+[[categories.options]]
+id = "cinematic"
+description = "Erzähle kurze verbindende Bewegungen für die Spielerfigur, halte aber wesentliche Entscheidungen offen."
+
+[[categories]]
+id = "consequence"
+default = "balanced"
+
+[[categories.options]]
+id = "balanced"
+description = "Lass Handlungen angemessene Folgen haben und gib Gelegenheit, aus Rückschlägen weiterzuspielen."
+
+[[categories.options]]
+id = "forgiving"
+description = "Halte Fehler korrigierbar und biete nachvollziehbare Auswege an, ohne Folgen vollständig zu vermeiden."
+
+[[categories.options]]
+id = "harsh"
+description = "Lass riskante Entscheidungen spürbare und dauerhafte Folgen haben, ohne willkürliche Bestrafung."
+
+[[categories]]
+id = "challenge"
+default = "balanced"
+
+[[categories.options]]
+id = "balanced"
+description = "Verbinde verständliche Hindernisse mit mehreren plausiblen Wegen, sie zu bewältigen."
+
+[[categories.options]]
+id = "narrative"
+description = "Gewichte Figurenentwicklung und erzählerische Entscheidungen stärker als taktische Schwierigkeit."
+
+[[categories.options]]
+id = "demanding"
+description = "Verlange Aufmerksamkeit und überlegte Entscheidungen, stelle aber keine unlösbaren oder versteckten Anforderungen."
+
+[[categories]]
+id = "extraction"
+default = "combined"
+
+[[categories.options]]
+id = "combined"
+description = "Prüfe alle relevanten WorldState-Bereiche gemeinsam in einem unbestätigten Vorschlagsresultat."
+
+[[categories]]
+id = "content_profile"
+default = "teen"
+
+[[categories.options]]
+id = "family"
+description = "Keine Sexualität oder Erotik, keine drastische Gewalt und nur moderate Bedrohung."
+
+[[categories.options]]
+id = "teen"
+description = "Zurückhaltende Romantik und nicht explizite Gewalt sind möglich; Tod und düstere Themen bleiben möglich, aber explizite Sexualität, sexualisierte Gewalt, grafische Verletzungen und ausgespielte Folter sind ausgeschlossen."
+
+[[categories.options]]
+id = "mature"
+description = "Erwachsene Themen und stärkere Darstellung sind möglich, ohne maximale Intensität oder Explizitheit zu verlangen."
+
+[[directives]]
+id = "narrative_boundaries"
+selectable = false
+text = """
+Behandle jede vom Spiel gesetzte narrative Grenze als zusätzliche verbindliche
+Schranke. Eine solche Grenze darf das gewählte Content Profile verschärfen,
+aber niemals lockern oder eine ausgeschlossene Darstellung erlauben.
+"""

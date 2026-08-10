@@ -49,14 +49,7 @@ class StoryPromptSelectionResolver:
             configuration.prompt_package_id,
             configuration.prompt_package_version,
         )
-        options = tuple(
-            _resolved_option(
-                category_id,
-                option_id,
-                package.category(category_id).option(option_id),
-            )
-            for category_id, option_id in configuration.prompt_profile.selections()
-        )
+        options = _resolved_story_options(configuration, package)
         return StoryPromptSelection(
             task=package.task("story_generation"),
             options=options,
@@ -77,14 +70,7 @@ class StoryInitializationPromptResolver:
             configuration.prompt_package_id,
             configuration.prompt_package_version,
         )
-        options = tuple(
-            _resolved_option(
-                category_id,
-                option_id,
-                package.category(category_id).option(option_id),
-            )
-            for category_id, option_id in configuration.prompt_profile.selections()
-        )
+        options = _resolved_story_options(configuration, package)
         return StoryPromptSelection(
             task=package.task("story_initialization"),
             options=options,
@@ -109,15 +95,48 @@ class ExtractionPromptSelectionResolver:
         )
 
 
+class InitialExtractionPromptSelectionResolver:
+    """Resolve the extraction instructions used only for an opening narration."""
+
+    def __init__(self, catalog: PromptPackageCatalog) -> None:
+        self.catalog = catalog
+
+    def resolve(self, package_id: str, package_version: str) -> ExtractionPromptSelection:
+        package = self.catalog.load(package_id, package_version)
+        option = package.category("extraction").option("combined")
+        return ExtractionPromptSelection(
+            task=package.task("worldstate_initialization"),
+            option=_resolved_option("extraction", "combined", option),
+        )
+
+
 def _resolved_option(
     category_id: str, option_id: str, option: PromptOption
 ) -> ResolvedPromptOption:
     return ResolvedPromptOption(category_id, option_id, option.description)
 
 
+def _resolved_story_options(
+    configuration: GameConfiguration,
+    package,
+) -> tuple[ResolvedPromptOption, ...]:
+    resolved = tuple(
+        _resolved_option(
+            category_id,
+            option_id,
+            package.category(category_id).option(option_id),
+        )
+        for category_id, option_id in configuration.prompt_profile.selections()
+    )
+    if configuration.prompt_profile.control_mode == "director":
+        return tuple(item for item in resolved if item.category_id != "player_agency")
+    return resolved
+
+
 __all__ = [
     "ExtractionPromptSelection",
     "ExtractionPromptSelectionResolver",
+    "InitialExtractionPromptSelectionResolver",
     "ResolvedPromptOption",
     "StoryPromptSelection",
     "StoryInitializationPromptResolver",

@@ -14,3 +14,4 @@ def test_openapi_describes_complete_game_documents(
     assert schema["paths"]["/api/v1/runs/{run_id}/state"]["get"]
     assert "/api/v1/runs/{run_id}/commits" not in schema["paths"]
     assert "GameDocument" in schema["components"]["schemas"]
+    assert "EvidenceModel" not in schema["components"]["schemas"]

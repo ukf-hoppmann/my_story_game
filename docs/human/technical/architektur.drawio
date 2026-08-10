@@ -209,7 +209,7 @@
         <mxCell id="domainDetailLinks" value="&lt;b&gt;EntityLinks&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;located_in · possesses&lt;br&gt;contains · knows · related&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8E8;strokeColor=#D7A65C;strokeWidth=1;fontColor=#26364D;fontSize=13;align=left;verticalAlign=middle;spacingLeft=12;" vertex="1" parent="domainDetailWorld">
           <mxGeometry x="320" y="62" width="290" height="74" as="geometry" />
         </mxCell>
-        <mxCell id="domainDetailFacts" value="&lt;b&gt;Facts &amp;amp; Evidence&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;bestätigte Aussagen&lt;br&gt;mit Sichtbarkeit&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8E8;strokeColor=#D7A65C;strokeWidth=1;fontColor=#26364D;fontSize=13;align=left;verticalAlign=middle;spacingLeft=12;" vertex="1" parent="domainDetailWorld">
+        <mxCell id="domainDetailFacts" value="&lt;b&gt;Facts&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;bestätigte Aussagen&lt;br&gt;mit Sichtbarkeit&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8E8;strokeColor=#D7A65C;strokeWidth=1;fontColor=#26364D;fontSize=13;align=left;verticalAlign=middle;spacingLeft=12;" vertex="1" parent="domainDetailWorld">
           <mxGeometry x="22" y="162" width="270" height="74" as="geometry" />
         </mxCell>
         <mxCell id="domainDetailKnowledge" value="&lt;b&gt;Knowledge&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;Akteur kennt Fakt&lt;br&gt;ab Sequenz / optional vergessen&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;;html=1;fillColor=#FFF8E8;strokeColor=#D7A65C;strokeWidth=1;fontColor=#26364D;fontSize=13;align=left;verticalAlign=middle;spacingLeft=12;" vertex="1" parent="domainDetailWorld">
@@ -381,7 +381,7 @@
         <mxCell id="llmTitle" value="LLM-Ablauf – Story-Zug" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=28;fontStyle=1;fontColor=#26364D;" vertex="1" parent="llmDetail1">
           <mxGeometry x="60" y="30" width="850" height="45" as="geometry" />
         </mxCell>
-        <mxCell id="llmStatus" value="&lt;b&gt;Geplant · noch nicht implementiert&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;font-weight:normal&quot;&gt;Die Grenze ist entschieden; konkrete Klassen, Providerdetails und Extraction-Variante folgen später.&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8E8;strokeColor=#D7A65C;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="llmDetail1">
+        <mxCell id="llmStatus" value="&lt;b&gt;Grundarchitektur umgesetzt&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;font-weight:normal&quot;&gt;Provider und Story-Start funktionieren; der reguläre Story-Zug mit Turn-Extraction folgt später.&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8E8;strokeColor=#D7A65C;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="llmDetail1">
           <mxGeometry x="980" y="30" width="540" height="58" as="geometry" />
         </mxCell>
 
@@ -509,7 +509,7 @@
         <mxCell id="llmArchitectureSubtitle" value="Statische Abhängigkeiten: Application-Ports bleiben stabil, Provider und Modelltechnik sind austauschbar." style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=14;fontColor=#52647D;" vertex="1" parent="llmArchitecture1">
           <mxGeometry x="62" y="75" width="1050" height="28" as="geometry" />
         </mxCell>
-        <mxCell id="llmArchitectureStatus" value="&lt;b&gt;Architekturzielbild&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;font-weight:normal&quot;&gt;noch nicht implementiert&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8E8;strokeColor=#D7A65C;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="llmArchitecture1">
+        <mxCell id="llmArchitectureStatus" value="&lt;b&gt;Architektur umgesetzt&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;font-weight:normal&quot;&gt;weitere Workflows folgen&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8E8;strokeColor=#D7A65C;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="llmArchitecture1">
           <mxGeometry x="1260" y="32" width="240" height="58" as="geometry" />
         </mxCell>
 

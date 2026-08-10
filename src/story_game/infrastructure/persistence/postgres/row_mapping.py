@@ -13,7 +13,6 @@ from story_game.domain import (
     Condition,
     EntityKind,
     EntityLink,
-    Evidence,
     Fact,
     GameConfiguration,
     Goal,
@@ -93,26 +92,6 @@ def visibility_from_row(row: Mapping[str, Any]) -> Visibility:
     return Visibility(
         VisibilityScope(_text(row, "visibility_scope")),
         None if actor_id is None else StableId(str(actor_id)),
-    )
-
-
-def evidence_values(evidence: Evidence) -> dict[str, str | None]:
-    return {
-        "evidence_source": evidence.source,
-        "evidence_reference": (
-            None if evidence.reference is None else str(evidence.reference)
-        ),
-        "evidence_excerpt": evidence.excerpt,
-    }
-
-
-def evidence_from_row(row: Mapping[str, Any]) -> Evidence:
-    reference = row.get("evidence_reference")
-    excerpt = row.get("evidence_excerpt")
-    return Evidence(
-        _text(row, "evidence_source"),
-        None if reference is None else StableId(str(reference)),
-        None if excerpt is None else str(excerpt),
     )
 
 
@@ -200,7 +179,6 @@ def fact_values(
         "fact_id": str(fact.id),
         "statement": fact.statement,
         "subject_id": None if fact.subject_id is None else str(fact.subject_id),
-        **evidence_values(fact.evidence),
         **visibility_values(fact.visibility),
     }
 
@@ -208,11 +186,10 @@ def fact_values(
 def fact_from_row(row: Mapping[str, Any]) -> Fact:
     subject_id = row.get("subject_id")
     return Fact(
-        StableId(_text(row, "fact_id")),
-        _text(row, "statement"),
-        evidence_from_row(row),
-        visibility_from_row(row),
-        None if subject_id is None else StableId(str(subject_id)),
+        id=StableId(_text(row, "fact_id")),
+        statement=_text(row, "statement"),
+        visibility=visibility_from_row(row),
+        subject_id=None if subject_id is None else StableId(str(subject_id)),
     )
 
 
@@ -249,17 +226,15 @@ def rule_values(
         "position": position,
         "rule_id": str(rule.id),
         "statement": rule.statement,
-        **evidence_values(rule.evidence),
         **visibility_values(rule.visibility),
     }
 
 
 def rule_from_row(row: Mapping[str, Any]) -> WorldRule:
     return WorldRule(
-        StableId(_text(row, "rule_id")),
-        _text(row, "statement"),
-        evidence_from_row(row),
-        visibility_from_row(row),
+        id=StableId(_text(row, "rule_id")),
+        statement=_text(row, "statement"),
+        visibility=visibility_from_row(row),
     )
 
 

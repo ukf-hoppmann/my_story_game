@@ -8,7 +8,6 @@ from .errors import InvalidReferenceError, ValidationError
 from .value_objects import (
     ActorRole,
     EntityKind,
-    Evidence,
     GoalKind,
     GoalStatus,
     RelationKind,
@@ -114,7 +113,6 @@ class Fact:
 
     id: StableId
     statement: str
-    evidence: Evidence
     visibility: Visibility = field(default_factory=Visibility.public)
     subject_id: StableId | None = None
 
@@ -146,7 +144,6 @@ class WorldRule:
 
     id: StableId
     statement: str
-    evidence: Evidence
     visibility: Visibility = field(default_factory=Visibility.public)
 
     def __post_init__(self) -> None:

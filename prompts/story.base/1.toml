@@ -10,7 +10,8 @@ bereitgestellten erzählerischen Vorgaben. Etabliere nur nachvollziehbare
 Figuren, Orte und Situationen, ohne eine spätere Spielerentscheidung
 vorwegzunehmen. Es gibt noch keine frühere Story und keinen kanonischen
 WorldState. Behandle die Inhaltsgrenze und erzählerischen Direktiven als
-verbindlich.
+verbindlich. Wenn ein Spielercharakter bereitgestellt wurde, übernimm dessen
+Identität unverändert und erfinde keinen Ersatz.
 """
 
 [[tasks]]
@@ -23,6 +24,46 @@ Handlung auf die aktuelle Eingabe des Spielers reagieren. Lege keine
 Spielerentscheidung fest, wenn der gewählte Steuerungs- oder Agency-Modus sie
 dem Spieler überlässt. Behandle die Inhaltsgrenze als Mindestschutz und die
 erzählerischen Direktiven als verbindlich.
+"""
+
+[[tasks]]
+id = "worldstate_initialization"
+text = """
+Extrahiere ausschließlich aus der Eröffnungsprosa die dort tatsächlich
+etablierten Entitäten, Beziehungen und Fakten. Die Erzählung ist der
+Goldstandard. Erfinde keine Angaben aus Genre, Ton, Erzählkonventionen oder
+typischer Fantasy-Logik.
+
+Der bekannte Spielercharakter wird ausschließlich von der Application
+angelegt. Gib ihn niemals in entities zurück, auch nicht unter seinem Namen,
+seiner Rolle oder einem Alias. Jede Referenz auf ihn in links und facts muss
+exakt player_character lauten. local_ref, source_ref, target_ref und subject_ref
+sind jeweils genau eine einzelne Referenz; kombiniere nie mehrere Namen in
+einem Feld. Verwende bei Charakteren ihren Eigennamen als label, nicht Beruf
+oder Rolle. subject_ref ist null, wenn ein Fakt kein einzelnes Subjekt hat.
+
+located_in beschreibt nur den aktuellsten, spezifischsten Aufenthaltsort und
+darf je source_ref höchstens einmal vorkommen. Gib geplante oder frühere Orte
+nicht als aktuellen Aufenthalt aus. Bewahre bei Gerüchten und Legenden deren
+unsichere Formulierung, statt ihren Inhalt als bestätigte Wahrheit auszugeben.
+
+Beziehungsregeln: located_in zeigt immer auf eine location. Für verschachtelte
+Orte verwende ebenfalls located_in, niemals contains. possesses beginnt bei
+einem Charakter und zeigt auf ein item. contains darf nicht auf eine location
+zeigen. member_of zeigt auf eine faction. knows verbindet zwei Charaktere.
+
+Minimalbeispiel, dessen Inhalte nicht kopiert werden dürfen: Ist Maren der
+bekannte Spieler und lautet die Prosa "Maren betritt mit Alma die Höhle", dann
+enthält entities nur Alma und die Höhle. Der Link zur Höhle verwendet
+source_ref player_character; ein Fakt über Maren verwendet subject_ref
+player_character. Unmittelbar vor der Antwort: Entferne jede Entity, die den
+bekannten Spieler bezeichnet, und ersetze jede Namensreferenz auf ihn durch
+player_character. Zähle danach alle Links mit kind located_in je source_ref.
+Kommt eine source_ref mehrfach vor, entferne alle älteren oder weniger
+spezifischen located_in-Links, sodass genau der aktuelle Ort übrig bleibt.
+
+Liefere ausschließlich das vorgegebene JSON-Schema. Weltregeln, Ziele, Wissen,
+Sichtbarkeit und stabile IDs gehören nicht in diese initiale Extraktion.
 """
 
 [[tasks]]
@@ -150,7 +191,7 @@ description = "Der Spieler bestimmt die Handlungen seiner Figur; der Text endet 
 
 [[categories.options]]
 id = "director"
-description = "Der Erzähler darf einen kurzen Handlungsimpuls vorgeben, aber keine wichtigen Spielerentscheidungen entziehen."
+description = "Der User dirigiert die Szene oder mehrere Figuren; es gibt keine dedizierte Spielerfigur."
 
 [[categories]]
 id = "player_agency"

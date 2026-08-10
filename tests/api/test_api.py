@@ -129,9 +129,22 @@ def complete_state_document() -> dict[str, object]:
                     }
                 ],
                 "links": [],
-                "facts": [],
+                "facts": [
+                    {
+                        "id": "dungeon-open",
+                        "statement": "Der Dungeon ist geöffnet.",
+                        "visibility": {"scope": "public", "actor_id": None},
+                        "subject_id": None,
+                    }
+                ],
                 "knowledge": [],
-                "rules": [],
+                "rules": [
+                    {
+                        "id": "silver-hurts-spirits",
+                        "statement": "Silber verletzt Geister.",
+                        "visibility": {"scope": "public", "actor_id": None},
+                    }
+                ],
                 "goals": [
                     {
                         "id": "find-sword",

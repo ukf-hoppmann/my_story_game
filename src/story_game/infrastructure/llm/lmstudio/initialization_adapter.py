@@ -63,15 +63,22 @@ class LmStudioStoryInitializationAdapter(StoryInitializationPort):
 
 
 def _messages_for(request: StoryInitializationRequest) -> tuple[LmStudioChatMessage, ...]:
+    sections = [
+        "[configuration]\n" + request.configuration,
+        "[initial_prompt]\n" + request.initial_prompt,
+    ]
+    if request.player_character is not None:
+        character = request.player_character
+        description = character.description or "Keine zusätzliche Beschreibung."
+        sections.append(
+            "[player_character]\n"
+            f"Name: {character.name}\n"
+            f"Beschreibung: {description}"
+        )
     return (
         LmStudioChatMessage(role="system", content="\n\n".join(request.system_prompts)),
         LmStudioChatMessage(
             role="user",
-            content="\n\n".join(
-                (
-                    "[configuration]\n" + request.configuration,
-                    "[initial_prompt]\n" + request.initial_prompt,
-                )
-            ),
+            content="\n\n".join(sections),
         ),
     )

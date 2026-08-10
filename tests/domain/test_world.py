@@ -7,7 +7,6 @@ from story_game.domain import (
     ActorRole,
     EntityKind,
     EntityLink,
-    Evidence,
     Fact,
     InvalidReferenceError,
     KnowledgeEntry,
@@ -16,6 +15,7 @@ from story_game.domain import (
     StorySequence,
     ValidationError,
     WorldEntity,
+    WorldRule,
     WorldState,
 )
 
@@ -77,7 +77,6 @@ def test_knowledge_requires_a_real_actor_and_fact() -> None:
     fact = Fact(
         sid("hidden-door"),
         "Hinter dem Hafenlager befindet sich eine verborgene Tür.",
-        Evidence("setup"),
     )
 
     world = WorldState(
@@ -94,6 +93,18 @@ def test_knowledge_requires_a_real_actor_and_fact() -> None:
             facts=(fact,),
             knowledge=(KnowledgeEntry(sid("unknown-actor"), fact.id, StorySequence(1)),),
         )
+
+
+def test_canonical_facts_and_rules_do_not_require_evidence() -> None:
+    fact = Fact(sid("door"), "Die Tür ist verschlossen.")
+    rule = WorldRule(sid("silver"), "Silber verletzt Geister.")
+
+    world = WorldState(facts=(fact,), rules=(rule,))
+
+    assert world.facts == (fact,)
+    assert world.rules == (rule,)
+    assert not hasattr(fact, "evidence")
+    assert not hasattr(rule, "evidence")
 
 
 def test_self_links_and_non_positive_quantities_are_rejected() -> None:

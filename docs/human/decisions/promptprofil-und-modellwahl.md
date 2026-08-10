@@ -131,7 +131,8 @@ obwohl ein konkreter Director-Aufruf nur die dafür wirksamen Werte projiziert.
 
 WorldState-Extraction verwendet dagegen:
 
-- den Task `worldstate_extraction`;
+- für den Story-Start den Task `worldstate_initialization`, später nach Zügen
+  den Task `worldstate_extraction`;
 - ausschließlich die Paketoption `extraction.combined`;
 - den gerade erzeugten Storytext;
 - den relevanten aktuellen WorldState.

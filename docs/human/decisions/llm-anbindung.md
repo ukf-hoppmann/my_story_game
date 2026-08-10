@@ -1,6 +1,7 @@
 # Entscheidung: Anbieterunabhängige Modellanbindung
 
-Status: Beschlossenes Architekturziel, noch nicht implementiert.  
+Status: Grundarchitektur, LM-Studio-Adapter und zweistufige Story-
+Initialisierung umgesetzt; regulärer StoryTurn-Workflow bleibt offen.
 Datum: 2026-08-07.
 
 Die spätere Entscheidung

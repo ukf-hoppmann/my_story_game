@@ -25,8 +25,9 @@ liegen ausschließlich in der zentralen Laufzeitkonfiguration. Provider-URLs,
 Zugangsdaten, Rohprompts und laufende Aufrufe gehören weiterhin nicht in den
 GameState.
 
-Das Paket `story.base`/`1` enthält die Tasks `story_generation` und
-`worldstate_extraction`, alle vereinbarten Auswahlkategorien samt Defaults und
+Das Paket `story.base`/`1` enthält getrennte Tasks für Story- und WorldState-
+Initialisierung sowie reguläre Story Generation und spätere Extraction. Es
+enthält außerdem alle vereinbarten Auswahlkategorien samt Defaults und
 die nicht auswählbare Directive `narrative_boundaries`. Die Auswahlfelder für
 Genre, Tone, Pacing, Player Agency, Consequence, Challenge und Content Profile
 sind Teil von `GameConfiguration`. Das Profil enthält außerdem Prose Style,

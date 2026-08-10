@@ -8,7 +8,8 @@ Das Paket `story.base` in Version `1` liegt vollständig in
 [`prompts/story.base/1.toml`](../../../prompts/story.base/1.toml). Es gibt keine
 separaten Prompt-Textdateien. Der TOML-Aufbau enthält:
 
-- genau die Tasks `story_generation` und `worldstate_extraction`;
+- die Tasks `story_initialization`, `story_generation`,
+  `worldstate_initialization` und `worldstate_extraction`;
 - die auswählbaren Kategorien `genre`, `tone`, `prose_style`, `perspective`,
   `pacing`, `control_mode`, `player_agency`, `consequence`, `challenge`,
   `extraction` und `content_profile`;

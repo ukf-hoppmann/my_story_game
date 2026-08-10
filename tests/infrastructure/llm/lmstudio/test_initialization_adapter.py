@@ -6,6 +6,7 @@ from story_game.application.llm import (
     InitialStoryText,
     StoryInitializationRequest,
 )
+from story_game.application.initialization_models import PlayerCharacterSeed
 from story_game.infrastructure.llm.lmstudio import LmStudioStoryInitializationAdapter
 from story_game.infrastructure.llm.lmstudio.models import LmStudioChatRequest, LmStudioChatResponse
 
@@ -29,6 +30,9 @@ def test_adapter_maps_opening_without_world_or_story_context() -> None:
                 system_prompts=("Erzeuge die Eröffnung.",),
                 configuration="Sprache: de",
                 initial_prompt="Maren und Almas gehen in den Dungeon.",
+                player_character=PlayerCharacterSeed(
+                    "Maren", "Eine vorsichtige Kartografin."
+                ),
             ),
         )
     )
@@ -39,5 +43,7 @@ def test_adapter_maps_opening_without_world_or_story_context() -> None:
     assert client.request.temperature == 0.5
     assert client.request.max_tokens is None
     assert "[initial_prompt]" in client.request.messages[1].content
+    assert "[player_character]" in client.request.messages[1].content
+    assert "Maren" in client.request.messages[1].content
     assert "world_state" not in client.request.messages[1].content
     assert "story_state" not in client.request.messages[1].content

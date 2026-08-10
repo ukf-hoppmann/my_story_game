@@ -63,12 +63,10 @@ class WorldSnapshotWriter:
                 """
                 INSERT INTO world_facts (
                     run_id, revision, position, fact_id, statement, subject_id,
-                    evidence_source, evidence_reference, evidence_excerpt,
                     visibility_scope, visibility_actor_id
                 ) VALUES (
                     %(run_id)s, %(revision)s, %(position)s, %(fact_id)s,
-                    %(statement)s, %(subject_id)s, %(evidence_source)s,
-                    %(evidence_reference)s, %(evidence_excerpt)s,
+                    %(statement)s, %(subject_id)s,
                     %(visibility_scope)s, %(visibility_actor_id)s
                 )
                 """,
@@ -92,12 +90,10 @@ class WorldSnapshotWriter:
                 """
                 INSERT INTO world_rules (
                     run_id, revision, position, rule_id, statement,
-                    evidence_source, evidence_reference, evidence_excerpt,
                     visibility_scope, visibility_actor_id
                 ) VALUES (
                     %(run_id)s, %(revision)s, %(position)s, %(rule_id)s,
-                    %(statement)s, %(evidence_source)s, %(evidence_reference)s,
-                    %(evidence_excerpt)s, %(visibility_scope)s,
+                    %(statement)s, %(visibility_scope)s,
                     %(visibility_actor_id)s
                 )
                 """,

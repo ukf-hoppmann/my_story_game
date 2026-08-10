@@ -19,6 +19,7 @@ from story_game.domain import (  # noqa: E402
     AddGoal,
     ApprovedChangeSet,
     EntityKind,
+    Fact,
     GameConfiguration,
     GameRole,
     GameRun,
@@ -36,6 +37,7 @@ from story_game.domain import (  # noqa: E402
     StorySummary,
     StoryTurn,
     WorldEntity,
+    WorldRule,
     WorldState,
 )
 from story_game.infrastructure.persistence.errors import (  # noqa: E402
@@ -113,7 +115,11 @@ def initial(run_id: StableId) -> tuple[GameRun, GameState]:
         run_id,
         StateRevision(1),
         configuration(),
-        WorldState(entities=(almas,)),
+        WorldState(
+            entities=(almas,),
+            facts=(Fact(sid("dungeon-open"), "Der Dungeon ist geöffnet."),),
+            rules=(WorldRule(sid("silver"), "Silber verletzt Geister."),),
+        ),
         StoryState(),
     )
     return run, state
@@ -274,6 +280,24 @@ def test_new_baseline_does_not_create_obsolete_story_tables(
             assert connection.execute(
                 "SELECT to_regclass(%s) AS table_name", (table,)
             ).fetchone()["table_name"] is None
+
+
+def test_new_baseline_has_no_persisted_evidence_columns(
+    postgres_store: tuple[PostgresGameStore, PostgresConnectionFactory],
+) -> None:
+    _, connections = postgres_store
+    with connections.connect() as connection:
+        rows = connection.execute(
+            """
+            SELECT table_name, column_name
+            FROM information_schema.columns
+            WHERE table_schema = 'public'
+              AND table_name IN ('world_facts', 'world_rules')
+              AND column_name LIKE 'evidence_%'
+            """
+        ).fetchall()
+
+    assert rows == []
 
 
 def _delete_run(connections: PostgresConnectionFactory, run_id: StableId) -> None:

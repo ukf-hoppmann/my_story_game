@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Generic, TypeVar
 
+from ..initialization_models import PlayerCharacterSeed
 from ..contracts import Failure, Success
 
 
@@ -129,6 +130,7 @@ class StoryInitializationRequest:
     system_prompts: tuple[str, ...]
     configuration: str
     initial_prompt: str
+    player_character: PlayerCharacterSeed | None = None
 
     def __post_init__(self) -> None:
         prompts = tuple(prompt.strip() for prompt in self.system_prompts if prompt.strip())

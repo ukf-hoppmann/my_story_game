@@ -13,6 +13,7 @@ from story_game.infrastructure.llm.lmstudio import (
 )
 
 from .live_prompt import smoke_call
+from .live_settings import live_base_url
 
 
 @pytest.mark.lmstudio_live
@@ -31,7 +32,7 @@ def test_live_lmstudio_story_boundary_roundtrip(
 
     client = LmStudioClient(
         LmStudioSettings(
-            base_url=provider.base_url,
+            base_url=live_base_url(provider.base_url),
             timeout_seconds=provider.timeout_seconds,
         )
     )

@@ -18,7 +18,8 @@ summary = "model.summary.default"
 Der Live-Test wird ausdrücklich über die Pytest-Option aktiviert:
 
 ```text
-python -m pytest tests/infrastructure/llm/lmstudio/test_live.py \
+STORY_LMSTUDIO_LIVE_BASE_URL=http://localhost:1234/v1 \
+python -m pytest tests/infrastructure/llm/lmstudio/ \
   -m lmstudio_live --run-lmstudio-live
 ```
 
@@ -29,3 +30,7 @@ persistiert keine Antwort.
 
 Wenn der Test aus einem Container läuft, muss die URL typischerweise
 `http://host.docker.internal:1234/v1` verwenden.
+
+Der testlokale Override ändert `configs/llm.toml` nicht. Dadurch kann die
+Projektkonfiguration weiterhin die Containeradresse verwenden, während ein
+bewusst auf dem Host gestarteter Live-Test LM Studio über `localhost` erreicht.

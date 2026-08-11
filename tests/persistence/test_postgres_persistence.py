@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import socket
 from datetime import UTC, datetime
+from pathlib import Path
 from uuid import uuid4
 
 import pytest
@@ -12,6 +13,23 @@ psycopg = pytest.importorskip("psycopg")
 from story_game.application.game_models import (  # noqa: E402
     CompletedTurnPersistenceRequest,
     ConfigurationPersistenceRequest,
+    LoadedGame,
+)
+from story_game.application import (  # noqa: E402
+    Failure,
+    InitializeGameRun,
+    InitializeGameRunRequest,
+    RunInitiator,
+    Success,
+)
+from story_game.application.game_state import (  # noqa: E402
+    CreateGameRun,
+    PromptProfileValidator,
+    RunConflict,
+)
+from story_game.application.initialization_models import (  # noqa: E402
+    InitializedStory,
+    PlayerCharacterSeed,
 )
 from story_game.domain import (  # noqa: E402
     ActorProfile,
@@ -49,10 +67,12 @@ from story_game.infrastructure.persistence.postgres import (  # noqa: E402
     PostgresGameStore,
     PostgresSchemaMigrator,
 )
+from story_game.infrastructure.llm import FilePromptPackageCatalog  # noqa: E402
 from tests.ids import sid  # noqa: E402
 
 
 POSTGRES_DSN = os.environ.get("STORY_GAME_POSTGRES_DSN")
+PROMPT_ROOT = Path(__file__).resolve().parents[2] / "prompts"
 if POSTGRES_DSN is None and os.environ.get("HARNESS_RUN_DIRECTORY"):
     try:
         socket.getaddrinfo("postgres", 5432)
@@ -64,7 +84,9 @@ if POSTGRES_DSN is None and os.environ.get("HARNESS_RUN_DIRECTORY"):
         )
 
 
-def configuration(tone: str = "balanced") -> GameConfiguration:
+def configuration(
+    tone: str = "balanced", *, control_mode: str = "player"
+) -> GameConfiguration:
     return GameConfiguration(
         language="de",
         prompt_profile=PromptProfile(
@@ -73,7 +95,7 @@ def configuration(tone: str = "balanced") -> GameConfiguration:
             prose_style="balanced",
             perspective="third_person_limited",
             pacing="balanced",
-            control_mode="player",
+            control_mode=control_mode,
             player_agency="strict",
             consequence="balanced",
             challenge="balanced",
@@ -145,6 +167,107 @@ def test_postgres_roundtrips_a_complete_initial_game(
         assert store.load_run(run_id) == run
         assert store.load_state(run_id) == state
         assert store.load_state(run_id, revision=StateRevision(1)) == state
+    finally:
+        _delete_run(connections, run_id)
+
+
+def test_initialize_game_run_persists_revision_one_atomically(
+    postgres_store: tuple[PostgresGameStore, PostgresConnectionFactory],
+) -> None:
+    store, connections = postgres_store
+    run_id = sid(f"initial-{uuid4()}")
+    timestamp = datetime(2026, 8, 11, 9, tzinfo=UTC)
+    player = WorldEntity(
+        sid("initial-player"),
+        EntityKind.CHARACTER,
+        "Almas",
+        actor=ActorProfile(ActorRole.PLAYER),
+    )
+    initialized = InitializedStory(
+        StoryState(),
+        WorldState(entities=(player,)),
+    )
+
+    class FixedInitializer:
+        def apply(self, request: object) -> object:
+            return Success(initialized)
+
+    operation = InitializeGameRun(
+        FixedInitializer(),  # type: ignore[arg-type]
+        CreateGameRun(
+            store,
+            PromptProfileValidator(FilePromptPackageCatalog(PROMPT_ROOT)),
+        ),
+        new_id=lambda: run_id,
+        now=lambda: timestamp,
+    )
+
+    try:
+        result = operation.apply(
+            InitializeGameRunRequest(
+                configuration=configuration(),
+                run_name="Almas und das magische Schwert",
+                initial_prompt="Almas betritt den Dungeon.",
+                initiator=RunInitiator("https://identity.example/story", "user-1"),
+                player_character=PlayerCharacterSeed("Almas"),
+            )
+        )
+
+        assert isinstance(result, Success)
+        assert isinstance(result.data, LoadedGame)
+        assert result.data.run.status is GameRunStatus.DRAFT
+        assert result.data.run.current_revision == StateRevision(1)
+        assert result.data.state.revision == StateRevision(1)
+        assert store.load_run(run_id) == result.data.run
+        assert store.load_state(run_id) == result.data.state
+    finally:
+        _delete_run(connections, run_id)
+
+
+def test_initialize_game_run_maps_duplicate_uuid_to_conflict_without_overwrite(
+    postgres_store: tuple[PostgresGameStore, PostgresConnectionFactory],
+) -> None:
+    store, connections = postgres_store
+    run_id = sid(f"duplicate-{uuid4()}")
+    timestamp = datetime(2026, 8, 11, 9, tzinfo=UTC)
+    initialized = InitializedStory(StoryState(), WorldState())
+
+    class FixedInitializer:
+        def apply(self, request: object) -> object:
+            return Success(initialized)
+
+    creator = CreateGameRun(
+        store,
+        PromptProfileValidator(FilePromptPackageCatalog(PROMPT_ROOT)),
+    )
+
+    def operation() -> InitializeGameRun:
+        return InitializeGameRun(
+            FixedInitializer(),  # type: ignore[arg-type]
+            creator,
+            new_id=lambda: run_id,
+            now=lambda: timestamp,
+        )
+
+    request = InitializeGameRunRequest(
+        configuration=configuration(control_mode="director"),
+        run_name="Leerer Regie-Start",
+        initial_prompt="Die Szene beginnt.",
+        initiator=RunInitiator("https://identity.example/story", "user-1"),
+    )
+
+    try:
+        first = operation().apply(request)
+        second = operation().apply(request)
+
+        assert isinstance(first, Success)
+        assert second == Failure(
+            RunConflict(
+                f"Der GameRun existiert bereits oder enthält doppelte Daten: {run_id}"
+            )
+        )
+        assert store.load_run(run_id) == first.data.run
+        assert store.load_state(run_id) == first.data.state
     finally:
         _delete_run(connections, run_id)
 

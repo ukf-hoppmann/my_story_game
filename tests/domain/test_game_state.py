@@ -98,3 +98,28 @@ def test_game_state_validates_member_player_entity_against_world() -> None:
 
     with pytest.raises(domain.InvalidReferenceError):
         state.validate_members((member,))
+
+
+def test_game_state_rejects_membership_bound_to_non_player_actor() -> None:
+    npc = domain.WorldEntity(
+        id=sid("npc"),
+        kind=domain.EntityKind.CHARACTER,
+        label="Ein Wächter",
+        actor=domain.ActorProfile(domain.ActorRole.NPC),
+    )
+    state = domain.GameState(
+        run_id=sid("run-1"),
+        revision=domain.StateRevision(1),
+        configuration=configuration(),
+        world=domain.WorldState(entities=(npc,)),
+        story=domain.StoryState(),
+    )
+    member = domain.GameRunMember(
+        issuer="issuer",
+        subject="subject",
+        game_role=domain.GameRole.OWNER,
+        player_entity_id=npc.id,
+    )
+
+    with pytest.raises(domain.InvalidReferenceError):
+        state.validate_members((member,))

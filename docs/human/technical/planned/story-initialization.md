@@ -1,9 +1,10 @@
 # Story-Initialisierung und initiale WorldState-Extraction
 
-Status: `STORY-008` und `STORY-009` sind am 2026-08-10 umgesetzt und
+Status: `STORY-008`, `STORY-009` und `STORY-010` sind umgesetzt und
 verifiziert. `InitializeStory` liefert StoryState und WorldState transient als
-gemeinsames Ergebnis. Persistenz und öffentlicher Startendpunkt bleiben
-Folgearbeiten.
+gemeinsames Ergebnis; `InitializeGameRun` führt beide Ergebnisse zusammen und
+persistiert den initialen GameRun atomar. Der öffentliche Startendpunkt bleibt
+Teil von `STORY-003`.
 
 Der echte LM-Studio-Test führt beide Aufrufe aus und druckt Eingaben,
 Rohantworten und Endzustände. Das lokale Modell erzeugt technisch nutzbare
@@ -27,9 +28,13 @@ InitializeStory
     └── transienter, validierter WorldState
 ```
 
-Erst ein späterer Workflow darf beide Ergebnisse gemeinsam als GameRun und
-GameState in Revision 1 persistieren. Der erste reguläre Spielerzug bleibt
-StoryTurn 1.
+`InitializeGameRun` persistiert beide Ergebnisse gemeinsam als GameRun und
+GameState in Revision 1. Der Run startet im Status `DRAFT`; der aufrufende
+Benutzer erhält die `OWNER`-Mitgliedschaft. Im Player Mode verweist
+`player_entity_id` auf genau die eine `ActorRole.PLAYER`-Entität des
+WorldState, im Director Mode bleibt die Zuordnung leer. Alle internen IDs sind
+native UUIDs. Der erste reguläre Spielerzug bleibt StoryTurn 1 und erzeugt
+Revision 2.
 
 ## Perspektive und Control Mode
 

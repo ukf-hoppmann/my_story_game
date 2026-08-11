@@ -20,7 +20,7 @@ from .configuration import GameConfiguration
 from .errors import ChangeRejectedError, InvalidReferenceError, RevisionConflictError
 from .game_run import GameRunMember
 from .story import StoryState, StorySummary, StoryTurn
-from .value_objects import StableId, StateRevision
+from .value_objects import ActorRole, StableId, StateRevision
 from .world import WorldState
 
 
@@ -45,9 +45,9 @@ class GameState:
                 raise InvalidReferenceError(
                     "Eine Mitgliedschaft verweist auf eine unbekannte Spielfigur"
                 ) from error
-            if player.actor is None:
+            if player.actor is None or player.actor.role is not ActorRole.PLAYER:
                 raise InvalidReferenceError(
-                    "Eine Mitgliedschaft muss auf einen handlungsfähigen Akteur zeigen"
+                    "Eine Mitgliedschaft muss auf einen Spielercharakter zeigen"
                 )
 
     def apply(self, changes: ApprovedChangeSet) -> GameState:

@@ -7,6 +7,12 @@ from .initialization_errors import (
     StoryInitializationStage,
 )
 from .initialization_models import InitializedStory, PlayerCharacterSeed
+from .initialize_game_run import (
+    InitialGameRunError,
+    InitializeGameRun,
+    InitializeGameRunRequest,
+    RunInitiator,
+)
 from .initialize_story import InitializeStory, InitializeStoryRequest
 from .initial_world_extraction import (
     ExtractInitialWorldState,
@@ -52,6 +58,9 @@ __all__ = [
     "ExtractInitialWorldState",
     "ExtractInitialWorldStateRequest",
     "InitializedStory",
+    "InitialGameRunError",
+    "InitializeGameRun",
+    "InitializeGameRunRequest",
     "InitializeStory",
     "InitializeStoryRequest",
     "GenerationOptions",
@@ -81,6 +90,7 @@ __all__ = [
     "PromptTaskNotFoundError",
     "OperationResult",
     "PlayerCharacterSeed",
+    "RunInitiator",
     "ProposalStatus",
     "ProposalEvidence",
     "ProposedChange",

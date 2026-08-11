@@ -54,7 +54,13 @@ diese Werte, besitzt aber nicht ihre Identität.
 
 Die Application besitzt getrennte Operationen für:
 
-- einen neuen GameRun mit vollständiger Revision 1 anlegen;
+- `InitializeGameRun`: Story- und WorldState-Initialisierung ausführen und
+  einen neuen GameRun mit vollständiger Revision 1 atomar anlegen. Der Run
+  startet als `DRAFT`; die Initiator-Identität wird als `OWNER` gespeichert.
+  Im Player Mode wird die einzige `ActorRole.PLAYER`-Entität über ihre UUID als
+  `player_entity_id` gebunden. Der Director Mode erlaubt keine solche Bindung.
+- `CreateGameRun`: den bereits erzeugten Run-State über den Persistenzport
+  validieren und schreiben;
 - GameRun und aktuellen oder historischen GameState laden;
 - eine reine Konfigurationsrevision schreiben;
 - einen abgeschlossenen StoryTurn mit der resultierenden Revision schreiben.

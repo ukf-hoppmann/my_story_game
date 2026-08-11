@@ -10,6 +10,9 @@ autoritativen [`docs/TODO.md`](../../../TODO.md) geführt.
 
 Offene technische Zielbilder:
 
+- [`stable-uuid-identities.md`](stable-uuid-identities.md): interne
+  Storygame-Identitäten nativ als UUID führen und von textuellen Fremd- und
+  Konfigurationsreferenzen trennen.
 - [`story-initialization.md`](story-initialization.md): initialen StoryState
   aus einem Userprompt erzeugen, bevor ein WorldState existiert.
 - [`story-generation.md`](story-generation.md): anbieterunabhängige

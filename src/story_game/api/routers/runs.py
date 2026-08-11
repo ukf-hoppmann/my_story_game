@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, Path, Query, status
 
@@ -51,7 +52,7 @@ def create_run(
     summary="Load a complete current or historical test state",
 )
 def load_state(
-    run_id: Annotated[str, Path(min_length=1)],
+    run_id: Annotated[UUID, Path()],
     dependencies: Annotated[ApiDependencies, Depends(get_api_dependencies)],
     revision: Annotated[int | None, Query(ge=1)] = None,
 ) -> GameDocument:

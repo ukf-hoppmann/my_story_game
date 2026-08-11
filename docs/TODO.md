@@ -428,7 +428,7 @@ After explicit rejection:
 
 - `TASK-013` **Interne StableIds nativ als UUID führen**
   - Type: Task.
-  - Status: Open.
+  - Status: Completed.
   - Parent: `EPIC-001`.
   - Required for parent: Yes.
   - Created: 2026-08-11.
@@ -437,3 +437,4 @@ After explicit rejection:
   - Dependencies: `STORY-001`, `STORY-002`.
   - Goal: Alle vom Storygame kontrollierten kanonischen Identitäten als streng validierte UUIDs modellieren und in PostgreSQL nativ als UUID speichern, während Keycloak-, TOML-, Prompt-, Provider-, Modell- und lokale LLM-Referenzen textuell bleiben und menschlich lesbare Namen in eigenen Fachfeldern liegen.
   - Completion criteria: `StableId` akzeptiert ausschließlich UUIDs; GameRun-, Entity-, Link-, Fact-, Rule-, Goal- und Turn-IDs sowie ihre internen Referenzen sind in Domain, API und PostgreSQL UUID-typisiert; Goal-Entity-Referenzen liegen nicht mehr als ID-Strings in JSONB; GameRun besitzt einen getrennten Anzeigenamen; lokale LLM-Referenzen werden weiterhin erst durch die Application auf StableIds abgebildet; Fremd- und Konfigurationsreferenzen bleiben Text; die dokumentierte Datenstrategie wurde vor der Schemaänderung bestätigt und die vollständige isolierte Harness-Verifikation besteht.
+  - Resolution: Implemented, verified and confirmed by the owner on 2026-08-11.

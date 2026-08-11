@@ -36,7 +36,7 @@ class PostgresSnapshotWriter:
             )
             """,
             {
-                "run_id": str(state.run_id),
+                "run_id": state.run_id.value,
                 "revision": state.revision.value,
                 **configuration_values(state.configuration),
             },

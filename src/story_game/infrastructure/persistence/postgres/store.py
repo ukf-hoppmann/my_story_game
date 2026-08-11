@@ -50,11 +50,13 @@ class PostgresGameStore:
                     connection.execute(
                         """
                         INSERT INTO game_runs (
-                            run_id, status, current_revision, created_at, updated_at
-                        ) VALUES (%s, %s, %s, %s, %s)
+                            run_id, name, status, current_revision,
+                            created_at, updated_at
+                        ) VALUES (%s, %s, %s, %s, %s, %s)
                         """,
                         (
-                            str(run.id),
+                            run.id.value,
+                            run.name,
                             run.status.value,
                             run.current_revision.value,
                             run.created_at,
@@ -69,13 +71,13 @@ class PostgresGameStore:
                             ) VALUES (%s, %s, %s, %s, %s)
                             """,
                             (
-                                str(run.id),
+                                run.id.value,
                                 member.issuer,
                                 member.subject,
                                 member.game_role.value,
                                 None
                                 if member.player_entity_id is None
-                                else str(member.player_entity_id),
+                                else member.player_entity_id.value,
                             ),
                         )
                     self._insert_revision(
@@ -95,7 +97,7 @@ class PostgresGameStore:
         try:
             with self.connections.connect() as connection:
                 row = connection.execute(
-                    "SELECT * FROM game_runs WHERE run_id = %s", (str(run_id),)
+                    "SELECT * FROM game_runs WHERE run_id = %s", (run_id.value,)
                 ).fetchone()
                 if row is None:
                     raise PersistenceNotFoundError(
@@ -107,10 +109,11 @@ class PostgresGameStore:
                     WHERE run_id = %s
                     ORDER BY issuer, subject
                     """,
-                    (str(run_id),),
+                    (run_id.value,),
                 ).fetchall()
                 return GameRun(
                     id=run_id,
+                    name=str(row["name"]),
                     status=GameRunStatus(str(row["status"])),
                     current_revision=StateRevision(int(row["current_revision"])),
                     members=tuple(
@@ -121,7 +124,7 @@ class PostgresGameStore:
                             player_entity_id=(
                                 None
                                 if member["player_entity_id"] is None
-                                else StableId(str(member["player_entity_id"]))
+                                else StableId(member["player_entity_id"])
                             ),
                         )
                         for member in member_rows
@@ -259,7 +262,7 @@ class PostgresGameStore:
             ) VALUES (%s, %s, %s)
             """,
             (
-                str(run_id),
+                run_id.value,
                 revision.value,
                 None if previous is None else previous.value,
             ),
@@ -271,7 +274,7 @@ class PostgresGameStore:
     ) -> StateRevision:
         row = connection.execute(
             "SELECT current_revision FROM game_runs WHERE run_id = %s",
-            (str(run_id),),
+            (run_id.value,),
         ).fetchone()
         if row is None:
             raise PersistenceNotFoundError(f"Der GameRun existiert nicht: {run_id}")
@@ -287,7 +290,7 @@ class PostgresGameStore:
             WHERE run_id = %s
             FOR UPDATE
             """,
-            (str(run_id),),
+            (run_id.value,),
         ).fetchone()
         if row is None:
             raise PersistenceNotFoundError(f"Der GameRun existiert nicht: {run_id}")
@@ -314,5 +317,5 @@ class PostgresGameStore:
             SET current_revision = %s, updated_at = CURRENT_TIMESTAMP
             WHERE run_id = %s
             """,
-            (revision.value, str(run_id)),
+            (revision.value, run_id.value),
         )

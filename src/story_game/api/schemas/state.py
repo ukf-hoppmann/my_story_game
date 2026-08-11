@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import Literal
+from uuid import UUID
 
 from pydantic import Field
 
@@ -37,7 +38,7 @@ class StoryStateModel(APIModel):
 
 
 class GameStateModel(APIModel):
-    run_id: str = Field(min_length=1)
+    run_id: UUID
     revision: int = Field(ge=1)
     configuration: GameConfigurationModel
     world: WorldStateModel

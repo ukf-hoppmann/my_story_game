@@ -1,15 +1,14 @@
 # Native UUIDs für interne StableIds
 
-Status: Geplant. Dieses Dokument beschreibt die konkrete Umstellung, enthält
-aber noch keine Produkt-, Schema- oder Datenmigration.
+Status: Umgesetzt und am 11.08.2026 verifiziert. Dieses Dokument hält die
+Entscheidungen und den ausgeführten Umstellungsumfang fest.
 
 ## Ausgangslage
 
-`StableId.new()` erzeugt bereits UUIDv4-Werte, speichert sie jedoch als Text.
-Der Konstruktor akzeptiert weiterhin jeden nicht leeren String. Dadurch können
-Domain, API und Tests Werte wie `run-1`, `almas` oder `turn-1` als StableIds
-verwenden. PostgreSQL speichert sämtliche internen IDs derzeit in
-`TEXT`-Spalten.
+Vor der Umstellung erzeugte `StableId.new()` UUIDv4-Werte, der Konstruktor
+akzeptierte jedoch auch beliebigen nicht leeren Text. PostgreSQL speicherte
+interne IDs in `TEXT`-Spalten. Dieser inkonsistente Ausgangszustand ist
+aufgehoben.
 
 Die Initial-Extraction besitzt bereits die richtige fachliche Trennung: Das
 Modell liefert nur kurzlebige `local_ref`, `source_ref`, `target_ref` und
@@ -27,7 +26,7 @@ besitzt. Fremde, konfigurationsgebundene oder nur lokal innerhalb eines
 Requests gültige Referenzen bleiben Text. Dass ein Wert in PostgreSQL
 gespeichert wird, macht ihn allein noch nicht zu einer internen Identität.
 
-`StableId` wird ein Domain-Wrapper um `uuid.UUID`. `StableId.new()` erzeugt
+`StableId` ist ein Domain-Wrapper um `uuid.UUID`. `StableId.new()` erzeugt
 UUIDv4; eine explizite Parse-Funktion akzeptiert UUID-Objekte oder kanonische
 UUID-Strings und weist andere Werte als Domainfehler ab. `str(stable_id)`
 liefert weiterhin die normale Bindestrichschreibweise für Logs, URLs und JSON.
@@ -54,10 +53,10 @@ Revisionen erzeugen keine neuen IDs für unveränderte Objekte.
 
 `ProposedChangeSet.id`, `ProposedChange.id` und
 `ApprovedChangeSet.proposal_id` sind backend-eigene Korrelationsidentitäten
-und werden ebenfalls UUIDs, obwohl sie aktuell nicht persistiert werden.
-`ProposalEvidence.reference` wird dagegen Text oder ein eigener transienter
-Referenztyp: Seine Bedeutung ist nicht auf ein kanonisches Storygame-Objekt
-begrenzt und darf den UUID-Vertrag nicht verwässern.
+und sind ebenfalls UUIDs, obwohl sie aktuell nicht persistiert werden.
+`ProposalEvidence.reference` ist dagegen Text: Seine Bedeutung ist nicht auf
+ein kanonisches Storygame-Objekt begrenzt und darf den UUID-Vertrag nicht
+verwässern.
 
 ### Textuelle Fremd- und Konfigurationsreferenzen
 
@@ -95,14 +94,13 @@ bleiben verantwortlich:
 - Sequenz und Abschlusszeitpunkt eines StoryTurns;
 - `PlayerCharacterSeed.name`.
 
-`GameRun` besitzt noch keinen Anzeigenamen. Die Umsetzung ergänzt deshalb
-`GameRun.name` als erforderlichen, getrimmten Text sowie `game_runs.name` und
-das entsprechende API-Feld. Namen müssen nicht eindeutig sein; die UUID bleibt
-die einzige technische Identität.
+`GameRun` besitzt nun `GameRun.name` als erforderlichen, getrimmten Text sowie
+`game_runs.name` und das entsprechende API-Feld. Namen müssen nicht eindeutig
+sein; die UUID bleibt die einzige technische Identität.
 
 ## PostgreSQL-Zielschema
 
-Folgende Spalten werden nativ `UUID`:
+Folgende Spalten sind nativ `UUID`:
 
 - `game_runs.run_id`;
 - `game_run_members.run_id` und `player_entity_id`;
@@ -119,7 +117,7 @@ Folgende Spalten werden nativ `UUID`:
 - `story_turns.run_id` und `turn_id`.
 
 `world_goals.related_entity_ids` kann in JSONB keine nativen UUID-Werte
-enthalten. Es wird durch eine geordnete Relation ersetzt, beispielsweise:
+enthalten. Es wurde durch eine geordnete Relation ersetzt:
 
 ```text
 world_goal_related_entities
@@ -132,14 +130,13 @@ world_goal_related_entities
 
 Ein eindeutiger Positionsschlüssel erhält die Domain-Reihenfolge. Composite
 Foreign Keys verbinden die Zuordnung mit Goal und Entity derselben Revision.
-Snapshotinterne Link-, Fact-, Knowledge- und Sichtbarkeitsreferenzen sollen
-ebenfalls durch passende Composite Foreign Keys abgesichert werden, sofern die
-Schreibreihenfolge der bestehenden atomaren Snapshot-Transaktion erhalten
-bleibt.
+Snapshotinterne Link-, Fact-, Knowledge- und Sichtbarkeitsreferenzen sind
+ebenfalls durch passende Composite Foreign Keys abgesichert. Die bestehende
+Schreibreihenfolge der atomaren Snapshot-Transaktion bleibt erhalten.
 
 `game_run_members.player_entity_id` kann nicht direkt auf
 `world_entities` zeigen: Die Mitgliedschaft ist revisionsunabhängig, die
-Entity-Zeile dagegen Teil eines revisionierten Snapshots. Die Spalte wird UUID,
+Entity-Zeile dagegen Teil eines revisionierten Snapshots. Die Spalte ist UUID,
 bleibt aber zunächst durch die vorhandene Domainprüfung statt durch einen
 irreführenden Datenbank-FK abgesichert. Ein unveränderliches Entity-Registry-
 Modell wäre eine eigenständige spätere Architekturentscheidung.
@@ -168,23 +165,20 @@ und liefert native UUID-Objekte; Textkonvertierungen im Row-Mapping werden auf
 Transport- und Ausgabestellen begrenzt.
 
 Die Umstellung ist ein Breaking Change für Clients, die sprechende IDs senden.
-Die aktuelle API ist als Testgrenze dokumentiert. Solange kein externer Client
-einen stabilen V1-Vertrag benötigt, wird sie direkt und ohne Legacy-Alias-
-Schicht umgestellt. Andernfalls muss vor Implementierungsbeginn ein eigener
-Versionierungsentscheid getroffen werden.
+Die aktuelle API ist als Testgrenze dokumentiert und wurde direkt ohne
+Legacy-Alias-Schicht umgestellt.
 
 ## Daten- und Migrationsstrategie
 
 Das Projekt verwendet derzeit ein bewusst ersetzbares Basisschema und fordert
 bei inkompatiblen Schemaänderungen den manuellen Neuaufbau der
-Entwicklungsdatenbank. Unter dieser weiterhin geltenden Annahme wird
+Entwicklungsdatenbank. Unter dieser bestätigten Annahme wurde
 `001_initial.sql` angepasst und keine Upgrade-Migration für bestehende Slugs
-angelegt. Die Implementierung darf keine Datenbank und kein Volume automatisch
-löschen.
+angelegt. Die Implementierung hat keine Datenbank und kein Volume automatisch
+gelöscht.
 
-Vor Beginn der Umsetzung wird diese Annahme erneut bestätigt. Sobald eine
-erhaltenswerte Umgebung existiert, ist stattdessen eine additive Migration
-erforderlich. Sie muss zuerst alle Nicht-UUID-Werte inventarisieren und eine
+Sobald eine erhaltenswerte Umgebung existiert, ist stattdessen eine additive
+Migration erforderlich. Sie muss zuerst alle Nicht-UUID-Werte inventarisieren und eine
 einheitliche Zuordnung von Altwert zu UUID über alle Revisionen und
 Referenztabellen anwenden. Ein direktes `TEXT::UUID` ist für die heutigen
 Slug-Fixtures unzulässig.
@@ -258,12 +252,11 @@ PostgreSQL-Typen gemeinsam atomar konsistent werden müssen. Ihre Reihenfolge
 reduziert Kontextverlust; die gemeinsame Schlussprüfung verhindert, dass ein
 einzeln erfolgreicher Teilvertrag inkompatibel integriert wird.
 
-## Risiken und offene Entscheidungen
+## Ergebnis und verbleibende Grenzen
 
-- Vor Implementierungsbeginn muss bestätigt werden, dass weiterhin nur
-  entbehrliche Entwicklungsdaten existieren.
-- Eine bereits extern verwendete API würde eine explizite Versionsstrategie
-  erfordern.
+- Die direkte Baseline-Änderung ohne Upgrade-Migration wurde bestätigt. Es
+  wurde keine Datenbank und kein Volume automatisch zurückgesetzt.
+- Der API-Vertrag wurde bewusst ohne Legacy-Alias-Schicht umgestellt.
 - UUID-Typen allein beweisen keine fachliche Referenzgültigkeit; Domainregeln
   und geeignete Composite Foreign Keys bleiben notwendig.
 - `player_entity_id` bleibt ohne separates Entity-Registry-Modell nur in der
@@ -272,11 +265,11 @@ einzeln erfolgreicher Teilvertrag inkompatibel integriert wird.
   das aktuelle Volumen ausreichend. Eine spätere Sortier- oder Indexanforderung
   kann diesen Entscheid neu öffnen.
 
-## Gesamt-Abnahmekriterien
+## Erfüllte Gesamt-Abnahmekriterien
 
-Die Umstellung ist abgeschlossen, wenn alle backend-eigenen kanonischen IDs in
-Domain und API UUID-validiert und in PostgreSQL nativ als UUID gespeichert
-werden, TOML-, Keycloak-, Provider-, Modell- und LLM-lokale Referenzen Text
-bleiben, GameRuns einen getrennten Anzeigenamen besitzen, historische
-Snapshotbeziehungen korrekt roundtrippen und die vollständige isolierte
-Harness-Verifikation erfolgreich ist.
+Die Kriterien sind erfüllt: Alle backend-eigenen kanonischen IDs sind in Domain
+und API UUID-validiert und werden in PostgreSQL nativ als UUID gespeichert.
+TOML-, Keycloak-, Provider-, Modell- und LLM-lokale Referenzen bleiben Text,
+GameRuns besitzen einen getrennten Anzeigenamen, historische
+Snapshotbeziehungen roundtrippen korrekt und die vollständige isolierte
+Harness-Verifikation ist erfolgreich.

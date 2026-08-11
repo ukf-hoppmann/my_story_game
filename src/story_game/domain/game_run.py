@@ -39,6 +39,7 @@ class GameRun:
     """One game stream with memberships and a pointer to its committed head."""
 
     id: StableId
+    name: str
     status: GameRunStatus
     current_revision: StateRevision
     members: tuple[GameRunMember, ...]
@@ -46,6 +47,7 @@ class GameRun:
     updated_at: datetime
 
     def __post_init__(self) -> None:
+        object.__setattr__(self, "name", _required(self.name, "Der Name"))
         identities = [member.identity for member in self.members]
         if len(identities) != len(set(identities)):
             raise ValidationError("Mitgliedschaften eines GameRuns müssen eindeutig sein")

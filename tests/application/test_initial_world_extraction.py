@@ -30,11 +30,11 @@ from story_game.domain import (
     GameConfiguration,
     PromptProfile,
     RelationKind,
-    StableId,
     StoryInitialization,
     StoryState,
 )
 from story_game.infrastructure.llm import FilePromptPackageCatalog
+from tests.ids import sid
 
 
 PROMPT_ROOT = Path(__file__).parents[2] / "prompts"
@@ -107,7 +107,7 @@ def operation(extractor: RecordingExtractor) -> ExtractInitialWorldState:
         ),
         FixedConfigurationResolver(),
         extractor,
-        lambda: StableId(next(values)),
+        lambda: sid(next(values)),
     )
 
 

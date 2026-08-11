@@ -18,6 +18,12 @@ Das gemeinsame Transportdokument heißt `GameDocument` und enthält sowohl
 `GameConfiguration`, den `WorldState` einschließlich Goals und den
 `StoryState`. Fremde Felder und fachlich inkonsistente IDs werden abgewiesen.
 
+Alle internen IDs werden im OpenAPI-Schema als `string` mit `format: uuid`
+ausgewiesen und im JSON in kanonischer UUID-Schreibweise übertragen. Das gilt
+auch für `run_id` im Pfad; eine nicht als UUID parsebare ID führt zu HTTP 422.
+`game_run.name` ist der lesbare Anzeigename und unabhängig von der technischen
+ID. Keycloak-, Prompt-Paket- und Promptprofil-Kennungen bleiben Text.
+
 `GameConfiguration.prompt_profile` ist ein vollständiges Objekt mit zehn
 Pflichtfeldern. Die API ergänzt keine Paketdefaults. Vor dem Speichern prüft
 die Application jede Options-ID gegen `prompt_package_id` und

@@ -10,12 +10,13 @@ Die wichtigsten Tabellen sind:
 
 | Tabelle | Inhalt |
 | --- | --- |
-| `game_runs` | Lauf, Status, aktuelle Revision und Zeitpunkte |
+| `game_runs` | UUID, Anzeigename, Status, aktuelle Revision und Zeitpunkte |
 | `game_run_members` | Keycloak-Identität, Rolle und optionale Spielfigur |
 | `game_state_revisions` | unveränderliche Revisionsfolge |
 | `game_state_configurations` | Konfiguration je Revision |
 | `world_*` | Entitäten, Beziehungen, Fakten, Wissen und Regeln je Revision |
 | `world_goals` | Haupt- und Nebenziele je Revision |
+| `world_goal_related_entities` | geordnete Goal-Verweise auf Entities derselben Revision |
 | `story_state_metadata` | aktuelle Zusammenfassung und Zugnummer je Revision |
 | `story_turns` | jeder abgeschlossene Zug genau einmal |
 
@@ -32,6 +33,22 @@ Paketversion. Es speichert weder allgemeine Stil-IDs noch Modellreferenzen.
 Es gibt bewusst keine Tabellen für laufende Workflows, Modellaufrufe,
 Rohantworten, Extraktionen, MemorySnapshots, ProposedChangeSets oder
 Validierungsergebnisse.
+
+Alle internen Identitäts- und Referenzspalten verwenden den nativen
+PostgreSQL-Typ `UUID`. Snapshotinterne Beziehungen sind über zusammengesetzte
+Foreign Keys an dieselbe `(run_id, revision)` gebunden. Goal-Entity-Verweise
+liegen deshalb nicht als String-Liste in JSONB, sondern geordnet in
+`world_goal_related_entities`.
+
+`game_run_members.player_entity_id` ist ebenfalls UUID, besitzt jedoch keinen
+Foreign Key auf `world_entities`: Eine Mitgliedschaft ist nicht revisioniert,
+eine Entity-Zeile dagegen immer Teil eines konkreten Snapshots. Die Domain
+prüft die Zuordnung. Ein Datenbank-FK würde zuerst eine separate,
+unveränderliche Entity-Registry erfordern.
+
+Text bleiben insbesondere Keycloak `issuer`/`subject`, Prompt-Paket-ID und
+-Version sowie die gespeicherten Promptprofil-Optionen. PostgreSQL speichert
+diese Werte, besitzt aber nicht ihre Identität.
 
 ## Schreibgrenzen
 

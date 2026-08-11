@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -24,7 +25,7 @@ class APIModel(BaseModel):
 
 class VisibilityModel(APIModel):
     scope: VisibilityScope
-    actor_id: str | None = Field(default=None, min_length=1)
+    actor_id: UUID | None = None
 
 
 class ConditionModel(APIModel):
@@ -37,7 +38,7 @@ class ActorProfileModel(APIModel):
 
 
 class WorldEntityModel(APIModel):
-    id: str = Field(min_length=1)
+    id: UUID
     kind: EntityKind
     label: str = Field(min_length=1)
     description: str = ""
@@ -47,9 +48,9 @@ class WorldEntityModel(APIModel):
 
 
 class EntityLinkModel(APIModel):
-    id: str = Field(min_length=1)
-    source_id: str = Field(min_length=1)
-    target_id: str = Field(min_length=1)
+    id: UUID
+    source_id: UUID
+    target_id: UUID
     kind: RelationKind
     visibility: VisibilityModel
     quantity: int | None = Field(default=None, ge=1)
@@ -57,36 +58,36 @@ class EntityLinkModel(APIModel):
 
 
 class FactModel(APIModel):
-    id: str = Field(min_length=1)
+    id: UUID
     statement: str = Field(min_length=1)
     visibility: VisibilityModel
-    subject_id: str | None = Field(default=None, min_length=1)
+    subject_id: UUID | None = None
 
 
 class KnowledgeEntryModel(APIModel):
-    actor_id: str = Field(min_length=1)
-    fact_id: str = Field(min_length=1)
+    actor_id: UUID
+    fact_id: UUID
     learned_at: int = Field(ge=1)
     forgotten_at: int | None = Field(default=None, ge=1)
 
 
 class WorldRuleModel(APIModel):
-    id: str = Field(min_length=1)
+    id: UUID
     statement: str = Field(min_length=1)
     visibility: VisibilityModel
 
 
 class GoalModel(APIModel):
-    id: str = Field(min_length=1)
+    id: UUID
     kind: GoalKind
     title: str = Field(min_length=1)
     description: str = Field(min_length=1)
     status: GoalStatus
-    related_entity_ids: list[str] = Field(default_factory=list)
+    related_entity_ids: list[UUID] = Field(default_factory=list)
 
 
 class StoryTurnModel(APIModel):
-    id: str = Field(min_length=1)
+    id: UUID
     sequence: int = Field(ge=1)
     player_input: str = Field(min_length=1)
     narration: str = Field(min_length=1)
@@ -126,11 +127,12 @@ class GameRunMemberModel(APIModel):
     issuer: str = Field(min_length=1)
     subject: str = Field(min_length=1)
     game_role: GameRole
-    player_entity_id: str | None = Field(default=None, min_length=1)
+    player_entity_id: UUID | None = None
 
 
 class GameRunModel(APIModel):
-    id: str = Field(min_length=1)
+    id: UUID
+    name: str = Field(min_length=1)
     status: GameRunStatus
     current_revision: int = Field(ge=1)
     members: list[GameRunMemberModel] = Field(default_factory=list)

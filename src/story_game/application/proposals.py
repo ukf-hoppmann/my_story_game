@@ -21,7 +21,7 @@ class ProposalEvidence:
     """Transient source context available only while reviewing a proposal."""
 
     source: str
-    reference: StableId | None = None
+    reference: str | None = None
     excerpt: str | None = None
 
     def __post_init__(self) -> None:
@@ -29,6 +29,9 @@ class ProposalEvidence:
         if not source:
             raise ValueError("Vorschlagsevidenz benötigt eine Quellenangabe")
         object.__setattr__(self, "source", source)
+        if self.reference is not None:
+            reference = self.reference.strip()
+            object.__setattr__(self, "reference", reference or None)
         if self.excerpt is not None:
             excerpt = self.excerpt.strip()
             object.__setattr__(self, "excerpt", excerpt or None)

@@ -29,7 +29,7 @@ class StorySnapshotWriter:
             ) VALUES (%s, %s, %s, %s, %s, %s)
             """,
             (
-                str(run_id),
+                run_id.value,
                 revision.value,
                 story.current_turn_sequence,
                 None if summary is None else summary.through_sequence.value,
@@ -52,8 +52,8 @@ class StorySnapshotWriter:
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             """,
             (
-                str(run_id),
-                str(turn.id),
+                run_id.value,
+                turn.id.value,
                 turn.sequence.value,
                 turn.player_input,
                 turn.narration,

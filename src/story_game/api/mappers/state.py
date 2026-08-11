@@ -55,6 +55,7 @@ def game_from_api(document: GameDocument) -> LoadedGame:
     state_model = document.game_state
     run = GameRun(
         StableId(run_model.id),
+        run_model.name,
         run_model.status,
         StateRevision(run_model.current_revision),
         tuple(
@@ -86,7 +87,8 @@ def game_to_api(game: LoadedGame) -> GameDocument:
     state = game.state
     return GameDocument(
         game_run=GameRunModel(
-            id=str(run.id),
+            id=run.id.value,
+            name=run.name,
             status=run.status,
             current_revision=run.current_revision.value,
             members=[
@@ -97,7 +99,7 @@ def game_to_api(game: LoadedGame) -> GameDocument:
                     player_entity_id=(
                         None
                         if member.player_entity_id is None
-                        else str(member.player_entity_id)
+                        else member.player_entity_id.value
                     ),
                 )
                 for member in run.members
@@ -106,7 +108,7 @@ def game_to_api(game: LoadedGame) -> GameDocument:
             updated_at=run.updated_at,
         ),
         game_state=GameStateModel(
-            run_id=str(state.run_id),
+            run_id=state.run_id.value,
             revision=state.revision.value,
             configuration=_configuration_to_api(state.configuration),
             world=_world_to_api(state.world),
@@ -167,7 +169,7 @@ def _visibility_from_api(model: VisibilityModel) -> Visibility:
 def _visibility_to_api(value: Visibility) -> VisibilityModel:
     return VisibilityModel(
         scope=value.scope,
-        actor_id=None if value.actor_id is None else str(value.actor_id),
+        actor_id=None if value.actor_id is None else value.actor_id.value,
     )
 
 
@@ -245,7 +247,7 @@ def _world_to_api(world: WorldState) -> WorldStateModel:
     return WorldStateModel(
         entities=[
             WorldEntityModel(
-                id=str(item.id),
+                id=item.id.value,
                 kind=item.kind,
                 label=item.label,
                 description=item.description,
@@ -262,9 +264,9 @@ def _world_to_api(world: WorldState) -> WorldStateModel:
         ],
         links=[
             EntityLinkModel(
-                id=str(item.id),
-                source_id=str(item.source_id),
-                target_id=str(item.target_id),
+                id=item.id.value,
+                source_id=item.source_id.value,
+                target_id=item.target_id.value,
                 kind=item.kind,
                 visibility=_visibility_to_api(item.visibility),
                 quantity=item.quantity,
@@ -274,17 +276,17 @@ def _world_to_api(world: WorldState) -> WorldStateModel:
         ],
         facts=[
             FactModel(
-                id=str(item.id),
+                id=item.id.value,
                 statement=item.statement,
                 visibility=_visibility_to_api(item.visibility),
-                subject_id=None if item.subject_id is None else str(item.subject_id),
+                subject_id=None if item.subject_id is None else item.subject_id.value,
             )
             for item in world.facts
         ],
         knowledge=[
             KnowledgeEntryModel(
-                actor_id=str(item.actor_id),
-                fact_id=str(item.fact_id),
+                actor_id=item.actor_id.value,
+                fact_id=item.fact_id.value,
                 learned_at=item.learned_at.value,
                 forgotten_at=(
                     None if item.forgotten_at is None else item.forgotten_at.value
@@ -294,7 +296,7 @@ def _world_to_api(world: WorldState) -> WorldStateModel:
         ],
         rules=[
             WorldRuleModel(
-                id=str(item.id),
+                id=item.id.value,
                 statement=item.statement,
                 visibility=_visibility_to_api(item.visibility),
             )
@@ -302,12 +304,12 @@ def _world_to_api(world: WorldState) -> WorldStateModel:
         ],
         goals=[
             GoalModel(
-                id=str(item.id),
+                id=item.id.value,
                 kind=item.kind,
                 title=item.title,
                 description=item.description,
                 status=item.status,
-                related_entity_ids=[str(reference) for reference in item.related_entity_ids],
+                related_entity_ids=[reference.value for reference in item.related_entity_ids],
             )
             for item in world.goals
         ],
@@ -345,7 +347,7 @@ def _story_to_api(story: StoryState) -> StoryStateModel:
     return StoryStateModel(
         turns=[
             StoryTurnModel(
-                id=str(item.id),
+                id=item.id.value,
                 sequence=item.sequence.value,
                 player_input=item.player_input,
                 narration=item.narration,

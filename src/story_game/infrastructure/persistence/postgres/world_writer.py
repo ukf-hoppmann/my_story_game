@@ -104,12 +104,26 @@ class WorldSnapshotWriter:
                 """
                 INSERT INTO world_goals (
                     run_id, revision, position, goal_id, kind, title,
-                    description, status, related_entity_ids
+                    description, status
                 ) VALUES (
                     %(run_id)s, %(revision)s, %(position)s, %(goal_id)s,
-                    %(kind)s, %(title)s, %(description)s, %(status)s,
-                    %(related_entity_ids)s
+                    %(kind)s, %(title)s, %(description)s, %(status)s
                 )
                 """,
                 goal_values(run_id, revision.value, position, goal),
             )
+            for relation_position, entity_id in enumerate(goal.related_entity_ids):
+                connection.execute(
+                    """
+                    INSERT INTO world_goal_related_entities (
+                        run_id, revision, goal_id, position, entity_id
+                    ) VALUES (%s, %s, %s, %s, %s)
+                    """,
+                    (
+                        run_id.value,
+                        revision.value,
+                        goal.id.value,
+                        relation_position,
+                        entity_id.value,
+                    ),
+                )

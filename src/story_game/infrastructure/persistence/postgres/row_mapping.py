@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from typing import Any
+from uuid import UUID
 
 from psycopg.types.json import Jsonb
 
@@ -78,11 +79,11 @@ def configuration_from_row(row: Mapping[str, Any]) -> GameConfiguration:
     )
 
 
-def visibility_values(visibility: Visibility) -> dict[str, str | None]:
+def visibility_values(visibility: Visibility) -> dict[str, str | UUID | None]:
     return {
         "visibility_scope": visibility.scope.value,
         "visibility_actor_id": (
-            None if visibility.actor_id is None else str(visibility.actor_id)
+            None if visibility.actor_id is None else visibility.actor_id.value
         ),
     }
 
@@ -91,7 +92,11 @@ def visibility_from_row(row: Mapping[str, Any]) -> Visibility:
     actor_id = row.get("visibility_actor_id")
     return Visibility(
         VisibilityScope(_text(row, "visibility_scope")),
-        None if actor_id is None else StableId(str(actor_id)),
+        (
+            None
+            if actor_id is None
+            else stable_id_from_row(row, "visibility_actor_id")
+        ),
     )
 
 
@@ -99,10 +104,10 @@ def entity_values(
     run_id: StableId, revision: int, position: int, entity: WorldEntity
 ) -> dict[str, Any]:
     return {
-        "run_id": str(run_id),
+        "run_id": run_id.value,
         "revision": revision,
         "position": position,
-        "entity_id": str(entity.id),
+        "entity_id": entity.id.value,
         "kind": entity.kind.value,
         "label": entity.label,
         "description": entity.description,
@@ -120,7 +125,7 @@ def entity_values(
 def entity_from_row(row: Mapping[str, Any]) -> WorldEntity:
     actor_role = row.get("actor_role")
     return WorldEntity(
-        StableId(_text(row, "entity_id")),
+        stable_id_from_row(row, "entity_id"),
         EntityKind(_text(row, "kind")),
         _text(row, "label"),
         str(row.get("description") or ""),
@@ -143,12 +148,12 @@ def link_values(
     run_id: StableId, revision: int, position: int, link: EntityLink
 ) -> dict[str, Any]:
     return {
-        "run_id": str(run_id),
+        "run_id": run_id.value,
         "revision": revision,
         "position": position,
-        "link_id": str(link.id),
-        "source_id": str(link.source_id),
-        "target_id": str(link.target_id),
+        "link_id": link.id.value,
+        "source_id": link.source_id.value,
+        "target_id": link.target_id.value,
         "kind": link.kind.value,
         **visibility_values(link.visibility),
         "quantity": link.quantity,
@@ -159,9 +164,9 @@ def link_values(
 def link_from_row(row: Mapping[str, Any]) -> EntityLink:
     quantity = row.get("quantity")
     return EntityLink(
-        StableId(_text(row, "link_id")),
-        StableId(_text(row, "source_id")),
-        StableId(_text(row, "target_id")),
+        stable_id_from_row(row, "link_id"),
+        stable_id_from_row(row, "source_id"),
+        stable_id_from_row(row, "target_id"),
         RelationKind(_text(row, "kind")),
         visibility_from_row(row),
         None if quantity is None else int(quantity),
@@ -173,12 +178,12 @@ def fact_values(
     run_id: StableId, revision: int, position: int, fact: Fact
 ) -> dict[str, Any]:
     return {
-        "run_id": str(run_id),
+        "run_id": run_id.value,
         "revision": revision,
         "position": position,
-        "fact_id": str(fact.id),
+        "fact_id": fact.id.value,
         "statement": fact.statement,
-        "subject_id": None if fact.subject_id is None else str(fact.subject_id),
+        "subject_id": None if fact.subject_id is None else fact.subject_id.value,
         **visibility_values(fact.visibility),
     }
 
@@ -186,10 +191,12 @@ def fact_values(
 def fact_from_row(row: Mapping[str, Any]) -> Fact:
     subject_id = row.get("subject_id")
     return Fact(
-        id=StableId(_text(row, "fact_id")),
+        id=stable_id_from_row(row, "fact_id"),
         statement=_text(row, "statement"),
         visibility=visibility_from_row(row),
-        subject_id=None if subject_id is None else StableId(str(subject_id)),
+        subject_id=(
+            None if subject_id is None else stable_id_from_row(row, "subject_id")
+        ),
     )
 
 
@@ -197,11 +204,11 @@ def knowledge_values(
     run_id: StableId, revision: int, position: int, entry: KnowledgeEntry
 ) -> dict[str, Any]:
     return {
-        "run_id": str(run_id),
+        "run_id": run_id.value,
         "revision": revision,
         "position": position,
-        "actor_id": str(entry.actor_id),
-        "fact_id": str(entry.fact_id),
+        "actor_id": entry.actor_id.value,
+        "fact_id": entry.fact_id.value,
         "learned_at": entry.learned_at.value,
         "forgotten_at": None if entry.forgotten_at is None else entry.forgotten_at.value,
     }
@@ -210,8 +217,8 @@ def knowledge_values(
 def knowledge_from_row(row: Mapping[str, Any]) -> KnowledgeEntry:
     forgotten_at = row.get("forgotten_at")
     return KnowledgeEntry(
-        StableId(_text(row, "actor_id")),
-        StableId(_text(row, "fact_id")),
+        stable_id_from_row(row, "actor_id"),
+        stable_id_from_row(row, "fact_id"),
         StorySequence(int(row["learned_at"])),
         None if forgotten_at is None else StorySequence(int(forgotten_at)),
     )
@@ -221,10 +228,10 @@ def rule_values(
     run_id: StableId, revision: int, position: int, rule: WorldRule
 ) -> dict[str, Any]:
     return {
-        "run_id": str(run_id),
+        "run_id": run_id.value,
         "revision": revision,
         "position": position,
-        "rule_id": str(rule.id),
+        "rule_id": rule.id.value,
         "statement": rule.statement,
         **visibility_values(rule.visibility),
     }
@@ -232,7 +239,7 @@ def rule_values(
 
 def rule_from_row(row: Mapping[str, Any]) -> WorldRule:
     return WorldRule(
-        id=StableId(_text(row, "rule_id")),
+        id=stable_id_from_row(row, "rule_id"),
         statement=_text(row, "statement"),
         visibility=visibility_from_row(row),
     )
@@ -242,30 +249,35 @@ def goal_values(
     run_id: StableId, revision: int, position: int, goal: Goal
 ) -> dict[str, Any]:
     return {
-        "run_id": str(run_id),
+        "run_id": run_id.value,
         "revision": revision,
         "position": position,
-        "goal_id": str(goal.id),
+        "goal_id": goal.id.value,
         "kind": goal.kind.value,
         "title": goal.title,
         "description": goal.description,
         "status": goal.status.value,
-        "related_entity_ids": jsonb([str(item) for item in goal.related_entity_ids]),
     }
 
 
-def goal_from_row(row: Mapping[str, Any]) -> Goal:
+def goal_from_row(
+    row: Mapping[str, Any], related_entity_ids: tuple[StableId, ...]
+) -> Goal:
     return Goal(
-        StableId(_text(row, "goal_id")),
+        stable_id_from_row(row, "goal_id"),
         GoalKind(_text(row, "kind")),
         _text(row, "title"),
         _text(row, "description"),
         GoalStatus(_text(row, "status")),
-        tuple(
-            StableId(_value_text(item, "goal reference"))
-            for item in _json_list(row.get("related_entity_ids"), "related_entity_ids")
-        ),
+        related_entity_ids,
     )
+
+
+def stable_id_from_row(row: Mapping[str, Any], key: str) -> StableId:
+    value = row.get(key)
+    if not isinstance(value, UUID):
+        raise PersistenceConsistencyError(f"Die Datenbankspalte {key} ist keine UUID")
+    return StableId(value)
 
 
 def _text(row: Mapping[str, Any], key: str) -> str:

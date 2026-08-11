@@ -27,6 +27,19 @@ Die JSON-Form dieses Dokuments ist ein experimenteller Testvertrag, noch kein
 verbindlicher API-Vertrag. Insbesondere sind `new:`-IDs nur temporäre
 Extraction-Referenzen; stabile IDs muss die Anwendung erzeugen.
 
+Ein `slug` ist hier lediglich ein kurzer, innerhalb genau einer Modellantwort
+lesbarer Bezeichner wie `merchant-iven`. `new:merchant-iven` erlaubt anderen
+Änderungen derselben Antwort, auf dieses noch nicht angelegte Objekt zu
+verweisen. Die Application löst alle solchen Referenzen gemeinsam auf, erzeugt
+für kanonische Objekte UUIDs und verwirft den gesamten Candidate bei
+unbekannten oder doppelten Referenzen. Weder der `new:`-Wert noch der Slug wird
+als StableId in Domain, API oder PostgreSQL übernommen.
+
+Auch die sprechenden `run_id`-, `turn_id`- und Proposal-Werte in den folgenden
+historischen Beispielen sind Bestandteil dieses alten experimentellen Formats,
+nicht Beispiele des aktuellen UUID-API-Vertrags. Evidence-Referenzen sind
+transiente Reviewtexte und werden nicht kanonisch gespeichert.
+
 Die Planungsnotiz schließt persistierte Scenes aus. Deshalb erzeugen die
 Prompts keine Scenes, Events, Chapters, Threads oder Zusammenfassungen. Der
 aktuelle Checkout enthält allerdings `Scene` innerhalb des `StoryState`; diese

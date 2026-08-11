@@ -23,6 +23,7 @@ from story_game.application.game_models import (
 from story_game.application.ports import GameStateConflictError, GameStateNotFoundError
 from story_game.domain import GameRun, GameState, StableId, StateRevision
 from story_game.infrastructure.llm import FilePromptPackageCatalog
+from tests.ids import uuid_text
 
 
 class MemoryGameStore:
@@ -81,7 +82,8 @@ def complete_state_document() -> dict[str, object]:
     return {
         "schema_version": 1,
         "game_run": {
-            "id": "run-1",
+            "id": uuid_text("run-1"),
+            "name": "Almas und das magische Schwert",
             "status": "draft",
             "current_revision": 1,
             "members": [
@@ -89,14 +91,14 @@ def complete_state_document() -> dict[str, object]:
                     "issuer": "issuer",
                     "subject": "subject",
                     "game_role": "owner",
-                    "player_entity_id": "almas",
+                    "player_entity_id": uuid_text("almas"),
                 }
             ],
             "created_at": timestamp,
             "updated_at": timestamp,
         },
         "game_state": {
-            "run_id": "run-1",
+            "run_id": uuid_text("run-1"),
             "revision": 1,
             "configuration": {
                 "language": "de",
@@ -119,7 +121,7 @@ def complete_state_document() -> dict[str, object]:
             "world": {
                 "entities": [
                     {
-                        "id": "almas",
+                        "id": uuid_text("almas"),
                         "kind": "character",
                         "label": "Almas",
                         "description": "",
@@ -131,7 +133,7 @@ def complete_state_document() -> dict[str, object]:
                 "links": [],
                 "facts": [
                     {
-                        "id": "dungeon-open",
+                        "id": uuid_text("dungeon-open"),
                         "statement": "Der Dungeon ist geöffnet.",
                         "visibility": {"scope": "public", "actor_id": None},
                         "subject_id": None,
@@ -140,19 +142,19 @@ def complete_state_document() -> dict[str, object]:
                 "knowledge": [],
                 "rules": [
                     {
-                        "id": "silver-hurts-spirits",
+                        "id": uuid_text("silver-hurts-spirits"),
                         "statement": "Silber verletzt Geister.",
                         "visibility": {"scope": "public", "actor_id": None},
                     }
                 ],
                 "goals": [
                     {
-                        "id": "find-sword",
+                        "id": uuid_text("find-sword"),
                         "kind": "main",
                         "title": "Finde das magische Schwert",
                         "description": "Almas muss das Schwert finden.",
                         "status": "open",
-                        "related_entity_ids": ["almas"],
+                        "related_entity_ids": [uuid_text("almas")],
                     }
                 ],
             },
@@ -169,7 +171,7 @@ def test_api_saves_and_loads_the_complete_state_document(client: TestClient) -> 
     document = complete_state_document()
 
     created = client.post("/api/v1/runs", json=document)
-    loaded = client.get("/api/v1/runs/run-1/state")
+    loaded = client.get(f"/api/v1/runs/{uuid_text('run-1')}/state")
 
     assert created.status_code == 201
     assert created.json() == document
@@ -179,9 +181,24 @@ def test_api_saves_and_loads_the_complete_state_document(client: TestClient) -> 
 
 def test_api_rejects_inconsistent_run_and_state_ids(client: TestClient) -> None:
     document = complete_state_document()
-    document["game_state"]["run_id"] = "another-run"  # type: ignore[index]
+    document["game_state"]["run_id"] = uuid_text("another-run")  # type: ignore[index]
 
     response = client.post("/api/v1/runs", json=document)
+
+    assert response.status_code == 422
+
+
+def test_api_rejects_non_uuid_internal_ids(client: TestClient) -> None:
+    document = complete_state_document()
+    document["game_run"]["id"] = "run-1"  # type: ignore[index]
+
+    response = client.post("/api/v1/runs", json=document)
+
+    assert response.status_code == 422
+
+
+def test_api_rejects_a_non_uuid_run_path(client: TestClient) -> None:
+    response = client.get("/api/v1/runs/run-1/state")
 
     assert response.status_code == 422
 

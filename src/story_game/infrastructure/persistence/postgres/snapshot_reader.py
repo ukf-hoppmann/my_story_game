@@ -32,7 +32,7 @@ class PostgresSnapshotReader:
             JOIN game_state_revisions USING (run_id, revision)
             WHERE configuration.run_id = %s AND configuration.revision = %s
             """,
-            (str(run_id), revision.value),
+            (run_id.value, revision.value),
         ).fetchone()
         if configuration_row is None:
             raise PersistenceNotFoundError(
@@ -42,6 +42,6 @@ class PostgresSnapshotReader:
             run_id=run_id,
             revision=revision,
             configuration=configuration_from_row(configuration_row),
-            world=self.world_reader.read(connection, str(run_id), revision.value),
-            story=self.story_reader.read(connection, str(run_id), revision.value),
+            world=self.world_reader.read(connection, run_id.value, revision.value),
+            story=self.story_reader.read(connection, run_id.value, revision.value),
         )

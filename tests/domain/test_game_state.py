@@ -3,10 +3,7 @@ from __future__ import annotations
 import pytest
 
 import story_game.domain as domain
-
-
-def sid(value: str) -> domain.StableId:
-    return domain.StableId(value)
+from tests.ids import sid
 
 
 def configuration() -> object:

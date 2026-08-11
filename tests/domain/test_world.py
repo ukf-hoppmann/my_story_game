@@ -11,17 +11,13 @@ from story_game.domain import (
     InvalidReferenceError,
     KnowledgeEntry,
     RelationKind,
-    StableId,
     StorySequence,
     ValidationError,
     WorldEntity,
     WorldRule,
     WorldState,
 )
-
-
-def sid(value: str) -> StableId:
-    return StableId(value)
+from tests.ids import sid
 
 
 def test_inventory_and_location_are_derived_from_typed_links() -> None:

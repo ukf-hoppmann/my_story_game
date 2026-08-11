@@ -49,6 +49,7 @@ from story_game.infrastructure.persistence.postgres import (  # noqa: E402
     PostgresGameStore,
     PostgresSchemaMigrator,
 )
+from tests.ids import sid  # noqa: E402
 
 
 POSTGRES_DSN = os.environ.get("STORY_GAME_POSTGRES_DSN")
@@ -61,10 +62,6 @@ if POSTGRES_DSN is None and os.environ.get("HARNESS_RUN_DIRECTORY"):
         POSTGRES_DSN = (
             "postgresql://story_game:story_game_test@postgres:5432/story_game"
         )
-
-
-def sid(value: str) -> StableId:
-    return StableId(value)
 
 
 def configuration(tone: str = "balanced") -> GameConfiguration:
@@ -98,6 +95,7 @@ def initial(run_id: StableId) -> tuple[GameRun, GameState]:
     )
     run = GameRun(
         run_id,
+        "Almas und das magische Schwert",
         GameRunStatus.DRAFT,
         StateRevision(1),
         (
@@ -300,7 +298,82 @@ def test_new_baseline_has_no_persisted_evidence_columns(
     assert rows == []
 
 
+def test_new_baseline_uses_native_uuid_for_internal_id_columns(
+    postgres_store: tuple[PostgresGameStore, PostgresConnectionFactory],
+) -> None:
+    _, connections = postgres_store
+    expected_uuid_columns = {
+        ("game_runs", "run_id"),
+        ("game_run_members", "run_id"),
+        ("game_run_members", "player_entity_id"),
+        ("game_state_revisions", "run_id"),
+        ("game_state_configurations", "run_id"),
+        ("world_entities", "run_id"),
+        ("world_entities", "entity_id"),
+        ("world_links", "run_id"),
+        ("world_links", "link_id"),
+        ("world_links", "source_id"),
+        ("world_links", "target_id"),
+        ("world_links", "visibility_actor_id"),
+        ("world_facts", "run_id"),
+        ("world_facts", "fact_id"),
+        ("world_facts", "subject_id"),
+        ("world_facts", "visibility_actor_id"),
+        ("world_knowledge", "run_id"),
+        ("world_knowledge", "actor_id"),
+        ("world_knowledge", "fact_id"),
+        ("world_rules", "run_id"),
+        ("world_rules", "rule_id"),
+        ("world_rules", "visibility_actor_id"),
+        ("world_goals", "run_id"),
+        ("world_goals", "goal_id"),
+        ("world_goal_related_entities", "run_id"),
+        ("world_goal_related_entities", "goal_id"),
+        ("world_goal_related_entities", "entity_id"),
+        ("story_state_metadata", "run_id"),
+        ("story_turns", "run_id"),
+        ("story_turns", "turn_id"),
+    }
+
+    with connections.connect() as connection:
+        rows = connection.execute(
+            """
+            SELECT table_name, column_name
+            FROM information_schema.columns
+            WHERE table_schema = 'public' AND data_type = 'uuid'
+            """
+        ).fetchall()
+
+    assert {(row["table_name"], row["column_name"]) for row in rows} == (
+        expected_uuid_columns
+    )
+
+
+def test_goal_entity_references_are_relational_not_json(
+    postgres_store: tuple[PostgresGameStore, PostgresConnectionFactory],
+) -> None:
+    _, connections = postgres_store
+    with connections.connect() as connection:
+        obsolete_column = connection.execute(
+            """
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_schema = 'public'
+              AND table_name = 'world_goals'
+              AND column_name = 'related_entity_ids'
+            """
+        ).fetchall()
+        relation_table = connection.execute(
+            "SELECT to_regclass('world_goal_related_entities') AS table_name"
+        ).fetchone()
+
+    assert obsolete_column == []
+    assert relation_table["table_name"] == "world_goal_related_entities"
+
+
 def _delete_run(connections: PostgresConnectionFactory, run_id: StableId) -> None:
     with connections.connect() as connection:
         with connection.transaction():
-            connection.execute("DELETE FROM game_runs WHERE run_id = %s", (str(run_id),))
+            connection.execute(
+                "DELETE FROM game_runs WHERE run_id = %s", (run_id.value,)
+            )

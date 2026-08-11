@@ -1,7 +1,8 @@
 {
   "schema_version": 1,
   "game_run": {
-    "id": "test-dungeon-run",
+    "id": "00000000-0000-4000-8000-000000000001",
+    "name": "Almas und das magische Schwert",
     "status": "active",
     "current_revision": 1,
     "members": [
@@ -9,14 +10,14 @@
         "issuer": "https://keycloak.example/realms/story-game",
         "subject": "test-player-almas",
         "game_role": "owner",
-        "player_entity_id": "almas"
+        "player_entity_id": "10000000-0000-4000-8000-000000000001"
       }
     ],
     "created_at": "2026-08-06T10:00:00Z",
     "updated_at": "2026-08-06T10:00:00Z"
   },
   "game_state": {
-    "run_id": "test-dungeon-run",
+    "run_id": "00000000-0000-4000-8000-000000000001",
     "revision": 1,
     "configuration": {
       "language": "de",
@@ -42,7 +43,7 @@
     "world": {
       "entities": [
         {
-          "id": "almas",
+          "id": "10000000-0000-4000-8000-000000000001",
           "kind": "character",
           "label": "Almas",
           "description": "Eine entschlossene Abenteurerin auf der Suche nach einem magischen Schwert.",
@@ -55,7 +56,7 @@
           ]
         },
         {
-          "id": "old-dungeon",
+          "id": "10000000-0000-4000-8000-000000000002",
           "kind": "location",
           "label": "Der alte Dungeon",
           "description": "Ein kalter, verlassener Dungeon unter den Ruinen von Velar.",
@@ -66,7 +67,7 @@
           ]
         },
         {
-          "id": "magic-sword",
+          "id": "10000000-0000-4000-8000-000000000003",
           "kind": "item",
           "label": "Das magische Schwert",
           "description": "Ein silbernes Schwert, das schwach blau leuchtet.",
@@ -79,9 +80,9 @@
       ],
       "links": [
         {
-          "id": "almas-in-dungeon",
-          "source_id": "almas",
-          "target_id": "old-dungeon",
+          "id": "20000000-0000-4000-8000-000000000001",
+          "source_id": "10000000-0000-4000-8000-000000000001",
+          "target_id": "10000000-0000-4000-8000-000000000002",
           "kind": "located_in",
           "visibility": {
             "scope": "public"
@@ -90,9 +91,9 @@
           "description": "Almas steht am Eingang des Dungeons."
         },
         {
-          "id": "sword-in-dungeon",
-          "source_id": "magic-sword",
-          "target_id": "old-dungeon",
+          "id": "20000000-0000-4000-8000-000000000002",
+          "source_id": "10000000-0000-4000-8000-000000000003",
+          "target_id": "10000000-0000-4000-8000-000000000002",
           "kind": "located_in",
           "visibility": {
             "scope": "public"
@@ -103,18 +104,18 @@
       ],
       "facts": [
         {
-          "id": "dungeon-holds-sword",
+          "id": "30000000-0000-4000-8000-000000000001",
           "statement": "Das magische Schwert befindet sich im alten Dungeon.",
           "visibility": {
             "scope": "public"
           },
-          "subject_id": "magic-sword"
+          "subject_id": "10000000-0000-4000-8000-000000000003"
         }
       ],
       "knowledge": [],
       "rules": [
         {
-          "id": "dungeon-rule",
+          "id": "40000000-0000-4000-8000-000000000001",
           "statement": "Der Dungeon ist dunkel und gefährlich, aber nicht tödlich unfair.",
           "visibility": {
             "scope": "public"
@@ -123,15 +124,15 @@
       ],
       "goals": [
         {
-          "id": "find-magic-sword",
+          "id": "50000000-0000-4000-8000-000000000001",
           "kind": "main",
           "title": "Finde das magische Schwert",
           "description": "Almas muss das magische Schwert im alten Dungeon finden.",
           "status": "open",
           "related_entity_ids": [
-            "almas",
-            "old-dungeon",
-            "magic-sword"
+            "10000000-0000-4000-8000-000000000001",
+            "10000000-0000-4000-8000-000000000002",
+            "10000000-0000-4000-8000-000000000003"
           ]
         }
       ]

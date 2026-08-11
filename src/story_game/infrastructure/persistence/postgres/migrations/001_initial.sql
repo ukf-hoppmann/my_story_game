@@ -1,5 +1,6 @@
 CREATE TABLE game_runs (
-    run_id TEXT PRIMARY KEY,
+    run_id UUID PRIMARY KEY,
+    name TEXT NOT NULL CHECK (name <> ''),
     status TEXT NOT NULL CHECK (status IN ('draft', 'active', 'paused', 'completed')),
     current_revision BIGINT NOT NULL CHECK (current_revision >= 1),
     created_at TIMESTAMPTZ NOT NULL,
@@ -8,16 +9,16 @@ CREATE TABLE game_runs (
 );
 
 CREATE TABLE game_run_members (
-    run_id TEXT NOT NULL REFERENCES game_runs (run_id) ON DELETE CASCADE,
+    run_id UUID NOT NULL REFERENCES game_runs (run_id) ON DELETE CASCADE,
     issuer TEXT NOT NULL CHECK (issuer <> ''),
     subject TEXT NOT NULL CHECK (subject <> ''),
     game_role TEXT NOT NULL CHECK (game_role IN ('owner', 'player')),
-    player_entity_id TEXT,
+    player_entity_id UUID,
     PRIMARY KEY (run_id, issuer, subject)
 );
 
 CREATE TABLE game_state_revisions (
-    run_id TEXT NOT NULL REFERENCES game_runs (run_id) ON DELETE CASCADE,
+    run_id UUID NOT NULL REFERENCES game_runs (run_id) ON DELETE CASCADE,
     revision BIGINT NOT NULL CHECK (revision >= 1),
     previous_revision BIGINT CHECK (previous_revision IS NULL OR previous_revision >= 1),
     committed_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -29,7 +30,7 @@ CREATE TABLE game_state_revisions (
 );
 
 CREATE TABLE game_state_configurations (
-    run_id TEXT NOT NULL,
+    run_id UUID NOT NULL,
     revision BIGINT NOT NULL,
     language TEXT NOT NULL CHECK (language <> ''),
     genre TEXT NOT NULL CHECK (genre <> ''),
@@ -51,10 +52,10 @@ CREATE TABLE game_state_configurations (
 );
 
 CREATE TABLE world_entities (
-    run_id TEXT NOT NULL,
+    run_id UUID NOT NULL,
     revision BIGINT NOT NULL,
     position INTEGER NOT NULL CHECK (position >= 0),
-    entity_id TEXT NOT NULL,
+    entity_id UUID NOT NULL,
     kind TEXT NOT NULL,
     label TEXT NOT NULL,
     description TEXT NOT NULL,
@@ -68,84 +69,113 @@ CREATE TABLE world_entities (
 );
 
 CREATE TABLE world_links (
-    run_id TEXT NOT NULL,
+    run_id UUID NOT NULL,
     revision BIGINT NOT NULL,
     position INTEGER NOT NULL CHECK (position >= 0),
-    link_id TEXT NOT NULL,
-    source_id TEXT NOT NULL,
-    target_id TEXT NOT NULL,
+    link_id UUID NOT NULL,
+    source_id UUID NOT NULL,
+    target_id UUID NOT NULL,
     kind TEXT NOT NULL,
     visibility_scope TEXT NOT NULL,
-    visibility_actor_id TEXT,
+    visibility_actor_id UUID,
     quantity INTEGER CHECK (quantity IS NULL OR quantity >= 1),
     description TEXT NOT NULL,
     PRIMARY KEY (run_id, revision, link_id),
     UNIQUE (run_id, revision, position),
     FOREIGN KEY (run_id, revision)
-        REFERENCES game_state_revisions (run_id, revision) ON DELETE CASCADE
+        REFERENCES game_state_revisions (run_id, revision) ON DELETE CASCADE,
+    FOREIGN KEY (run_id, revision, source_id)
+        REFERENCES world_entities (run_id, revision, entity_id) ON DELETE CASCADE,
+    FOREIGN KEY (run_id, revision, target_id)
+        REFERENCES world_entities (run_id, revision, entity_id) ON DELETE CASCADE,
+    FOREIGN KEY (run_id, revision, visibility_actor_id)
+        REFERENCES world_entities (run_id, revision, entity_id) ON DELETE CASCADE
 );
 
 CREATE TABLE world_facts (
-    run_id TEXT NOT NULL,
+    run_id UUID NOT NULL,
     revision BIGINT NOT NULL,
     position INTEGER NOT NULL CHECK (position >= 0),
-    fact_id TEXT NOT NULL,
+    fact_id UUID NOT NULL,
     statement TEXT NOT NULL,
-    subject_id TEXT,
+    subject_id UUID,
     visibility_scope TEXT NOT NULL,
-    visibility_actor_id TEXT,
+    visibility_actor_id UUID,
     PRIMARY KEY (run_id, revision, fact_id),
     UNIQUE (run_id, revision, position),
     FOREIGN KEY (run_id, revision)
-        REFERENCES game_state_revisions (run_id, revision) ON DELETE CASCADE
+        REFERENCES game_state_revisions (run_id, revision) ON DELETE CASCADE,
+    FOREIGN KEY (run_id, revision, subject_id)
+        REFERENCES world_entities (run_id, revision, entity_id) ON DELETE CASCADE,
+    FOREIGN KEY (run_id, revision, visibility_actor_id)
+        REFERENCES world_entities (run_id, revision, entity_id) ON DELETE CASCADE
 );
 
 CREATE TABLE world_knowledge (
-    run_id TEXT NOT NULL,
+    run_id UUID NOT NULL,
     revision BIGINT NOT NULL,
     position INTEGER NOT NULL CHECK (position >= 0),
-    actor_id TEXT NOT NULL,
-    fact_id TEXT NOT NULL,
+    actor_id UUID NOT NULL,
+    fact_id UUID NOT NULL,
     learned_at BIGINT NOT NULL CHECK (learned_at >= 1),
     forgotten_at BIGINT CHECK (forgotten_at IS NULL OR forgotten_at >= 1),
     PRIMARY KEY (run_id, revision, actor_id, fact_id),
     UNIQUE (run_id, revision, position),
     FOREIGN KEY (run_id, revision)
-        REFERENCES game_state_revisions (run_id, revision) ON DELETE CASCADE
+        REFERENCES game_state_revisions (run_id, revision) ON DELETE CASCADE,
+    FOREIGN KEY (run_id, revision, actor_id)
+        REFERENCES world_entities (run_id, revision, entity_id) ON DELETE CASCADE,
+    FOREIGN KEY (run_id, revision, fact_id)
+        REFERENCES world_facts (run_id, revision, fact_id) ON DELETE CASCADE
 );
 
 CREATE TABLE world_rules (
-    run_id TEXT NOT NULL,
+    run_id UUID NOT NULL,
     revision BIGINT NOT NULL,
     position INTEGER NOT NULL CHECK (position >= 0),
-    rule_id TEXT NOT NULL,
+    rule_id UUID NOT NULL,
     statement TEXT NOT NULL,
     visibility_scope TEXT NOT NULL,
-    visibility_actor_id TEXT,
+    visibility_actor_id UUID,
     PRIMARY KEY (run_id, revision, rule_id),
     UNIQUE (run_id, revision, position),
     FOREIGN KEY (run_id, revision)
-        REFERENCES game_state_revisions (run_id, revision) ON DELETE CASCADE
+        REFERENCES game_state_revisions (run_id, revision) ON DELETE CASCADE,
+    FOREIGN KEY (run_id, revision, visibility_actor_id)
+        REFERENCES world_entities (run_id, revision, entity_id) ON DELETE CASCADE
 );
 
 CREATE TABLE world_goals (
-    run_id TEXT NOT NULL,
+    run_id UUID NOT NULL,
     revision BIGINT NOT NULL,
     position INTEGER NOT NULL CHECK (position >= 0),
-    goal_id TEXT NOT NULL,
+    goal_id UUID NOT NULL,
     kind TEXT NOT NULL CHECK (kind IN ('main', 'side')),
     title TEXT NOT NULL CHECK (title <> ''),
     description TEXT NOT NULL CHECK (description <> ''),
     status TEXT NOT NULL CHECK (status IN ('open', 'completed', 'failed')),
-    related_entity_ids JSONB NOT NULL DEFAULT '[]'::jsonb,
     PRIMARY KEY (run_id, revision, goal_id),
     UNIQUE (run_id, revision, position),
     FOREIGN KEY (run_id, revision)
         REFERENCES game_state_revisions (run_id, revision) ON DELETE CASCADE
 );
 
+CREATE TABLE world_goal_related_entities (
+    run_id UUID NOT NULL,
+    revision BIGINT NOT NULL,
+    goal_id UUID NOT NULL,
+    position INTEGER NOT NULL CHECK (position >= 0),
+    entity_id UUID NOT NULL,
+    PRIMARY KEY (run_id, revision, goal_id, entity_id),
+    UNIQUE (run_id, revision, goal_id, position),
+    FOREIGN KEY (run_id, revision, goal_id)
+        REFERENCES world_goals (run_id, revision, goal_id) ON DELETE CASCADE,
+    FOREIGN KEY (run_id, revision, entity_id)
+        REFERENCES world_entities (run_id, revision, entity_id) ON DELETE CASCADE
+);
+
 CREATE TABLE story_state_metadata (
-    run_id TEXT NOT NULL,
+    run_id UUID NOT NULL,
     revision BIGINT NOT NULL,
     current_turn_sequence BIGINT NOT NULL CHECK (current_turn_sequence >= 0),
     summary_through_sequence BIGINT CHECK (summary_through_sequence >= 1),
@@ -165,8 +195,8 @@ CREATE TABLE story_state_metadata (
 );
 
 CREATE TABLE story_turns (
-    run_id TEXT NOT NULL REFERENCES game_runs (run_id) ON DELETE CASCADE,
-    turn_id TEXT NOT NULL,
+    run_id UUID NOT NULL REFERENCES game_runs (run_id) ON DELETE CASCADE,
+    turn_id UUID NOT NULL,
     sequence BIGINT NOT NULL CHECK (sequence >= 1),
     player_input TEXT NOT NULL CHECK (player_input <> ''),
     narration TEXT NOT NULL CHECK (narration <> ''),

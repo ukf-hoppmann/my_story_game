@@ -7,6 +7,7 @@ weder HTTP und PostgreSQL noch Keycloak oder einen konkreten LLM-Anbieter.
 
 ```text
 GameRun
+├── UUID und Anzeigename
 ├── Status
 ├── Mitglieder
 ├── aktuelle Revision
@@ -20,11 +21,25 @@ GameRun
         └── aktuelle Zugnummer
 ```
 
-`GameRun` ist die konkrete Spielpartie. Er hält den Status `draft`, `active`,
-`paused` oder `completed`, die Mitglieder und den Verweis auf die aktuelle
-Revision. Ein Mitglied wird durch `issuer` und `subject` aus Keycloak erkannt,
-hat die Spielrolle `owner` oder `player` und kann einer Spielfigur im
-WorldState zugeordnet sein. Passwörter werden nicht im Storygame gespeichert.
+`GameRun` ist die konkrete Spielpartie. Er besitzt eine technische UUID und
+einen davon getrennten, nicht eindeutigen Anzeigenamen. Er hält den Status
+`draft`, `active`, `paused` oder `completed`, die Mitglieder und den Verweis auf
+die aktuelle Revision. Ein Mitglied wird durch `issuer` und `subject` aus
+Keycloak erkannt, hat die Spielrolle `owner` oder `player` und kann einer
+Spielfigur im WorldState zugeordnet sein. Passwörter werden nicht im Storygame
+gespeichert.
+
+Alle vom Storygame kontrollierten kanonischen Identitäten werden durch
+`StableId` als `uuid.UUID` modelliert. Dazu gehören GameRuns, WorldEntities,
+EntityLinks, Facts, WorldRules, Goals, StoryTurns und ihre internen
+Referenzen. Neue Werte entstehen mit UUIDv4 vor dem Persistenzadapter; eine
+lesbare Bezeichnung liegt stattdessen in `GameRun.name`, `WorldEntity.label`,
+`Goal.title` oder den jeweiligen Beschreibungsfeldern.
+
+Keycloak-Identitäten, Prompt-Paket-, Provider- und Modellkennungen,
+Promptprofil-Optionen sowie lokale Referenzen aus einem LLM-Candidate bleiben
+Text. Sie gehören fremden Systemen oder versionierten Konfigurationen und sind
+keine vom Storygame besessenen Identitäten.
 
 `GameState` ist ein unveränderlicher, revisionierter Stand innerhalb dieses
 Laufs. Er enthält genau die Konfiguration, die strukturierte Welt und die

@@ -24,10 +24,7 @@ from story_game.domain import (
     StoryState,
     WorldState,
 )
-
-
-def sid(value: str) -> StableId:
-    return StableId(value)
+from tests.ids import sid
 
 
 def configuration(tone: str = "balanced") -> GameConfiguration:
@@ -102,6 +99,7 @@ def initial() -> tuple[GameRun, GameState]:
     member = GameRunMember("issuer", "subject", GameRole.OWNER)
     run = GameRun(
         sid("run-1"),
+        "Almas und das magische Schwert",
         GameRunStatus.DRAFT,
         StateRevision(1),
         (member,),

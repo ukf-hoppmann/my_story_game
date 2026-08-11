@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 from typing import Any
+from uuid import UUID
 
 import psycopg
 
 from story_game.domain import (
-    StableId,
     StateRevision,
     StorySequence,
     StoryState,
@@ -15,12 +15,14 @@ from story_game.domain import (
     StoryTurn,
 )
 
+from .row_mapping import stable_id_from_row
+
 
 class StorySnapshotReader:
     def read(
         self,
         connection: psycopg.Connection[Any],
-        run_id: str,
+        run_id: UUID,
         revision: int,
     ) -> StoryState:
         metadata = connection.execute(
@@ -42,7 +44,7 @@ class StorySnapshotReader:
         ).fetchall()
         turns = tuple(
             StoryTurn(
-                StableId(str(row["turn_id"])),
+                stable_id_from_row(row, "turn_id"),
                 StorySequence(int(row["sequence"])),
                 str(row["player_input"]),
                 str(row["narration"]),

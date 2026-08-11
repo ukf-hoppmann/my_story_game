@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from .errors import ValidationError
 
@@ -13,21 +13,29 @@ from .errors import ValidationError
 class StableId:
     """An application-owned identifier used for all persistent domain objects."""
 
-    value: str
+    value: UUID
 
     def __post_init__(self) -> None:
-        value = self.value.strip()
-        if not value:
-            raise ValidationError("Eine stabile ID darf nicht leer sein")
-        object.__setattr__(self, "value", value)
+        if not isinstance(self.value, UUID):
+            raise ValidationError("Eine stabile ID muss eine UUID sein")
+
+    @classmethod
+    def parse(cls, value: UUID | str) -> StableId:
+        """Parse a UUID received at a serialization boundary."""
+        if isinstance(value, UUID):
+            return cls(value)
+        try:
+            return cls(UUID(value))
+        except (AttributeError, TypeError, ValueError) as error:
+            raise ValidationError("Eine stabile ID muss eine UUID sein") from error
 
     @classmethod
     def new(cls) -> StableId:
         """Create an identifier for a new in-memory domain object."""
-        return cls(str(uuid4()))
+        return cls(uuid4())
 
     def __str__(self) -> str:
-        return self.value
+        return str(self.value)
 
 
 @dataclass(frozen=True, slots=True, order=True)

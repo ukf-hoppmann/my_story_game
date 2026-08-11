@@ -5,10 +5,7 @@ from datetime import UTC, datetime
 import pytest
 
 import story_game.domain as domain
-
-
-def sid(value: str) -> domain.StableId:
-    return domain.StableId(value)
+from tests.ids import sid
 
 
 def test_story_state_contains_completed_turns_summary_and_sequence_only() -> None:

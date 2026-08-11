@@ -5,10 +5,7 @@ from datetime import UTC, datetime
 import pytest
 
 import story_game.domain as domain
-
-
-def sid(value: str) -> domain.StableId:
-    return domain.StableId(value)
+from tests.ids import sid
 
 
 def test_game_run_owns_status_members_and_current_revision() -> None:
@@ -26,6 +23,7 @@ def test_game_run_owns_status_members_and_current_revision() -> None:
     created_at = datetime(2026, 8, 6, tzinfo=UTC)
     run = domain.GameRun(
         id=sid("run-1"),
+        name="Almas und das magische Schwert",
         status=domain.GameRunStatus.DRAFT,
         current_revision=domain.StateRevision(1),
         members=(member,),
@@ -34,6 +32,7 @@ def test_game_run_owns_status_members_and_current_revision() -> None:
     )
 
     assert run.members == (member,)
+    assert run.name == "Almas und das magische Schwert"
     assert run.current_revision == domain.StateRevision(1)
 
 
@@ -49,9 +48,25 @@ def test_game_run_rejects_duplicate_memberships() -> None:
     with pytest.raises(domain.ValidationError):
         domain.GameRun(
             id=sid("run-1"),
+            name="Testlauf",
             status=domain.GameRunStatus.ACTIVE,
             current_revision=domain.StateRevision(1),
             members=(member, member),
+            created_at=created_at,
+            updated_at=created_at,
+        )
+
+
+def test_game_run_requires_a_human_readable_name() -> None:
+    created_at = datetime(2026, 8, 6, tzinfo=UTC)
+
+    with pytest.raises(domain.ValidationError):
+        domain.GameRun(
+            id=sid("run-1"),
+            name="  ",
+            status=domain.GameRunStatus.DRAFT,
+            current_revision=domain.StateRevision(1),
+            members=(),
             created_at=created_at,
             updated_at=created_at,
         )

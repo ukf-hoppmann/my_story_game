@@ -12,6 +12,7 @@ noch nicht den aktuellen Stand beschreiben, gehören nach
 Aktuelle Dokumente:
 
 - [`architektur.md`](architektur.md)
+- [`architecture-naming.md`](architecture-naming.md)
 - [`api.md`](api.md)
 - [`domain-model.md`](domain-model.md)
 - [`persistence.md`](persistence.md)

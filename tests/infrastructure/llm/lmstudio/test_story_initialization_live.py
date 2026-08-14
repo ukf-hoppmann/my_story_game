@@ -67,8 +67,8 @@ class PrintingClient:
 def test_live_initializes_and_prints_story_and_world_state(
     request: pytest.FixtureRequest,
 ) -> None:
-    if not request.config.getoption("--run-lmstudio-live"):
-        pytest.skip("Live LM-Studio-Test nur mit --run-lmstudio-live")
+    # if not request.config.getoption("--run-lmstudio-live"):
+    #     pytest.skip("Live LM-Studio-Test nur mit --run-lmstudio-live")
 
     repository_root = Path(__file__).resolve().parents[4]
     configuration_path = repository_root / "configs" / "llm.toml"

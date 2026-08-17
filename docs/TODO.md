@@ -548,6 +548,41 @@ After explicit rejection:
   - Goal: Nach einem abgeschlossenen Zug die fortlaufende Zusammenfassung der bisherigen Geschichte erzeugen und mit dem Zug persistieren.
   - Completion criteria: Ein eigener Port und ein neuer Prompt-Task im Paket existieren; `GenerationTask.SUMMARY` ist bereits konfiguriert, der Prompt-Task fehlte bislang. Der Zug übergibt die erzeugte Zusammenfassung an den atomaren Commit; ein Fehlschlag der Zusammenfassung ist typisiert und macht sichtbar, ob der Zug trotzdem gültig abgeschlossen wurde.
 
+- `TASK-025` **Historische Daten in den Turn-Kontext aufnehmen**
+  - Type: Task.
+  - Status: Open.
+  - Parent: `EPIC-002`.
+  - Required for parent: No.
+  - Created: 2026-08-17.
+  - Area: Story-Workflow.
+  - Priority: Perspektivisch.
+  - Dependencies: `TASK-015`.
+  - Goal: Bezugnahmen auf Vergangenes im Prompt auflösbar machen. Die Kontextauswahl liest heute ausschließlich die aktuelle Revision. Sagt der Spieler „ich gehe zurück", weiß das Modell nur dann was gemeint ist, wenn der frühere Ort zufällig noch in den letzten Zügen oder der Zusammenfassung vorkommt. Die Information liegt vollständig in der Datenbank — jede Revision hält einen kompletten Weltsnapshot, alte Revisionen werden nie gelöscht — sie erreicht nur den Prompt nicht.
+  - Completion criteria: Entschieden und umgesetzt ist, welcher historische Ausschnitt in den Kontext gelangt — mindestens der vorherige Schauplatz, gegebenenfalls frühere Aufenthaltsorte oder entfernte Tatsachen. Die Auswahl bleibt deterministisch und budgetiert; die Herkunft der historischen Daten ist im Prompt als solche erkennbar, damit das Modell Vergangenes nicht als Gegenwart erzählt.
+
+- `TASK-026` **Automatischen Review der Änderungsvorschläge einführen**
+  - Type: Task.
+  - Status: Open.
+  - Parent: `STORY-007`.
+  - Required for parent: No.
+  - Created: 2026-08-17.
+  - Area: Story-Workflow und Diagnose.
+  - Priority: Wichtig.
+  - Dependencies: `TASK-021`.
+  - Goal: Vorgeschlagene Änderungen automatisch und ohne nennenswerte Rechenlast auf Plausibilität prüfen, statt sie nur strukturell zu validieren. Der Review läuft ohne Benutzereingriff und hält den Spielfluss nicht an; seine Befunde sollen optional anzeigbar sein, damit sichtbar wird, wie oft und wobei das Modell danebenliegt.
+  - Completion criteria: Das Delta-Schema führt je Änderung einen Beleg als wörtliches Zitat aus der Erzählung. Deterministische Prüfungen erzeugen je Änderung Befunde: der Beleg kommt in der Erzählung tatsächlich vor; die Bezeichnung einer neu vorgeschlagenen Entität ist in der Erzählung auffindbar; ein neuer Schauplatz ist genannt oder unverändert. Die vorhandene deutschsprachige Namenserkennung wird dafür wiederverwendet, statt eine zweite zu bauen. Befunde sind Hinweise, keine Ablehnung — strukturelle Fehler und Domainverstöße verwerfen den Vorschlag weiterhin ganz. Die Befunde sind abrufbar und im Live-Test sichtbar. Dokumentiert ist, was der automatische Review ausdrücklich nicht leisten kann.
+
+- `TASK-024` **Logging-Grundlage einführen**
+  - Type: Task.
+  - Status: Open.
+  - Parent: None.
+  - Created: 2026-08-17.
+  - Area: Betrieb und Diagnose.
+  - Priority: Wichtig.
+  - Dependencies: None.
+  - Goal: Eine schlanke, projektweite Logging-Grundlage schaffen. Das Projekt enthält heute kein einziges Log: weder Modellaufrufe noch verworfene Vorschläge, Revisionskonflikte oder Providerfehler hinterlassen eine Spur. Wiederkehrende Probleme im Spielbetrieb sind dadurch nicht erkennbar.
+  - Completion criteria: Es ist entschieden, welche Ereignisse geloggt werden und auf welcher Stufe, wie die Ausgabe konfiguriert wird und wie die Schichtengrenzen eingehalten bleiben — die Domain loggt nicht, die Application entscheidet fachlich, Infrastruktur und Composition Root richten ein. Spielerprosa, Prompts und Rohantworten dürfen nicht ungefiltert im Log landen. Mindestens fehlgeschlagene Modellaufrufe, verworfene Änderungsvorschläge und Revisionskonflikte sind sichtbar. Bestehende typisierte Fehler bleiben unverändert; das Log ergänzt sie, ersetzt sie nicht.
+
 - `TASK-016` **Mehrere gesteuerte Figuren im Director Mode**
   - Type: Task.
   - Status: Open.

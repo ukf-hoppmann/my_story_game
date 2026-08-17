@@ -1,9 +1,9 @@
 # Geplante Story-Erzeugung über austauschbare Modelle
 
-Status: Der Provider-Anschluss, die technische Story-Grenze, der Szenenzeiger im
-WorldState, die Kontextauswahl für einen Zug und die Story-Erzeugung selbst sind
-implementiert. Noch nicht implementiert sind Turn-Extraction, Freigabe und der
-umschließende Zug-Workflow.
+Status: Ein vollständiger Storyzug ist implementiert — Kontextauswahl,
+Story-Erzeugung, Turn-Extraction, Freigabe und atomarer Commit. Noch nicht
+implementiert sind die rollierende Zusammenfassung, die Verdrahtung des
+Providers im Composition Root und ein HTTP-Endpunkt.
 Grundlage: [Entscheidung zur LLM-Anbindung](../../decisions/llm-anbindung.md),
 die [Entscheidung zu Promptprofil und Modellwahl](../../decisions/promptprofil-und-modellwahl.md)
 und der verbindliche
@@ -307,6 +307,45 @@ Verdecktes Wissen wird im ersten Wurf **nicht** gekennzeichnet: `director_only`
 erscheint im Prompt wie jede andere Tatsache. Ob das Modell dadurch Plotpunkte
 vorzeitig ausspricht, muss beobachtet werden; die Entscheidung darüber ist als
 offene Folgearbeit festgehalten.
+
+## Turn-Extraction und Freigabe
+
+`ExtractStoryTurnChanges` vergleicht die neu erzeugte Prosa mit dem aktuellen
+Weltausschnitt und liefert einen unbestätigten Delta-Vorschlag: neue und
+geänderte Entitäten, hinzugefügte und entfernte Beziehungen, hinzugefügte und
+entfernte Tatsachen sowie den Schauplatz nach dem Zug. Wissen, Weltregeln und
+Ziele bleiben außen vor, konsistent zur Initialisierung.
+
+Die Spielereingabe erreicht diesen Aufruf bewusst nicht. Was geschehen ist,
+sagt die Erzählung — nicht, was der Spieler versucht hat.
+
+Bestehende Objekte spricht das Modell über kurze Handles an, die
+`extraction_projection` für genau diesen einen Aufruf vergibt: `e` für
+Entitäten, `l` für Beziehungen, `f` für Tatsachen. Bezeichnungen reichen nicht,
+weil gleichlautende Namen erlaubt sind, und stabile IDs kosten deutlich mehr
+Token und werden von lokalen Modellen verschrieben — ein falsches Zeichen würde
+den ganzen Zug verwerfen. Neu Entstandenes verwendet weiterhin lokale
+Referenzen wie bei der Initialisierung.
+
+`ApproveStoryTurnChanges` löst beide Referenzformen gegen die aktuelle Revision
+auf, vergibt neuen Objekten erst dabei stabile IDs, bildet daraus den
+transienten `ProposedChangeSet` und gibt ihn frei. Entfernte Beziehungen werden
+vor hinzugefügten eingeordnet, damit ein Ortswechsel nicht kurzzeitig zwei
+Aufenthaltsorte beansprucht. Die Domain-Invarianten prüft ein Trockenlauf, der
+verworfen wird — die Regeln bleiben damit an einer Stelle. Jeder Fehler
+verwirft den gesamten Vorschlag.
+
+Dieser Freigabepfad ist der gemeinsame Trichter: eine spätere Aufteilung in
+mehrere gezielte Extraktionsaufrufe tauscht nur den Aufrufteil aus.
+
+## Vollständiger Zug
+
+`PlayStoryTurn` verbindet Laden, Kontextauswahl, Story-Erzeugung, Extraktion,
+Freigabe und atomaren Commit in sichtbarer Reihenfolge. Die gesteuerte Figur
+wird aus der Mitgliedschaft des Aufrufers aufgelöst; im Director Mode ist keine
+gebunden, was gültig bleibt. Beide Modellaufrufe liegen außerhalb der
+Datenbanktransaktion, sodass jeder Fehler vor dem Commit die vorherige Revision
+unverändert stehen lässt.
 
 Die Relevanzauswahl filtert bewusst **nicht** nach `Visibility`. Ein
 `director_only`-Fakt wird wie ein öffentlicher ausgewählt, weil das Modell auf

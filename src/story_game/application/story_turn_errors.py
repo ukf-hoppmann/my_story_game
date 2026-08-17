@@ -12,6 +12,9 @@ class StoryTurnErrorKind(StrEnum):
     INVALID_CONFIGURATION = "invalid_configuration"
     MODEL_FAILURE = "model_failure"
     INVALID_MODEL_RESPONSE = "invalid_model_response"
+    INVALID_CANDIDATE_REFERENCE = "invalid_candidate_reference"
+    DOMAIN_REJECTION = "domain_rejection"
+    UNKNOWN_MEMBER = "unknown_member"
 
 
 @dataclass(frozen=True, slots=True)

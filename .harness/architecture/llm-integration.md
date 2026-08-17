@@ -113,6 +113,14 @@ contract remains binding together with this scope.
   projections. Their orchestration MUST remain an Application workflow concern,
   and they MUST converge on one shared downstream validation, approval, and
   turn-completion path.
+- When Extraction compares against an existing world, its projection MUST give
+  every addressable object a short handle valid for that one call, and the
+  model MUST address existing objects only through those handles. Labels are
+  not sufficient because equally named entities are allowed. Stable IDs MUST
+  NOT be used for this: they cost far more tokens, and a single mistyped
+  identifier would discard an entire turn. Genuinely new objects keep using
+  local references. The Application MUST resolve both forms and MUST reject a
+  local reference that shadows a handle.
 - Specialized partial results MAY remain transient while failed calls are
   handled, but they MUST enter the root architecture's canonical-state boundary
   only as one complete, validated turn result.

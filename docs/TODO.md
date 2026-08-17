@@ -502,7 +502,7 @@ After explicit rejection:
 
 - `TASK-020` **Extraktionsvertrag und Modellaufruf für einen Zug**
   - Type: Task.
-  - Status: Open.
+  - Status: Awaiting confirmation.
   - Parent: `STORY-007`.
   - Required for parent: Yes.
   - Created: 2026-08-17.
@@ -514,7 +514,7 @@ After explicit rejection:
 
 - `TASK-021` **Kandidaten fachlich prüfen und freigeben**
   - Type: Task.
-  - Status: Open.
+  - Status: Awaiting confirmation.
   - Parent: `STORY-007`.
   - Required for parent: Yes.
   - Created: 2026-08-17.
@@ -526,7 +526,7 @@ After explicit rejection:
 
 - `TASK-022` **Vollständigen Storyzug orchestrieren**
   - Type: Task.
-  - Status: Open.
+  - Status: Awaiting confirmation.
   - Parent: `STORY-007`.
   - Required for parent: Yes.
   - Created: 2026-08-17.

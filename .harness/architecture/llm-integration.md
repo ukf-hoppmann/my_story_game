@@ -133,9 +133,17 @@ contract remains binding together with this scope.
   tone, an existing WorldState, and an invented story history MUST NOT enter
   the initial Extraction model request.
 - The structured model result MUST be limited to candidate entities, links,
-  and facts with local entity references. It MUST NOT contain stable IDs,
-  visibility, evidence, actor knowledge, world rules, goals, or a model-created
-  player character.
+  facts, and scene-location references, all using local entity references. It
+  MUST NOT contain stable IDs, visibility, evidence, actor knowledge, world
+  rules, goals, or a model-created player character.
+- The scene reference names where the opening is set. It is a separate
+  statement from where entities are located: location links say where something
+  is, the scene says where the narration currently looks. Both are required
+  because director control MAY narrate a scene that the controlled character is
+  not part of, so the scene MUST NOT be derived from any entity's location.
+  The model MUST return the scene as ordered local references to extracted
+  locations, most relevant first. The Application MUST map them to stable IDs
+  and MUST reject references that are unknown, duplicated, or not locations.
 - A model MAY return zero or more non-player characters in every supported
   perspective. Extracted characters MUST be assigned the neutral actor role by
   the Application. The caller-provided player character MUST be created by the
@@ -181,7 +189,8 @@ contract remains binding together with this scope.
   of a model call after configuration rejection.
 - Initial-Extraction tests MUST cover empty candidate collections, optional
   non-player characters in first person, reserved player references, duplicate
-  player rejection, local-reference failures, Domain rejection, and empty
-  knowledge, rules, and goals.
+  player rejection, local-reference failures, Domain rejection, empty
+  knowledge, rules, and goals, and scene references that are unknown,
+  duplicated, or point at a non-location.
 - Architecture tests MUST enforce inward dependency direction for model ports,
   adapters, provider clients, and composition.

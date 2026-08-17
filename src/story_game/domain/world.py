@@ -182,6 +182,14 @@ class WorldState:
     knowledge: tuple[KnowledgeEntry, ...] = ()
     rules: tuple[WorldRule, ...] = ()
     goals: tuple[Goal, ...] = ()
+    scene_location_ids: tuple[StableId, ...] = ()
+    """Where the narration currently looks, most relevant location first.
+
+    This is a separate statement from the ``LOCATED_IN`` links: those say where
+    an entity *is*, the scene says where the story is being told. Director
+    control may narrate a scene the controlled character is not part of, so the
+    scene must not be derived from any entity's location.
+    """
 
     def __post_init__(self) -> None:
         _unique_ids(self.entities, "Entitäten")
@@ -261,6 +269,21 @@ class WorldState:
                 raise InvalidReferenceError(
                     "Ein Ziel muss auf vorhandene Entitäten verweisen"
                 )
+
+        if len(self.scene_location_ids) != len(set(self.scene_location_ids)):
+            raise ValidationError("Schauplätze einer Szene müssen eindeutig sein")
+        for location_id in self.scene_location_ids:
+            location = entities.get(location_id)
+            if location is None:
+                raise InvalidReferenceError(
+                    "Ein Schauplatz muss auf eine vorhandene Entität verweisen"
+                )
+            if location.kind is not EntityKind.LOCATION:
+                raise ValidationError("Ein Schauplatz muss ein Ort sein")
+
+    def primary_scene_location(self) -> StableId | None:
+        """Return the location the narration currently focuses on, if any."""
+        return self.scene_location_ids[0] if self.scene_location_ids else None
 
     def entity(self, entity_id: StableId) -> WorldEntity:
         for entity in self.entities:

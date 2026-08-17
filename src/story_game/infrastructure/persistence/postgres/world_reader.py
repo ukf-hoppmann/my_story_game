@@ -78,6 +78,14 @@ class WorldSnapshotReader:
             """,
             parameters,
         ).fetchall()
+        scene_locations = connection.execute(
+            """
+            SELECT location_id FROM world_scene_locations
+            WHERE run_id = %s AND revision = %s
+            ORDER BY position
+            """,
+            parameters,
+        ).fetchall()
         goal_references = connection.execute(
             """
             SELECT goal_id, entity_id FROM world_goal_related_entities
@@ -106,5 +114,8 @@ class WorldSnapshotReader:
                     ),
                 )
                 for row in goals
+            ),
+            scene_location_ids=tuple(
+                stable_id_from_row(row, "location_id") for row in scene_locations
             ),
         )

@@ -127,3 +127,12 @@ class WorldSnapshotWriter:
                         entity_id.value,
                     ),
                 )
+        for position, location_id in enumerate(world.scene_location_ids):
+            connection.execute(
+                """
+                INSERT INTO world_scene_locations (
+                    run_id, revision, position, location_id
+                ) VALUES (%s, %s, %s, %s)
+                """,
+                (run_id.value, revision.value, position, location_id.value),
+            )

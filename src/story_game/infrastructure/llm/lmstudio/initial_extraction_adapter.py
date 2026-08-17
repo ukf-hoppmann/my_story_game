@@ -97,6 +97,14 @@ class _WireCandidate(_WireModel):
     entities: list[_WireEntity]
     links: list[_WireLink]
     facts: list[_WireFact]
+    scene_refs: list[str] = Field(
+        description=(
+            "Local refs of the locations the opening is set in, most relevant first. "
+            "Each entry must be an entity local_ref of kind location. This is where "
+            "the narration looks, not where an entity is. Use an empty list only when "
+            "the opening establishes no location at all."
+        ),
+    )
 
 
 class LmStudioInitialWorldExtractionAdapter(InitialWorldExtractionPort):
@@ -198,4 +206,5 @@ def _candidate_from_wire(wire: _WireCandidate) -> WorldInitializationCandidate:
         facts=tuple(
             CandidateFact(item.statement, item.subject_ref) for item in wire.facts
         ),
+        scene_refs=tuple(wire.scene_refs),
     )

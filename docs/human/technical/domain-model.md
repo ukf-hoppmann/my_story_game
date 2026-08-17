@@ -78,6 +78,30 @@ werden aus Beziehungen abgeleitet und nicht doppelt geführt.
 `failed` und optionale Verweise auf beteiligte WorldEntities. Prozentwerte,
 Meilensteine und verschachtelte Teilziele gibt es zunächst nicht.
 
+### Szenenzeiger
+
+`scene_location_ids` ist eine geordnete Liste von Orts-IDs und benennt, wo die
+Erzählung gerade spielt. Der erste Eintrag ist der Hauptschauplatz; weitere
+Einträge erlauben es, zwischen Handlungssträngen zu schneiden. Jede ID muss auf
+eine vorhandene Entität vom Typ `location` zeigen, Duplikate sind unzulässig.
+`primary_scene_location()` liefert den Hauptschauplatz oder `None`.
+
+Das ist bewusst **keine** Dopplung der `located_in`-Beziehungen. Beide Angaben
+beantworten verschiedene Fragen:
+
+- `located_in` sagt, **wo eine Entität ist**.
+- `scene_location_ids` sagt, **wohin die Erzählung blickt**.
+
+Im Director Mode fallen beide legitim auseinander, weil eine Szene erzählt
+werden kann, in der die gesteuerte Figur gar nicht vorkommt. Genau deshalb
+lässt sich der Schauplatz nicht zuverlässig aus den Aufenthaltsorten ableiten
+und braucht eine eigene Aussage. Der Zeiger darf deshalb nicht als redundanter
+Zustand entfernt werden.
+
+Den ersten Wert setzt die initiale WorldState-Extraktion aus der
+Eröffnungsprosa. Eine Zustandsoperation zum Fortschreiben pro Zug gehört zur
+noch offenen Turn-Extraktion und existiert bewusst noch nicht.
+
 ## StoryState
 
 Der `StoryState` ist die konkrete Prosa-Chronologie. Er enthält nur:

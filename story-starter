@@ -6,6 +6,29 @@ script_directory="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 compose_file="${script_directory}/compose.yaml"
 api_port="${API_HOST_PORT:-8000}"
 
+print_help() {
+  cat <<EOF
+Verwendung: $(basename -- "${BASH_SOURCE[0]}") [-h|--help]
+
+Startet Story Game (PostgreSQL und API) über Docker Compose.
+
+Optionen:
+  -h, --help    Diese Hilfe anzeigen und beenden
+
+Umgebungsvariablen:
+  API_HOST_PORT  Host-Port für die API (Standard: 8000)
+
+Compose-Datei: ${compose_file}
+EOF
+}
+
+case "${1:-}" in
+  -h|--help)
+    print_help
+    exit 0
+    ;;
+esac
+
 if ! command -v docker >/dev/null 2>&1; then
   echo "Fehler: Docker wurde nicht gefunden." >&2
   exit 1

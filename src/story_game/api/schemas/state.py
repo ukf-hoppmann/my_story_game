@@ -29,6 +29,7 @@ class WorldStateModel(APIModel):
     knowledge: list[KnowledgeEntryModel] = Field(default_factory=list)
     rules: list[WorldRuleModel] = Field(default_factory=list)
     goals: list[GoalModel] = Field(default_factory=list)
+    scene_location_ids: list[UUID] = Field(default_factory=list)
 
 
 class StoryStateModel(APIModel):

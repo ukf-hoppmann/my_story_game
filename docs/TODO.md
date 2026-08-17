@@ -439,3 +439,40 @@ After explicit rejection:
   - Goal: Alle vom Storygame kontrollierten kanonischen Identitäten als streng validierte UUIDs modellieren und in PostgreSQL nativ als UUID speichern, während Keycloak-, TOML-, Prompt-, Provider-, Modell- und lokale LLM-Referenzen textuell bleiben und menschlich lesbare Namen in eigenen Fachfeldern liegen.
   - Completion criteria: `StableId` akzeptiert ausschließlich UUIDs; GameRun-, Entity-, Link-, Fact-, Rule-, Goal- und Turn-IDs sowie ihre internen Referenzen sind in Domain, API und PostgreSQL UUID-typisiert; Goal-Entity-Referenzen liegen nicht mehr als ID-Strings in JSONB; GameRun besitzt einen getrennten Anzeigenamen; lokale LLM-Referenzen werden weiterhin erst durch die Application auf StableIds abgebildet; Fremd- und Konfigurationsreferenzen bleiben Text; die dokumentierte Datenstrategie wurde vor der Schemaänderung bestätigt und die vollständige isolierte Harness-Verifikation besteht.
   - Resolution: Implemented, verified and confirmed by the owner on 2026-08-11.
+
+- `TASK-014` **Szenenzeiger im WorldState einführen**
+  - Type: Task.
+  - Status: Awaiting confirmation.
+  - Parent: `STORY-006`.
+  - Required for parent: Yes.
+  - Created: 2026-08-17.
+  - Area: Domainmodell, Persistenz, API und LLM-Integration.
+  - Priority: Wichtig.
+  - Dependencies: `STORY-009`, `STORY-002`.
+  - Goal: Den aktuellen Schauplatz der Erzählung als eigene geordnete Aussage im WorldState führen, damit die Kontextauswahl eines Storyzugs nicht auf Ableitungen aus Aufenthaltsbeziehungen angewiesen ist. Aufenthaltsbeziehungen sagen, wo eine Entität ist; der Szenenzeiger sagt, wohin die Erzählung blickt. Im Director Mode fallen beide legitim auseinander.
+  - Completion criteria: `WorldState.scene_location_ids` ist eine geordnete, duplikatfreie Liste vorhandener Orte mit `primary_scene_location()`; PostgreSQL speichert sie relational und revisionsgebunden in `world_scene_locations`; die API überträgt sie als UUID-Liste; die Initial-Extraction liefert geordnete lokale Schauplatzreferenzen, und unbekannte, doppelte oder nicht auf einen Ort zeigende Referenzen verwerfen den gesamten Kandidaten; `.harness/architecture/llm-integration.md` Abschnitt 6a ist entsprechend erweitert; die Begründung gegen Redundanz ist dokumentiert; bestehende Entwicklungsdatenbanken müssen ohne Upgrade-Migration neu angelegt werden; die vollständige Verifikation einschließlich PostgreSQL besteht.
+
+- `TASK-015` **Kontextauswahl für einen regulären Storyzug**
+  - Type: Task.
+  - Status: Awaiting confirmation.
+  - Parent: `STORY-006`.
+  - Required for parent: Yes.
+  - Created: 2026-08-17.
+  - Area: Story-Workflow.
+  - Priority: Wichtig.
+  - Dependencies: `TASK-014`.
+  - Goal: Aus dem vollständigen GameState und der Spielereingabe einen deterministischen, erklärbaren und budgetierten Ausschnitt auswählen, den der folgende Story-Modellaufruf als Kontext erhält.
+  - Completion criteria: Eine zusammengesetzte Application-Operation delegiert an einzeln testbare Schritte für Grundgerüst, Namenserkennung, Schauplatzbevölkerung, Ein-Hop-Erweiterung, zugehörige Fakten/Wissen/Ziele und Budgetierung; gleicher Zustand und gleiche Eingabe liefern dasselbe Ergebnis; der Eingabezustand bleibt unverändert; die Auswahl filtert nicht nach Visibility; die Budgetkappung bleibt referenziell geschlossen; kein Modellaufruf und keine Persistenz finden statt.
+  - Resolution: Implemented and verified on 2026-08-17 as `SelectStoryTurnContext` with six leaves. Ein Zug ohne Ortsnennung erhält seinen Schauplatz aus dem Zeiger; die gesteuerte Figur ist auch bei Du-Erzählung enthalten; `director_only`-Fakten werden nicht herausgefiltert. Die Projektion in den `StoryGenerationRequest` ist bewusst nicht Teil dieser Arbeit.
+
+- `TASK-016` **Mehrere gesteuerte Figuren im Director Mode**
+  - Type: Task.
+  - Status: Open.
+  - Parent: `EPIC-001`.
+  - Required for parent: No.
+  - Created: 2026-08-17.
+  - Area: Domainmodell und Persistenz.
+  - Priority: Perspektivisch.
+  - Dependencies: `STORY-001`, `STORY-002`.
+  - Goal: Klären und umsetzen, wie ein Benutzer im Director Mode eine oder mehrere Figuren steuert. Heute bindet `GameRunMember` genau eine Figur, und die Director-Initialisierung lässt die Bindung bewusst leer.
+  - Completion criteria: Entschieden und dokumentiert ist, ob eine Mitgliedschaft mehrere gesteuerte Figuren binden darf und wie diese bei der Welt-Erzeugung entstehen; Domain, Persistenz und API bilden das Ergebnis ab; die Kontextauswahl nimmt alle gesteuerten Figuren auf.

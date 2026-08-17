@@ -40,3 +40,25 @@ explicitly classified as one of:
 Always name the specific rule (quote or point to the section) and give the
 reason with the classification above — don't just flag "this is ambiguous"
 without saying why and which type it is.
+
+## Goal approval before implementation (concrete `goal`-mode interpretation)
+
+The project's `approval_mode` is `goal` (`.harness/policy.toml`). For this
+repo, the user has defined what that means concretely: the normal case is
+that we discuss what will be built and how first, and implementation MUST
+NOT start until the user gives explicit, unambiguous go-ahead (e.g. "ok",
+"los", "go", "mach") for that specific piece of work.
+
+This applies regardless of the active permission mode. Do not start editing
+files, running state-changing commands, or otherwise implementing a change
+based on inferring that the discussion "sounds settled" or that the request
+"seems small enough" — wait for the explicit go-ahead every time. Presenting
+a plan or approach and answering questions about it is not itself
+implementation and does not require this go-ahead; writing/changing files,
+or running commands with side effects, does.
+
+If the user's message already reads as an unambiguous go-ahead for a
+concretely stated plan in the same turn, that counts and no separate
+confirmation round is needed — the point is to never silently skip the
+approval step, not to force a redundant extra round-trip when approval was
+already clearly given.

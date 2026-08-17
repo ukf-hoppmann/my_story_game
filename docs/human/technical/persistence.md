@@ -17,6 +17,7 @@ Die wichtigsten Tabellen sind:
 | `world_*` | Entitäten, Beziehungen, Fakten, Wissen und Regeln je Revision |
 | `world_goals` | Haupt- und Nebenziele je Revision |
 | `world_goal_related_entities` | geordnete Goal-Verweise auf Entities derselben Revision |
+| `world_scene_locations` | geordnete Schauplätze der Erzählung je Revision |
 | `story_state_metadata` | aktuelle Zusammenfassung und Zugnummer je Revision |
 | `story_turns` | jeder abgeschlossene Zug genau einmal |
 
@@ -39,6 +40,13 @@ PostgreSQL-Typ `UUID`. Snapshotinterne Beziehungen sind über zusammengesetzte
 Foreign Keys an dieselbe `(run_id, revision)` gebunden. Goal-Entity-Verweise
 liegen deshalb nicht als String-Liste in JSONB, sondern geordnet in
 `world_goal_related_entities`.
+
+`world_scene_locations` folgt demselben Muster: die Reihenfolge liegt in
+`position`, der erste Eintrag ist der Hauptschauplatz, und ein zusammengesetzter
+Foreign Key bindet jeden Schauplatz an eine `world_entities`-Zeile derselben
+Revision. Die Tabelle ist keine Dopplung der `located_in`-Zeilen in
+`world_links`: diese halten fest, wo eine Entität ist, jene, wohin die Erzählung
+blickt. Im Director Mode fallen beide legitim auseinander.
 
 `game_run_members.player_entity_id` ist ebenfalls UUID, besitzt jedoch keinen
 Foreign Key auf `world_entities`: Eine Mitgliedschaft ist nicht revisioniert,

@@ -88,6 +88,7 @@ def test_adapter_requests_strict_json_and_returns_a_typed_candidate() -> None:
                         "subject_ref": "player_character",
                     }
                 ],
+                "scene_refs": ["dungeon"],
             }
         )
     )
@@ -101,6 +102,7 @@ def test_adapter_requests_strict_json_and_returns_a_typed_candidate() -> None:
         "alma", EntityKind.CHARACTER, "Alma", "Begleitet Maren."
     )
     assert result.data.facts[0].subject_ref == "player_character"
+    assert result.data.scene_refs == ("dungeon",)
     assert client.request is not None
     assert client.request.temperature == 0.1
     assert client.request.response_format is not None
@@ -124,8 +126,10 @@ def test_adapter_requests_strict_json_and_returns_a_typed_candidate() -> None:
     [
         "not-json",
         "{}",
-        '{"entities": [], "links": [], "facts": [], "evidence": []}',
-        '{"entities": [{"local_ref": "x", "kind": "unknown", "label": "X", "description": "", "conditions": [], "aliases": []}], "links": [], "facts": []}',
+        '{"entities": [], "links": [], "facts": [], "scene_refs": [], "evidence": []}',
+        '{"entities": [{"local_ref": "x", "kind": "unknown", "label": "X", "description": "", "conditions": [], "aliases": []}], "links": [], "facts": [], "scene_refs": []}',
+        '{"entities": [], "links": [], "facts": []}',
+        '{"entities": [], "links": [], "facts": [], "scene_refs": [""]}',
     ],
 )
 def test_adapter_rejects_malformed_or_nonconforming_json(response_text: str) -> None:

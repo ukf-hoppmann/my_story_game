@@ -18,6 +18,12 @@ Das gemeinsame Transportdokument heißt `GameDocument` und enthält sowohl
 `GameConfiguration`, den `WorldState` einschließlich Goals und den
 `StoryState`. Fremde Felder und fachlich inkonsistente IDs werden abgewiesen.
 
+`world.scene_location_ids` ist eine geordnete Liste von Orts-UUIDs und benennt,
+wo die Erzählung spielt; der erste Eintrag ist der Hauptschauplatz. Die Liste
+ist getrennt von den `located_in`-Beziehungen: diese sagen, wo eine Entität ist,
+jene, wohin die Erzählung blickt. IDs, die keinen vorhandenen Ort bezeichnen,
+sowie Duplikate werden abgewiesen.
+
 Alle internen IDs werden im OpenAPI-Schema als `string` mit `format: uuid`
 ausgewiesen und im JSON in kanonischer UUID-Schreibweise übertragen. Das gilt
 auch für `run_id` im Pfad; eine nicht als UUID parsebare ID führt zu HTTP 422.

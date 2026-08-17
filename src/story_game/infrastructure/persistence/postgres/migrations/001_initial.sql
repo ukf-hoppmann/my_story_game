@@ -174,6 +174,23 @@ CREATE TABLE world_goal_related_entities (
         REFERENCES world_entities (run_id, revision, entity_id) ON DELETE CASCADE
 );
 
+-- Where the narration currently looks, most relevant location first. This is a
+-- separate statement from world_links LOCATED_IN rows: those record where an
+-- entity is, this records where the story is being told. Director control may
+-- narrate a scene the controlled character is not part of.
+CREATE TABLE world_scene_locations (
+    run_id UUID NOT NULL,
+    revision BIGINT NOT NULL,
+    position INTEGER NOT NULL CHECK (position >= 0),
+    location_id UUID NOT NULL,
+    PRIMARY KEY (run_id, revision, location_id),
+    UNIQUE (run_id, revision, position),
+    FOREIGN KEY (run_id, revision)
+        REFERENCES game_state_revisions (run_id, revision) ON DELETE CASCADE,
+    FOREIGN KEY (run_id, revision, location_id)
+        REFERENCES world_entities (run_id, revision, entity_id) ON DELETE CASCADE
+);
+
 CREATE TABLE story_state_metadata (
     run_id UUID NOT NULL,
     revision BIGINT NOT NULL,

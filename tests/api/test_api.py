@@ -128,7 +128,16 @@ def complete_state_document() -> dict[str, object]:
                         "actor": {"role": "player"},
                         "conditions": [],
                         "aliases": [],
-                    }
+                    },
+                    {
+                        "id": uuid_text("dungeon"),
+                        "kind": "location",
+                        "label": "Dungeonkammer",
+                        "description": "",
+                        "actor": None,
+                        "conditions": [],
+                        "aliases": [],
+                    },
                 ],
                 "links": [],
                 "facts": [
@@ -157,6 +166,7 @@ def complete_state_document() -> dict[str, object]:
                         "related_entity_ids": [uuid_text("almas")],
                     }
                 ],
+                "scene_location_ids": [uuid_text("dungeon")],
             },
             "story": {
                 "turns": [],

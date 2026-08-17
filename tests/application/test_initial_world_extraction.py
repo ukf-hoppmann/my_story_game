@@ -167,6 +167,104 @@ def test_builds_complete_initial_world_state_and_keeps_request_minimal() -> None
     assert not hasattr(request, "world_state")
 
 
+def test_scene_references_become_ordered_stable_ids() -> None:
+    extractor = RecordingExtractor(
+        Success(
+            WorldInitializationCandidate(
+                entities=(
+                    CandidateEntity("dungeon", EntityKind.LOCATION, "Alter Dungeon"),
+                    CandidateEntity("hall", EntityKind.LOCATION, "Große Halle"),
+                ),
+                scene_refs=("hall", "dungeon"),
+            )
+        )
+    )
+
+    result = operation(extractor).apply(
+        ExtractInitialWorldStateRequest(
+            configuration(), story_state(), player_character()
+        )
+    )
+
+    assert isinstance(result, Success)
+    world = result.data
+    hall = next(item for item in world.entities if item.label == "Große Halle")
+    dungeon = next(item for item in world.entities if item.label == "Alter Dungeon")
+    assert world.scene_location_ids == (hall.id, dungeon.id)
+    assert world.primary_scene_location() == hall.id
+
+
+def test_a_world_without_scene_references_has_no_scene() -> None:
+    extractor = RecordingExtractor(
+        Success(
+            WorldInitializationCandidate(
+                entities=(CandidateEntity("dungeon", EntityKind.LOCATION, "Dungeon"),)
+            )
+        )
+    )
+
+    result = operation(extractor).apply(
+        ExtractInitialWorldStateRequest(
+            configuration(), story_state(), player_character()
+        )
+    )
+
+    assert isinstance(result, Success)
+    assert result.data.scene_location_ids == ()
+
+
+def test_unknown_scene_reference_rejects_the_entire_candidate() -> None:
+    extractor = RecordingExtractor(
+        Success(
+            WorldInitializationCandidate(
+                entities=(CandidateEntity("dungeon", EntityKind.LOCATION, "Dungeon"),),
+                scene_refs=("missing",),
+            )
+        )
+    )
+
+    result = operation(extractor).apply(
+        ExtractInitialWorldStateRequest(
+            configuration(), story_state(), player_character()
+        )
+    )
+
+    assert isinstance(result, Failure)
+    assert result.error.kind is StoryInitializationErrorKind.INVALID_CANDIDATE_REFERENCE
+
+
+@pytest.mark.parametrize(
+    "candidate",
+    [
+        pytest.param(
+            WorldInitializationCandidate(
+                entities=(CandidateEntity("dungeon", EntityKind.LOCATION, "Dungeon"),),
+                scene_refs=("dungeon", "Dungeon"),
+            ),
+            id="duplicate_scene_reference",
+        ),
+        pytest.param(
+            WorldInitializationCandidate(
+                entities=(CandidateEntity("alma", EntityKind.CHARACTER, "Alma"),),
+                scene_refs=("alma",),
+            ),
+            id="scene_reference_is_not_a_location",
+        ),
+    ],
+)
+def test_invalid_scene_references_reject_the_entire_candidate(candidate) -> None:
+    extractor = RecordingExtractor(Success(candidate))
+
+    result = operation(extractor).apply(
+        ExtractInitialWorldStateRequest(
+            configuration(), story_state(), player_character()
+        )
+    )
+
+    assert isinstance(result, Failure)
+    assert result.error.kind is StoryInitializationErrorKind.DOMAIN_REJECTION
+
+
 def test_director_mode_can_produce_an_empty_world_without_a_character() -> None:
     extractor = RecordingExtractor(Success(WorldInitializationCandidate()))
 

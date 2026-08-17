@@ -52,6 +52,13 @@ Orte verwende ebenfalls located_in, niemals contains. possesses beginnt bei
 einem Charakter und zeigt auf ein item. contains darf nicht auf eine location
 zeigen. member_of zeigt auf eine faction. knows verbindet zwei Charaktere.
 
+scene_refs benennt, wo die Eröffnung spielt, wichtigster Schauplatz zuerst.
+Jeder Eintrag ist die local_ref einer Entität mit kind location. Das ist eine
+eigene Aussage und nicht dasselbe wie located_in: located_in sagt, wo eine
+Entität ist, scene_refs sagt, wohin die Erzählung blickt. Nenne mehrere
+Schauplätze nur, wenn die Prosa tatsächlich zwischen ihnen wechselt. Gib eine
+leere Liste nur zurück, wenn die Eröffnung überhaupt keinen Ort etabliert.
+
 Minimalbeispiel, dessen Inhalte nicht kopiert werden dürfen: Ist Maren der
 bekannte Spieler und lautet die Prosa "Maren betritt mit Alma die Höhle", dann
 enthält entities nur Alma und die Höhle. Der Link zur Höhle verwendet

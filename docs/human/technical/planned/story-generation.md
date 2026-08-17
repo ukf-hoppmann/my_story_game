@@ -1,7 +1,9 @@
 # Geplante Story-Erzeugung über austauschbare Modelle
 
-Status: Der Provider-Anschluss und die technische Story-Grenze sind
-implementiert; der Story-Workflow ist noch nicht implementiert.
+Status: Der Provider-Anschluss, die technische Story-Grenze, der Szenenzeiger im
+WorldState und die Kontextauswahl für einen Zug sind implementiert; die
+Projektion in den Story-Request und der Story-Workflow sind noch nicht
+implementiert.
 Grundlage: [Entscheidung zur LLM-Anbindung](../../decisions/llm-anbindung.md),
 die [Entscheidung zu Promptprofil und Modellwahl](../../decisions/promptprofil-und-modellwahl.md)
 und der verbindliche
@@ -134,7 +136,9 @@ StoryGenerationRequest
   dem Promptprofil aufgelösten verständlichen Erzählvorgaben. Technische
   Options-IDs werden nicht erst im Adapter interpretiert.
 - `world_state` enthält den vollständigen WorldState oder ausgewählte
-  vollständige Werte, die für den nächsten Text relevant sind.
+  vollständige Werte, die für den nächsten Text relevant sind. Der Ausschnitt
+  wird durch eine eigene deterministische Kontextauswahl bestimmt, siehe
+  unten.
 - `story_state` enthält den vollständigen StoryState oder die relevante
   Zusammenfassung und ausgewählte abgeschlossene Turns.
 - `user_prompt` enthält die aktuelle Spielerhandlung.
@@ -249,6 +253,42 @@ als Providerobjekt die Application-Grenze überschreiten.
 - Der bestehende atomare Turn-Abschluss bleibt unverändert.
 - Architekturtests sichern die neue Abhängigkeitsrichtung.
 
+## Kontextauswahl für einen Zug
+
+`SelectStoryTurnContext` bestimmt den relevanten Ausschnitt vor dem
+Modellaufruf. Die Operation ist deterministisch, führt keinen Modellaufruf aus,
+speichert nichts und lässt den übergebenen GameState unverändert. Sie delegiert
+in sichtbarer Reihenfolge an sechs einzeln testbare Schritte:
+
+1. `SelectAlwaysIncluded` — Zusammenfassung, letzte Züge, Weltregeln, offene
+   Hauptziele, die gesteuerte Figur sowie Sprache, Perspektive, Steuerungsmodus
+   und erzählerische Grenzen. Dieser Rahmen wird von der Budgetierung nie
+   gekappt. Die gesteuerte Figur ist auch dann enthalten, wenn die Erzählung
+   sie nie beim Namen nennt, etwa bei Du-Erzählung.
+2. `ResolveMentionedEntities` — bekannte Bezeichnungen in Spielereingabe und
+   jüngster Prosa. Treffer in der Eingabe wiegen schwerer als solche in der
+   Prosa. Gesucht wird nach ganzen Wörtern, groß- und kleinschreibungsneutral,
+   mit Toleranz für deutsche Endungen und vorangestellte Artikel, damit
+   `Marens Schwert` und `dem Wirt` treffen, `kann` aber nicht `Ann`. Mehrdeutige
+   Nennungen werden nicht aufgelöst; alle Kandidaten bleiben erhalten.
+3. `PopulateSceneLocations` — bevölkert die Orte aus `scene_location_ids` und
+   danach im Text genannte Nebenschauplätze. Der Zeiger ist die primäre
+   Wahrheit und trägt auch einen Zug, dessen Prosa gar keinen Ort nennt;
+   Nebenschauplätze verdrängen ihn nie.
+4. `ExpandOneHop` — direkt verlinkte Entitäten, jede Beziehungsart, beide
+   Richtungen, genau ein Schritt.
+5. `SelectReferencedFactsKnowledgeGoals` — zugehörige Fakten, Akteurswissen und
+   Ziele; fehlende Zielreferenzen werden nachgezogen.
+6. `ApplySelectionBudget` — kappt nach Auswahlgrund, bei Gleichstand nach der
+   stabilen Weltreihenfolge, und entfernt anschließend alles, was auf eine
+   gekappte Entität zeigt. `truncated` meldet, dass ein Limit gegriffen hat.
+
+Die Relevanzauswahl filtert bewusst **nicht** nach `Visibility`. Ein
+`director_only`-Fakt wird wie ein öffentlicher ausgewählt, weil das Modell auf
+verdeckte Ziele hinarbeiten können muss. `Visibility` bleibt ein UI-Belang: eine
+Ansicht, die zeigt, was der Spieler weiß, filtert direkt auf dem `WorldState`
+und nicht auf diesem Prompt-Ausschnitt.
+
 ## Offene Entscheidungen vor der Implementierung
 
 - konkrete Python-Typen und Modulpfade;
@@ -258,7 +298,13 @@ als Providerobjekt die Application-Grenze überschreiten.
 - tatsächlich benötigte Generierungsoptionen;
 - Streaming ja oder nein;
 - Auswahl der ersten Extraction-Variante für den vollständigen Storyzug;
-- Grenze und Freigabe für einen optionalen Live-Test mit lokalem LM Studio.
+- Grenze und Freigabe für einen optionalen Live-Test mit lokalem LM Studio;
+- wie verdecktes Wissen im Prompt gekennzeichnet wird, damit das Modell es für
+  Andeutungen nutzen kann, ohne es wörtlich zu verraten;
+- ob die Budgets zusätzlich zu Anzahlgrenzen ein Tokenbudget benötigen;
+- ob der Graph-Radius über einen Hop hinaus erweitert wird;
+- die Zustandsoperation, mit der die Turn-Extraction `scene_location_ids`
+  fortschreibt.
 
 ## Dokumentationsfolgen
 

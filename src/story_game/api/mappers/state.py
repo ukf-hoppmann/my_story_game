@@ -240,6 +240,9 @@ def _world_from_api(model: WorldStateModel) -> WorldState:
             )
             for item in model.goals
         ),
+        scene_location_ids=tuple(
+            StableId(reference) for reference in model.scene_location_ids
+        ),
     )
 
 
@@ -312,6 +315,9 @@ def _world_to_api(world: WorldState) -> WorldStateModel:
                 related_entity_ids=[reference.value for reference in item.related_entity_ids],
             )
             for item in world.goals
+        ],
+        scene_location_ids=[
+            reference.value for reference in world.scene_location_ids
         ],
     )
 

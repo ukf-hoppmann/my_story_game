@@ -200,11 +200,16 @@ def _build_world(
             )
             for item in candidate.facts
         )
+        scene_location_ids = tuple(
+            _resolve_reference(reference, reference_ids)
+            for reference in candidate.scene_refs
+        )
         return Success(
             WorldState(
                 entities=tuple(entities),
                 links=links,
                 facts=facts,
+                scene_location_ids=scene_location_ids,
             )
         )
     except KeyError as error:

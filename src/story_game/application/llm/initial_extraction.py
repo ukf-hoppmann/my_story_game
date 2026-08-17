@@ -80,6 +80,23 @@ class WorldInitializationCandidate:
     entities: tuple[CandidateEntity, ...] = ()
     links: tuple[CandidateLink, ...] = ()
     facts: tuple[CandidateFact, ...] = ()
+    scene_refs: tuple[str, ...] = ()
+    """Local references to the locations the opening is set in, primary first.
+
+    Separate from the location links: those say where an entity is, this says
+    where the narration looks. The Application maps them to stable IDs and
+    rejects references that are unknown, duplicated, or not locations.
+    """
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "scene_refs",
+            tuple(
+                _required(reference, "Die Schauplatzreferenz")
+                for reference in self.scene_refs
+            ),
+        )
 
 
 @dataclass(frozen=True, slots=True)

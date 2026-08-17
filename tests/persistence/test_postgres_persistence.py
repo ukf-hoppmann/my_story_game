@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import socket
+from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
@@ -115,6 +116,7 @@ def initial(run_id: StableId) -> tuple[GameRun, GameState]:
         "Almas",
         actor=ActorProfile(ActorRole.PLAYER),
     )
+    dungeon = WorldEntity(sid("dungeon"), EntityKind.LOCATION, "Dungeonkammer")
     run = GameRun(
         run_id,
         "Almas und das magische Schwert",
@@ -136,9 +138,10 @@ def initial(run_id: StableId) -> tuple[GameRun, GameState]:
         StateRevision(1),
         configuration(),
         WorldState(
-            entities=(almas,),
+            entities=(almas, dungeon),
             facts=(Fact(sid("dungeon-open"), "Der Dungeon ist geöffnet."),),
             rules=(WorldRule(sid("silver"), "Silber verletzt Geister."),),
+            scene_location_ids=(dungeon.id,),
         ),
         StoryState(),
     )
@@ -453,6 +456,8 @@ def test_new_baseline_uses_native_uuid_for_internal_id_columns(
         ("world_goal_related_entities", "run_id"),
         ("world_goal_related_entities", "goal_id"),
         ("world_goal_related_entities", "entity_id"),
+        ("world_scene_locations", "run_id"),
+        ("world_scene_locations", "location_id"),
         ("story_state_metadata", "run_id"),
         ("story_turns", "run_id"),
         ("story_turns", "turn_id"),
@@ -492,6 +497,45 @@ def test_goal_entity_references_are_relational_not_json(
 
     assert obsolete_column == []
     assert relation_table["table_name"] == "world_goal_related_entities"
+
+
+def test_scene_locations_are_ordered_and_bound_to_their_revision(
+    postgres_store: tuple[PostgresGameStore, PostgresConnectionFactory],
+) -> None:
+    store, connections = postgres_store
+    run_id = sid(f"integration-{uuid4()}")
+    run, state = initial(run_id)
+    tavern = WorldEntity(sid("tavern"), EntityKind.LOCATION, "Wirtshaus")
+    world = replace(
+        state.world,
+        entities=(*state.world.entities, tavern),
+        scene_location_ids=(tavern.id, *state.world.scene_location_ids),
+    )
+
+    try:
+        store.create(run, replace(state, world=world))
+        loaded = store.load_state(run_id)
+
+        assert loaded.world.scene_location_ids == (tavern.id, sid("dungeon"))
+        assert loaded.world.primary_scene_location() == tavern.id
+
+        with connections.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT position, location_id FROM world_scene_locations
+                WHERE run_id = %s AND revision = %s
+                ORDER BY position
+                """,
+                (run_id.value, 1),
+            ).fetchall()
+
+        assert [row["position"] for row in rows] == [0, 1]
+        assert [row["location_id"] for row in rows] == [
+            tavern.id.value,
+            sid("dungeon").value,
+        ]
+    finally:
+        _delete_run(connections, run_id)
 
 
 def _delete_run(connections: PostgresConnectionFactory, run_id: StableId) -> None:

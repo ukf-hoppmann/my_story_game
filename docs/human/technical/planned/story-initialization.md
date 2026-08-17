@@ -142,13 +142,22 @@ WorldInitializationCandidate
 │   ├── kind
 │   ├── quantity
 │   └── description
-└── facts
-    ├── statement
-    └── subject_ref
+├── facts
+│   ├── statement
+│   └── subject_ref
+└── scene_refs
 ```
 
 Das Modell erzeugt keine StableIds. Die Application löst lokale Referenzen auf
 und vergibt IDs erst nach erfolgreicher Strukturprüfung.
+
+`scene_refs` ist eine geordnete Liste lokaler Ortsreferenzen und benennt, wo die
+Eröffnung spielt; der wichtigste Schauplatz steht zuerst. Das ist eine eigene
+Aussage und nicht dasselbe wie `located_in`: dieses sagt, wo eine Entität ist,
+`scene_refs` sagt, wohin die Erzählung blickt. Im Director Mode kann eine Szene
+erzählt werden, in der die gesteuerte Figur nicht vorkommt, weshalb sich der
+Schauplatz nicht aus Aufenthaltsorten ableiten lässt. Eine leere Liste ist nur
+gültig, wenn die Eröffnung überhaupt keinen Ort etabliert.
 
 ## Charaktere im Extraction-Ergebnis
 
@@ -214,6 +223,8 @@ Antworten in typisierte Kandidaten um. Die Application prüft anschließend:
 - alle Link- und Fact-Referenzen;
 - eine mögliche Duplikation des vorgegebenen Spielercharakters;
 - erlaubte Entitäts- und Beziehungstypen;
+- die Schauplatzreferenzen: unbekannte Referenzen, Duplikate und Verweise auf
+  eine Entität, die kein Ort ist, verwerfen den gesamten Kandidaten;
 - sämtliche WorldState-Domain-Invarianten.
 
 Die Übernahme ist all-or-nothing. Provider-, Parsing-, Schema-, Referenz- oder

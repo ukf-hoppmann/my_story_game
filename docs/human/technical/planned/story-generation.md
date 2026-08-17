@@ -2,9 +2,10 @@
 
 Status: Ein vollständiger Storyzug ist implementiert — Kontextauswahl,
 Story-Erzeugung, Turn-Extraction, Freigabe, rollierende Zusammenfassung und
-atomarer Commit. Noch nicht implementiert sind die Verdrahtung des Providers im
-Composition Root, ein HTTP-Endpunkt und ein Live-Test für den vollständigen Zug
-(offen, siehe `TASK-022`).
+atomarer Commit — und über einen Live-Checkpoint gegen echtes LM Studio prüfbar
+(`TestStoryTurnHuman.test_full_turn`, opt-in mit `--run-lmstudio-live`). Noch
+nicht implementiert sind die Verdrahtung des Providers im Composition Root und
+ein HTTP-Endpunkt.
 Grundlage: [Entscheidung zur LLM-Anbindung](../../decisions/llm-anbindung.md),
 die [Entscheidung zu Promptprofil und Modellwahl](../../decisions/promptprofil-und-modellwahl.md)
 und der verbindliche

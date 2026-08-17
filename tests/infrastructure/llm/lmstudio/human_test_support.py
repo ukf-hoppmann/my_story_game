@@ -14,23 +14,42 @@ Nothing here is asserted against; the point is to look, not to verify.
 from __future__ import annotations
 
 import json
+import os
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
+if TYPE_CHECKING:
+    from story_game.infrastructure.persistence.postgres import PostgresConnectionFactory
+
 from story_game.application import (
+    ApproveStoryTurnChanges,
     ExtractedTurnChanges,
     ExtractInitialWorldState,
     ExtractStoryTurnChanges,
     ExtractStoryTurnChangesRequest,
     GenerateStory,
     GenerateStoryRequest,
+    InitializeGameRun,
+    InitializeGameRunRequest,
     InitializeStory,
     InitializeStoryRequest,
+    PlayedStoryTurn,
     PlayerCharacterSeed,
+    PlayStoryTurn,
+    PlayStoryTurnRequest,
+    RunInitiator,
     StoryGenerationData,
     Success,
+)
+from story_game.application.game_models import LoadedGame
+from story_game.application.game_state import (
+    CommitCompletedTurn,
+    CreateGameRun,
+    LoadGame,
+    PromptProfileValidator,
 )
 from story_game.application.llm import (
     ExtractionPromptSelectionResolver,
@@ -39,7 +58,9 @@ from story_game.application.llm import (
     LLMGenerationCall,
     StoryInitializationPromptResolver,
     StoryPromptSelectionResolver,
+    SummaryPromptSelectionResolver,
 )
+from story_game.application.summarize_story import SummarizeStory
 from story_game.application.story_initialization import (
     GenerateInitialStoryState,
     GenerateInitialStoryStateRequest,
@@ -48,7 +69,19 @@ from story_game.application.story_turn_context import (
     SelectStoryTurnContextRequest,
     build_story_turn_context_selection,
 )
-from story_game.domain import GameConfiguration, PromptProfile, StoryState, WorldState
+from story_game.domain import (
+    GameConfiguration,
+    GameRole,
+    GameRun,
+    GameRunMember,
+    GameRunStatus,
+    GameState,
+    PromptProfile,
+    StableId,
+    StateRevision,
+    StoryState,
+    WorldState,
+)
 from story_game.infrastructure.configuration import (
     LlmTask,
     TomlGenerationConfigurationResolver,
@@ -61,6 +94,7 @@ from story_game.infrastructure.llm.lmstudio import (
     LmStudioSettings,
     LmStudioStoryGenerationAdapter,
     LmStudioStoryInitializationAdapter,
+    LmStudioStorySummaryAdapter,
     LmStudioTurnExtractionAdapter,
 )
 from story_game.infrastructure.llm.lmstudio.models import (
@@ -79,6 +113,18 @@ def skip_unless_enabled(request: pytest.FixtureRequest) -> None:
     """Shared guard: the whole bundle only runs with --run-lmstudio-live."""
     if not request.config.getoption("--run-lmstudio-live"):
         pytest.skip("Live LM-Studio-Test nur mit --run-lmstudio-live")
+
+
+def skip_unless_postgres_available() -> None:
+    """Additional guard for the full-playthrough checkpoint only.
+
+    Mirrors the skip idiom ``tests/persistence/test_postgres_persistence.py``
+    uses when ``STORY_GAME_POSTGRES_DSN`` is not set, rather than failing.
+    """
+    if not os.environ.get("STORY_GAME_POSTGRES_DSN"):
+        pytest.skip(
+            "STORY_GAME_POSTGRES_DSN ist für den Persistenz-Anteil nicht gesetzt"
+        )
 
 
 class PrintingLmStudioClient:
@@ -385,18 +431,45 @@ def _request_shape(call: LLMGenerationCall) -> dict[str, object]:
     return document
 
 
+class InMemoryTurnStore:
+    """Holds exactly one run/state pair in process memory, never on disk.
+
+    Lets ``play_turn`` exercise the real ``LoadGame`` / ``CommitCompletedTurn``
+    operations — revision checks, member validation, atomic turn assembly —
+    without a database. This is a viewing checkpoint, not a persistence test:
+    PostgreSQL already covers that path.
+    """
+
+    def __init__(self, run: GameRun, state: GameState) -> None:
+        self.run = run
+        self.state = state
+
+    def load_run(self, run_id: StableId) -> GameRun:
+        return self.run
+
+    def load_state(self, run_id: StableId, *, revision: StateRevision | None = None) -> GameState:
+        return self.state
+
+    def commit_turn(self, request):
+        self.state = self.state.complete_turn(
+            request.changes, request.turn, request.summary
+        )
+        return self.state
+
+
 class HumanStoryTurnSupport:
     """Builds, calls, and extracts for the story-turn-generation flow."""
 
     def __init__(self) -> None:
-        state = w.game_state((w.TAVERN,), "Maren sitzt am Feuer.")
+        self.state = w.game_state((w.TAVERN,), "Maren sitzt am Feuer.")
+        self.player_input = "Ich frage den Wirt nach dem Geheimgang."
         selected = build_story_turn_context_selection().apply(
-            SelectStoryTurnContextRequest(state, w.MAREN, "Ich frage den Wirt nach dem Geheimgang.")
+            SelectStoryTurnContextRequest(self.state, w.MAREN, self.player_input)
         )
         assert isinstance(selected, Success), selected
         self.context = selected.data
         self.configuration = w.configuration()
-        self.player_input = "Ich frage den Wirt nach dem Geheimgang."
+        self.initiator = RunInitiator("https://human-test.example/realm", "human-tester")
 
     def prepare_prompt(self) -> LLMGenerationCall:
         port = CapturingStoryGenerationPort()
@@ -473,3 +546,223 @@ class HumanStoryTurnSupport:
             return extracted.data
         finally:
             client.close()
+
+    def play_turn(self) -> PlayedStoryTurn:
+        """Run the real ``PlayStoryTurn`` end to end: generation, extraction,
+        approval, summary, and commit — against an in-memory store so nothing
+        touches a database, but every non-model step is the production one."""
+        client = _live_client()
+        try:
+            printing = PrintingLmStudioClient(client)
+            run = GameRun(
+                id=self.state.run_id,
+                name="Human-Test-Lauf",
+                status=GameRunStatus.ACTIVE,
+                current_revision=self.state.revision,
+                members=(
+                    GameRunMember(
+                        self.initiator.issuer,
+                        self.initiator.subject,
+                        GameRole.OWNER,
+                        w.MAREN,
+                    ),
+                ),
+                created_at=(
+                    self.state.story.turns[0].completed_at
+                    if self.state.story.turns
+                    else datetime.now(UTC)
+                ),
+                updated_at=datetime.now(UTC),
+            )
+            store = InMemoryTurnStore(run, self.state)
+            operation = PlayStoryTurn(
+                LoadGame(store, store),
+                build_story_turn_context_selection(),
+                GenerateStory(
+                    StoryPromptSelectionResolver(_catalog()),
+                    _resolver(),
+                    LmStudioStoryGenerationAdapter(printing),
+                ),
+                ExtractStoryTurnChanges(
+                    ExtractionPromptSelectionResolver(_catalog()),
+                    _resolver(),
+                    LmStudioTurnExtractionAdapter(printing),
+                ),
+                ApproveStoryTurnChanges(),
+                SummarizeStory(
+                    SummaryPromptSelectionResolver(_catalog()),
+                    _resolver(),
+                    LmStudioStorySummaryAdapter(printing),
+                ),
+                CommitCompletedTurn(store, store),
+            )
+            result = operation.apply(
+                PlayStoryTurnRequest(run.id, self.initiator, self.player_input)
+            )
+            assert isinstance(result, Success), result
+            print(
+                json.dumps(
+                    {
+                        "resulting_revision": result.data.state.revision.value,
+                        "narration": store.state.story.turns[-1].narration,
+                        "summary_failure": (
+                            None
+                            if result.data.summary_failure is None
+                            else result.data.summary_failure.message
+                        ),
+                        "world_state": _world_document(result.data.state.world),
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                )
+            )
+            return result.data
+        finally:
+            client.close()
+
+
+class HumanFullPlaythroughSupport:
+    """Plays one real game through real PostgreSQL and real LM Studio.
+
+    Closes the gap noted in the STORY-006 completion criteria in
+    ``docs/TODO.md``: no other test connects a live model with live
+    persistence in one run. ``InitializeGameRun`` persists revision 1;
+    ``PlayStoryTurn`` persists revision 2 on top of it. The created run is
+    deleted again afterwards so repeated human runs stay clean.
+    """
+
+    def __init__(self) -> None:
+        self.configuration = GameConfiguration(
+            language="de",
+            prompt_profile=PromptProfile(
+                "dark_fantasy", "balanced", "balanced", "third_person_limited",
+                "balanced", "player", "strict", "balanced", "balanced", "teen",
+            ),
+            narrative_boundaries=("Keine sexualisierte Gewalt",),
+            prompt_package_id="story.base",
+            prompt_package_version="1",
+        )
+        self.run_name = "Human-Test-Durchlauf"
+        self.initial_prompt = (
+            "Maren und Alma stehen gemeinsam in einer einzigen "
+            "verschlossenen Dungeonkammer. Noch bewegt sich niemand."
+        )
+        self.player_character = PlayerCharacterSeed(
+            "Maren", "Eine vorsichtige Kartografin."
+        )
+        self.initiator = RunInitiator(
+            "https://human-test.example/realm", "human-tester"
+        )
+
+    def play(self, turn_input: str) -> tuple[LoadedGame, PlayedStoryTurn]:
+        # Imported lazily: psycopg (and therefore this whole subpackage) is
+        # only installed in environments that actually run Postgres tests,
+        # and this module must stay importable for every other checkpoint
+        # without it.
+        from story_game.infrastructure.persistence.postgres import (
+            PostgresConnectionFactory,
+            PostgresGameStore,
+            PostgresSchemaMigrator,
+        )
+
+        connections = PostgresConnectionFactory(os.environ["STORY_GAME_POSTGRES_DSN"])
+        PostgresSchemaMigrator(connections).migrate()
+        store = PostgresGameStore(connections)
+        client = _live_client()
+        run_id: StableId | None = None
+        try:
+            printing = PrintingLmStudioClient(client)
+
+            init_operation = InitializeGameRun(
+                InitializeStory(
+                    GenerateInitialStoryState(
+                        StoryInitializationPromptResolver(_catalog()),
+                        _resolver(),
+                        LmStudioStoryInitializationAdapter(printing),
+                        lambda: datetime.now(UTC),
+                    ),
+                    ExtractInitialWorldState(
+                        InitialExtractionPromptSelectionResolver(_catalog()),
+                        _resolver(),
+                        LmStudioInitialWorldExtractionAdapter(printing),
+                    ),
+                ),
+                CreateGameRun(store, PromptProfileValidator(_catalog())),
+            )
+            initialized = init_operation.apply(
+                InitializeGameRunRequest(
+                    configuration=self.configuration,
+                    run_name=self.run_name,
+                    initial_prompt=self.initial_prompt,
+                    initiator=self.initiator,
+                    player_character=self.player_character,
+                )
+            )
+            assert isinstance(initialized, Success), initialized
+            run_id = initialized.data.run.id
+            print(
+                json.dumps(
+                    {
+                        "postgres_initialized_run": {
+                            "run_id": str(run_id),
+                            "revision": initialized.data.state.revision.value,
+                            "narration": initialized.data.state.story.initialization.narration,
+                            "world_state": _world_document(initialized.data.state.world),
+                        }
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                )
+            )
+
+            turn_operation = PlayStoryTurn(
+                LoadGame(store, store),
+                build_story_turn_context_selection(),
+                GenerateStory(
+                    StoryPromptSelectionResolver(_catalog()),
+                    _resolver(),
+                    LmStudioStoryGenerationAdapter(printing),
+                ),
+                ExtractStoryTurnChanges(
+                    ExtractionPromptSelectionResolver(_catalog()),
+                    _resolver(),
+                    LmStudioTurnExtractionAdapter(printing),
+                ),
+                ApproveStoryTurnChanges(),
+                SummarizeStory(
+                    SummaryPromptSelectionResolver(_catalog()),
+                    _resolver(),
+                    LmStudioStorySummaryAdapter(printing),
+                ),
+                CommitCompletedTurn(store, store),
+            )
+            played = turn_operation.apply(
+                PlayStoryTurnRequest(run_id, self.initiator, turn_input)
+            )
+            assert isinstance(played, Success), played
+            print(
+                json.dumps(
+                    {
+                        "postgres_played_turn": {
+                            "resulting_revision": played.data.state.revision.value,
+                            "narration": played.data.state.story.turns[-1].narration,
+                            "world_state": _world_document(played.data.state.world),
+                        }
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                )
+            )
+            return initialized.data, played.data
+        finally:
+            client.close()
+            if run_id is not None:
+                _delete_run(connections, run_id)
+
+
+def _delete_run(connections: PostgresConnectionFactory, run_id: StableId) -> None:
+    with connections.connect() as connection:
+        with connection.transaction():
+            connection.execute(
+                "DELETE FROM game_runs WHERE run_id = %s", (run_id.value,)
+            )

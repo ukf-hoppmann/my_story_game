@@ -526,7 +526,7 @@ After explicit rejection:
 
 - `TASK-022` **Vollständigen Storyzug orchestrieren**
   - Type: Task.
-  - Status: In progress.
+  - Status: Awaiting confirmation.
   - Parent: `STORY-007`.
   - Required for parent: Yes.
   - Created: 2026-08-17.
@@ -534,7 +534,7 @@ After explicit rejection:
   - Priority: Wichtig.
   - Dependencies: `TASK-021`.
   - Goal: Laden, Kontextauswahl, Story-Erzeugung, Extraktion, Freigabe und atomaren Commit als einen sichtbaren Workflow verbinden.
-  - Completion criteria: Die Reihenfolge ist auf Workflowebene sichtbar und über beobachtbares Verhalten getestet; die gesteuerte Figur wird aus der Mitgliedschaft aufgelöst; Modellaufrufe liegen außerhalb der Datenbanktransaktion; ein Fehler vor dem Commit lässt GameState und StoryTurn unverändert; Erfolg persistiert StoryTurn und resultierende Revision gemeinsam. Ein ausdrücklich aktivierter Live-Test führt einen vollständigen Zug gegen LM Studio aus.
+  - Completion criteria: Die Reihenfolge ist auf Workflowebene sichtbar und über beobachtbares Verhalten getestet; die gesteuerte Figur wird aus der Mitgliedschaft aufgelöst; Modellaufrufe liegen außerhalb der Datenbanktransaktion; ein Fehler vor dem Commit lässt GameState und StoryTurn unverändert; Erfolg persistiert StoryTurn und resultierende Revision gemeinsam. Ein ausdrücklich aktivierter Live-Test führt einen vollständigen Zug gegen LM Studio aus — erfüllt durch `TestStoryTurnHuman.test_full_turn`, das `PlayStoryTurn` gegen echtes LM Studio und einen In-Memory-Store laufen lässt. Die zuvor offene Lücke, dass kein Lauf echtes LM Studio und echte PostgreSQL-Persistenz verbindet, ist geschlossen durch `TestFullPlaythroughHuman.test_init_and_play_one_turn` (`InitializeGameRun` gefolgt von `PlayStoryTurn`, beide gegen echtes LM Studio und eine echte PostgreSQL-Instanz, mit Aufräumen des angelegten Runs danach; verifiziert am 2026-08-17).
 
 - `TASK-023` **Rollierende Zusammenfassung erzeugen**
   - Type: Task.

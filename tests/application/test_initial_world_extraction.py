@@ -347,6 +347,58 @@ def test_domain_invariant_rejects_the_entire_candidate() -> None:
     assert result.error.kind is StoryInitializationErrorKind.DOMAIN_REJECTION
 
 
+def test_exact_duplicate_located_in_links_are_deduplicated() -> None:
+    extractor = RecordingExtractor(
+        Success(
+            WorldInitializationCandidate(
+                entities=(CandidateEntity("room", EntityKind.LOCATION, "Kammer"),),
+                links=(
+                    CandidateLink("player_character", "room", RelationKind.LOCATED_IN),
+                    CandidateLink("player_character", "room", RelationKind.LOCATED_IN),
+                ),
+            )
+        )
+    )
+
+    result = operation(extractor).apply(
+        ExtractInitialWorldStateRequest(
+            configuration(), story_state(), player_character()
+        )
+    )
+
+    assert isinstance(result, Success)
+    located_in_links = [
+        link for link in result.data.links if link.kind is RelationKind.LOCATED_IN
+    ]
+    assert len(located_in_links) == 1
+
+
+def test_conflicting_located_in_links_still_reject_the_entire_candidate() -> None:
+    extractor = RecordingExtractor(
+        Success(
+            WorldInitializationCandidate(
+                entities=(
+                    CandidateEntity("room_a", EntityKind.LOCATION, "Kammer A"),
+                    CandidateEntity("room_b", EntityKind.LOCATION, "Kammer B"),
+                ),
+                links=(
+                    CandidateLink("player_character", "room_a", RelationKind.LOCATED_IN),
+                    CandidateLink("player_character", "room_b", RelationKind.LOCATED_IN),
+                ),
+            )
+        )
+    )
+
+    result = operation(extractor).apply(
+        ExtractInitialWorldStateRequest(
+            configuration(), story_state(), player_character()
+        )
+    )
+
+    assert isinstance(result, Failure)
+    assert result.error.kind is StoryInitializationErrorKind.DOMAIN_REJECTION
+
+
 def test_invalid_model_response_remains_visible_without_retry() -> None:
     cause = LLMError(LLMErrorKind.INVALID_RESPONSE, "Kein gültiges JSON")
     extractor = RecordingExtractor(Failure(cause))

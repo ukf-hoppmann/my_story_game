@@ -18,6 +18,7 @@ from story_game.application.llm import (
     GenerationConfigurationResolver,
     GenerationTask,
     CandidateEntity,
+    CandidateLink,
     InitialExtractionPromptSelectionResolver,
     InitialWorldExtractionPort,
     InitialWorldExtractionRequest,
@@ -33,6 +34,7 @@ from story_game.domain import (
     EntityLink,
     Fact,
     GameConfiguration,
+    RelationKind,
     StableId,
     StoryState,
     WorldEntity,
@@ -186,7 +188,7 @@ def _build_world(
                 quantity=item.quantity,
                 description=item.description,
             )
-            for item in candidate.links
+            for item in _deduplicated_links(candidate.links)
         )
         facts = tuple(
             Fact(
@@ -226,6 +228,32 @@ def _build_world(
 
 def _reference_key(value: str) -> str:
     return value.strip().casefold()
+
+
+def _deduplicated_links(links: tuple[CandidateLink, ...]) -> tuple[CandidateLink, ...]:
+    """Collapse exact-duplicate wire links, keeping first occurrence.
+
+    A model occasionally repeats the exact same relation twice (identical
+    source, target, kind, quantity and description). That carries no
+    additional information and is silently redundant, unlike two genuinely
+    different targets for the same source-and-kind, which is a real conflict
+    and must still surface as a Domain rejection.
+    """
+    seen: set[tuple[str, str, RelationKind, int | None, str]] = set()
+    deduplicated: list[CandidateLink] = []
+    for item in links:
+        key = (
+            _reference_key(item.source_ref),
+            _reference_key(item.target_ref),
+            item.kind,
+            item.quantity,
+            item.description,
+        )
+        if key in seen:
+            continue
+        seen.add(key)
+        deduplicated.append(item)
+    return tuple(deduplicated)
 
 
 def _system_prompts(

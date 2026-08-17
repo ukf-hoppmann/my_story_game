@@ -464,6 +464,30 @@ After explicit rejection:
   - Goal: Aus dem vollständigen GameState und der Spielereingabe einen deterministischen, erklärbaren und budgetierten Ausschnitt auswählen, den der folgende Story-Modellaufruf als Kontext erhält.
   - Completion criteria: Eine zusammengesetzte Application-Operation delegiert an einzeln testbare Schritte für Grundgerüst, Namenserkennung, Schauplatzbevölkerung, Ein-Hop-Erweiterung, zugehörige Fakten/Wissen/Ziele und Budgetierung; gleicher Zustand und gleiche Eingabe liefern dasselbe Ergebnis; der Eingabezustand bleibt unverändert; die Auswahl filtert nicht nach Visibility; die Budgetkappung bleibt referenziell geschlossen; kein Modellaufruf und keine Persistenz finden statt.
 
+- `TASK-017` **Story-Generation-Aufruf für einen regulären Storyzug**
+  - Type: Task.
+  - Status: Open.
+  - Parent: `STORY-006`.
+  - Required for parent: Yes.
+  - Created: 2026-08-17.
+  - Area: Story-Workflow und LLM-Integration.
+  - Priority: Wichtig.
+  - Dependencies: `TASK-015`, `STORY-005`.
+  - Goal: Den ausgewählten Turn-Kontext in den bestehenden `StoryGenerationRequest` projizieren, den Story-Port aufrufen und daraus normalisierte Prosa für den nächsten Zug erhalten. Zusammen mit `TASK-015` erfüllt dieser Task die Completion criteria von `STORY-006`.
+  - Completion criteria: Eine Application-Operation bildet den Kontext auf die fünf Textfelder des Requests ab, löst Promptprofil und aktives Story-Modell auf und ruft den Story-Port auf; Erfolg liefert nichtleere normalisierte Prosa; Provider-, Timeout-, Leer- und Fehlerszenarien führen zu typisierten, sichtbaren Failures ohne Retry; der Adapter wählt keine Spieldaten aus; kein kanonischer GameState wird gelesen oder geschrieben; die Regel für verdecktes Wissen ist im Promptpaket und in der Projektion umgesetzt und getestet.
+
+- `TASK-018` **Verdecktes Wissen im Story-Prompt kennzeichnen**
+  - Type: Task.
+  - Status: Open.
+  - Parent: `EPIC-002`.
+  - Required for parent: No.
+  - Created: 2026-08-17.
+  - Area: Story-Workflow und Promptgestaltung.
+  - Priority: Perspektivisch.
+  - Dependencies: `TASK-017`.
+  - Goal: Entscheiden und umsetzen, wie dem Modell im Story-Prompt kenntlich gemacht wird, dass ein Teil des Kontexts der Spielerseite noch nicht bekannt ist. Die Kontextauswahl filtert bewusst nicht nach `Visibility`, damit das Modell auf verdeckte Ziele hinarbeiten kann; der erste Wurf von `TASK-017` kennzeichnet den Unterschied im Prompt jedoch bewusst gar nicht. Beobachtet werden muss, ob das Modell dadurch verdeckte Plotpunkte vorzeitig ausspricht.
+  - Completion criteria: Es ist entschieden, welche Sichtbarkeitsstufen als verdeckt gelten — mindestens `director_only`, gegebenenfalls auch Wissen anderer Figuren — und wie sie im Prompt erscheinen; die Regel für den Director Mode ohne Spielerfigur ist festgelegt; Projektion und Promptpaket setzen sie um und sind getestet.
+
 - `TASK-016` **Mehrere gesteuerte Figuren im Director Mode**
   - Type: Task.
   - Status: Open.

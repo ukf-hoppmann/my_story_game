@@ -100,3 +100,14 @@ an agent MUST NOT add a local exception or bypass an interface. Before changing
 code, it MUST identify the requirement, the conflicting rule, the proposed
 smallest contract amendment, consequences, alternatives, and verification. The
 project owner must explicitly approve the amendment before it becomes binding.
+
+## 9. Application composition naming
+
+The shared naming vocabulary for application composition MUST follow
+`docs/human/technical/architecture-naming.md`. In particular, agents and
+contributors SHOULD use `Composition Root`, `Composition Builder`,
+`Top-Level Composite`, `Composite Level X`, `Leaf`, `Operation Contract`,
+`Constructor Injection`, `Injected Collaborator`, and `Delegation` with the
+meanings defined there. The naming document is the detailed human-readable
+reference; this section makes its use discoverable from the binding
+architecture contract.

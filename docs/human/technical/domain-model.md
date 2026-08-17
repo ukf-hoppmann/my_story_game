@@ -133,3 +133,16 @@ anschließend in einer Datenbanktransaktion.
 
 Prompt-Auflösung, Modellaufruf, Rohantwort, Extraktion, Vorschlag und
 Validierungsergebnis bleiben außerhalb des persistierten Domainzustands.
+
+Die unterstützten Operationen sind: Entität anlegen und aktualisieren,
+Beziehung hinzufügen und entfernen, Tatsache hinzufügen und entfernen, Wissen
+gewähren, Ziel anlegen und aktualisieren sowie den Schauplatz setzen.
+
+`RemoveFact` gibt es, weil Tatsachen sonst nur wachsen könnten. Eine im Spiel
+aufgeschlossene Tür würde sonst dauerhaft als verschlossen im Weltzustand
+stehen und jedem weiteren Prompt widersprechen. Wird eine Tatsache entfernt,
+verschwindet das Wissen darüber mit ihr: ein Akteur kann nichts wissen, das die
+Welt nicht mehr enthält.
+
+`SetSceneLocations` bewegt den Szenenzeiger weiter. Ohne diese Operation bliebe
+der Schauplatz dauerhaft beim Eröffnungsort. Eine leere Liste löscht die Szene.

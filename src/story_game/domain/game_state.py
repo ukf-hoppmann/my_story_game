@@ -11,7 +11,9 @@ from .changes import (
     ApprovedChangeSet,
     CreateEntity,
     GrantKnowledge,
+    RemoveFact,
     RemoveLink,
+    SetSceneLocations,
     StateOperation,
     UpdateEntity,
     UpdateGoal,
@@ -125,6 +127,12 @@ class GameState:
             return replace(self, world=self.world.remove_link(operation.link_id))
         if isinstance(operation, AddFact):
             return replace(self, world=self.world.add_fact(operation.fact))
+        if isinstance(operation, RemoveFact):
+            return replace(self, world=self.world.remove_fact(operation.fact_id))
+        if isinstance(operation, SetSceneLocations):
+            return replace(
+                self, world=self.world.set_scene_locations(operation.location_ids)
+            )
         if isinstance(operation, GrantKnowledge):
             return replace(self, world=self.world.add_knowledge(operation.entry))
         if isinstance(operation, AddGoal):

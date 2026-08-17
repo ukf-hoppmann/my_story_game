@@ -18,6 +18,7 @@ from .contracts import (
 )
 from .prompts import PromptPackage
 from .initial_extraction import InitialWorldExtractionRequest, WorldInitializationCandidate
+from .turn_extraction import TurnChangeCandidate, TurnExtractionRequest
 
 
 class ModelSelectionResolver(Protocol):
@@ -65,3 +66,12 @@ class InitialWorldExtractionPort(Protocol):
         self,
         call: LLMGenerationCall[InitialWorldExtractionRequest],
     ) -> OperationResult[WorldInitializationCandidate, LLMError]: ...
+
+
+class TurnExtractionPort(Protocol):
+    """Propose the delta one turn's prose implies for an existing world."""
+
+    def extract(
+        self,
+        call: LLMGenerationCall[TurnExtractionRequest],
+    ) -> OperationResult[TurnChangeCandidate, LLMError]: ...

@@ -11,6 +11,8 @@ step a workflow delegates to in a visible order.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from story_game.application.llm import StoryPromptSelection
 from story_game.application.story_turn_context_models import SelectedStoryTurnContext
 from story_game.domain import (
@@ -84,6 +86,80 @@ def story_state_text(context: SelectedStoryTurnContext) -> str:
     return "\n\n".join(parts) if parts else _NO_STORY_YET
 
 
+@dataclass(frozen=True, slots=True)
+class TurnExtractionProjection:
+    """The comparison text plus the handles it hands out for this one turn.
+
+    Extraction has to address existing objects unambiguously, which the story
+    projection cannot do: it shows labels only, and equally named entities are
+    allowed. Short handles beat stable IDs here because they cost far fewer
+    tokens and a local model mistyping one long identifier would otherwise
+    discard the whole turn.
+    """
+
+    text: str
+    entity_handles: dict[str, StableId]
+    link_handles: dict[str, StableId]
+    fact_handles: dict[str, StableId]
+
+
+def extraction_projection(
+    context: SelectedStoryTurnContext,
+) -> TurnExtractionProjection:
+    """Render the current world slice with a handle on every addressable object."""
+    entity_handles = {f"e{index}": item.id for index, item in enumerate(context.entities, 1)}
+    link_handles = {f"l{index}": item.id for index, item in enumerate(context.links, 1)}
+    fact_handles = {f"f{index}": item.id for index, item in enumerate(context.facts, 1)}
+    labels = {item.id: item.label for item in context.entities}
+    by_id = {value: key for key, value in entity_handles.items()}
+
+    scene = tuple(
+        f"{by_id[item.id]} {item.label}"
+        for item in context.scene_locations
+        if item.id in by_id
+    )
+    entities = tuple(
+        f"{handle} {_entity_line(_entity(context, entity_id))}"
+        for handle, entity_id in entity_handles.items()
+    )
+    links = tuple(
+        f"{handle} {_link_line(_link(context, link_id), labels)}"
+        for handle, link_id in link_handles.items()
+    )
+    facts = tuple(
+        f"{handle} {_fact_line(_fact(context, fact_id), labels)}"
+        for handle, fact_id in fact_handles.items()
+    )
+    sections = tuple(
+        _section(name, lines)
+        for name, lines in (
+            ("scene", scene),
+            ("entities", entities),
+            ("relations", links),
+            ("facts", facts),
+        )
+        if lines
+    )
+    return TurnExtractionProjection(
+        text="\n\n".join(sections) if sections else _NO_WORLD_DATA,
+        entity_handles=entity_handles,
+        link_handles=link_handles,
+        fact_handles=fact_handles,
+    )
+
+
+def _entity(context: SelectedStoryTurnContext, entity_id: StableId) -> WorldEntity:
+    return next(item for item in context.entities if item.id == entity_id)
+
+
+def _link(context: SelectedStoryTurnContext, link_id: StableId) -> EntityLink:
+    return next(item for item in context.links if item.id == link_id)
+
+
+def _fact(context: SelectedStoryTurnContext, fact_id: StableId) -> Fact:
+    return next(item for item in context.facts if item.id == fact_id)
+
+
 def _section(name: str, lines: tuple[str, ...]) -> str:
     return f"[{name}]\n" + "\n".join(lines)
 
@@ -140,4 +216,10 @@ def _label(entity_id: StableId, labels: dict[StableId, str]) -> str:
     return labels.get(entity_id, str(entity_id))
 
 
-__all__ = ["configuration_text", "story_state_text", "world_state_text"]
+__all__ = [
+    "TurnExtractionProjection",
+    "configuration_text",
+    "extraction_projection",
+    "story_state_text",
+    "world_state_text",
+]

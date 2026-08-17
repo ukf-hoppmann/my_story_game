@@ -7,6 +7,7 @@ from story_game.application import Success
 from story_game.application.llm import StoryPromptSelectionResolver
 from story_game.application.story_prompt_sections import (
     configuration_text,
+    extraction_projection,
     story_state_text,
     world_state_text,
 )
@@ -110,3 +111,77 @@ def test_story_state_text_stays_readable_before_the_first_turn() -> None:
     text = story_state_text(context("Ich sehe mich um."))
 
     assert text.strip() != ""
+
+
+def test_the_extraction_projection_hands_out_a_handle_per_object() -> None:
+    selected = context()
+
+    projection = extraction_projection(selected)
+
+    assert set(projection.entity_handles.values()) == {
+        entity.id for entity in selected.entities
+    }
+    assert set(projection.link_handles.values()) == {
+        link.id for link in selected.links
+    }
+    assert set(projection.fact_handles.values()) == {
+        fact.id for fact in selected.facts
+    }
+
+
+def test_every_handle_appears_in_the_rendered_text() -> None:
+    projection = extraction_projection(context())
+
+    for handle in projection.entity_handles:
+        assert handle in projection.text
+
+
+def test_handles_are_short_and_never_a_stable_id() -> None:
+    """Long identifiers cost tokens and local models mistype them."""
+    selected = context()
+
+    projection = extraction_projection(selected)
+
+    assert all(len(handle) <= 6 for handle in projection.entity_handles)
+    for entity in selected.entities:
+        assert str(entity.id) not in projection.text
+
+
+def test_the_projection_is_deterministic() -> None:
+    selected = context()
+
+    assert extraction_projection(selected) == extraction_projection(selected)
+
+
+def test_handles_of_different_object_kinds_do_not_collide() -> None:
+    projection = extraction_projection(context())
+
+    handles = (
+        set(projection.entity_handles)
+        | set(projection.link_handles)
+        | set(projection.fact_handles)
+    )
+    assert len(handles) == (
+        len(projection.entity_handles)
+        + len(projection.link_handles)
+        + len(projection.fact_handles)
+    )
+
+
+def test_the_projection_survives_an_empty_selection() -> None:
+    empty = replace(
+        context(),
+        scene_locations=(),
+        entities=(),
+        links=(),
+        facts=(),
+        knowledge=(),
+        rules=(),
+        goals=(),
+        controlled_entity=None,
+    )
+
+    projection = extraction_projection(empty)
+
+    assert projection.entity_handles == {}
+    assert projection.text.strip() != ""

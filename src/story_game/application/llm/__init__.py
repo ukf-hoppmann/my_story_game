@@ -28,6 +28,12 @@ from .ports import (
     PromptPackageCatalog,
     StoryGenerationPort,
     StoryInitializationPort,
+    TurnExtractionPort,
+)
+from .turn_extraction import (
+    CandidateEntityUpdate,
+    TurnChangeCandidate,
+    TurnExtractionRequest,
 )
 from .prompt_selection import (
     ExtractionPromptSelection,
@@ -95,5 +101,9 @@ __all__ = [
     "StoryInitializationPromptResolver",
     "StoryPromptSelection",
     "StoryPromptSelectionResolver",
+    "CandidateEntityUpdate",
+    "TurnChangeCandidate",
+    "TurnExtractionPort",
+    "TurnExtractionRequest",
     "WorldInitializationCandidate",
 ]

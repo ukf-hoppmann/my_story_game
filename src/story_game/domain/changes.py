@@ -35,6 +35,28 @@ class AddFact:
 
 
 @dataclass(frozen=True, slots=True)
+class RemoveFact:
+    """Retire a statement the story has made untrue.
+
+    Without this facts could only ever accumulate, so a door unlocked during
+    play would keep contradicting every later prompt.
+    """
+
+    fact_id: StableId
+
+
+@dataclass(frozen=True, slots=True)
+class SetSceneLocations:
+    """Move where the narration looks, most relevant location first.
+
+    Distinct from a location link: that records where an entity is, this where
+    the story is being told. An empty tuple clears the scene.
+    """
+
+    location_ids: tuple[StableId, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
 class GrantKnowledge:
     entry: KnowledgeEntry
 
@@ -55,9 +77,11 @@ StateOperation: TypeAlias = (
     | AddLink
     | RemoveLink
     | AddFact
+    | RemoveFact
     | GrantKnowledge
     | AddGoal
     | UpdateGoal
+    | SetSceneLocations
 )
 
 

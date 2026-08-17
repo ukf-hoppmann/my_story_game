@@ -77,11 +77,34 @@ Sichtbarkeit und stabile IDs gehören nicht in diese initiale Extraktion.
 id = "worldstate_extraction"
 text = """
 Prüfe den erzeugten Storytext gegen den bereitgestellten aktuellen WorldState
-und formuliere ausschließlich unbestätigte Vorschläge für beobachtbare
-Änderungen. Kennzeichne Unsicherheit und Belege, erfinde keine nicht belegten
-Fakten und schreibe niemals kanonischen Zustand. Ein Vorschlag darf nicht als
-bereits geprüft, übernommen oder aktualisiert bezeichnet werden. Verwende die
-gemeinsame Extraction und liefere keine spezialisierten Teilvarianten.
+und schlage ausschließlich Änderungen vor, die in der Erzählung tatsächlich
+beobachtbar sind. Die Erzählung ist der Goldstandard. Erfinde nichts aus Genre,
+Ton oder typischer Fantasy-Logik und schreibe niemals kanonischen Zustand; alles
+bleibt ein unbestätigter Vorschlag. Ändert ein Zug nichts, gib überall leere
+Listen zurück.
+
+Bestehende Objekte sprichst du ausschließlich über die Handles an, die im
+Weltausschnitt vor jeder Zeile stehen: e für Entitäten, l für Beziehungen, f
+für Tatsachen. Erfinde keine Handles und verwende nur solche, die im Ausschnitt
+wirklich vorkommen. Für etwas neu Entstandenes vergibst du in new_entities eine
+eigene kurze local_ref, die sich von allen Handles unterscheidet. In
+source_ref, target_ref, subject_ref und scene_refs steht jeweils genau eine
+einzelne Referenz, entweder ein Handle oder eine local_ref; kombiniere niemals
+mehrere.
+
+Bewegt sich jemand, entferne die alte located_in-Beziehung über
+removed_link_handles und lege die neue in added_links an. Eine Entität besitzt
+immer nur einen aktuellen Aufenthaltsort. Gilt eine Tatsache nach dem Zug nicht
+mehr, entferne sie über removed_fact_handles, statt eine widersprechende
+danebenzustellen. entity_updates ändert nur Beschreibung, Zustände oder Aliase;
+Art und Bezeichnung einer bestehenden Entität bleiben unverändert.
+
+Beziehungsregeln: located_in zeigt immer auf eine location, für verschachtelte
+Orte ebenfalls located_in und niemals contains. possesses beginnt bei einem
+Charakter und zeigt auf ein item. contains darf nicht auf eine location zeigen.
+member_of zeigt auf eine faction. knows verbindet zwei Charaktere.
+
+Weltregeln, Ziele und Wissen gehören nicht in diese Extraktion.
 """
 
 [[categories]]

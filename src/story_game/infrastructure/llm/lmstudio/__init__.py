@@ -4,6 +4,7 @@ from .adapter import LmStudioStoryGenerationAdapter
 from .client import LmStudioClient, LmStudioSettings
 from .initialization_adapter import LmStudioStoryInitializationAdapter
 from .initial_extraction_adapter import LmStudioInitialWorldExtractionAdapter
+from .turn_extraction_adapter import LmStudioTurnExtractionAdapter
 
 __all__ = [
     "LmStudioClient",
@@ -11,4 +12,5 @@ __all__ = [
     "LmStudioInitialWorldExtractionAdapter",
     "LmStudioStoryGenerationAdapter",
     "LmStudioStoryInitializationAdapter",
+    "LmStudioTurnExtractionAdapter",
 ]

@@ -349,6 +349,26 @@ class WorldState:
             raise ValidationError(f"Die Fakten-ID existiert bereits: {fact.id}")
         return replace(self, facts=(*self.facts, fact))
 
+    def remove_fact(self, fact_id: StableId) -> WorldState:
+        """Retire a statement, together with the knowledge about it.
+
+        An actor cannot keep knowing a fact the world no longer holds, so the
+        matching knowledge entries go with it rather than dangling.
+        """
+        if not any(fact.id == fact_id for fact in self.facts):
+            raise InvalidReferenceError(f"Unbekannte Tatsache: {fact_id}")
+        return replace(
+            self,
+            facts=tuple(fact for fact in self.facts if fact.id != fact_id),
+            knowledge=tuple(
+                entry for entry in self.knowledge if entry.fact_id != fact_id
+            ),
+        )
+
+    def set_scene_locations(self, location_ids: tuple[StableId, ...]) -> WorldState:
+        """Point the narration at other locations, or at none at all."""
+        return replace(self, scene_location_ids=location_ids)
+
     def add_knowledge(self, entry: KnowledgeEntry) -> WorldState:
         return replace(self, knowledge=(*self.knowledge, entry))
 

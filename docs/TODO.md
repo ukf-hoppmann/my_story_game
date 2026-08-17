@@ -488,6 +488,66 @@ After explicit rejection:
   - Goal: Entscheiden und umsetzen, wie dem Modell im Story-Prompt kenntlich gemacht wird, dass ein Teil des Kontexts der Spielerseite noch nicht bekannt ist. Die Kontextauswahl filtert bewusst nicht nach `Visibility`, damit das Modell auf verdeckte Ziele hinarbeiten kann; der erste Wurf von `TASK-017` kennzeichnet den Unterschied im Prompt jedoch bewusst gar nicht. Beobachtet werden muss, ob das Modell dadurch verdeckte Plotpunkte vorzeitig ausspricht.
   - Completion criteria: Es ist entschieden, welche Sichtbarkeitsstufen als verdeckt gelten — mindestens `director_only`, gegebenenfalls auch Wissen anderer Figuren — und wie sie im Prompt erscheinen; die Regel für den Director Mode ohne Spielerfigur ist festgelegt; Projektion und Promptpaket setzen sie um und sind getestet.
 
+- `TASK-019` **Zustandsoperationen für einen Zug ergänzen**
+  - Type: Task.
+  - Status: Awaiting confirmation.
+  - Parent: `STORY-007`.
+  - Required for parent: Yes.
+  - Created: 2026-08-17.
+  - Area: Domainmodell.
+  - Priority: Wichtig.
+  - Dependencies: `TASK-014`.
+  - Goal: Die beiden Zustandsoperationen ergänzen, ohne die ein regulärer Zug den Weltzustand nicht sinnvoll fortschreiben kann: den Szenenzeiger weiterbewegen und eine nicht mehr geltende Tatsache entfernen.
+  - Completion criteria: `SetSceneLocations` setzt geordnete Schauplätze und weist unbekannte Entitäten sowie Nicht-Orte ab; eine leere Liste löscht die Szene. `RemoveFact` entfernt genau eine Tatsache und nimmt das Wissen darüber mit, sodass kein verwaistes Wissen zurückbleibt; eine unbekannte Tatsache wird abgewiesen. Beide Operationen laufen über den freigegebenen Änderungssatz und erhöhen die Revision wie jede andere Änderung. Die Persistenz benötigt keine Schemaänderung, weil je Revision der vollständige Weltsnapshot geschrieben wird.
+
+- `TASK-020` **Extraktionsvertrag und Modellaufruf für einen Zug**
+  - Type: Task.
+  - Status: Open.
+  - Parent: `STORY-007`.
+  - Required for parent: Yes.
+  - Created: 2026-08-17.
+  - Area: LLM-Integration und Story-Workflow.
+  - Priority: Wichtig.
+  - Dependencies: `TASK-019`, `TASK-017`.
+  - Goal: Aus der neu erzeugten Prosa und dem relevanten bestehenden Weltausschnitt strukturierte, noch nicht freigegebene Änderungskandidaten gewinnen. Ein kombinierter Aufruf, weil lokale Modellaufrufe lange dauern; eine spätere Aufteilung in gezielte Teilaufrufe bleibt möglich.
+  - Completion criteria: Ein eigener Extraktionsport mit typisiertem Request und Kandidatentyp existiert; der Kandidat trägt ausschließlich Handles und lokale Referenzen, nie stabile IDs oder freigegebene Operationen. Eine eigene Extraktionsprojektion nennt bestehende Entitäten über kurze Handles, getrennt von der Story-Projektion, die bewusst keine Identifikatoren enthält. Der Adapter übermittelt ein geschlossenes JSON-Schema und lehnt unbekannte Felder, falsche Typen, leere und abgeschnittene Antworten ab; Rohantworten überschreiten die Portgrenze nicht. Der Modellrequest enthält Systemprompts, die neue Prosa und den Vergleichsausschnitt, aber keine Spielereingabe und kein Storyprofil.
+
+- `TASK-021` **Kandidaten fachlich prüfen und freigeben**
+  - Type: Task.
+  - Status: Open.
+  - Parent: `STORY-007`.
+  - Required for parent: Yes.
+  - Created: 2026-08-17.
+  - Area: Story-Workflow.
+  - Priority: Wichtig.
+  - Dependencies: `TASK-020`.
+  - Goal: Den unbestätigten Kandidaten in einen freigegebenen Änderungssatz überführen. Dieser Pfad ist der gemeinsame Trichter, auf den später auch spezialisierte Extraktionsvarianten münden.
+  - Completion criteria: Handles und lokale Referenzen werden gegen die aktuelle Revision aufgelöst, neue Entitäten erhalten erst dabei stabile IDs; ein transienter `ProposedChangeSet` entsteht als Zwischenstufe, an der Reviewevidenz hängen kann. Unbekannte oder doppelte Referenzen, nicht vorhandene zu entfernende Beziehungen, Revisionskonflikte und Domainverstöße verwerfen jeweils den gesamten Vorschlag; es entsteht kein Teilzustand und kein Retry. Die Domain-Invarianten werden über einen verworfenen Trockenlauf geprüft, statt in der Application nachgebaut zu werden. Erfolg liefert genau einen `ApprovedChangeSet`.
+
+- `TASK-022` **Vollständigen Storyzug orchestrieren**
+  - Type: Task.
+  - Status: Open.
+  - Parent: `STORY-007`.
+  - Required for parent: Yes.
+  - Created: 2026-08-17.
+  - Area: Application-Orchestrierung.
+  - Priority: Wichtig.
+  - Dependencies: `TASK-021`.
+  - Goal: Laden, Kontextauswahl, Story-Erzeugung, Extraktion, Freigabe und atomaren Commit als einen sichtbaren Workflow verbinden.
+  - Completion criteria: Die Reihenfolge ist auf Workflowebene sichtbar und über beobachtbares Verhalten getestet; die gesteuerte Figur wird aus der Mitgliedschaft aufgelöst; Modellaufrufe liegen außerhalb der Datenbanktransaktion; ein Fehler vor dem Commit lässt GameState und StoryTurn unverändert; Erfolg persistiert StoryTurn und resultierende Revision gemeinsam. Ein ausdrücklich aktivierter Live-Test führt einen vollständigen Zug gegen LM Studio aus.
+
+- `TASK-023` **Rollierende Zusammenfassung erzeugen**
+  - Type: Task.
+  - Status: Open.
+  - Parent: `STORY-007`.
+  - Required for parent: Yes.
+  - Created: 2026-08-17.
+  - Area: Story-Workflow und LLM-Integration.
+  - Priority: Wichtig.
+  - Dependencies: `TASK-022`.
+  - Goal: Nach einem abgeschlossenen Zug die fortlaufende Zusammenfassung der bisherigen Geschichte erzeugen und mit dem Zug persistieren.
+  - Completion criteria: Ein eigener Port und ein neuer Prompt-Task im Paket existieren; `GenerationTask.SUMMARY` ist bereits konfiguriert, der Prompt-Task fehlte bislang. Der Zug übergibt die erzeugte Zusammenfassung an den atomaren Commit; ein Fehlschlag der Zusammenfassung ist typisiert und macht sichtbar, ob der Zug trotzdem gültig abgeschlossen wurde.
+
 - `TASK-016` **Mehrere gesteuerte Figuren im Director Mode**
   - Type: Task.
   - Status: Open.

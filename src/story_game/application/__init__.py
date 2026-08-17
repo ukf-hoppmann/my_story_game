@@ -18,11 +18,13 @@ from .initial_world_extraction import (
     ExtractInitialWorldState,
     ExtractInitialWorldStateRequest,
 )
+from .generate_story import GenerateStory, GenerateStoryRequest
 from .story_turn_context import (
     SelectStoryTurnContext,
     SelectStoryTurnContextRequest,
     build_story_turn_context_selection,
 )
+from .story_turn_errors import StoryTurnError, StoryTurnErrorKind
 from .story_turn_context_errors import (
     ContextSelectionError,
     ContextSelectionErrorKind,
@@ -79,6 +81,10 @@ __all__ = [
     "InitializeStoryRequest",
     "ContextSelectionError",
     "ContextSelectionErrorKind",
+    "GenerateStory",
+    "GenerateStoryRequest",
+    "StoryTurnError",
+    "StoryTurnErrorKind",
     "SelectStoryTurnContext",
     "SelectStoryTurnContextRequest",
     "SelectedStoryTurnContext",

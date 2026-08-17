@@ -1,9 +1,9 @@
 # Geplante Story-Erzeugung über austauschbare Modelle
 
 Status: Der Provider-Anschluss, die technische Story-Grenze, der Szenenzeiger im
-WorldState und die Kontextauswahl für einen Zug sind implementiert; die
-Projektion in den Story-Request und der Story-Workflow sind noch nicht
-implementiert.
+WorldState, die Kontextauswahl für einen Zug und die Story-Erzeugung selbst sind
+implementiert. Noch nicht implementiert sind Turn-Extraction, Freigabe und der
+umschließende Zug-Workflow.
 Grundlage: [Entscheidung zur LLM-Anbindung](../../decisions/llm-anbindung.md),
 die [Entscheidung zu Promptprofil und Modellwahl](../../decisions/promptprofil-und-modellwahl.md)
 und der verbindliche
@@ -283,6 +283,31 @@ in sichtbarer Reihenfolge an sechs einzeln testbare Schritte:
    stabilen Weltreihenfolge, und entfernt anschließend alles, was auf eine
    gekappte Entität zeigt. `truncated` meldet, dass ein Limit gegriffen hat.
 
+## Story-Erzeugung
+
+`GenerateStory` bildet den ausgewählten Kontext auf die fünf Textfelder des
+`StoryGenerationRequest` ab und ruft den Story-Port. Die Projektion liegt in
+`story_prompt_sections.py` als reine Funktionen:
+
+- `configuration_text` löst die Options-IDs des Promptprofils in verständliche
+  Anweisungen auf. Sie wird von der Initialisierung und vom regulären Zug
+  gemeinsam genutzt, weil beide dieselbe aufgelöste Auswahl hereinbekommen.
+- `world_state_text` rendert Schauplatz, Entitäten, Beziehungen, Fakten, Wissen,
+  Regeln und Ziele als benannte Abschnitte.
+- `story_state_text` rendert die laufende Zusammenfassung und die letzten Züge.
+
+Die `GameConfiguration` wird neben dem Kontext übergeben, weil die
+Promptauflösung Paket-ID und -version braucht, die der Kontext nicht führt.
+
+Ein leerer Weltausschnitt ist im Director Mode gültig, der Request weist leeren
+Text aber ab. Die Projektion schreibt in diesem Fall einen ausdrücklichen
+Platzhaltersatz, statt den Zug scheitern zu lassen.
+
+Verdecktes Wissen wird im ersten Wurf **nicht** gekennzeichnet: `director_only`
+erscheint im Prompt wie jede andere Tatsache. Ob das Modell dadurch Plotpunkte
+vorzeitig ausspricht, muss beobachtet werden; die Entscheidung darüber ist als
+offene Folgearbeit festgehalten.
+
 Die Relevanzauswahl filtert bewusst **nicht** nach `Visibility`. Ein
 `director_only`-Fakt wird wie ein öffentlicher ausgewählt, weil das Modell auf
 verdeckte Ziele hinarbeiten können muss. `Visibility` bleibt ein UI-Belang: eine
@@ -299,8 +324,9 @@ und nicht auf diesem Prompt-Ausschnitt.
 - Streaming ja oder nein;
 - Auswahl der ersten Extraction-Variante für den vollständigen Storyzug;
 - Grenze und Freigabe für einen optionalen Live-Test mit lokalem LM Studio;
-- wie verdecktes Wissen im Prompt gekennzeichnet wird, damit das Modell es für
-  Andeutungen nutzen kann, ohne es wörtlich zu verraten;
+- ob und wie verdecktes Wissen im Prompt gekennzeichnet wird, damit das Modell
+  es für Andeutungen nutzen kann, ohne es wörtlich zu verraten — der erste Wurf
+  kennzeichnet bewusst gar nicht;
 - ob die Budgets zusätzlich zu Anzahlgrenzen ein Tokenbudget benötigen;
 - ob der Graph-Radius über einen Hop hinaus erweitert wird;
 - die Zustandsoperation, mit der die Turn-Extraction `scene_location_ids`

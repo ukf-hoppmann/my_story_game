@@ -22,8 +22,8 @@ from story_game.application.llm import (
     StoryInitializationPort,
     StoryInitializationPromptResolver,
     StoryInitializationRequest,
-    StoryPromptSelection,
 )
+from story_game.application.story_prompt_sections import configuration_text
 from story_game.domain import GameConfiguration, StoryInitialization, StoryState
 
 
@@ -85,7 +85,7 @@ class GenerateInitialStoryState:
                 generation_options=generation_configuration.data.generation_options,
                 request=StoryInitializationRequest(
                     system_prompts=(selection.task.text, selection.boundary_directive.text),
-                    configuration=_configuration_text(selection),
+                    configuration=configuration_text(selection),
                     initial_prompt=request.initial_prompt,
                     player_character=request.player_character,
                 ),
@@ -116,13 +116,3 @@ class GenerateInitialStoryState:
         return Success(StoryState(initialization=initialization))
 
 
-def _configuration_text(selection: StoryPromptSelection) -> str:
-    """Render resolved prompt meaning without exposing option IDs to the adapter."""
-    resolved = selection
-    return "\n".join(
-        (
-            f"Sprache: {resolved.language}",
-            *(f"{item.category_id}: {item.description}" for item in resolved.options),
-            "Erzählerische Grenzen: " + "; ".join(resolved.narrative_boundaries),
-        )
-    )

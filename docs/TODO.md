@@ -466,7 +466,7 @@ After explicit rejection:
 
 - `TASK-017` **Story-Generation-Aufruf für einen regulären Storyzug**
   - Type: Task.
-  - Status: Open.
+  - Status: Awaiting confirmation.
   - Parent: `STORY-006`.
   - Required for parent: Yes.
   - Created: 2026-08-17.
@@ -474,7 +474,7 @@ After explicit rejection:
   - Priority: Wichtig.
   - Dependencies: `TASK-015`, `STORY-005`.
   - Goal: Den ausgewählten Turn-Kontext in den bestehenden `StoryGenerationRequest` projizieren, den Story-Port aufrufen und daraus normalisierte Prosa für den nächsten Zug erhalten. Zusammen mit `TASK-015` erfüllt dieser Task die Completion criteria von `STORY-006`.
-  - Completion criteria: Eine Application-Operation bildet den Kontext auf die fünf Textfelder des Requests ab, löst Promptprofil und aktives Story-Modell auf und ruft den Story-Port auf; Erfolg liefert nichtleere normalisierte Prosa; Provider-, Timeout-, Leer- und Fehlerszenarien führen zu typisierten, sichtbaren Failures ohne Retry; der Adapter wählt keine Spieldaten aus; kein kanonischer GameState wird gelesen oder geschrieben; die Regel für verdecktes Wissen ist im Promptpaket und in der Projektion umgesetzt und getestet.
+  - Completion criteria: Eine Application-Operation bildet den Kontext auf die fünf Textfelder des Requests ab, löst Promptprofil und aktives Story-Modell auf und ruft den Story-Port auf; Erfolg liefert nichtleere normalisierte Prosa; Provider-, Timeout-, Leer- und Fehlerszenarien führen zu typisierten, sichtbaren Failures ohne Retry; der Adapter wählt keine Spieldaten aus; kein kanonischer GameState wird gelesen oder geschrieben; ein leerer Weltausschnitt erzeugt einen gültigen Request statt eines Abbruchs. Verdecktes Wissen wird in diesem ersten Wurf bewusst nicht gekennzeichnet; diese Entscheidung wird unter `TASK-018` beobachtet und gegebenenfalls nachgezogen.
 
 - `TASK-018` **Verdecktes Wissen im Story-Prompt kennzeichnen**
   - Type: Task.

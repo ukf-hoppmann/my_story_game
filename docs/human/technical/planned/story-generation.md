@@ -1,9 +1,10 @@
 # Geplante Story-Erzeugung über austauschbare Modelle
 
 Status: Ein vollständiger Storyzug ist implementiert — Kontextauswahl,
-Story-Erzeugung, Turn-Extraction, Freigabe und atomarer Commit. Noch nicht
-implementiert sind die rollierende Zusammenfassung, die Verdrahtung des
-Providers im Composition Root und ein HTTP-Endpunkt.
+Story-Erzeugung, Turn-Extraction, Freigabe, rollierende Zusammenfassung und
+atomarer Commit. Noch nicht implementiert sind die Verdrahtung des Providers im
+Composition Root, ein HTTP-Endpunkt und ein Live-Test für den vollständigen Zug
+(offen, siehe `TASK-022`).
 Grundlage: [Entscheidung zur LLM-Anbindung](../../decisions/llm-anbindung.md),
 die [Entscheidung zu Promptprofil und Modellwahl](../../decisions/promptprofil-und-modellwahl.md)
 und der verbindliche
@@ -384,6 +385,13 @@ Die Relevanzauswahl filtert bewusst **nicht** nach `Visibility`. Ein
 verdeckte Ziele hinarbeiten können muss. `Visibility` bleibt ein UI-Belang: eine
 Ansicht, die zeigt, was der Spieler weiß, filtert direkt auf dem `WorldState`
 und nicht auf diesem Prompt-Ausschnitt.
+
+Ergebnis ist `PlayedStoryTurn`, nicht roh der `GameState`: neben dem
+persistierten Zustand trägt es `proposed_changes` — den transienten, nie
+persistierten Vorschlag samt Modellbegründungen, siehe „Belege" — und
+`summary_failure` für den in „Rollierende Zusammenfassung" beschriebenen
+Sonderfall. Beide Felder sind optional und `None`, wenn nichts zu berichten
+ist.
 
 ## Offene Entscheidungen vor der Implementierung
 

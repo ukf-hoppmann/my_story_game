@@ -526,7 +526,7 @@ After explicit rejection:
 
 - `TASK-022` **Vollständigen Storyzug orchestrieren**
   - Type: Task.
-  - Status: Awaiting confirmation.
+  - Status: In progress.
   - Parent: `STORY-007`.
   - Required for parent: Yes.
   - Created: 2026-08-17.

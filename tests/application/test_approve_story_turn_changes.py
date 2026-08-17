@@ -13,6 +13,8 @@ from story_game.application.llm import (
     CandidateEntityUpdate,
     CandidateFact,
     CandidateLink,
+    CandidateRemoval,
+    CandidateSceneReference,
     TurnChangeCandidate,
 )
 from story_game.application.story_prompt_sections import extraction_projection
@@ -77,15 +79,15 @@ def approve(candidate: TurnChangeCandidate):
 def operations(candidate: TurnChangeCandidate):
     result = approve(candidate)
     assert isinstance(result, Success), result
-    return result.data.changes
+    return result.data.approved.changes
 
 
 def test_an_empty_proposal_yields_an_empty_but_valid_change_set() -> None:
     result = approve(TurnChangeCandidate())
 
     assert isinstance(result, Success)
-    assert result.data.changes == ()
-    assert result.data.base_revision == StateRevision(1)
+    assert result.data.approved.changes == ()
+    assert result.data.approved.base_revision == StateRevision(1)
 
 
 def test_a_new_entity_becomes_a_create_operation_with_a_fresh_id() -> None:
@@ -119,7 +121,9 @@ def test_a_move_removes_the_old_place_before_adding_the_new_one() -> None:
             added_links=(
                 CandidateLink(handle_of(w.MAREN), "wald", RelationKind.LOCATED_IN),
             ),
-            removed_link_handles=(link_handle_of(w.sid("l-maren-tavern")),),
+            removed_links=(
+                CandidateRemoval(link_handle_of(w.sid("l-maren-tavern"))),
+            ),
         )
     )
 
@@ -130,7 +134,7 @@ def test_a_move_removes_the_old_place_before_adding_the_new_one() -> None:
 def test_a_retired_fact_becomes_a_remove_operation() -> None:
     changes = operations(
         TurnChangeCandidate(
-            removed_fact_handles=(fact_handle_of(w.sid("f-tavern-warm")),)
+            removed_facts=(CandidateRemoval(fact_handle_of(w.sid("f-tavern-warm"))),)
         )
     )
 
@@ -141,7 +145,7 @@ def test_the_new_scene_is_resolved_including_freshly_created_places() -> None:
     changes = operations(
         TurnChangeCandidate(
             new_entities=(CandidateEntity("wald", EntityKind.LOCATION, "Schwarzwald"),),
-            scene_refs=("wald",),
+            scene=(CandidateSceneReference("wald"),),
         )
     )
 
@@ -174,15 +178,15 @@ def test_an_entity_update_changes_only_the_fields_it_names() -> None:
             id="unknown_entity_handle",
         ),
         pytest.param(
-            TurnChangeCandidate(removed_link_handles=("l99",)),
+            TurnChangeCandidate(removed_links=(CandidateRemoval("l99"),)),
             id="unknown_link_handle",
         ),
         pytest.param(
-            TurnChangeCandidate(removed_fact_handles=("f99",)),
+            TurnChangeCandidate(removed_facts=(CandidateRemoval("f99"),)),
             id="unknown_fact_handle",
         ),
         pytest.param(
-            TurnChangeCandidate(scene_refs=("nirgendwo",)),
+            TurnChangeCandidate(scene=(CandidateSceneReference("nirgendwo"),)),
             id="unknown_scene_reference",
         ),
         pytest.param(
@@ -242,11 +246,36 @@ def test_the_approved_set_can_actually_be_applied_to_the_state() -> None:
     result = approve(
         TurnChangeCandidate(
             new_entities=(CandidateEntity("wald", EntityKind.LOCATION, "Schwarzwald"),),
-            scene_refs=("wald",),
+            scene=(CandidateSceneReference("wald"),),
         )
     )
 
     assert isinstance(result, Success)
-    advanced = state().apply(result.data)
+    advanced = state().apply(result.data.approved)
     assert advanced.revision == StateRevision(2)
     assert len(advanced.world.scene_location_ids) == 1
+
+
+def test_the_model_reasons_stay_readable_on_the_transient_proposal() -> None:
+    """Asking for justifications would be pointless if nobody could read them."""
+    result = approve(
+        TurnChangeCandidate(
+            added_facts=(
+                CandidateFact("Es regnet.", evidence="Regen schlug ihr entgegen."),
+            )
+        )
+    )
+
+    assert isinstance(result, Success), result
+    change = result.data.proposed.changes[0]
+    assert change.evidence.source == "turn_extraction"
+    assert change.evidence.excerpt == "Regen schlug ihr entgegen."
+
+
+def test_a_change_without_a_justification_is_still_approved() -> None:
+    result = approve(
+        TurnChangeCandidate(added_facts=(CandidateFact("Es regnet."),))
+    )
+
+    assert isinstance(result, Success), result
+    assert result.data.proposed.changes[0].evidence.excerpt is None

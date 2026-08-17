@@ -27,8 +27,41 @@ def _required(value: str, label: str) -> str:
     return value
 
 
-def _required_all(values: tuple[str, ...], label: str) -> tuple[str, ...]:
-    return tuple(_required(value, label) for value in values)
+def _stripped_or_none(value: str | None) -> str | None:
+    if value is None:
+        return None
+    return value.strip() or None
+
+
+@dataclass(frozen=True, slots=True)
+class CandidateRemoval:
+    """One object the narration retired, addressed by its turn handle.
+
+    Structured rather than a bare handle so a removal can carry its own
+    justification. Removals are where that matters most: prose usually implies
+    them rather than stating them.
+    """
+
+    handle: str
+    evidence: str | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "handle", _required(self.handle, "Das Handle"))
+        object.__setattr__(self, "evidence", _stripped_or_none(self.evidence))
+
+
+@dataclass(frozen=True, slots=True)
+class CandidateSceneReference:
+    """One location the narration looks at after this turn."""
+
+    reference: str
+    evidence: str | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self, "reference", _required(self.reference, "Die Schauplatzreferenz")
+        )
+        object.__setattr__(self, "evidence", _stripped_or_none(self.evidence))
 
 
 @dataclass(frozen=True, slots=True)
@@ -43,8 +76,10 @@ class CandidateEntityUpdate:
     description: str | None = None
     conditions: tuple[CandidateCondition, ...] | None = None
     aliases: tuple[str, ...] | None = None
+    evidence: str | None = None
 
     def __post_init__(self) -> None:
+        object.__setattr__(self, "evidence", _stripped_or_none(self.evidence))
         object.__setattr__(self, "handle", _required(self.handle, "Das Handle"))
         if self.description is not None:
             object.__setattr__(self, "description", self.description.strip())
@@ -66,19 +101,11 @@ class TurnChangeCandidate:
     new_entities: tuple[CandidateEntity, ...] = ()
     entity_updates: tuple[CandidateEntityUpdate, ...] = ()
     added_links: tuple[CandidateLink, ...] = ()
-    removed_link_handles: tuple[str, ...] = ()
+    removed_links: tuple[CandidateRemoval, ...] = ()
     added_facts: tuple[CandidateFact, ...] = ()
-    removed_fact_handles: tuple[str, ...] = ()
-    scene_refs: tuple[str, ...] = ()
+    removed_facts: tuple[CandidateRemoval, ...] = ()
+    scene: tuple[CandidateSceneReference, ...] = ()
     """Where the narration looks after this turn, most relevant first."""
-
-    def __post_init__(self) -> None:
-        for name, label in (
-            ("removed_link_handles", "Ein Beziehungs-Handle"),
-            ("removed_fact_handles", "Ein Fakten-Handle"),
-            ("scene_refs", "Eine Schauplatzreferenz"),
-        ):
-            object.__setattr__(self, name, _required_all(getattr(self, name), label))
 
 
 @dataclass(frozen=True, slots=True)
@@ -89,6 +116,14 @@ class TurnExtractionRequest:
     narration: str
     world_state: str
     language: str
+    with_evidence: bool = True
+    """Whether the model is asked to justify each change with a quote.
+
+    Justifications are what makes an automatic plausibility check and any later
+    display possible, but they cost output tokens — the slowest resource
+    locally and the priciest against a paid API. Deciding to ask is an
+    application concern; the adapter only renders the matching schema.
+    """
 
     def __post_init__(self) -> None:
         prompts = tuple(prompt.strip() for prompt in self.system_prompts if prompt.strip())
@@ -105,6 +140,8 @@ class TurnExtractionRequest:
 
 __all__ = [
     "CandidateEntityUpdate",
+    "CandidateRemoval",
+    "CandidateSceneReference",
     "TurnChangeCandidate",
     "TurnExtractionRequest",
 ]

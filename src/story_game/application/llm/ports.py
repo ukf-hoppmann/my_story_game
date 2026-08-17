@@ -18,6 +18,7 @@ from .contracts import (
 )
 from .prompts import PromptPackage
 from .initial_extraction import InitialWorldExtractionRequest, WorldInitializationCandidate
+from .summary import StorySummaryRequest, StorySummaryText
 from .turn_extraction import TurnChangeCandidate, TurnExtractionRequest
 
 
@@ -75,3 +76,12 @@ class TurnExtractionPort(Protocol):
         self,
         call: LLMGenerationCall[TurnExtractionRequest],
     ) -> OperationResult[TurnChangeCandidate, LLMError]: ...
+
+
+class StorySummaryPort(Protocol):
+    """Roll the running summary forward by one completed turn."""
+
+    def summarize(
+        self,
+        call: LLMGenerationCall[StorySummaryRequest],
+    ) -> OperationResult[StorySummaryText, LLMError]: ...

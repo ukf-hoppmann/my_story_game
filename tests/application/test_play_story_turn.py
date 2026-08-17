@@ -11,10 +11,13 @@ from story_game.application.game_state import (
     LoadGame,
 )
 from story_game.application.generate_story import GenerateStory
+from story_game.application.summarize_story import SummarizeStory
 from story_game.application.initialize_game_run import RunInitiator
 from story_game.application.llm import (
     CandidateEntity,
     CandidateLink,
+    CandidateRemoval,
+    CandidateSceneReference,
     ExtractionPromptSelectionResolver,
     GenerationConfiguration,
     GenerationOptions,
@@ -23,6 +26,8 @@ from story_game.application.llm import (
     ModelSelection,
     StoryGenerationData,
     StoryPromptSelectionResolver,
+    StorySummaryText,
+    SummaryPromptSelectionResolver,
     TurnChangeCandidate,
 )
 from story_game.application.play_story_turn import (
@@ -95,6 +100,16 @@ class FakeStoryPort:
         return self.result
 
 
+class FakeSummaryPort:
+    def __init__(self, result=None) -> None:
+        self.result = result or Success(StorySummaryText("Maren hat das Wirtshaus verlassen."))
+        self.call = None
+
+    def summarize(self, call):
+        self.call = call
+        return self.result
+
+
 class FakeExtractionPort:
     def __init__(self, result=None) -> None:
         self.result = result or Success(TurnChangeCandidate())
@@ -125,6 +140,7 @@ def run_with(player_entity_id=w.MAREN) -> GameRun:
 def workflow(
     story_port=None,
     extraction_port=None,
+    summary_port=None,
     store=None,
     run=None,
 ) -> tuple[PlayStoryTurn, FakeStore]:
@@ -146,6 +162,11 @@ def workflow(
             extraction_port or FakeExtractionPort(),
         ),
         ApproveStoryTurnChanges(lambda: sid(next(ids))),
+        SummarizeStory(
+            SummaryPromptSelectionResolver(catalog),
+            FixedConfigurationResolver(),
+            summary_port or FakeSummaryPort(),
+        ),
         CommitCompletedTurn(resolved_store, resolved_store),
         new_id=lambda: sid(next(ids)),
         now=lambda: datetime(2026, 8, 17, 12, tzinfo=UTC),
@@ -163,7 +184,7 @@ def test_a_complete_turn_persists_narration_and_the_next_revision() -> None:
     result = operation.apply(request())
 
     assert isinstance(result, Success), result
-    assert result.data.revision == StateRevision(2)
+    assert result.data.state.revision == StateRevision(2)
     assert store.committed is not None
     assert store.committed.turn.narration == NARRATION
     assert store.committed.turn.player_input == "Ich gehe hinaus."
@@ -188,7 +209,7 @@ def test_an_approved_delta_reaches_the_next_revision() -> None:
                     CandidateEntity("wald", EntityKind.LOCATION, "Schwarzwald"),
                 ),
                 added_links=(CandidateLink("e1", "wald", RelationKind.RELATED_TO),),
-                scene_refs=("wald",),
+                scene=(CandidateSceneReference("wald"),),
             )
         )
     )
@@ -197,9 +218,9 @@ def test_an_approved_delta_reaches_the_next_revision() -> None:
     result = operation.apply(request())
 
     assert isinstance(result, Success), result
-    labels = {entity.label for entity in result.data.world.entities}
+    labels = {entity.label for entity in result.data.state.world.entities}
     assert "Schwarzwald" in labels
-    assert len(result.data.world.scene_location_ids) == 1
+    assert len(result.data.state.world.scene_location_ids) == 1
 
 
 def test_a_story_failure_leaves_the_state_untouched() -> None:
@@ -234,7 +255,7 @@ def test_an_extraction_failure_leaves_the_state_untouched() -> None:
 
 def test_a_rejected_proposal_leaves_the_state_untouched() -> None:
     extraction_port = FakeExtractionPort(
-        Success(TurnChangeCandidate(removed_fact_handles=("f99",)))
+        Success(TurnChangeCandidate(removed_facts=(CandidateRemoval("f99"),)))
     )
     operation, store = workflow(extraction_port=extraction_port)
 
@@ -267,9 +288,44 @@ def test_director_control_without_a_bound_figure_can_still_play() -> None:
     assert isinstance(result, Success), result
 
 
-def test_no_summary_is_written_until_it_is_implemented() -> None:
+def test_the_rolling_summary_is_written_with_the_turn() -> None:
     operation, store = workflow()
+
+    result = operation.apply(request())
+
+    assert isinstance(result, Success), result
+    assert result.data.summary_failure is None
+    assert store.committed.summary is not None
+    assert store.committed.summary.text == "Maren hat das Wirtshaus verlassen."
+    assert store.committed.summary.through_sequence == StorySequence(2)
+
+
+def test_the_summary_call_sees_the_previous_summary_and_the_new_turn() -> None:
+    summary_port = FakeSummaryPort()
+    operation, _ = workflow(summary_port=summary_port)
 
     operation.apply(request())
 
+    prepared = summary_port.call.request
+    assert prepared.narration == NARRATION
+    assert prepared.player_input == "Ich gehe hinaus."
+    assert prepared.previous_summary == "Maren hat das Wirtshaus erreicht."
+    assert prepared.language == "de"
+
+
+def test_a_failed_summary_still_persists_the_turn_and_stays_visible() -> None:
+    """Prose and world changes are already paid for; losing them would be worse."""
+    operation, store = workflow(
+        summary_port=FakeSummaryPort(
+            Failure(LLMError(LLMErrorKind.TIMEOUT, "Zeitüberschreitung."))
+        )
+    )
+
+    result = operation.apply(request())
+
+    assert isinstance(result, Success), result
+    assert result.data.state.revision == StateRevision(2)
+    assert store.committed is not None
     assert store.committed.summary is None
+    assert result.data.summary_failure is not None
+    assert result.data.summary_failure.kind is StoryTurnErrorKind.MODEL_FAILURE

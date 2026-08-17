@@ -41,9 +41,26 @@ from story_game.domain import (
 
 
 @dataclass(frozen=True, slots=True)
+class ApprovedTurnChanges:
+    """What may be committed, plus the untrusted proposal it came from.
+
+    The proposal travels along so the model's own justifications stay readable
+    — otherwise asking for them would cost output tokens for data nobody can
+    see. It is never persisted.
+    """
+
+    approved: ApprovedChangeSet
+    proposed: ProposedChangeSet
+
+
+@dataclass(frozen=True, slots=True)
 class ApproveStoryTurnChangesRequest:
     game_state: GameState
     extracted: ExtractedTurnChanges
+
+
+_JustifiedOperation = tuple[StateOperation, "str | None"]
+"""One approved operation together with the quote the model offered for it."""
 
 
 class _UnknownReference(Exception):
@@ -63,7 +80,7 @@ class ApproveStoryTurnChanges:
 
     def apply(
         self, request: ApproveStoryTurnChangesRequest
-    ) -> OperationResult[ApprovedChangeSet, StoryTurnError]:
+    ) -> OperationResult[ApprovedTurnChanges, StoryTurnError]:
         state = request.game_state
         candidate = request.extracted.candidate
         projection = request.extracted.projection
@@ -79,8 +96,9 @@ class ApproveStoryTurnChanges:
             )
 
         # The transient proposal is the documented boundary between untrusted
-        # model output and canonical state. It is where review evidence lives;
-        # today nothing reviews it yet, so it is built and approved in one go.
+        # model output and canonical state. It is where the model's own
+        # justification lives; today nothing reviews it yet, so it is built and
+        # approved in one go.
         proposed = ProposedChangeSet(
             id=self._new_id(),
             base_revision=state.revision,
@@ -88,10 +106,12 @@ class ApproveStoryTurnChanges:
                 ProposedChange(
                     id=self._new_id(),
                     operation=operation,
-                    evidence=ProposalEvidence(source="turn_extraction"),
+                    evidence=ProposalEvidence(
+                        source="turn_extraction", excerpt=evidence
+                    ),
                     visibility=Visibility.public(),
                 )
-                for operation in operations
+                for operation, evidence in operations
             ),
         )
         approved = ApprovedChangeSet(
@@ -106,7 +126,7 @@ class ApproveStoryTurnChanges:
             return Failure(
                 StoryTurnError(StoryTurnErrorKind.DOMAIN_REJECTION, str(error))
             )
-        return Success(approved)
+        return Success(ApprovedTurnChanges(approved, proposed))
 
     def _entity_references(
         self, candidate, projection
@@ -127,38 +147,41 @@ class ApproveStoryTurnChanges:
         projection,
         entities: dict[str, StableId],
         state: GameState,
-    ) -> tuple[StateOperation, ...]:
-        operations: list[StateOperation] = [
+    ) -> tuple[_JustifiedOperation, ...]:
+        operations: list[_JustifiedOperation] = [
             *self._created(candidate.new_entities, entities),
             *self._updated(candidate.entity_updates, entities, state),
             # Removals come first so a move does not briefly claim two places.
             *(
-                RemoveLink(_resolve(handle, projection.link_handles))
-                for handle in candidate.removed_link_handles
+                (RemoveLink(_resolve(item.handle, projection.link_handles)), item.evidence)
+                for item in candidate.removed_links
             ),
             *self._added_links(candidate.added_links, entities),
             *(
-                RemoveFact(_resolve(handle, projection.fact_handles))
-                for handle in candidate.removed_fact_handles
+                (RemoveFact(_resolve(item.handle, projection.fact_handles)), item.evidence)
+                for item in candidate.removed_facts
             ),
             *self._added_facts(candidate.added_facts, entities),
         ]
-        if candidate.scene_refs:
+        if candidate.scene:
             operations.append(
-                SetSceneLocations(
-                    tuple(
-                        _resolve(reference, entities)
-                        for reference in candidate.scene_refs
-                    )
+                (
+                    SetSceneLocations(
+                        tuple(
+                            _resolve(item.reference, entities)
+                            for item in candidate.scene
+                        )
+                    ),
+                    candidate.scene[0].evidence,
                 )
             )
         return tuple(operations)
 
     def _created(
         self, items: tuple[CandidateEntity, ...], entities: dict[str, StableId]
-    ) -> tuple[StateOperation, ...]:
+    ) -> tuple[_JustifiedOperation, ...]:
         return tuple(
-            CreateEntity(
+            (CreateEntity(
                 WorldEntity(
                     id=entities[item.local_ref],
                     kind=item.kind,
@@ -170,7 +193,7 @@ class ApproveStoryTurnChanges:
                     ),
                     aliases=item.aliases,
                 )
-            )
+            ), item.evidence)
             for item in items
         )
 
@@ -179,8 +202,8 @@ class ApproveStoryTurnChanges:
         items: tuple[CandidateEntityUpdate, ...],
         entities: dict[str, StableId],
         state: GameState,
-    ) -> tuple[StateOperation, ...]:
-        operations: list[StateOperation] = []
+    ) -> tuple[_JustifiedOperation, ...]:
+        operations: list[_JustifiedOperation] = []
         for item in items:
             entity_id = _resolve(item.handle, entities)
             try:
@@ -197,14 +220,16 @@ class ApproveStoryTurnChanges:
                 )
             if item.aliases is not None:
                 changes["aliases"] = item.aliases
-            operations.append(UpdateEntity(replace(current, **changes)))
+            operations.append(
+                (UpdateEntity(replace(current, **changes)), item.evidence)
+            )
         return tuple(operations)
 
     def _added_links(
         self, items: tuple[CandidateLink, ...], entities: dict[str, StableId]
-    ) -> tuple[StateOperation, ...]:
+    ) -> tuple[_JustifiedOperation, ...]:
         return tuple(
-            AddLink(
+            (AddLink(
                 EntityLink(
                     id=self._new_id(),
                     source_id=_resolve(item.source_ref, entities),
@@ -213,15 +238,15 @@ class ApproveStoryTurnChanges:
                     quantity=item.quantity,
                     description=item.description,
                 )
-            )
+            ), item.evidence)
             for item in items
         )
 
     def _added_facts(
         self, items: tuple[CandidateFact, ...], entities: dict[str, StableId]
-    ) -> tuple[StateOperation, ...]:
+    ) -> tuple[_JustifiedOperation, ...]:
         return tuple(
-            AddFact(
+            (AddFact(
                 Fact(
                     id=self._new_id(),
                     statement=item.statement,
@@ -231,7 +256,7 @@ class ApproveStoryTurnChanges:
                         else _resolve(item.subject_ref, entities)
                     ),
                 )
-            )
+            ), item.evidence)
             for item in items
         )
 

@@ -21,6 +21,7 @@ from story_game.application.llm import (
 _TASK_IDS = {
     "story_initialization",
     "story_generation",
+    "story_summary",
     "worldstate_initialization",
     "worldstate_extraction",
 }

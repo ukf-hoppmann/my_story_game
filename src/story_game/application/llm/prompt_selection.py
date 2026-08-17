@@ -95,6 +95,16 @@ class ExtractionPromptSelectionResolver:
         )
 
 
+class SummaryPromptSelectionResolver:
+    """Resolve the summary instructions, which need no story profile."""
+
+    def __init__(self, catalog: PromptPackageCatalog) -> None:
+        self.catalog = catalog
+
+    def resolve(self, package_id: str, package_version: str) -> PromptTask:
+        return self.catalog.load(package_id, package_version).task("story_summary")
+
+
 class InitialExtractionPromptSelectionResolver:
     """Resolve the extraction instructions used only for an opening narration."""
 
@@ -141,4 +151,5 @@ __all__ = [
     "StoryPromptSelection",
     "StoryInitializationPromptResolver",
     "StoryPromptSelectionResolver",
+    "SummaryPromptSelectionResolver",
 ]

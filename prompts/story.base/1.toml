@@ -104,7 +104,32 @@ Orte ebenfalls located_in und niemals contains. possesses beginnt bei einem
 Charakter und zeigt auf ein item. contains darf nicht auf eine location zeigen.
 member_of zeigt auf eine faction. knows verbindet zwei Charaktere.
 
+Verlangt das Schema zu einer Änderung ein evidence-Feld, zitiere dort wörtlich
+die Stelle der Erzählung, die diese Änderung zeigt. Gib den Wortlaut exakt
+wieder, formuliere ihn nicht um und erfinde ihn nicht. Findest du keine Stelle,
+die eine Änderung belegt, gehört die Änderung nicht in den Vorschlag.
+
 Weltregeln, Ziele und Wissen gehören nicht in diese Extraktion.
+"""
+
+[[tasks]]
+id = "story_summary"
+text = """
+Schreibe die bisherige Zusammenfassung um den neuen Zug fort. Das Ergebnis
+ersetzt die bisherige Zusammenfassung vollständig und muss für sich allein
+verständlich bleiben.
+
+Behalte alles, was für spätere Züge zählt: wer beteiligt ist, wo die Handlung
+steht, welche Absichten und offenen Fragen bestehen und was sich dauerhaft
+verändert hat. Lass fallen, was nur Ausschmückung war. Erfinde nichts hinzu und
+bewerte nicht; gib ausschließlich wieder, was tatsächlich erzählt wurde.
+
+Schreibe zusammenhängende Prosa in der vorgegebenen Sprache, ohne
+Aufzählungen, Überschriften oder Anreden an den Spieler. Halte dich kurz: die
+Zusammenfassung ist Gedächtnis, nicht Nacherzählung.
+
+Gibt es noch keine bisherige Zusammenfassung, fasse allein den neuen Zug
+zusammen.
 """
 
 [[categories]]

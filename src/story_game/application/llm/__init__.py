@@ -28,10 +28,14 @@ from .ports import (
     PromptPackageCatalog,
     StoryGenerationPort,
     StoryInitializationPort,
+    StorySummaryPort,
     TurnExtractionPort,
 )
+from .summary import StorySummaryRequest, StorySummaryText
 from .turn_extraction import (
     CandidateEntityUpdate,
+    CandidateRemoval,
+    CandidateSceneReference,
     TurnChangeCandidate,
     TurnExtractionRequest,
 )
@@ -43,6 +47,7 @@ from .prompt_selection import (
     StoryPromptSelection,
     StoryInitializationPromptResolver,
     StoryPromptSelectionResolver,
+    SummaryPromptSelectionResolver,
 )
 from .prompts import (
     InvalidPromptPackageError,
@@ -102,6 +107,12 @@ __all__ = [
     "StoryPromptSelection",
     "StoryPromptSelectionResolver",
     "CandidateEntityUpdate",
+    "CandidateRemoval",
+    "CandidateSceneReference",
+    "StorySummaryPort",
+    "StorySummaryRequest",
+    "StorySummaryText",
+    "SummaryPromptSelectionResolver",
     "TurnChangeCandidate",
     "TurnExtractionPort",
     "TurnExtractionRequest",

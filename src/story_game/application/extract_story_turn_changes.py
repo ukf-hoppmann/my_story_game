@@ -32,6 +32,7 @@ class ExtractStoryTurnChangesRequest:
     context: SelectedStoryTurnContext
     configuration: GameConfiguration
     narration: str
+    with_evidence: bool = True
 
     def __post_init__(self) -> None:
         narration = self.narration.strip()
@@ -92,6 +93,7 @@ class ExtractStoryTurnChanges:
                     narration=request.narration,
                     world_state=projection.text,
                     language=request.configuration.language,
+                    with_evidence=request.with_evidence,
                 ),
             )
         except (KeyError, ValueError) as error:

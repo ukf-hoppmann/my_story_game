@@ -25,18 +25,42 @@ from story_game.application.game_state import (
 from story_game.application.game_state.errors import GameStateOperationError
 from story_game.application.generate_story import GenerateStory, GenerateStoryRequest
 from story_game.application.initialize_game_run import RunInitiator
+from story_game.application.proposals import ProposedChangeSet
 from story_game.application.story_turn_context import (
     SelectStoryTurnContext,
     SelectStoryTurnContextRequest,
 )
 from story_game.application.story_turn_context_errors import ContextSelectionError
 from story_game.application.story_turn_errors import StoryTurnError, StoryTurnErrorKind
+from story_game.application.summarize_story import SummarizeStory, SummarizeStoryRequest
 from story_game.domain import GameRun, GameState, StableId
 
 
 StoryTurnWorkflowError: TypeAlias = (
     StoryTurnError | ContextSelectionError | GameStateOperationError
 )
+
+
+@dataclass(frozen=True, slots=True)
+class PlayedStoryTurn:
+    """The persisted turn, plus what went wrong without invalidating it."""
+
+    state: GameState
+    proposed_changes: ProposedChangeSet | None = None
+    """The untrusted proposal behind this turn, with the model's own reasons.
+
+    Transient and never persisted; kept so a caller can show what the model
+    wanted and why.
+    """
+
+    summary_failure: StoryTurnError | None = None
+    """Set when the turn was committed but its summary could not be produced.
+
+    Prose and world changes are already paid for by then, so losing the whole
+    turn over its summary would be the worse trade. The turn stands; the
+    failure stays visible so a caller can show it instead of silently drifting
+    without a summary.
+    """
 
 
 @dataclass(frozen=True, slots=True)
@@ -69,6 +93,7 @@ class PlayStoryTurn:
         generate_story: GenerateStory,
         extract_changes: ExtractStoryTurnChanges,
         approve_changes: ApproveStoryTurnChanges,
+        summarize_story: SummarizeStory,
         commit_turn: CommitCompletedTurn,
         *,
         new_id: Callable[[], StableId] = StableId.new,
@@ -79,13 +104,14 @@ class PlayStoryTurn:
         self._generate_story = generate_story
         self._extract_changes = extract_changes
         self._approve_changes = approve_changes
+        self._summarize_story = summarize_story
         self._commit_turn = commit_turn
         self._new_id = new_id
         self._now = now
 
     def apply(
         self, request: PlayStoryTurnRequest
-    ) -> OperationResult[GameState, StoryTurnWorkflowError]:
+    ) -> OperationResult[PlayedStoryTurn, StoryTurnWorkflowError]:
         loaded = self._load_game.apply(LoadGameRequest(request.run_id))
         if isinstance(loaded, Failure):
             return loaded
@@ -123,16 +149,31 @@ class PlayStoryTurn:
         if isinstance(approved, Failure):
             return approved
 
-        return self._commit_turn.apply(
+        summarized = self._summarize_story.apply(
+            SummarizeStoryRequest(
+                state.story,
+                state.configuration,
+                request.player_input,
+                narrated.data.text,
+            )
+        )
+        summary_failure = summarized.error if isinstance(summarized, Failure) else None
+
+        committed = self._commit_turn.apply(
             CommitCompletedTurnRequest(
                 run_id=request.run_id,
-                changes=approved.data,
+                changes=approved.data.approved,
                 turn_id=self._new_id(),
                 player_input=request.player_input,
                 narration=narrated.data.text,
-                summary_text=None,
+                summary_text=None if summary_failure else summarized.data.text,
                 completed_at=self._now(),
             )
+        )
+        if isinstance(committed, Failure):
+            return committed
+        return Success(
+            PlayedStoryTurn(committed.data, approved.data.proposed, summary_failure)
         )
 
 

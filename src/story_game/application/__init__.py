@@ -21,6 +21,7 @@ from .initial_world_extraction import (
 from .approve_story_turn_changes import (
     ApproveStoryTurnChanges,
     ApproveStoryTurnChangesRequest,
+    ApprovedTurnChanges,
 )
 from .extract_story_turn_changes import (
     ExtractStoryTurnChanges,
@@ -29,6 +30,7 @@ from .extract_story_turn_changes import (
 )
 from .generate_story import GenerateStory, GenerateStoryRequest
 from .play_story_turn import (
+    PlayedStoryTurn,
     PlayStoryTurn,
     PlayStoryTurnRequest,
     StoryTurnWorkflowError,
@@ -38,6 +40,7 @@ from .story_turn_context import (
     SelectStoryTurnContextRequest,
     build_story_turn_context_selection,
 )
+from .summarize_story import SummarizeStory, SummarizeStoryRequest
 from .story_turn_errors import StoryTurnError, StoryTurnErrorKind
 from .story_turn_context_errors import (
     ContextSelectionError,
@@ -97,12 +100,16 @@ __all__ = [
     "ContextSelectionErrorKind",
     "ApproveStoryTurnChanges",
     "ApproveStoryTurnChangesRequest",
+    "ApprovedTurnChanges",
     "ExtractStoryTurnChanges",
     "ExtractStoryTurnChangesRequest",
     "ExtractedTurnChanges",
     "GenerateStory",
     "GenerateStoryRequest",
     "PlayStoryTurn",
+    "PlayedStoryTurn",
+    "SummarizeStory",
+    "SummarizeStoryRequest",
     "PlayStoryTurnRequest",
     "StoryTurnWorkflowError",
     "StoryTurnError",

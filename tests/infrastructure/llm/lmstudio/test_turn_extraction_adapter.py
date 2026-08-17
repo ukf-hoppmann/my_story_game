@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 
 import pytest
 
@@ -50,10 +51,10 @@ def empty_payload(**overrides) -> str:
         "new_entities": [],
         "entity_updates": [],
         "added_links": [],
-        "removed_link_handles": [],
+        "removed_links": [],
         "added_facts": [],
-        "removed_fact_handles": [],
-        "scene_refs": [],
+        "removed_facts": [],
+        "scene": [],
     }
     payload.update(overrides)
     return json.dumps(payload)
@@ -70,6 +71,7 @@ def test_adapter_requests_strict_json_and_returns_a_typed_candidate() -> None:
                     "description": "Dichter Nadelwald.",
                     "conditions": [],
                     "aliases": [],
+                    "evidence": "Sie tritt in den Schwarzwald.",
                 }
             ],
             entity_updates=[
@@ -78,6 +80,7 @@ def test_adapter_requests_strict_json_and_returns_a_typed_candidate() -> None:
                     "description": "Durchnässt.",
                     "conditions": [{"name": "erschöpft", "description": ""}],
                     "aliases": None,
+                    "evidence": "Maren ist durchnässt.",
                 }
             ],
             added_links=[
@@ -87,12 +90,13 @@ def test_adapter_requests_strict_json_and_returns_a_typed_candidate() -> None:
                     "kind": "located_in",
                     "quantity": None,
                     "description": "",
+                    "evidence": "Sie betritt den Wald.",
                 }
             ],
-            removed_link_handles=["l1"],
-            added_facts=[{"statement": "Es regnet.", "subject_ref": None}],
-            removed_fact_handles=["f2"],
-            scene_refs=["wald"],
+            removed_links=[{"handle": "l1", "evidence": "Sie verlässt das Wirtshaus."}],
+            added_facts=[{"statement": "Es regnet.", "subject_ref": None, "evidence": "in den Regen"}],
+            removed_facts=[{"handle": "f2", "evidence": "Das Feuer ist erloschen."}],
+            scene=[{"reference": "wald", "evidence": "tritt in den Wald"}],
         )
     )
 
@@ -105,10 +109,10 @@ def test_adapter_requests_strict_json_and_returns_a_typed_candidate() -> None:
     assert candidate.entity_updates[0].handle == "e1"
     assert candidate.entity_updates[0].conditions[0].name == "erschöpft"
     assert candidate.added_links[0].kind is RelationKind.LOCATED_IN
-    assert candidate.removed_link_handles == ("l1",)
+    assert candidate.removed_links[0].handle == "l1"
     assert candidate.added_facts[0].statement == "Es regnet."
-    assert candidate.removed_fact_handles == ("f2",)
-    assert candidate.scene_refs == ("wald",)
+    assert candidate.removed_facts[0].handle == "f2"
+    assert candidate.scene[0].reference == "wald"
 
 
 def test_the_request_carries_narration_and_comparison_excerpt_only() -> None:
@@ -134,8 +138,39 @@ def test_the_schema_is_strict_and_free_of_canonical_concepts() -> None:
     assert response_format.name == "turn_changes"
     assert response_format.strict is True
     schema_text = json.dumps(response_format.schema)
-    for forbidden in ("visibility", "evidence", "knowledge", "rules", "goals", "uuid"):
+    for forbidden in ("visibility", "knowledge", "rules", "goals", "uuid"):
         assert forbidden not in schema_text
+
+
+def test_the_schema_asks_for_a_justification_when_requested() -> None:
+    client = RecordingClient(empty_payload())
+
+    LmStudioTurnExtractionAdapter(client).extract(call(extraction_request()))
+
+    assert "evidence" in json.dumps(client.request.response_format.schema)
+
+
+def test_the_schema_leaves_justifications_out_when_switched_off() -> None:
+    """Justifications cost output tokens — the slowest resource locally."""
+    client = RecordingClient(empty_payload())
+
+    LmStudioTurnExtractionAdapter(client).extract(
+        call(replace(extraction_request(), with_evidence=False))
+    )
+
+    assert "evidence" not in json.dumps(client.request.response_format.schema)
+
+
+def test_a_payload_without_justifications_is_accepted_when_switched_off() -> None:
+    client = RecordingClient(empty_payload(removed_links=[{"handle": "l1"}]))
+
+    result = LmStudioTurnExtractionAdapter(client).extract(
+        call(replace(extraction_request(), with_evidence=False))
+    )
+
+    assert isinstance(result, Success)
+    assert result.data.removed_links[0].handle == "l1"
+    assert result.data.removed_links[0].evidence is None
 
 
 def test_a_wrong_provider_is_refused_before_any_call() -> None:
@@ -159,9 +194,9 @@ def test_a_wrong_provider_is_refused_before_any_call() -> None:
     [
         "not-json",
         "{}",
-        '{"new_entities": [], "entity_updates": [], "added_links": [], "removed_link_handles": [], "added_facts": [], "removed_fact_handles": [], "scene_refs": [], "evidence": []}',
-        '{"new_entities": [{"local_ref": "x", "kind": "unknown", "label": "X", "description": "", "conditions": [], "aliases": []}], "entity_updates": [], "added_links": [], "removed_link_handles": [], "added_facts": [], "removed_fact_handles": [], "scene_refs": []}',
-        '{"new_entities": [], "entity_updates": [], "added_links": [], "removed_link_handles": [""], "added_facts": [], "removed_fact_handles": [], "scene_refs": []}',
+        '{"new_entities": [], "entity_updates": [], "added_links": [], "removed_links": [], "added_facts": [], "removed_facts": [], "scene": [], "evidence": []}',
+        '{"new_entities": [{"local_ref": "x", "kind": "unknown", "label": "X", "description": "", "conditions": [], "aliases": []}], "entity_updates": [], "added_links": [], "removed_links": [], "added_facts": [], "removed_facts": [], "scene": []}',
+        '{"new_entities": [], "entity_updates": [], "added_links": [], "removed_links": [{"handle": ""}], "added_facts": [], "removed_facts": [], "scene": []}',
     ],
 )
 def test_adapter_rejects_malformed_or_nonconforming_json(response_text: str) -> None:

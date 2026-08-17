@@ -38,6 +38,7 @@ def test_loads_all_categories_defaults_and_non_selectable_boundary_directive() -
     assert {task.id for task in package.tasks} == {
         "story_initialization",
         "story_generation",
+        "story_summary",
         "worldstate_initialization",
         "worldstate_extraction",
     }
@@ -138,6 +139,10 @@ def _synthetic_package(variant: str) -> str:
             "[[tasks]]",
             'id = "story_generation"',
             f'text = {"" if variant == "empty_text" else "story"!r}',
+            "",
+            "[[tasks]]",
+            'id = "story_summary"',
+            'text = "summary"',
             "",
             "[[tasks]]",
             'id = "worldstate_initialization"',

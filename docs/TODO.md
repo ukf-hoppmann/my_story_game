@@ -538,7 +538,7 @@ After explicit rejection:
 
 - `TASK-023` **Rollierende Zusammenfassung erzeugen**
   - Type: Task.
-  - Status: Open.
+  - Status: Awaiting confirmation.
   - Parent: `STORY-007`.
   - Required for parent: Yes.
   - Created: 2026-08-17.
@@ -546,7 +546,7 @@ After explicit rejection:
   - Priority: Wichtig.
   - Dependencies: `TASK-022`.
   - Goal: Nach einem abgeschlossenen Zug die fortlaufende Zusammenfassung der bisherigen Geschichte erzeugen und mit dem Zug persistieren.
-  - Completion criteria: Ein eigener Port und ein neuer Prompt-Task im Paket existieren; `GenerationTask.SUMMARY` ist bereits konfiguriert, der Prompt-Task fehlte bislang. Der Zug übergibt die erzeugte Zusammenfassung an den atomaren Commit; ein Fehlschlag der Zusammenfassung ist typisiert und macht sichtbar, ob der Zug trotzdem gültig abgeschlossen wurde.
+  - Completion criteria: Ein eigener Port und ein neuer Prompt-Task im Paket existieren; `GenerationTask.SUMMARY` war bereits konfiguriert, der Prompt-Task fehlte. Der Zug übergibt die erzeugte Zusammenfassung an den atomaren Commit. Ein Fehlschlag der Zusammenfassung bricht den Zug **nicht** ab: Prosa und Änderungen werden regulär persistiert, und der typisierte Fehler bleibt über das Zugergebnis sichtbar. Der dauerhafte Logeintrag, an dem sich wiederkehrende Fehlschläge erkennen lassen, steht noch aus und gehört zu `TASK-024`.
 
 - `TASK-025` **Historische Daten in den Turn-Kontext aufnehmen**
   - Type: Task.
@@ -571,6 +571,18 @@ After explicit rejection:
   - Dependencies: `TASK-021`.
   - Goal: Vorgeschlagene Änderungen automatisch und ohne nennenswerte Rechenlast auf Plausibilität prüfen, statt sie nur strukturell zu validieren. Der Review läuft ohne Benutzereingriff und hält den Spielfluss nicht an; seine Befunde sollen optional anzeigbar sein, damit sichtbar wird, wie oft und wobei das Modell danebenliegt.
   - Completion criteria: Das Delta-Schema führt je Änderung einen Beleg als wörtliches Zitat aus der Erzählung. Deterministische Prüfungen erzeugen je Änderung Befunde: der Beleg kommt in der Erzählung tatsächlich vor; die Bezeichnung einer neu vorgeschlagenen Entität ist in der Erzählung auffindbar; ein neuer Schauplatz ist genannt oder unverändert. Die vorhandene deutschsprachige Namenserkennung wird dafür wiederverwendet, statt eine zweite zu bauen. Befunde sind Hinweise, keine Ablehnung — strukturelle Fehler und Domainverstöße verwerfen den Vorschlag weiterhin ganz. Die Befunde sind abrufbar und im Live-Test sichtbar. Dokumentiert ist, was der automatische Review ausdrücklich nicht leisten kann.
+
+- `TASK-027` **Belege der Änderungsvorschläge optional anfordern**
+  - Type: Task.
+  - Status: Awaiting confirmation.
+  - Parent: `STORY-007`.
+  - Required for parent: No.
+  - Created: 2026-08-17.
+  - Area: LLM-Integration und Diagnose.
+  - Priority: Wichtig.
+  - Dependencies: `TASK-021`.
+  - Goal: Das Modell je vorgeschlagener Änderung ein wörtliches Zitat aus der Erzählung mitliefern lassen, als Grundlage für den automatischen Review und für eine spätere Anzeige. Weil Ausgabetoken lokal die langsamste und bei API-Abrechnung die teuerste Ressource sind, muss die Anforderung abschaltbar sein.
+  - Completion criteria: Der Extraktions-Request trägt einen Schalter; der Adapter wählt danach zwischen zwei Schemavarianten, sodass ohne Schalter kein Belegfeld im Schema erscheint. Belege erreichen als Zitat die `ProposalEvidence` der jeweiligen Änderung. Der transiente Vorschlag ist im Zugergebnis lesbar, damit die Begründungen überhaupt sichtbar werden können; persistiert wird er nicht. Eine fehlende Begründung verwirft einen Vorschlag nicht. Die Initial-Extraction bleibt unberührt.
 
 - `TASK-024` **Logging-Grundlage einführen**
   - Type: Task.

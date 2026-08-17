@@ -338,6 +338,38 @@ verwirft den gesamten Vorschlag.
 Dieser Freigabepfad ist der gemeinsame Trichter: eine spätere Aufteilung in
 mehrere gezielte Extraktionsaufrufe tauscht nur den Aufrufteil aus.
 
+### Belege
+
+Das Delta-Schema kann je Änderung ein wörtliches Zitat aus der Erzählung
+verlangen. Ein Schalter am Extraktions-Request entscheidet darüber; der Adapter
+hält zwei Schemavarianten bereit und wählt danach aus. Der Schalter ist
+zunächst eingeschaltet, um zu beobachten, wie zuverlässig das Modell zitiert.
+
+Belege kosten Ausgabetoken — lokal die langsamste, bei API-Abrechnung die
+teuerste Ressource. Sie sind trotzdem sinnvoll, weil sie die einzige billige
+Prüfung ermöglichen, die Erfundenes von Beobachtetem trennt, und weil sie die
+Information sind, die eine spätere Anzeige braucht. Fehlt ein Beleg, wird der
+Vorschlag nicht verworfen: Belege sind Diagnose, keine Bedingung.
+
+Die Zitate landen in der `ProposalEvidence` der jeweiligen Änderung. Der
+transiente Vorschlag ist im Zugergebnis lesbar, damit die Begründungen
+überhaupt sichtbar werden können; persistiert wird er nicht.
+
+## Rollierende Zusammenfassung
+
+`SummarizeStory` schreibt nach dem Zug die laufende Zusammenfassung fort. Der
+Aufruf erhält nur die bisherige Zusammenfassung und den neuen Zug, nicht die
+ganze Historie — die Zusammenfassung steht bereits für alles davor, was den
+Aufruf mit wachsendem Spiel klein hält.
+
+Scheitert sie, **bricht der Zug nicht ab**. Prosa und Änderungen sind zu diesem
+Zeitpunkt längst berechnet; sie wegen des Nebenprodukts zu verwerfen wäre der
+schlechtere Tausch. Der Zug wird regulär persistiert, und der Fehler bleibt im
+Ergebnis sichtbar, damit eine UI ihn anzeigen kann, statt still ohne
+Zusammenfassung weiterzulaufen. Ein dauerhafter Logeintrag, an dem sich
+wiederkehrende Fehlschläge erkennen ließen, fehlt noch — das Projekt hat
+bislang kein Logging.
+
 ## Vollständiger Zug
 
 `PlayStoryTurn` verbindet Laden, Kontextauswahl, Story-Erzeugung, Extraktion,

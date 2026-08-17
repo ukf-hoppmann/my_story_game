@@ -13,6 +13,8 @@ from story_game.application.llm import (
     CandidateEntityUpdate,
     CandidateFact,
     CandidateLink,
+    CandidateRemoval,
+    CandidateSceneReference,
     LLMError,
     LLMErrorKind,
     LLMGenerationCall,
@@ -43,6 +45,14 @@ class _WireModel(BaseModel):
 class _WireCondition(_WireModel):
     name: str = Field(min_length=1)
     description: str = ""
+
+
+_EVIDENCE = Field(
+    description=(
+        "Verbatim quote from the narration that shows this change happened. "
+        "Quote exactly; never paraphrase and never invent."
+    ),
+)
 
 
 class _WireNewEntity(_WireModel):
@@ -101,25 +111,69 @@ class _WireFact(_WireModel):
     )
 
 
+class _WireRemoval(_WireModel):
+    handle: str = Field(min_length=1)
+
+
+class _WireSceneReference(_WireModel):
+    reference: str = Field(
+        min_length=1,
+        description="Handle or local_ref of a location.",
+    )
+
+
+class _WireNewEntityWithEvidence(_WireNewEntity):
+    evidence: str = _EVIDENCE
+
+
+class _WireEntityUpdateWithEvidence(_WireEntityUpdate):
+    evidence: str = _EVIDENCE
+
+
+class _WireLinkWithEvidence(_WireLink):
+    evidence: str = _EVIDENCE
+
+
+class _WireFactWithEvidence(_WireFact):
+    evidence: str = _EVIDENCE
+
+
+class _WireRemovalWithEvidence(_WireRemoval):
+    evidence: str = _EVIDENCE
+
+
+class _WireSceneReferenceWithEvidence(_WireSceneReference):
+    evidence: str = _EVIDENCE
+
+
 class _WireCandidate(_WireModel):
     new_entities: list[_WireNewEntity]
     entity_updates: list[_WireEntityUpdate]
     added_links: list[_WireLink]
-    removed_link_handles: list[str] = Field(
-        description="Handles of relations the narration ended, e.g. a place left."
+    removed_links: list[_WireRemoval] = Field(
+        description="Relations the narration ended, e.g. a place that was left."
     )
     added_facts: list[_WireFact]
-    removed_fact_handles: list[str] = Field(
-        description="Handles of facts the narration made untrue."
+    removed_facts: list[_WireRemoval] = Field(
+        description="Facts the narration made untrue."
     )
-    scene_refs: list[str] = Field(
+    scene: list[_WireSceneReference] = Field(
         description=(
             "Where the narration looks after this turn, most relevant first. "
-            "Each entry is a handle or local_ref of a location. Repeat the "
-            "current scene when it did not move; use an empty list only when no "
-            "location applies at all."
+            "Repeat the current scene when it did not move; use an empty list "
+            "only when no location applies at all."
         )
     )
+
+
+class _WireCandidateWithEvidence(_WireCandidate):
+    new_entities: list[_WireNewEntityWithEvidence]
+    entity_updates: list[_WireEntityUpdateWithEvidence]
+    added_links: list[_WireLinkWithEvidence]
+    removed_links: list[_WireRemovalWithEvidence]
+    added_facts: list[_WireFactWithEvidence]
+    removed_facts: list[_WireRemovalWithEvidence]
+    scene: list[_WireSceneReferenceWithEvidence]
 
 
 class LmStudioTurnExtractionAdapter(TurnExtractionPort):
@@ -136,6 +190,11 @@ class LmStudioTurnExtractionAdapter(TurnExtractionPort):
                     "Der LM-Studio-Adapter wurde mit einem anderen Provider aufgerufen.",
                 )
             )
+        wire_model = (
+            _WireCandidateWithEvidence
+            if call.request.with_evidence
+            else _WireCandidate
+        )
         try:
             response = self._client.complete(
                 LmStudioChatRequest(
@@ -146,7 +205,7 @@ class LmStudioTurnExtractionAdapter(TurnExtractionPort):
                     response_format=LmStudioJsonSchema(
                         name="turn_changes",
                         strict=True,
-                        schema=_WireCandidate.model_json_schema(),
+                        schema=wire_model.model_json_schema(),
                     ),
                 )
             )
@@ -154,7 +213,7 @@ class LmStudioTurnExtractionAdapter(TurnExtractionPort):
             return Failure(_map_error(error))
 
         try:
-            wire = _WireCandidate.model_validate_json(response.text)
+            wire = wire_model.model_validate_json(response.text)
             return Success(_candidate_from_wire(wire))
         except (PydanticError, ValueError):
             return Failure(
@@ -187,6 +246,7 @@ def _candidate_from_wire(wire: _WireCandidate) -> TurnChangeCandidate:
                 item.description,
                 _conditions(item.conditions),
                 tuple(item.aliases),
+                _evidence(item),
             )
             for item in wire.new_entities
         ),
@@ -196,6 +256,7 @@ def _candidate_from_wire(wire: _WireCandidate) -> TurnChangeCandidate:
                 item.description,
                 None if item.conditions is None else _conditions(item.conditions),
                 None if item.aliases is None else tuple(item.aliases),
+                _evidence(item),
             )
             for item in wire.entity_updates
         ),
@@ -206,16 +267,30 @@ def _candidate_from_wire(wire: _WireCandidate) -> TurnChangeCandidate:
                 RelationKind(item.kind),
                 item.quantity,
                 item.description,
+                _evidence(item),
             )
             for item in wire.added_links
         ),
-        removed_link_handles=tuple(wire.removed_link_handles),
+        removed_links=_removals(wire.removed_links),
         added_facts=tuple(
-            CandidateFact(item.statement, item.subject_ref) for item in wire.added_facts
+            CandidateFact(item.statement, item.subject_ref, _evidence(item))
+            for item in wire.added_facts
         ),
-        removed_fact_handles=tuple(wire.removed_fact_handles),
-        scene_refs=tuple(wire.scene_refs),
+        removed_facts=_removals(wire.removed_facts),
+        scene=tuple(
+            CandidateSceneReference(item.reference, _evidence(item))
+            for item in wire.scene
+        ),
     )
+
+
+def _evidence(item: _WireModel) -> str | None:
+    """Only the evidence-bearing schema variant carries a justification."""
+    return getattr(item, "evidence", None)
+
+
+def _removals(items: list[_WireRemoval]) -> tuple[CandidateRemoval, ...]:
+    return tuple(CandidateRemoval(item.handle, _evidence(item)) for item in items)
 
 
 def _conditions(items: list[_WireCondition]) -> tuple[CandidateCondition, ...]:

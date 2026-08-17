@@ -8,6 +8,12 @@ from story_game.application.initialization_models import PlayerCharacterSeed
 from story_game.domain import EntityKind, RelationKind
 
 
+def _stripped_or_none(value: str | None) -> str | None:
+    if value is None:
+        return None
+    return value.strip() or None
+
+
 def _required(value: str, label: str) -> str:
     value = value.strip()
     if not value:
@@ -33,8 +39,15 @@ class CandidateEntity:
     description: str = ""
     conditions: tuple[CandidateCondition, ...] = ()
     aliases: tuple[str, ...] = ()
+    evidence: str | None = None
+    """Optional verbatim quote from the prose that justifies this proposal.
+
+    Only turn extraction asks for it; initial extraction leaves it unset,
+    because there is no earlier world its output could contradict.
+    """
 
     def __post_init__(self) -> None:
+        object.__setattr__(self, "evidence", _stripped_or_none(self.evidence))
         object.__setattr__(self, "local_ref", _required(self.local_ref, "Die lokale Referenz"))
         object.__setattr__(self, "label", _required(self.label, "Die Bezeichnung"))
         object.__setattr__(self, "description", self.description.strip())
@@ -51,8 +64,10 @@ class CandidateLink:
     kind: RelationKind
     quantity: int | None = None
     description: str = ""
+    evidence: str | None = None
 
     def __post_init__(self) -> None:
+        object.__setattr__(self, "evidence", _stripped_or_none(self.evidence))
         object.__setattr__(self, "source_ref", _required(self.source_ref, "Die Quellreferenz"))
         object.__setattr__(self, "target_ref", _required(self.target_ref, "Die Zielreferenz"))
         if self.quantity is not None and self.quantity < 1:
@@ -64,8 +79,10 @@ class CandidateLink:
 class CandidateFact:
     statement: str
     subject_ref: str | None = None
+    evidence: str | None = None
 
     def __post_init__(self) -> None:
+        object.__setattr__(self, "evidence", _stripped_or_none(self.evidence))
         object.__setattr__(self, "statement", _required(self.statement, "Der Fakt"))
         if self.subject_ref is not None:
             object.__setattr__(

@@ -38,6 +38,11 @@ class ApplySelectionBudget:
     order in the world so that the same input always yields the same slice.
     Whatever survives is then closed over: anything pointing at a dropped entity
     is dropped too, so the model never sees a reference it cannot resolve.
+
+    Two things are kept even past the limit: the frame of every turn, and the
+    locations the world itself names as the scene — without them a turn would no
+    longer know where it takes place. Everyone standing in those locations stays
+    budgeted, so a crowded place cannot crowd out the rest of the slice.
     """
 
     def apply(
@@ -55,9 +60,14 @@ class ApplySelectionBudget:
             key=lambda candidate: (candidate.priority, order[candidate.entity_id]),
         )
 
-        # The frame is part of every turn, so it is kept even past the limit.
-        required = [item for item in ranked if item.priority is SelectionPriority.ALWAYS]
-        optional = [item for item in ranked if item.priority is not SelectionPriority.ALWAYS]
+        scene_ids = set(world.scene_location_ids)
+        keep_regardless = {
+            item.entity_id
+            for item in ranked
+            if item.priority is SelectionPriority.ALWAYS or item.entity_id in scene_ids
+        }
+        required = [item for item in ranked if item.entity_id in keep_regardless]
+        optional = [item for item in ranked if item.entity_id not in keep_regardless]
         room = max(request.budget.max_entities - len(required), 0)
         kept = [*required, *optional[:room]]
         truncated = len(kept) < len(ranked)

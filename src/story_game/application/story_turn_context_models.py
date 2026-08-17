@@ -110,6 +110,11 @@ class BudgetedSelection:
     goals: tuple[Goal, ...]
     reasons: tuple[EntityCandidate, ...]
     truncated: bool
+    """Whether a limit actually left something out.
+
+    False when a guaranteed value pushed the result past its limit without
+    anything being dropped, because nothing is missing from the slice then.
+    """
 
 
 @dataclass(frozen=True, slots=True)

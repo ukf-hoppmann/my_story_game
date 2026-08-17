@@ -84,11 +84,16 @@ def _at_location(
     priority: SelectionPriority,
 ) -> tuple[EntityCandidate, ...]:
     label = world.entity(location_id).label
+    # The two relations run in opposite directions: `located_in` points from the
+    # entity to its place, `contains` from the container to what is inside it.
     present = tuple(
         link.source_id
         for link in world.links
-        if link.kind in {RelationKind.LOCATED_IN, RelationKind.CONTAINS}
-        and link.target_id == location_id
+        if link.kind is RelationKind.LOCATED_IN and link.target_id == location_id
+    ) + tuple(
+        link.target_id
+        for link in world.links
+        if link.kind is RelationKind.CONTAINS and link.source_id == location_id
     )
     return (
         EntityCandidate(location_id, priority, f"Schauplatz {label!r}"),

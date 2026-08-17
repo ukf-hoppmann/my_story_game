@@ -448,8 +448,8 @@ After explicit rejection:
   - Created: 2026-08-17.
   - Area: Domainmodell, Persistenz, API und LLM-Integration.
   - Priority: Wichtig.
-  - Dependencies: `STORY-009`, `STORY-002`.
-  - Goal: Den aktuellen Schauplatz der Erzählung als eigene geordnete Aussage im WorldState führen, damit die Kontextauswahl eines Storyzugs nicht auf Ableitungen aus Aufenthaltsbeziehungen angewiesen ist. Aufenthaltsbeziehungen sagen, wo eine Entität ist; der Szenenzeiger sagt, wohin die Erzählung blickt. Im Director Mode fallen beide legitim auseinander.
+  - Dependencies: `STORY-009`, `TASK-009`, `STORY-002`.
+  - Goal: Den aktuellen Schauplatz der Erzählung als eigene geordnete Aussage im WorldState führen, damit die Kontextauswahl eines Storyzugs nicht auf Ableitungen aus Aufenthaltsbeziehungen angewiesen ist. Aufenthaltsbeziehungen sagen, wo eine Entität ist; der Szenenzeiger sagt, wohin die Erzählung blickt. Im Director Mode fallen beide legitim auseinander. Dieser Task erweitert ausdrücklich den mit `TASK-009` bestätigten Initial-Extraction-Vertrag: der Kandidat besteht nicht mehr nur aus Entities, Links und Facts, sondern zusätzlich aus geordneten lokalen Schauplatzreferenzen. Autoritative Quelle für den erweiterten Vertrag bleibt `.harness/architecture/llm-integration.md` Abschnitt 6a; `TASK-009` wird als abgeschlossene Historie nicht rückwirkend umgeschrieben.
   - Completion criteria: `WorldState.scene_location_ids` ist eine geordnete, duplikatfreie Liste vorhandener Orte mit `primary_scene_location()`; PostgreSQL speichert sie relational und revisionsgebunden in `world_scene_locations`; die API überträgt sie als UUID-Liste; die Initial-Extraction liefert geordnete lokale Schauplatzreferenzen, und unbekannte, doppelte oder nicht auf einen Ort zeigende Referenzen verwerfen den gesamten Kandidaten; `.harness/architecture/llm-integration.md` Abschnitt 6a ist entsprechend erweitert; die Begründung gegen Redundanz ist dokumentiert; bestehende Entwicklungsdatenbanken müssen ohne Upgrade-Migration neu angelegt werden; die vollständige Verifikation einschließlich PostgreSQL besteht.
 
 - `TASK-015` **Kontextauswahl für einen regulären Storyzug**
@@ -463,7 +463,6 @@ After explicit rejection:
   - Dependencies: `TASK-014`.
   - Goal: Aus dem vollständigen GameState und der Spielereingabe einen deterministischen, erklärbaren und budgetierten Ausschnitt auswählen, den der folgende Story-Modellaufruf als Kontext erhält.
   - Completion criteria: Eine zusammengesetzte Application-Operation delegiert an einzeln testbare Schritte für Grundgerüst, Namenserkennung, Schauplatzbevölkerung, Ein-Hop-Erweiterung, zugehörige Fakten/Wissen/Ziele und Budgetierung; gleicher Zustand und gleiche Eingabe liefern dasselbe Ergebnis; der Eingabezustand bleibt unverändert; die Auswahl filtert nicht nach Visibility; die Budgetkappung bleibt referenziell geschlossen; kein Modellaufruf und keine Persistenz finden statt.
-  - Resolution: Implemented and verified on 2026-08-17 as `SelectStoryTurnContext` with six leaves. Ein Zug ohne Ortsnennung erhält seinen Schauplatz aus dem Zeiger; die gesteuerte Figur ist auch bei Du-Erzählung enthalten; `director_only`-Fakten werden nicht herausgefiltert. Die Projektion in den `StoryGenerationRequest` ist bewusst nicht Teil dieser Arbeit.
 
 - `TASK-016` **Mehrere gesteuerte Figuren im Director Mode**
   - Type: Task.

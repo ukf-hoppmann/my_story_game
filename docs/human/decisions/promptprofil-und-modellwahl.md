@@ -83,6 +83,16 @@ Promptpaket. Der bestehende Catalog-Vertrag
 `prompts/<package-id>/<version>.toml` bleiben erhalten. Ein zusätzlicher Digest
 oder eine weitergehende Replay-Garantie wird nicht eingeführt.
 
+Daraus folgt bewusst: Eine Paketversion ist kein eingefrorenes Artefakt. Ohne
+Replay-Garantie gibt es nichts, was eine unveränderte Versionsdatei zusichern
+würde. Solange das Projekt am Anfang steht, wird ein Paket deshalb in seiner
+bestehenden Versionsdatei erweitert, statt für jede Änderung eine neue anzulegen.
+Eine neue Versionsdatei wird erst nötig, wenn ältere Partien mit ihrem
+ursprünglichen Prompt nachvollziehbar wiedergegeben werden müssen — das ist
+zugleich der Zeitpunkt, an dem eine Replay-Garantie überhaupt Sinn ergibt.
+Dieselbe Begründung, die gegen den Digest spricht, trägt also auch die
+In-place-Änderung.
+
 ## Defaults und Validierung
 
 Paketdefaults dienen nur dazu, das vollständige Profil einer neuen Partie

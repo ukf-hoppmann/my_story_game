@@ -40,6 +40,13 @@ def test_the_scene_pointer_brings_its_location_and_everyone_there() -> None:
     assert w.BRUDER not in found
 
 
+def test_items_contained_in_the_scene_are_part_of_it() -> None:
+    """A `contains` link runs location -> item, the opposite of `located_in`."""
+    found = priorities(populate((w.TAVERN,)))
+
+    assert found[w.LAMP] is SelectionPriority.PRIMARY_SCENE
+
+
 def test_the_scene_works_without_anything_being_named_in_the_text() -> None:
     """'Maren geht weiter' names no place — the world still knows the scene."""
     found = priorities(populate((w.TAVERN,), mentioned=()))

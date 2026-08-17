@@ -24,6 +24,13 @@ ist getrennt von den `located_in`-Beziehungen: diese sagen, wo eine Entität ist
 jene, wohin die Erzählung blickt. IDs, die keinen vorhandenen Ort bezeichnen,
 sowie Duplikate werden abgewiesen.
 
+`schema_version` kennzeichnet den Aufbau des Transportdokuments und steigt nur
+bei brechenden Änderungen: entfernten oder umbenannten Feldern, geänderten Typen
+oder geänderter Bedeutung eines Feldes. Ein zusätzliches Feld mit Standardwert
+ist dagegen rein additiv — ältere Clients ignorieren es, und ältere Dokumente
+bleiben ohne Anpassung gültig. `scene_location_ids` ist ein solcher Fall; die
+Version bleibt deshalb bewusst `1`.
+
 Alle internen IDs werden im OpenAPI-Schema als `string` mit `format: uuid`
 ausgewiesen und im JSON in kanonischer UUID-Schreibweise übertragen. Das gilt
 auch für `run_id` im Pfad; eine nicht als UUID parsebare ID führt zu HTTP 422.

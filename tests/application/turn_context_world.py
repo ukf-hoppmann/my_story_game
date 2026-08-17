@@ -41,6 +41,7 @@ TAVERN = sid("tavern")
 CAPITAL = sid("capital")
 FOREST = sid("forest")
 SWORD = sid("sword")
+LAMP = sid("lamp")
 GUILD = sid("guild")
 
 
@@ -76,6 +77,7 @@ def entities() -> tuple[WorldEntity, ...]:
         WorldEntity(CAPITAL, EntityKind.LOCATION, "Hauptstadt"),
         WorldEntity(FOREST, EntityKind.LOCATION, "Schwarzwald"),
         WorldEntity(SWORD, EntityKind.ITEM, "Silberschwert"),
+        WorldEntity(LAMP, EntityKind.ITEM, "Öllampe"),
         WorldEntity(GUILD, EntityKind.FACTION, "Kartografengilde"),
     )
 
@@ -88,6 +90,9 @@ def links() -> tuple[EntityLink, ...]:
         EntityLink(sid("l-bruder-capital"), BRUDER, CAPITAL, RelationKind.LOCATED_IN),
         EntityLink(sid("l-maren-sword"), MAREN, SWORD, RelationKind.POSSESSES),
         EntityLink(sid("l-alma-guild"), ALMA, GUILD, RelationKind.MEMBER_OF),
+        # A location contains an item: the source is the container, the target
+        # the contained thing. The reverse is rejected by the domain.
+        EntityLink(sid("l-tavern-lamp"), TAVERN, LAMP, RelationKind.CONTAINS),
     )
 
 

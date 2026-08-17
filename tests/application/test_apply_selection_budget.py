@@ -78,6 +78,37 @@ def test_the_frame_is_never_dropped_even_below_the_limit() -> None:
     assert data.truncated is True
 
 
+def test_the_scene_the_world_names_is_never_dropped() -> None:
+    """Without its location a turn no longer knows where it takes place."""
+    data = cap(
+        [
+            candidate(w.MAREN, SelectionPriority.ALWAYS),
+            candidate(w.TAVERN, SelectionPriority.PRIMARY_SCENE),
+        ],
+        SelectionBudget(max_entities=1),
+    )
+
+    assert set(ids(data.entities)) == {w.MAREN, w.TAVERN}
+    # Nothing was left out, the guarantee merely pushed past the limit.
+    assert data.truncated is False
+
+
+def test_the_cast_of_the_scene_is_still_budgeted() -> None:
+    """Only the place itself is guaranteed, not everyone standing in it."""
+    data = cap(
+        [
+            candidate(w.TAVERN, SelectionPriority.PRIMARY_SCENE),
+            candidate(w.WIRT, SelectionPriority.PRIMARY_SCENE),
+            candidate(w.ALMA, SelectionPriority.PRIMARY_SCENE),
+        ],
+        SelectionBudget(max_entities=2),
+    )
+
+    assert w.TAVERN in ids(data.entities)
+    assert len(data.entities) == 2
+    assert data.truncated is True
+
+
 def test_entities_of_equal_priority_keep_the_world_order() -> None:
     data = cap(
         [

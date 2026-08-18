@@ -41,7 +41,7 @@ class SelectStoryTurnContextRequest:
     """Everything one turn's context selection reads, already loaded."""
 
     game_state: GameState
-    controlled_entity_id: StableId | None
+    controlled_entity_ids: tuple[StableId, ...]
     player_input: str
 
 
@@ -80,14 +80,12 @@ class SelectStoryTurnContext:
         self._diagnostics.trace(
             "select_story_turn_context.request",
             player_input=request.player_input,
-            controlled_entity_id=str(request.controlled_entity_id)
-            if request.controlled_entity_id
-            else None,
+            controlled_entity_ids=[str(entity_id) for entity_id in request.controlled_entity_ids],
         )
 
         frame = self._always_included.apply(
             SelectAlwaysIncludedRequest(
-                request.game_state, request.controlled_entity_id, self._budget
+                request.game_state, request.controlled_entity_ids, self._budget
             )
         )
         if isinstance(frame, Failure):
@@ -144,7 +142,7 @@ class SelectStoryTurnContext:
         selected_context = SelectedStoryTurnContext(
             summary=frame.data.summary,
             recent_turns=frame.data.recent_turns,
-            controlled_entity=frame.data.controlled_entity,
+            controlled_entities=frame.data.controlled_entities,
             scene_locations=tuple(
                 location
                 for location in scene.data.scene_locations

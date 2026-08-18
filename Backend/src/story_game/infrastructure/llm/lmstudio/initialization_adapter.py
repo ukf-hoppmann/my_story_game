@@ -67,14 +67,13 @@ def _messages_for(request: StoryInitializationRequest) -> tuple[LmStudioChatMess
         "[configuration]\n" + request.configuration,
         "[initial_prompt]\n" + request.initial_prompt,
     ]
-    if request.player_character is not None:
-        character = request.player_character
-        description = character.description or "Keine zusätzliche Beschreibung."
-        sections.append(
-            "[player_character]\n"
-            f"Name: {character.name}\n"
-            f"Beschreibung: {description}"
-        )
+    if request.controllable_characters:
+        lines = [
+            f"- Name: {character.name}\n"
+            f"  Beschreibung: {character.description or 'Keine zusätzliche Beschreibung.'}"
+            for character in request.controllable_characters
+        ]
+        sections.append("[controllable_characters]\n" + "\n".join(lines))
     return (
         LmStudioChatMessage(role="system", content="\n\n".join(request.system_prompts)),
         LmStudioChatMessage(

@@ -6,6 +6,12 @@ gemeinsames Ergebnis; `InitializeGameRun` führt beide Ergebnisse zusammen und
 persistiert den initialen GameRun atomar. Der öffentliche Startendpunkt bleibt
 Teil von `STORY-003`.
 
+Nachtrag: Director Mode ist kein Modus ohne steuerbare Figur mehr, sondern
+erlaubt 0..N explizit benannte steuerbare Figuren (siehe TASK-016). Player
+Mode bleibt der Sonderfall mit genau einer. Die folgenden Abschnitte
+beschreiben deshalb `ControllableCharacterSeed` als Liste, nicht mehr als
+optionalen Einzelwert.
+
 Der echte LM-Studio-Test führt beide Aufrufe aus und druckt Eingaben,
 Rohantworten und Endzustände. Das lokale Modell erzeugt technisch nutzbare
 Candidates, verletzt in der Eröffnungsprosa aber noch sichtbar die strenge
@@ -30,11 +36,11 @@ InitializeStory
 
 `InitializeGameRun` persistiert beide Ergebnisse gemeinsam als GameRun und
 GameState in Revision 1. Der Run startet im Status `DRAFT`; der aufrufende
-Benutzer erhält die `OWNER`-Mitgliedschaft. Im Player Mode verweist
-`player_entity_id` auf genau die eine `ActorRole.PLAYER`-Entität des
-WorldState, im Director Mode bleibt die Zuordnung leer. Alle internen IDs sind
-native UUIDs. Der erste reguläre Spielerzug bleibt StoryTurn 1 und erzeugt
-Revision 2.
+Benutzer erhält die `OWNER`-Mitgliedschaft. `GameRunMember.controlled_entity_ids`
+verweist auf alle `ActorRole.PLAYER`-Entitäten des WorldState, die aus den
+übergebenen Seeds entstanden sind — im Player Mode genau eine, im Director
+Mode 0..N. Alle internen IDs sind native UUIDs. Der erste reguläre
+Spielerzug bleibt StoryTurn 1 und erzeugt Revision 2.
 
 ## Perspektive und Control Mode
 
@@ -55,8 +61,8 @@ Für die vorhandenen Perspektiven gelten:
 |---|---|---|
 | `first_person` | erlaubt, genau ein Spielercharakter | ungültig |
 | `second_person` | erlaubt, genau ein Spielercharakter | ungültig |
-| `third_person_limited` | erlaubt, genau ein Spielercharakter | erlaubt, kein Spielercharakter |
-| `third_person_omniscient` | erlaubt, genau ein Spielercharakter | erlaubt, kein Spielercharakter |
+| `third_person_limited` | erlaubt, genau ein Spielercharakter | erlaubt, 0..N steuerbare Figuren |
+| `third_person_omniscient` | erlaubt, genau ein Spielercharakter | erlaubt, 0..N steuerbare Figuren |
 
 `third_person_limited + player` bleibt ein normaler Singleplayer-Modus. Er
 bezeichnet nicht automatisch Multiplayer.
@@ -66,33 +72,36 @@ Erzählmodells und überschneidet sich damit mit `player_agency`. Die Umsetzung
 muss seine Bedeutung korrigieren:
 
 - `player`: Der User kontrolliert genau eine Spielerfigur.
-- `director`: Der User dirigiert die Szene oder mehrere Figuren; es gibt keine
-  dedizierte Spielerfigur.
+- `director`: Der User dirigiert die Szene und 0..N explizit benannte,
+  steuerbare Figuren; alle übrigen Figuren bleiben NPCs ohne direkten
+  Einfluss des Users.
 
 Im Director Mode wird `player_agency` nicht an das Modell übergeben und später
 in der UI ausgeblendet oder deaktiviert. Die GameConfiguration darf den Wert
 vorerst weiterhin vollständig speichern.
 
-## Vom User angelegter Spielercharakter
+## Vom User angelegte steuerbare Figuren
 
-Der Spielercharakter ist ein vertrauenswürdiger Initialisierungsinput und kein
+Jede steuerbare Figur ist ein vertrauenswürdiger Initialisierungsinput und kein
 Modellergebnis:
 
 ```text
-PlayerCharacterSeed
+ControllableCharacterSeed
 ├── name: erforderlich
 └── description: optional
 ```
 
-Im Player Mode ist genau ein Seed erforderlich. Im Director Mode ist ein Seed
-ungültig. Eine ungültige Kombination erzeugt einen typisierten, blockierenden
-Application-Fehler, bevor ein Modell aufgerufen wird. Die spätere UI kann
-diesen Fehler als verständliche Warnung darstellen; ohne gültige Auswahl geht
-der Workflow nicht weiter.
+Der Request trägt eine Liste `controllable_characters`. Im Player Mode ist
+genau ein Seed erforderlich. Im Director Mode sind null oder mehrere Seeds
+gültig, müssen sich aber im Namen unterscheiden. Eine ungültige Kombination
+(falsche Anzahl für den Modus, doppelte Namen) erzeugt einen typisierten,
+blockierenden Application-Fehler, bevor ein Modell aufgerufen wird. Die
+spätere UI kann diesen Fehler als verständliche Warnung darstellen; ohne
+gültige Auswahl geht der Workflow nicht weiter.
 
-Der Seed gehört nicht in den StoryState. Die übergeordnete Operation hält ihn
-zwischen Story-Erzeugung und WorldState-Extraction und erstellt daraus im
-WorldState eine `WorldEntity` vom Typ `character` mit `ActorRole.PLAYER`.
+Die Seeds gehören nicht in den StoryState. Die übergeordnete Operation hält
+sie zwischen Story-Erzeugung und WorldState-Extraction und erstellt daraus im
+WorldState je eine `WorldEntity` vom Typ `character` mit `ActorRole.PLAYER`.
 
 ## Story-Erzeugung
 
@@ -103,10 +112,10 @@ Modellrequest enthält:
 - die aufgelöste GameConfiguration einschließlich Sprache und gültiger
   Erzähloptionen;
 - den freien Initialprompt;
-- den PlayerCharacterSeed im Player Mode.
+- die `ControllableCharacterSeed`-Liste (0..N, je nach Modus).
 
 Er enthält keinen WorldState und keine bisherige Story-Chronologie. Das Modell
-darf den vorgegebenen Spielercharakter erzählerisch verwenden, aber weder
+darf die vorgegebenen steuerbaren Figuren erzählerisch verwenden, aber weder
 auswählen noch umbenennen.
 
 ## Initiale Extraction
@@ -118,7 +127,8 @@ Prompt und strukturiertem Ergebnis. Der Modellrequest enthält ausschließlich:
 - die Eröffnungsprosa als Goldstandard dafür, was passiert ist;
 - das JSON-Response-Schema;
 - Sprache, Perspektive und Control Mode;
-- den PlayerCharacterSeed als bekannte Entität im Player Mode.
+- die `ControllableCharacterSeed`-Liste als bekannte, reservierte Entitäten
+  (`player_character`, `player_character_2`, … in Zuordnungsreihenfolge).
 
 Der ursprüngliche Initialprompt wird nicht erneut übergeben. Genre, Ton,
 Prosa-Stil und typische Fantasy-Konventionen dürfen nicht als Weltfakten oder
@@ -164,11 +174,11 @@ gültig, wenn die Eröffnung überhaupt keinen Ort etabliert.
 Das Modell darf in jeder Perspektive weitere Charaktere extrahieren, muss aber
 keinen zurückgeben. Auch `entities = []` ist gültig.
 
-- Der vorgegebene Spielercharakter ist kein Extraction-Ergebnis.
-- Beziehungen und Fakten dürfen ihn über die reservierte Referenz
-  `player_character` ansprechen.
-- Eine Modell-Entität darf diese Referenz nicht selbst belegen.
-- Eine exakte Namens- oder Aliasduplikation des Spielercharakters wird
+- Jede vorgegebene steuerbare Figur ist kein Extraction-Ergebnis.
+- Beziehungen und Fakten dürfen sie über ihre reservierte Referenz ansprechen
+  (`player_character` für die erste, `player_character_2` für die zweite, …).
+- Eine Modell-Entität darf keine dieser Referenzen selbst belegen.
+- Eine exakte Namens- oder Aliasduplikation einer steuerbaren Figur wird
   abgewiesen.
 - Vom Modell gelieferte Entitäten vom Typ `character` erhalten durch die
   Application automatisch `ActorRole.NEUTRAL`.
@@ -221,7 +231,7 @@ Antworten in typisierte Kandidaten um. Die Application prüft anschließend:
 
 - reservierte und doppelte lokale Referenzen;
 - alle Link- und Fact-Referenzen;
-- eine mögliche Duplikation des vorgegebenen Spielercharakters;
+- eine mögliche Duplikation einer vorgegebenen steuerbaren Figur;
 - erlaubte Entitäts- und Beziehungstypen;
 - die Schauplatzreferenzen: unbekannte Referenzen, Duplikate und Verweise auf
   eine Entität, die kein Ort ist, verwerfen den gesamten Kandidaten;
@@ -240,8 +250,9 @@ max_output_tokens = None
 
 ## Live-Test und Persistenzgrenze
 
-Der ausdrücklich aktivierte Live-Test verwendet einen konkreten
-PlayerCharacterSeed, führt beide Modellprozesse aus und gibt aus:
+Der ausdrücklich aktivierte Live-Test verwendet konkrete
+`ControllableCharacterSeed`-Werte, führt beide Modellprozesse aus und gibt
+aus:
 
 - beide tatsächlich versendeten Modellrequests einschließlich Response-Schema;
 - die Modell- und Generationseinstellungen;

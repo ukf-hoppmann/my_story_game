@@ -88,8 +88,8 @@ class StartPlaythrough:
                 )
             )
 
-        player_entity_id = next(
-            (member.player_entity_id for member in source_run.members), None
+        controlled_entity_ids = next(
+            (member.controlled_entity_ids for member in source_run.members), ()
         )
         run_id = self._new_id()
         timestamp = self._now()
@@ -103,7 +103,7 @@ class StartPlaythrough:
                     issuer=request.initiator.issuer,
                     subject=request.initiator.subject,
                     game_role=GameRole.OWNER,
-                    player_entity_id=player_entity_id,
+                    controlled_entity_ids=controlled_entity_ids,
                 ),
             ),
             created_at=timestamp,

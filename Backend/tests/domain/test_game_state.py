@@ -93,7 +93,7 @@ def test_game_state_validates_member_player_entity_against_world() -> None:
         issuer="issuer",
         subject="subject",
         game_role=domain.GameRole.PLAYER,
-        player_entity_id=sid("missing"),
+        controlled_entity_ids=(sid("missing"),),
     )
 
     with pytest.raises(domain.InvalidReferenceError):
@@ -118,8 +118,69 @@ def test_game_state_rejects_membership_bound_to_non_player_actor() -> None:
         issuer="issuer",
         subject="subject",
         game_role=domain.GameRole.OWNER,
-        player_entity_id=npc.id,
+        controlled_entity_ids=(npc.id,),
     )
 
     with pytest.raises(domain.InvalidReferenceError):
         state.validate_members((member,))
+
+
+def test_game_state_validates_every_controlled_entity_of_a_membership() -> None:
+    maren = domain.WorldEntity(
+        id=sid("maren"),
+        kind=domain.EntityKind.CHARACTER,
+        label="Maren",
+        actor=domain.ActorProfile(domain.ActorRole.PLAYER),
+    )
+    npc = domain.WorldEntity(
+        id=sid("npc"),
+        kind=domain.EntityKind.CHARACTER,
+        label="Ein Wächter",
+        actor=domain.ActorProfile(domain.ActorRole.NPC),
+    )
+    state = domain.GameState(
+        run_id=sid("run-1"),
+        revision=domain.StateRevision(1),
+        configuration=configuration(),
+        world=domain.WorldState(entities=(maren, npc)),
+        story=domain.StoryState(),
+    )
+    member = domain.GameRunMember(
+        issuer="issuer",
+        subject="subject",
+        game_role=domain.GameRole.OWNER,
+        controlled_entity_ids=(maren.id, npc.id),
+    )
+
+    with pytest.raises(domain.InvalidReferenceError):
+        state.validate_members((member,))
+
+
+def test_game_state_accepts_membership_with_multiple_valid_controlled_entities() -> None:
+    maren = domain.WorldEntity(
+        id=sid("maren"),
+        kind=domain.EntityKind.CHARACTER,
+        label="Maren",
+        actor=domain.ActorProfile(domain.ActorRole.PLAYER),
+    )
+    jonas = domain.WorldEntity(
+        id=sid("jonas"),
+        kind=domain.EntityKind.CHARACTER,
+        label="Jonas",
+        actor=domain.ActorProfile(domain.ActorRole.PLAYER),
+    )
+    state = domain.GameState(
+        run_id=sid("run-1"),
+        revision=domain.StateRevision(1),
+        configuration=configuration(),
+        world=domain.WorldState(entities=(maren, jonas)),
+        story=domain.StoryState(),
+    )
+    member = domain.GameRunMember(
+        issuer="issuer",
+        subject="subject",
+        game_role=domain.GameRole.OWNER,
+        controlled_entity_ids=(maren.id, jonas.id),
+    )
+
+    state.validate_members((member,))

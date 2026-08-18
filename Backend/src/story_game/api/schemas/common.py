@@ -127,10 +127,10 @@ class GameRunMemberModel(APIModel):
     issuer: str = Field(min_length=1)
     subject: str = Field(min_length=1)
     game_role: GameRole
-    player_entity_id: UUID | None = None
+    controlled_entity_ids: list[UUID] = Field(default_factory=list)
 
 
-class PlayerCharacterSeedModel(APIModel):
+class ControllableCharacterSeedModel(APIModel):
     name: str = Field(min_length=1)
     description: str = ""
 

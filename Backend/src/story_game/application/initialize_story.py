@@ -12,8 +12,8 @@ from story_game.application.initial_world_extraction import (
 )
 from story_game.application.initialization_errors import StoryInitializationError
 from story_game.application.initialization_models import (
+    ControllableCharacterSeed,
     InitializedStory,
-    PlayerCharacterSeed,
 )
 from story_game.application.story_initialization import (
     GenerateInitialStoryState,
@@ -28,7 +28,7 @@ class InitializeStoryRequest:
 
     configuration: GameConfiguration
     initial_prompt: str
-    player_character: PlayerCharacterSeed | None = None
+    controllable_characters: tuple[ControllableCharacterSeed, ...] = ()
 
     def __post_init__(self) -> None:
         prompt = self.initial_prompt.strip()
@@ -58,7 +58,7 @@ class InitializeStory:
             GenerateInitialStoryStateRequest(
                 request.configuration,
                 request.initial_prompt,
-                request.player_character,
+                request.controllable_characters,
             )
         )
         if isinstance(generated, Failure):
@@ -68,7 +68,7 @@ class InitializeStory:
             ExtractInitialWorldStateRequest(
                 request.configuration,
                 generated.data,
-                request.player_character,
+                request.controllable_characters,
             )
         )
         if isinstance(extracted, Failure):

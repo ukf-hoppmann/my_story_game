@@ -7,7 +7,7 @@ import pytest
 
 from story_game.application import Failure, Success
 from story_game.application.initialization_errors import StoryInitializationErrorKind
-from story_game.application.initialization_models import PlayerCharacterSeed
+from story_game.application.initialization_models import ControllableCharacterSeed
 from story_game.application.initial_world_extraction import (
     ExtractInitialWorldState,
     ExtractInitialWorldStateRequest,
@@ -95,8 +95,8 @@ def story_state() -> StoryState:
     )
 
 
-def player_character() -> PlayerCharacterSeed:
-    return PlayerCharacterSeed("Maren", "Eine vorsichtige Kartografin.")
+def player_character() -> ControllableCharacterSeed:
+    return ControllableCharacterSeed("Maren", "Eine vorsichtige Kartografin.")
 
 
 def operation(extractor: RecordingExtractor) -> ExtractInitialWorldState:
@@ -132,7 +132,7 @@ def test_builds_complete_initial_world_state_and_keeps_request_minimal() -> None
 
     result = operation(extractor).apply(
         ExtractInitialWorldStateRequest(
-            configuration(), story_state(), player_character()
+            configuration(), story_state(), (player_character(),)
         )
     )
 
@@ -155,11 +155,11 @@ def test_builds_complete_initial_world_state_and_keeps_request_minimal() -> None
     assert world.facts[0].visibility.scope.value == "public"
     request = extractor.call.request
     assert request.opening_narration == story_state().initialization.narration
-    assert request.player_character == player_character()
+    assert request.controllable_characters == (player_character(),)
     assert request.perspective == "first_person"
     assert request.control_mode == "player"
     assert len(request.system_prompts) == 2
-    assert "Der bekannte Spieler heißt 'Maren'" in request.system_prompts[1]
+    assert "'Maren' (Referenz player_character)" in request.system_prompts[1]
     assert "unbestätigten Vorschlagsresultat" not in request.system_prompts[0]
     assert "Dieser Prompt darf nicht extrahiert werden." not in repr(request)
     assert not hasattr(request, "initial_prompt")
@@ -182,7 +182,7 @@ def test_scene_references_become_ordered_stable_ids() -> None:
 
     result = operation(extractor).apply(
         ExtractInitialWorldStateRequest(
-            configuration(), story_state(), player_character()
+            configuration(), story_state(), (player_character(),)
         )
     )
 
@@ -205,7 +205,7 @@ def test_a_world_without_scene_references_has_no_scene() -> None:
 
     result = operation(extractor).apply(
         ExtractInitialWorldStateRequest(
-            configuration(), story_state(), player_character()
+            configuration(), story_state(), (player_character(),)
         )
     )
 
@@ -225,7 +225,7 @@ def test_unknown_scene_reference_rejects_the_entire_candidate() -> None:
 
     result = operation(extractor).apply(
         ExtractInitialWorldStateRequest(
-            configuration(), story_state(), player_character()
+            configuration(), story_state(), (player_character(),)
         )
     )
 
@@ -257,7 +257,7 @@ def test_invalid_scene_references_reject_the_entire_candidate(candidate) -> None
 
     result = operation(extractor).apply(
         ExtractInitialWorldStateRequest(
-            configuration(), story_state(), player_character()
+            configuration(), story_state(), (player_character(),)
         )
     )
 
@@ -276,7 +276,103 @@ def test_director_mode_can_produce_an_empty_world_without_a_character() -> None:
 
     assert isinstance(result, Success)
     assert result.data.entities == ()
-    assert extractor.call.request.player_character is None
+    assert extractor.call.request.controllable_characters == ()
+
+
+def test_director_mode_can_bind_multiple_named_controllable_characters() -> None:
+    extractor = RecordingExtractor(
+        Success(
+            WorldInitializationCandidate(
+                entities=(CandidateEntity("dungeon", EntityKind.LOCATION, "Dungeon"),),
+                links=(
+                    CandidateLink(
+                        "player_character_2", "dungeon", RelationKind.LOCATED_IN
+                    ),
+                ),
+            )
+        )
+    )
+    maren = ControllableCharacterSeed("Maren", "Eine vorsichtige Kartografin.")
+    jonas = ControllableCharacterSeed("Jonas")
+
+    result = operation(extractor).apply(
+        ExtractInitialWorldStateRequest(
+            configuration("third_person_omniscient", "director"),
+            story_state(),
+            (maren, jonas),
+        )
+    )
+
+    assert isinstance(result, Success)
+    world = result.data
+    assert [entity.label for entity in world.entities[:2]] == ["Maren", "Jonas"]
+    assert world.entities[0].actor.role is ActorRole.PLAYER
+    assert world.entities[1].actor.role is ActorRole.PLAYER
+    request = extractor.call.request
+    assert request.controllable_characters == (maren, jonas)
+    assert len(request.system_prompts) == 2
+    assert "player_character" in request.system_prompts[1]
+    assert "player_character_2" in request.system_prompts[1]
+
+
+def test_rejects_a_candidate_entity_defining_the_second_reserved_reference() -> None:
+    extractor = RecordingExtractor(
+        Success(
+            WorldInitializationCandidate(
+                entities=(
+                    CandidateEntity("player_character_2", EntityKind.CHARACTER, "Alma"),
+                )
+            )
+        )
+    )
+    maren = ControllableCharacterSeed("Maren")
+    jonas = ControllableCharacterSeed("Jonas")
+
+    result = operation(extractor).apply(
+        ExtractInitialWorldStateRequest(
+            configuration("third_person_omniscient", "director"),
+            story_state(),
+            (maren, jonas),
+        )
+    )
+
+    assert isinstance(result, Failure)
+    assert result.error.kind is StoryInitializationErrorKind.INVALID_CANDIDATE_REFERENCE
+
+
+def test_duplicate_controllable_character_names_are_rejected_before_the_model_call() -> None:
+    extractor = RecordingExtractor(Success(WorldInitializationCandidate()))
+    maren = ControllableCharacterSeed("Maren")
+    duplicate = ControllableCharacterSeed("MAREN")
+
+    result = operation(extractor).apply(
+        ExtractInitialWorldStateRequest(
+            configuration("third_person_omniscient", "director"),
+            story_state(),
+            (maren, duplicate),
+        )
+    )
+
+    assert isinstance(result, Failure)
+    assert (
+        result.error.kind
+        is StoryInitializationErrorKind.DUPLICATE_CONTROLLABLE_CHARACTER
+    )
+    assert extractor.call is None
+
+
+def test_player_mode_with_more_than_one_seed_is_rejected_before_the_model_call() -> None:
+    extractor = RecordingExtractor(Success(WorldInitializationCandidate()))
+    maren = ControllableCharacterSeed("Maren")
+    jonas = ControllableCharacterSeed("Jonas")
+
+    result = operation(extractor).apply(
+        ExtractInitialWorldStateRequest(configuration(), story_state(), (maren, jonas))
+    )
+
+    assert isinstance(result, Failure)
+    assert result.error.kind is StoryInitializationErrorKind.MISSING_PLAYER_CHARACTER
+    assert extractor.call is None
 
 
 def test_requires_an_opening_before_calling_the_model() -> None:
@@ -284,7 +380,7 @@ def test_requires_an_opening_before_calling_the_model() -> None:
 
     result = operation(extractor).apply(
         ExtractInitialWorldStateRequest(
-            configuration(), StoryState(), player_character()
+            configuration(), StoryState(), (player_character(),)
         )
     )
 
@@ -315,7 +411,7 @@ def test_rejects_reserved_duplicate_or_unknown_candidate_references(candidate) -
 
     result = operation(extractor).apply(
         ExtractInitialWorldStateRequest(
-            configuration(), story_state(), player_character()
+            configuration(), story_state(), (player_character(),)
         )
     )
 
@@ -339,7 +435,7 @@ def test_domain_invariant_rejects_the_entire_candidate() -> None:
 
     result = operation(extractor).apply(
         ExtractInitialWorldStateRequest(
-            configuration(), story_state(), player_character()
+            configuration(), story_state(), (player_character(),)
         )
     )
 
@@ -362,7 +458,7 @@ def test_exact_duplicate_located_in_links_are_deduplicated() -> None:
 
     result = operation(extractor).apply(
         ExtractInitialWorldStateRequest(
-            configuration(), story_state(), player_character()
+            configuration(), story_state(), (player_character(),)
         )
     )
 
@@ -391,7 +487,7 @@ def test_conflicting_located_in_links_still_reject_the_entire_candidate() -> Non
 
     result = operation(extractor).apply(
         ExtractInitialWorldStateRequest(
-            configuration(), story_state(), player_character()
+            configuration(), story_state(), (player_character(),)
         )
     )
 
@@ -405,7 +501,7 @@ def test_invalid_model_response_remains_visible_without_retry() -> None:
 
     result = operation(extractor).apply(
         ExtractInitialWorldStateRequest(
-            configuration(), story_state(), player_character()
+            configuration(), story_state(), (player_character(),)
         )
     )
 

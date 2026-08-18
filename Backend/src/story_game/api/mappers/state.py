@@ -63,9 +63,7 @@ def game_from_api(document: GameDocument) -> LoadedGame:
                 member.issuer,
                 member.subject,
                 member.game_role,
-                None
-                if member.player_entity_id is None
-                else StableId(member.player_entity_id),
+                tuple(StableId(item) for item in member.controlled_entity_ids),
             )
             for member in run_model.members
         ),
@@ -95,11 +93,9 @@ def game_to_api(game: LoadedGame) -> GameDocument:
                     issuer=member.issuer,
                     subject=member.subject,
                     game_role=member.game_role,
-                    player_entity_id=(
-                        None
-                        if member.player_entity_id is None
-                        else member.player_entity_id.value
-                    ),
+                    controlled_entity_ids=[
+                        item.value for item in member.controlled_entity_ids
+                    ],
                 )
                 for member in run.members
             ],

@@ -7,10 +7,10 @@ from pathlib import Path
 import pytest
 
 from story_game.application import (
+    ControllableCharacterSeed,
     ExtractInitialWorldState,
     InitializeStory,
     InitializeStoryRequest,
-    PlayerCharacterSeed,
     Success,
 )
 from story_game.application.story_initialization import (
@@ -109,8 +109,8 @@ def test_live_initializes_and_prints_story_and_world_state(
                     "Maren und Alma stehen gemeinsam in einer einzigen "
                     "verschlossenen Dungeonkammer. Noch bewegt sich niemand."
                 ),
-                player_character=PlayerCharacterSeed(
-                    "Maren", "Eine vorsichtige Kartografin."
+                controllable_characters=(
+                    ControllableCharacterSeed("Maren", "Eine vorsichtige Kartografin."),
                 ),
             )
         )

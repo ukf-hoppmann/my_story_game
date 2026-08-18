@@ -18,7 +18,7 @@ from story_game.application.initialization_errors import (
     StoryInitializationStage,
     model_failure,
 )
-from story_game.application.initialization_models import PlayerCharacterSeed
+from story_game.application.initialization_models import ControllableCharacterSeed
 from story_game.application.initialization_policy import validate_initialization_choices
 from story_game.application.llm import (
     GenerationConfigurationResolver,
@@ -38,7 +38,7 @@ class GenerateInitialStoryStateRequest:
 
     configuration: GameConfiguration
     initial_prompt: str
-    player_character: PlayerCharacterSeed | None = None
+    controllable_characters: tuple[ControllableCharacterSeed, ...] = ()
 
     def __post_init__(self) -> None:
         prompt = self.initial_prompt.strip()
@@ -70,7 +70,7 @@ class GenerateInitialStoryState:
     ) -> OperationResult[StoryState, StoryInitializationError]:
         invalid = validate_initialization_choices(
             request.configuration,
-            request.player_character,
+            request.controllable_characters,
             StoryInitializationStage.STORY_GENERATION,
         )
         if invalid is not None:
@@ -94,7 +94,7 @@ class GenerateInitialStoryState:
                     system_prompts=(selection.task.text, selection.boundary_directive.text),
                     configuration=configuration_text(selection),
                     initial_prompt=request.initial_prompt,
-                    player_character=request.player_character,
+                    controllable_characters=request.controllable_characters,
                 ),
             )
         except (KeyError, ValueError) as error:

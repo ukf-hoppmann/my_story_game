@@ -5,6 +5,17 @@ Status: `STORY-008`, `STORY-009` und `TASK-007` bis `TASK-012` sind am
 Workflow liefert transient StoryState und WorldState; Persistenz, HTTP-API und
 der reguläre Spielzug wurden anschließend in separaten Workflows umgesetzt.
 
+**Nachtrag (`TASK-016`):** Die untenstehenden Entscheidungen beschreiben den
+Stand vor `TASK-016` — Director Mode als Modus ganz ohne steuerbare Figur,
+`PlayerCharacterSeed` als Einzelwert, `player_character` als einzige
+reservierte Referenz. `TASK-016` generalisiert das auf 0..N steuerbare
+Figuren im Director Mode (`ControllableCharacterSeed`-Liste, reservierte
+Referenzen `player_character`, `player_character_2`, …); Player Mode bleibt
+unverändert der Sonderfall mit genau einer. Diese Seite bleibt als
+historischer Datensatz des ursprünglichen Increments stehen, statt
+rückwirkend umgeschrieben zu werden — vgl. `docs/human/technical/planned/
+story-initialization.md`, das den aktuellen Stand beschreibt.
+
 ## Umsetzungsergebnis
 
 - `InitializeStory` orchestriert `GenerateInitialStoryState` und

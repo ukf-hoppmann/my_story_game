@@ -132,3 +132,18 @@ Der Paketroot ist standardmäßig `prompts` und kann für eine Laufzeitumgebung
 über `STORY_GAME_PROMPT_ROOT` gesetzt werden. Die LLM-Konfigurationsdatei ist
 standardmäßig `configs/llm.toml` und kann über `STORY_GAME_LLM_CONFIG_PATH`
 gesetzt werden.
+
+## Repo-Struktur und Frontend
+
+Das Repo ist in Subprojekte gegliedert: `Backend/` (dieser Python-Code),
+`Frontend-Web/` (React/Vite/TypeScript, siehe
+[`../../../Frontend-Web/README.md`](../../../Frontend-Web/README.md)), mit
+Platz für weitere Subprojekte (z.B. Mobile, Keycloak). `compose.yaml`,
+`story-starter` und `.devcontainer/` bleiben am Repo-Root und orchestrieren
+über alle Subprojekte hinweg — `story-starter` und lokale
+Backend-Entwicklung (`cd Backend && pytest`, `pip install -e .`) sind davon
+nicht betroffen.
+
+Für lokale Frontend-Entwicklung gegen eine im Browser laufende App erlaubt
+das Backend per CORS standardmäßig `http://localhost:5173` (Vite-Dev-Server);
+konfigurierbar über `STORY_GAME_CORS_ALLOWED_ORIGINS` (kommasepariert).

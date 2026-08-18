@@ -668,3 +668,14 @@ After explicit rejection:
   - Dependencies: `STORY-001`, `STORY-002`.
   - Goal: Klären und umsetzen, wie ein Benutzer im Director Mode eine oder mehrere Figuren steuert. Heute bindet `GameRunMember` genau eine Figur, und die Director-Initialisierung lässt die Bindung bewusst leer.
   - Completion criteria: Entschieden und dokumentiert ist, ob eine Mitgliedschaft mehrere gesteuerte Figuren binden darf und wie diese bei der Welt-Erzeugung entstehen; Domain, Persistenz und API bilden das Ergebnis ab; die Kontextauswahl nimmt alle gesteuerten Figuren auf.
+
+- `STORY-011` **Web-Frontend-Grundgerüst**
+  - Type: Story.
+  - Parent: None.
+  - Status: Awaiting confirmation.
+  - Created: 2026-08-18.
+  - Area: Repo-Struktur und Web-Frontend.
+  - Priority: Wichtig.
+  - Dependencies: `TASK-029`.
+  - Goal: Das Repo in Subprojekte gliedern (`Backend/`, `Frontend-Web/`, Platz für spätere Subprojekte wie Mobile oder Keycloak) und ein minimales, echt gegen die Backend-API sprechendes React/Vite/TypeScript-Grundgerüst anlegen — Runs-Liste, Vorlage starten, Zug spielen.
+  - Completion criteria: `src/`, `tests/`, `configs/`, `prompts/`, `pyproject.toml`, `requirements.txt`, `Dockerfile`, `.env.example` liegen unter `Backend/`; `compose.yaml`, `story-starter`, `.devcontainer/` bleiben am Root und funktionieren unverändert (verifiziert: `cd Backend && pytest` — 405 Tests grün; `docker compose build`; `./story-starter` mit funktionierendem `GET /health`, inklusive behobenem fehlenden `COPY prompts` im Dockerfile). Backend erlaubt CORS für den Vite-Dev-Server (`STORY_GAME_CORS_ALLOWED_ORIGINS`). `Frontend-Web/` enthält einen typisierten API-Client (`client.ts`, `types.ts`), einen `useApiRequest`-Hook für Lade-/Fehlerzustände und drei Screens (Runs-Liste, Vorlage starten, Zug spielen) ohne Router und ohne OpenAPI-Codegen (bewusste MVP-Entscheidungen, siehe `Frontend-Web/README.md`). Live gegen echtes Docker-Backend verifiziert: CORS-Preflight, Runs-Liste lädt echte Daten, Formular-Fehler (`invalid_candidate_reference`) wird korrekt als Fehler-Banner angezeigt. Ein vollständiger Klick-Durchlauf bis zum gespielten Zug wurde wegen unzuverlässiger lokaler Modellantworten nicht abschließend live bestätigt — die Turn-Play-Logik selbst ist nicht anders verifiziert als durch Code-Review und TypeScript-Typprüfung.

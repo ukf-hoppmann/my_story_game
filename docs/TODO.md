@@ -259,7 +259,7 @@ After explicit rejection:
   - Goal: Den Storygame-Zustand über eine stabile API für die späteren Benutzeroberflächen und Anwendungsfälle zugänglich machen. Die API trennt Lesen, fachliche Änderungsanträge und deren geprüfte Übernahme.
   - Completion criteria: Ein Client kann einen Storygame-Zustand anlegen, laden und fachlich valide Änderungen anfordern. Die API gibt keine direkten LLM-Schreibrechte frei, validiert Referenzen und Zustandsrevisionen und liefert verständliche Fehler bei ungültigen oder veralteten Änderungen. API- und Integrations-Tests prüfen die unterstützten Abläufe.
 
-- `TASK-028` **Lauf-Lebenszyklus-Endpunkte mit fester Entwicklungsidentität**
+- `TASK-029` **Lauf-Lebenszyklus-Endpunkte mit fester Entwicklungsidentität**
   - Type: Task.
   - Status: Awaiting confirmation.
   - Parent: `STORY-003`.

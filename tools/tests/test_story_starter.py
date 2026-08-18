@@ -77,6 +77,15 @@ def test_no_arguments_remains_an_alias_for_start() -> None:
     assert execute_mock.call_args.args[0].command == "start"
 
 
+def test_down_removes_containers_and_volumes() -> None:
+    fake_runner = _FakeRunner()
+
+    with patch("tools.story_starter.cli.ComposeRunner", return_value=fake_runner):
+        assert execute(Arguments("down")) == 0
+
+    assert fake_runner.commands == [["down", "--volumes"]]
+
+
 def test_confirmed_clean_removes_volumes_then_starts_without_build() -> None:
     fake_runner = _FakeRunner()
 

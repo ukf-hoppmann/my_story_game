@@ -72,6 +72,9 @@ def build_parser() -> argparse.ArgumentParser:
     stop = subparsers.add_parser("stop", help="Alle Services stoppen und das Netzwerk entfernen.")
     stop.set_defaults(command="stop")
 
+    down = subparsers.add_parser("down", help="Alle Services stoppen und Volumes entfernen (vollständiges Cleanup).")
+    down.set_defaults(command="down")
+
     upgrade = subparsers.add_parser("upgrade", help="Backend-Image neu bauen und alle Services starten.")
     upgrade.set_defaults(command="upgrade")
 
@@ -210,6 +213,9 @@ def execute(arguments: Arguments) -> int:
     elif arguments.command == "stop":
         runner.run(["down"])
         print("Story Game wurde gestoppt.")
+    elif arguments.command == "down":
+        runner.run(["down", "--volumes"])
+        print("Story Game wurde gestoppt und alle Volumes entfernt.")
     elif arguments.command == "upgrade":
         _start(runner, build=True)
     elif arguments.command == "restart":

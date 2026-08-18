@@ -9,6 +9,7 @@ from story_game.domain import GameRun, GameState, StableId, StateRevision
 from .game_models import (
     CompletedTurnPersistenceRequest,
     ConfigurationPersistenceRequest,
+    RunSummary,
 )
 
 
@@ -53,3 +54,7 @@ class ConfigurationRevisionWriter(Protocol):
 
 class CompletedTurnWriter(Protocol):
     def commit_turn(self, request: CompletedTurnPersistenceRequest) -> GameState: ...
+
+
+class PlayableRunLister(Protocol):
+    def list_for_member(self, issuer: str, subject: str) -> tuple[RunSummary, ...]: ...

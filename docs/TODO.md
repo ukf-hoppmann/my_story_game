@@ -249,7 +249,7 @@ After explicit rejection:
 
 - `STORY-003` **API für den Storygame-Zustand**
   - Type: Story.
-  - Status: Open.
+  - Status: In progress.
   - Parent: `EPIC-001`.
   - Required for parent: Yes.
   - Created: 2026-08-04.
@@ -258,6 +258,18 @@ After explicit rejection:
   - Dependencies: `STORY-002`.
   - Goal: Den Storygame-Zustand über eine stabile API für die späteren Benutzeroberflächen und Anwendungsfälle zugänglich machen. Die API trennt Lesen, fachliche Änderungsanträge und deren geprüfte Übernahme.
   - Completion criteria: Ein Client kann einen Storygame-Zustand anlegen, laden und fachlich valide Änderungen anfordern. Die API gibt keine direkten LLM-Schreibrechte frei, validiert Referenzen und Zustandsrevisionen und liefert verständliche Fehler bei ungültigen oder veralteten Änderungen. API- und Integrations-Tests prüfen die unterstützten Abläufe.
+
+- `TASK-028` **Lauf-Lebenszyklus-Endpunkte mit fester Entwicklungsidentität**
+  - Type: Task.
+  - Status: Awaiting confirmation.
+  - Parent: `STORY-003`.
+  - Required for parent: Yes.
+  - Created: 2026-08-18.
+  - Area: API.
+  - Priority: Wichtig.
+  - Dependencies: `STORY-008`, `STORY-009`, `STORY-010`, `TASK-022`.
+  - Goal: Die vorhandenen `InitializeGameRun`- und `PlayStoryTurn`-Workflows über echte HTTP-Endpunkte erreichbar machen, damit eine UI eine Geschichte auflisten, laden, starten und einen Zug spielen kann — ohne Keycloak, über eine fest verdrahtete, austauschbare Entwicklungsidentität. Ergänzt eine neue `StartPlaythrough`-Operation: `InitializeGameRun` legt eine unveränderliche `DRAFT`-Vorlage an; erst ein expliziter Abzweig kopiert sie in einen unabhängigen `ACTIVE`-Lauf, sodass dasselbe Szenario mehrfach gespielt werden kann.
+  - Completion criteria: `GET /api/v1/runs` (Liste), `GET /api/v1/runs/{run_id}` (laden), `POST /api/v1/runs` (Vorlage erzeugen), `POST /api/v1/runs/{run_id}/playthroughs` (Abzweig) und `POST /api/v1/runs/{run_id}/turns` (Zug) sind implementiert; die alten provisorischen Endpunkte (`POST /api/v1/runs` mit rohem GameDocument, `GET .../state`) sind ersetzt. Ein Zug gegen eine `DRAFT`-Vorlage wird mit `run_not_active` abgewiesen; ein Abzweig von einem bereits aktiven Lauf mit `playthrough_source_not_draft`. Eine feste, über `STORY_GAME_DEV_ISSUER`/`STORY_GAME_DEV_SUBJECT` konfigurierbare Identität wird über eine einzige austauschbare Dependency aufgelöst. `StoryInitializationError`, `StoryTurnError` und `ContextSelectionError` sind vollständig auf HTTP-Fehlercodes abgebildet. Ein neuer `PlayableRunLister`-Port mit PostgreSQL-Adapter und zusätzlichem `(issuer, subject)`-Index liefert die Liste ohne vollen WorldState pro Zeile. Alle betroffenen Tests (`tests/api`) sind angepasst und bestehen; der volle End-to-End-Ablauf (Vorlage → Abzweig → Zug) wurde manuell gegen echtes PostgreSQL und LM Studio geprüft. Ein öffentlicher Konfigurations- oder Auth-Endpunkt ist weiterhin nicht Teil dieser Arbeit.
 
 - `EPIC-002` **LLM-Anbindung und Storyzug-Workflow**
   - Type: Epic.

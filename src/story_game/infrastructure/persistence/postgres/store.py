@@ -10,6 +10,7 @@ from psycopg.errors import UniqueViolation
 from story_game.application.game_models import (
     CompletedTurnPersistenceRequest,
     ConfigurationPersistenceRequest,
+    RunSummary,
 )
 from story_game.domain import (
     DomainError,
@@ -230,6 +231,40 @@ class PostgresGameStore:
         except psycopg.Error as error:
             raise PersistenceError(
                 f"Der StoryTurn konnte nicht gespeichert werden: {request.run_id}"
+            ) from error
+
+    def list_for_member(self, issuer: str, subject: str) -> tuple[RunSummary, ...]:
+        try:
+            with self.connections.connect() as connection:
+                rows = connection.execute(
+                    """
+                    SELECT r.run_id, r.name, r.status, r.current_revision,
+                           r.updated_at, m.game_role
+                    FROM game_run_members m
+                    JOIN game_runs r ON r.run_id = m.run_id
+                    WHERE m.issuer = %s AND m.subject = %s
+                    ORDER BY r.updated_at DESC
+                    """,
+                    (issuer, subject),
+                ).fetchall()
+                return tuple(
+                    RunSummary(
+                        run_id=StableId(row["run_id"]),
+                        name=str(row["name"]),
+                        status=GameRunStatus(str(row["status"])),
+                        current_revision=StateRevision(int(row["current_revision"])),
+                        game_role=GameRole(str(row["game_role"])),
+                        updated_at=row["updated_at"],
+                    )
+                    for row in rows
+                )
+        except DomainError as error:
+            raise PersistenceConsistencyError(
+                "Die gespeicherte Laufliste ist ungültig"
+            ) from error
+        except psycopg.Error as error:
+            raise PersistenceError(
+                "Die Läufe konnten nicht geladen werden"
             ) from error
 
     def _persist_advanced_state(

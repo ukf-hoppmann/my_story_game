@@ -16,7 +16,56 @@ from story_game.application.game_state import (
     StateStoreUnavailable,
     StoredStateInvalid,
 )
+from story_game.application.initialization_errors import (
+    StoryInitializationError,
+    StoryInitializationErrorKind,
+)
+from story_game.application.start_playthrough_errors import (
+    PlaythroughError,
+    PlaythroughErrorKind,
+)
+from story_game.application.story_turn_context_errors import ContextSelectionError
+from story_game.application.story_turn_errors import StoryTurnError, StoryTurnErrorKind
 from story_game.domain.errors import DomainError, RevisionConflictError
+
+_STORY_INIT_STATUS: dict[StoryInitializationErrorKind, tuple[int, str]] = {
+    StoryInitializationErrorKind.INVALID_CONFIGURATION: (
+        500,
+        "story_configuration_invalid",
+    ),
+    StoryInitializationErrorKind.MISSING_PLAYER_CHARACTER: (
+        422,
+        "invalid_player_character_seed",
+    ),
+    StoryInitializationErrorKind.UNEXPECTED_PLAYER_CHARACTER: (
+        422,
+        "invalid_player_character_seed",
+    ),
+    StoryInitializationErrorKind.MODEL_FAILURE: (502, "story_model_unavailable"),
+    StoryInitializationErrorKind.INVALID_MODEL_RESPONSE: (
+        502,
+        "story_model_unavailable",
+    ),
+    StoryInitializationErrorKind.INVALID_CANDIDATE_REFERENCE: (
+        500,
+        "story_initialization_inconsistent",
+    ),
+    StoryInitializationErrorKind.DOMAIN_REJECTION: (422, "domain_validation_failed"),
+}
+
+_STORY_TURN_STATUS: dict[StoryTurnErrorKind, tuple[int, str]] = {
+    StoryTurnErrorKind.INVALID_CONFIGURATION: (500, "story_configuration_invalid"),
+    StoryTurnErrorKind.MODEL_FAILURE: (502, "story_model_unavailable"),
+    StoryTurnErrorKind.INVALID_MODEL_RESPONSE: (502, "story_model_unavailable"),
+    StoryTurnErrorKind.INVALID_CANDIDATE_REFERENCE: (500, "story_turn_inconsistent"),
+    StoryTurnErrorKind.DOMAIN_REJECTION: (422, "domain_validation_failed"),
+    StoryTurnErrorKind.UNKNOWN_MEMBER: (403, "not_a_run_member"),
+    StoryTurnErrorKind.RUN_NOT_ACTIVE: (409, "run_not_active"),
+}
+
+_PLAYTHROUGH_STATUS: dict[PlaythroughErrorKind, tuple[int, str]] = {
+    PlaythroughErrorKind.SOURCE_NOT_DRAFT: (409, "playthrough_source_not_draft"),
+}
 
 
 def register_error_handlers(app: FastAPI) -> None:
@@ -50,6 +99,17 @@ async def _operation_failed(request: Request, exc: Exception) -> JSONResponse:
         return _error_response(500, "persistence_consistency_failed", error.detail)
     if isinstance(error, StateStoreUnavailable):
         return _error_response(503, "persistence_unavailable", error.detail)
+    if isinstance(error, StoryInitializationError):
+        status_code, code = _STORY_INIT_STATUS[error.kind]
+        return _error_response(status_code, code, error.message)
+    if isinstance(error, StoryTurnError):
+        status_code, code = _STORY_TURN_STATUS[error.kind]
+        return _error_response(status_code, code, error.message)
+    if isinstance(error, ContextSelectionError):
+        return _error_response(500, "story_turn_inconsistent", error.message)
+    if isinstance(error, PlaythroughError):
+        status_code, code = _PLAYTHROUGH_STATUS[error.kind]
+        return _error_response(status_code, code, error.message)
     raise exc
 
 

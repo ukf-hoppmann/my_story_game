@@ -2,17 +2,19 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from tests.api.test_api import client
+from tests.api.test_api import client, store  # noqa: F401 - reused fixtures
 
 
-def test_openapi_describes_complete_game_documents(
+def test_openapi_describes_the_run_lifecycle(
     client: TestClient,
 ) -> None:
     schema = client.get("/openapi.json").json()
 
+    assert schema["paths"]["/api/v1/runs"]["get"]
     assert schema["paths"]["/api/v1/runs"]["post"]
-    assert schema["paths"]["/api/v1/runs/{run_id}/state"]["get"]
-    assert "/api/v1/runs/{run_id}/commits" not in schema["paths"]
+    assert schema["paths"]["/api/v1/runs/{run_id}"]["get"]
+    assert schema["paths"]["/api/v1/runs/{run_id}/playthroughs"]["post"]
+    assert schema["paths"]["/api/v1/runs/{run_id}/turns"]["post"]
     assert "GameDocument" in schema["components"]["schemas"]
     assert "EvidenceModel" not in schema["components"]["schemas"]
     component_fields = {
@@ -27,6 +29,7 @@ def test_openapi_describes_complete_game_documents(
         "GameRunMemberModel": ("player_entity_id",),
         "GameRunModel": ("id",),
         "GameStateModel": ("run_id",),
+        "RunSummaryModel": ("id",),
     }
     for component, fields in component_fields.items():
         properties = schema["components"]["schemas"][component]["properties"]
@@ -38,9 +41,7 @@ def test_openapi_describes_complete_game_documents(
     ]
     assert goal_references["items"]["format"] == "uuid"
 
-    path_parameter = schema["paths"]["/api/v1/runs/{run_id}/state"]["get"][
-        "parameters"
-    ][0]
+    path_parameter = schema["paths"]["/api/v1/runs/{run_id}"]["get"]["parameters"][0]
     assert path_parameter["schema"]["format"] == "uuid"
 
 

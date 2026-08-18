@@ -1,22 +1,66 @@
 # HTTP-API
 
-Die aktuelle API ist eine bewusst kleine Testgrenze für den vollständigen
-Spielzustand. Sie ist noch keine fertige Spielzug-, LLM- oder
-Konfigurations-API.
+Die API deckt den vollständigen Lauf-Lebenszyklus ab: eine Vorlage (`DRAFT`)
+erzeugen, sie als unabhängiges aktives Spiel (`ACTIVE`) abzweigen, einen Zug
+spielen und beides laden oder auflisten. Es gibt noch keine Authentifizierung
+— jeder Aufruf agiert als eine feste, konfigurierbare Entwicklungsidentität
+(siehe unten), bis Keycloak angebunden ist.
 
 ## Endpunkte
 
 | Methode | Pfad | Zweck |
 | --- | --- | --- |
 | `GET` | `/health` | Erreichbarkeit prüfen |
-| `POST` | `/api/v1/runs` | vollständigen neuen GameRun mit Revision 1 speichern |
-| `GET` | `/api/v1/runs/{run_id}/state` | vollständigen aktuellen GameRun und GameState laden |
-| `GET` | `/api/v1/runs/{run_id}/state?revision=N` | einen historischen GameState laden |
+| `GET` | `/api/v1/runs` | Eigene `DRAFT`-Vorlagen und `ACTIVE`-Spiele auflisten |
+| `GET` | `/api/v1/runs/{run_id}` | Aktuellen oder historischen (`?revision=N`) GameRun/GameState laden |
+| `POST` | `/api/v1/runs` | Neue `DRAFT`-Vorlage aus Initialprompt und Modus erzeugen |
+| `POST` | `/api/v1/runs/{run_id}/playthroughs` | Eine `DRAFT`-Vorlage als neues unabhängiges `ACTIVE`-Spiel abzweigen |
+| `POST` | `/api/v1/runs/{run_id}/turns` | Einen Zug in einem `ACTIVE`-Spiel spielen |
 
-Das gemeinsame Transportdokument heißt `GameDocument` und enthält sowohl
-`game_run` als auch `game_state`. Der GameState enthält die komplette
-`GameConfiguration`, den `WorldState` einschließlich Goals und den
-`StoryState`. Fremde Felder und fachlich inkonsistente IDs werden abgewiesen.
+## Vorlage und abgespieltes Spiel
+
+`POST /api/v1/runs` erzeugt über `InitializeGameRun` eine vollständige
+Eröffnung (Story-Generierung + initiale WorldState-Extraktion) und legt sie
+als `GameRun` im Status `DRAFT` mit Revision 1 an. Diese Vorlage bleibt
+unverändert und kann beliebig oft erneut abgezweigt werden.
+
+`POST /api/v1/runs/{run_id}/playthroughs` kopiert eine `DRAFT`-Vorlage in
+einen neuen, unabhängigen `GameRun` im Status `ACTIVE` (ebenfalls Revision 1,
+eigene `run_id`). Nur `DRAFT`-Läufe können abgezweigt werden; der Versuch,
+einen bereits aktiven Lauf erneut abzuzweigen, ergibt HTTP 409
+(`error = "playthrough_source_not_draft"`).
+
+`POST /api/v1/runs/{run_id}/turns` spielt einen Zug ausschließlich in einem
+`ACTIVE`-Lauf. Gegen eine `DRAFT`-Vorlage ergibt das HTTP 409
+(`error = "run_not_active"`).
+
+## Anfrage- und Antwortformen
+
+`POST /api/v1/runs` verlangt `run_name`, `initial_prompt`, `control_mode`
+(`"player"` oder `"director"`) und im Player Mode genau ein
+`player_character` (`name`, optional `description`). Die API verwendet
+dafür eine feste serverseitige `GameConfiguration`
+(`api/default_configuration.py`) — es gibt noch keine
+Konfigurations-Auswahl über die API; nur `control_mode` wird aus der
+Anfrage übernommen.
+
+`POST /api/v1/runs/{run_id}/turns` verlangt nur `player_input` und liefert
+`TurnResultModel`: den vollständigen aktualisierten `GameStateModel` sowie
+`proposed_change_count`, `summary_failed` und optional
+`summary_failure_message` als transiente Diagnose — ein Fehlschlag der
+Zusammenfassung lässt den Zug selbst unangetastet (siehe TASK-023).
+
+`GET /api/v1/runs` liefert `RunSummaryModel`-Einträge (`id`, `name`,
+`status`, `current_revision`, `game_role`, `updated_at`) ohne vollen
+WorldState, damit eine Liste nicht pro Zeile einen kompletten Weltsnapshot
+lädt. `GET /api/v1/runs/{run_id}` liefert weiterhin das vollständige
+`GameDocument` (siehe unten).
+
+Das gemeinsame Transportdokument für Init-, Playthrough- und Load-Antworten
+heißt `GameDocument` und enthält sowohl `game_run` als auch `game_state`. Der
+GameState enthält die komplette `GameConfiguration`, den `WorldState`
+einschließlich Goals und den `StoryState`. Fremde Felder und fachlich
+inkonsistente IDs werden abgewiesen.
 
 `world.scene_location_ids` ist eine geordnete Liste von Orts-UUIDs und benennt,
 wo die Erzählung spielt; der erste Eintrag ist der Hauptschauplatz. Die Liste
@@ -28,8 +72,7 @@ sowie Duplikate werden abgewiesen.
 bei brechenden Änderungen: entfernten oder umbenannten Feldern, geänderten Typen
 oder geänderter Bedeutung eines Feldes. Ein zusätzliches Feld mit Standardwert
 ist dagegen rein additiv — ältere Clients ignorieren es, und ältere Dokumente
-bleiben ohne Anpassung gültig. `scene_location_ids` ist ein solcher Fall; die
-Version bleibt deshalb bewusst `1`.
+bleiben ohne Anpassung gültig.
 
 Alle internen IDs werden im OpenAPI-Schema als `string` mit `format: uuid`
 ausgewiesen und im JSON in kanonischer UUID-Schreibweise übertragen. Das gilt
@@ -37,18 +80,32 @@ auch für `run_id` im Pfad; eine nicht als UUID parsebare ID führt zu HTTP 422.
 `game_run.name` ist der lesbare Anzeigename und unabhängig von der technischen
 ID. Keycloak-, Prompt-Paket- und Promptprofil-Kennungen bleiben Text.
 
-`GameConfiguration.prompt_profile` ist ein vollständiges Objekt mit zehn
-Pflichtfeldern. Die API ergänzt keine Paketdefaults. Vor dem Speichern prüft
-die Application jede Options-ID gegen `prompt_package_id` und
-`prompt_package_version`. Eine unbekannte Auswahl ergibt HTTP 422 mit
-`error = "invalid_prompt_selection"`, `category`, `option_id` und einer
-lesbaren Beschreibung, damit eine UI genau dieses Feld erneut abfragen kann.
+## Feste Entwicklungsidentität
 
-Der POST-Endpunkt legt absichtlich nur einen neuen Lauf in Revision 1 an.
-Konfigurationsrevisionen und atomare StoryTurn-Commits sind bereits als
-Application- und Persistenzoperationen vorhanden, werden aber noch nicht als
-Produktendpunkte veröffentlicht. Es gibt insbesondere keinen direkten
-HTTP-Endpunkt, über den ein LLM Zustandsänderungen schreiben kann.
+Jeder Aufruf agiert als dieselbe feste Identität
+(`ApiSettings.dev_issuer`/`dev_subject`, überschreibbar über
+`STORY_GAME_DEV_ISSUER`/`STORY_GAME_DEV_SUBJECT`), aufgelöst über
+`get_current_initiator` in `api/dependencies.py`. Das ist bewusst eine
+einzige austauschbare Funktion: der Wechsel auf echtes
+Keycloak-Token-Parsing ändert später nur ihren Rumpf, keine Router oder
+Schemas. Bis dahin gehört jeder erzeugte Lauf derselben Identität, und
+`GET /api/v1/runs` zeigt ausschließlich deren Läufe.
+
+## Fehlerantworten
+
+Jede Fehlerantwort hat die Form `{"error": <code>, "detail": <Text>, ...}`.
+Über die bereits dokumentierten Zustandsfehler hinaus (`not_found`,
+`revision_conflict`, `domain_validation_failed`, `invalid_prompt_selection`,
+`persistence_unavailable`, …) kennt die Lauf-API zusätzlich:
+
+| HTTP | `error` | Bedeutung |
+| --- | --- | --- |
+| 403 | `not_a_run_member` | Die aufrufende Identität gehört nicht zum GameRun |
+| 409 | `run_not_active` | Ein Zug wurde gegen eine `DRAFT`-Vorlage versucht |
+| 409 | `playthrough_source_not_draft` | Ein Abzweig wurde von einem bereits aktiven Lauf versucht |
+| 502 | `story_model_unavailable` | Das Modell hat nicht geantwortet oder unbrauchbare Ausgabe geliefert |
+| 500 | `story_configuration_invalid` | Die feste Server-Konfiguration ist ungültig (kein Aufruferfehler) |
+| 500 | `story_initialization_inconsistent` / `story_turn_inconsistent` | Die eigene Extraktions-/Validierungskette hat eine intern inkonsistente Antwort erzeugt |
 
 ## Swagger UI und OpenAPI
 
@@ -72,4 +129,6 @@ zuerst ein manueller Datenbank-Reset erforderlich; Details stehen in
 [`persistence.md`](persistence.md).
 
 Der Paketroot ist standardmäßig `prompts` und kann für eine Laufzeitumgebung
-über `STORY_GAME_PROMPT_ROOT` gesetzt werden.
+über `STORY_GAME_PROMPT_ROOT` gesetzt werden. Die LLM-Konfigurationsdatei ist
+standardmäßig `configs/llm.toml` und kann über `STORY_GAME_LLM_CONFIG_PATH`
+gesetzt werden.

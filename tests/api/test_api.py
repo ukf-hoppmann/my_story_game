@@ -1,46 +1,85 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
+from dataclasses import replace
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 
 from story_game.api import create_app
+from story_game.api.config import ApiSettings
 from story_game.api.dependencies import ApiDependencies
+from story_game.api.mappers import game_from_api
+from story_game.api.schemas.state import GameDocument
+from story_game.application import (
+    ExtractInitialWorldState,
+    ExtractStoryTurnChanges,
+    GenerateStory,
+    InitializeGameRun,
+    InitializeStory,
+    PlayStoryTurn,
+    StartPlaythrough,
+    SummarizeStory,
+)
+from story_game.application.approve_story_turn_changes import ApproveStoryTurnChanges
+from story_game.application.game_models import RunSummary
 from story_game.application.game_state import (
     CommitCompletedTurn,
     CreateGameRun,
     GameStateOperations,
+    ListPlayableRuns,
     LoadGame,
     PromptProfileValidator,
     UpdateGameConfiguration,
 )
-from story_game.application.game_models import (
-    CompletedTurnPersistenceRequest,
-    ConfigurationPersistenceRequest,
+from story_game.application.llm import (
+    ExtractionPromptSelectionResolver,
+    InitialExtractionPromptSelectionResolver,
+    StoryInitializationPromptResolver,
+    StoryPromptSelectionResolver,
+    SummaryPromptSelectionResolver,
 )
 from story_game.application.ports import GameStateConflictError, GameStateNotFoundError
-from story_game.domain import GameRun, GameState, StableId, StateRevision
+from story_game.application.story_initialization import GenerateInitialStoryState
+from story_game.application.story_turn_context import build_story_turn_context_selection
+from story_game.domain import GameRole, GameRun, GameRunMember, GameRunStatus, GameState, StableId, StateRevision
 from story_game.infrastructure.llm import FilePromptPackageCatalog
 from tests.ids import uuid_text
 
+from tests.api.llm_doubles import (
+    FakeGenerationConfigurationResolver,
+    FakeInitialWorldExtractionPort,
+    FakeStoryGenerationPort,
+    FakeStoryInitializationPort,
+    FakeStorySummaryPort,
+    FakeTurnExtractionPort,
+)
+
+PROMPT_ROOT = Path(__file__).resolve().parents[2] / "prompts"
+DEV_ISSUER = ApiSettings().dev_issuer
+DEV_SUBJECT = ApiSettings().dev_subject
+
 
 class MemoryGameStore:
+    """Holds any number of runs/states in process memory, never on disk."""
+
     def __init__(self) -> None:
-        self.run: GameRun | None = None
-        self.states: dict[StateRevision, GameState] = {}
+        self.runs: dict[StableId, GameRun] = {}
+        self.states: dict[StableId, dict[StateRevision, GameState]] = {}
 
     def create(self, run: GameRun, state: GameState) -> None:
-        if self.run is not None:
+        if run.id in self.runs:
             raise GameStateConflictError("exists")
-        self.run = run
-        self.states[state.revision] = state
+        self.runs[run.id] = run
+        self.states[run.id] = {state.revision: state}
 
     def load_run(self, run_id: StableId) -> GameRun:
-        if self.run is None or self.run.id != run_id:
-            raise GameStateNotFoundError("missing")
-        return self.run
+        try:
+            return self.runs[run_id]
+        except KeyError as error:
+            raise GameStateNotFoundError("missing") from error
 
     def load_state(
         self, run_id: StableId, *, revision: StateRevision | None = None
@@ -48,32 +87,100 @@ class MemoryGameStore:
         run = self.load_run(run_id)
         selected = revision or run.current_revision
         try:
-            return self.states[selected]
+            return self.states[run_id][selected]
         except KeyError as error:
             raise GameStateNotFoundError("missing revision") from error
 
-    def update_configuration(
-        self, request: ConfigurationPersistenceRequest
-    ) -> GameState:
+    def update_configuration(self, request) -> GameState:
         raise AssertionError("The test API does not expose configuration updates")
 
-    def commit_turn(self, request: CompletedTurnPersistenceRequest) -> GameState:
-        raise AssertionError("The test API does not expose completed turns")
+    def commit_turn(self, request) -> GameState:
+        run = self.runs[request.run_id]
+        current = self.states[request.run_id][run.current_revision]
+        updated = current.complete_turn(request.changes, request.turn, request.summary)
+        self.states[request.run_id][updated.revision] = updated
+        self.runs[request.run_id] = replace(
+            run, current_revision=updated.revision, updated_at=request.turn.completed_at
+        )
+        return updated
+
+    def list_for_member(self, issuer: str, subject: str) -> tuple[RunSummary, ...]:
+        return tuple(
+            RunSummary(
+                run_id=run.id,
+                name=run.name,
+                status=run.status,
+                current_revision=run.current_revision,
+                game_role=member.game_role,
+                updated_at=run.updated_at,
+            )
+            for run in self.runs.values()
+            for member in run.members
+            if member.issuer == issuer and member.subject == subject
+        )
 
 
-@pytest.fixture
-def client() -> Iterator[TestClient]:
-    store = MemoryGameStore()
-    validator = PromptProfileValidator(
-        FilePromptPackageCatalog(Path(__file__).resolve().parents[2] / "prompts")
-    )
+def build_dependencies(store: MemoryGameStore) -> ApiDependencies:
+    catalog = FilePromptPackageCatalog(PROMPT_ROOT)
+    validator = PromptProfileValidator(catalog)
+    generation_config = FakeGenerationConfigurationResolver()
+
     operations = GameStateOperations(
         create=CreateGameRun(store, validator),
         load=LoadGame(store, store),
         update_configuration=UpdateGameConfiguration(store, validator),
         commit_turn=CommitCompletedTurn(store, store),
+        list_playable_runs=ListPlayableRuns(store),
     )
-    with TestClient(create_app(ApiDependencies(operations))) as test_client:
+    initialize_run = InitializeGameRun(
+        InitializeStory(
+            GenerateInitialStoryState(
+                StoryInitializationPromptResolver(catalog),
+                generation_config,
+                FakeStoryInitializationPort(),
+                lambda: datetime.now(UTC),
+            ),
+            ExtractInitialWorldState(
+                InitialExtractionPromptSelectionResolver(catalog),
+                generation_config,
+                FakeInitialWorldExtractionPort(),
+            ),
+        ),
+        CreateGameRun(store, validator),
+    )
+    play_turn = PlayStoryTurn(
+        LoadGame(store, store),
+        build_story_turn_context_selection(),
+        GenerateStory(
+            StoryPromptSelectionResolver(catalog),
+            generation_config,
+            FakeStoryGenerationPort(),
+        ),
+        ExtractStoryTurnChanges(
+            ExtractionPromptSelectionResolver(catalog),
+            generation_config,
+            FakeTurnExtractionPort(),
+        ),
+        ApproveStoryTurnChanges(),
+        SummarizeStory(
+            SummaryPromptSelectionResolver(catalog),
+            generation_config,
+            FakeStorySummaryPort(),
+        ),
+        CommitCompletedTurn(store, store),
+    )
+    start_playthrough = StartPlaythrough(LoadGame(store, store), CreateGameRun(store, validator))
+    return ApiDependencies(operations, initialize_run, play_turn, start_playthrough)
+
+
+@pytest.fixture
+def store() -> MemoryGameStore:
+    return MemoryGameStore()
+
+
+@pytest.fixture
+def client(store: MemoryGameStore) -> Iterator[TestClient]:
+    with TestClient(create_app(build_dependencies(store), settings=ApiSettings())) as test_client:
         yield test_client
 
 
@@ -177,67 +284,180 @@ def complete_state_document() -> dict[str, object]:
     }
 
 
-def test_api_saves_and_loads_the_complete_state_document(client: TestClient) -> None:
+def seed_document(store: MemoryGameStore, document: dict[str, object]) -> None:
+    loaded = game_from_api(GameDocument.model_validate(document))
+    store.create(loaded.run, loaded.state)
+
+
+def test_api_loads_a_seeded_complete_state_document(
+    client: TestClient, store: MemoryGameStore
+) -> None:
     document = complete_state_document()
+    seed_document(store, document)
 
-    created = client.post("/api/v1/runs", json=document)
-    loaded = client.get(f"/api/v1/runs/{uuid_text('run-1')}/state")
+    loaded = client.get(f"/api/v1/runs/{uuid_text('run-1')}")
 
-    assert created.status_code == 201
-    assert created.json() == document
     assert loaded.status_code == 200
     assert loaded.json() == document
 
 
-def test_api_rejects_inconsistent_run_and_state_ids(client: TestClient) -> None:
-    document = complete_state_document()
-    document["game_state"]["run_id"] = uuid_text("another-run")  # type: ignore[index]
-
-    response = client.post("/api/v1/runs", json=document)
-
-    assert response.status_code == 422
-
-
-def test_api_rejects_non_uuid_internal_ids(client: TestClient) -> None:
-    document = complete_state_document()
-    document["game_run"]["id"] = "run-1"  # type: ignore[index]
-
-    response = client.post("/api/v1/runs", json=document)
-
-    assert response.status_code == 422
-
-
 def test_api_rejects_a_non_uuid_run_path(client: TestClient) -> None:
-    response = client.get("/api/v1/runs/run-1/state")
-
-    assert response.status_code == 422
-
-
-def test_api_reports_the_prompt_field_that_requires_a_new_selection(
-    client: TestClient,
-) -> None:
-    document = complete_state_document()
-    document["game_state"]["configuration"]["prompt_profile"]["tone"] = "unknown"  # type: ignore[index]
-
-    response = client.post("/api/v1/runs", json=document)
-
-    assert response.status_code == 422
-    assert response.json() == {
-        "error": "invalid_prompt_selection",
-        "detail": "Die Option 'unknown' ist für die Kategorie 'tone' nicht verfügbar",
-        "category": "tone",
-        "option_id": "unknown",
-    }
-
-
-def test_api_rejects_removed_configuration_fields(client: TestClient) -> None:
-    document = complete_state_document()
-    document["game_state"]["configuration"]["narration_style_id"] = "style.dark"  # type: ignore[index]
-
-    response = client.post("/api/v1/runs", json=document)
+    response = client.get("/api/v1/runs/run-1")
 
     assert response.status_code == 422
 
 
 def test_health_endpoint_is_independent_of_persistence(client: TestClient) -> None:
     assert client.get("/health").json() == {"status": "ok"}
+
+
+def test_api_starts_a_new_draft_run(client: TestClient) -> None:
+    response = client.post(
+        "/api/v1/runs",
+        json={
+            "run_name": "Der Leuchtturm von Talmoor",
+            "initial_prompt": "Ein Licht brennt, wo keines brennen sollte.",
+            "control_mode": "director",
+        },
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["game_run"]["status"] == "draft"
+    assert body["game_state"]["revision"] == 1
+
+
+def test_api_lists_runs_for_the_dev_identity(client: TestClient) -> None:
+    created = client.post(
+        "/api/v1/runs",
+        json={
+            "run_name": "Der Leuchtturm von Talmoor",
+            "initial_prompt": "Ein Licht brennt, wo keines brennen sollte.",
+            "control_mode": "director",
+        },
+    ).json()
+
+    listed = client.get("/api/v1/runs")
+
+    assert listed.status_code == 200
+    run_ids = [entry["id"] for entry in listed.json()["runs"]]
+    assert created["game_run"]["id"] in run_ids
+
+
+def test_api_starts_a_playthrough_from_a_draft(client: TestClient) -> None:
+    draft = client.post(
+        "/api/v1/runs",
+        json={
+            "run_name": "Der Leuchtturm von Talmoor",
+            "initial_prompt": "Ein Licht brennt, wo keines brennen sollte.",
+            "control_mode": "director",
+        },
+    ).json()
+
+    playthrough = client.post(
+        f"/api/v1/runs/{draft['game_run']['id']}/playthroughs"
+    )
+
+    assert playthrough.status_code == 201
+    body = playthrough.json()
+    assert body["game_run"]["status"] == "active"
+    assert body["game_run"]["id"] != draft["game_run"]["id"]
+    assert body["game_state"]["world"] == draft["game_state"]["world"]
+
+
+def test_api_rejects_a_playthrough_from_a_non_draft_source(client: TestClient) -> None:
+    draft = client.post(
+        "/api/v1/runs",
+        json={
+            "run_name": "Der Leuchtturm von Talmoor",
+            "initial_prompt": "Ein Licht brennt, wo keines brennen sollte.",
+            "control_mode": "director",
+        },
+    ).json()
+    active = client.post(
+        f"/api/v1/runs/{draft['game_run']['id']}/playthroughs"
+    ).json()
+
+    response = client.post(f"/api/v1/runs/{active['game_run']['id']}/playthroughs")
+
+    assert response.status_code == 409
+    assert response.json()["error"] == "playthrough_source_not_draft"
+
+
+def test_api_plays_a_turn_in_an_active_run(client: TestClient) -> None:
+    draft = client.post(
+        "/api/v1/runs",
+        json={
+            "run_name": "Der Leuchtturm von Talmoor",
+            "initial_prompt": "Ein Licht brennt, wo keines brennen sollte.",
+            "control_mode": "director",
+        },
+    ).json()
+    active = client.post(
+        f"/api/v1/runs/{draft['game_run']['id']}/playthroughs"
+    ).json()
+
+    response = client.post(
+        f"/api/v1/runs/{active['game_run']['id']}/turns",
+        json={"player_input": "Ich öffne die Tür."},
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["state"]["revision"] == 2
+    assert body["summary_failed"] is False
+
+
+def test_api_rejects_a_turn_against_a_draft_run(client: TestClient) -> None:
+    draft = client.post(
+        "/api/v1/runs",
+        json={
+            "run_name": "Der Leuchtturm von Talmoor",
+            "initial_prompt": "Ein Licht brennt, wo keines brennen sollte.",
+            "control_mode": "director",
+        },
+    ).json()
+
+    response = client.post(
+        f"/api/v1/runs/{draft['game_run']['id']}/turns",
+        json={"player_input": "Ich öffne die Tür."},
+    )
+
+    assert response.status_code == 409
+    assert response.json()["error"] == "run_not_active"
+
+
+def test_api_rejects_a_turn_for_an_unknown_member(
+    client: TestClient, store: MemoryGameStore
+) -> None:
+    run_id = StableId.new()
+    timestamp = datetime.now(UTC)
+    run = GameRun(
+        id=run_id,
+        name="Fremder Lauf",
+        status=GameRunStatus.ACTIVE,
+        current_revision=StateRevision(1),
+        members=(
+            GameRunMember(
+                issuer="https://someone-else.example/realm",
+                subject="someone-else",
+                game_role=GameRole.OWNER,
+                player_entity_id=None,
+            ),
+        ),
+        created_at=timestamp,
+        updated_at=timestamp,
+    )
+    document = complete_state_document()
+    document["game_state"]["run_id"] = str(run_id.value)  # type: ignore[index]
+    state = game_from_api(GameDocument.model_validate(document)).state
+    state = replace(state, run_id=run_id)
+    store.create(run, state)
+
+    response = client.post(
+        f"/api/v1/runs/{run_id.value}/turns",
+        json={"player_input": "Ich öffne die Tür."},
+    )
+
+    assert response.status_code == 403
+    assert response.json()["error"] == "not_a_run_member"

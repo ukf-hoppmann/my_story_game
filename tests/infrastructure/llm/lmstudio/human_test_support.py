@@ -41,6 +41,8 @@ from story_game.application import (
     PlayStoryTurn,
     PlayStoryTurnRequest,
     RunInitiator,
+    StartPlaythrough,
+    StartPlaythroughRequest,
     StoryGenerationData,
     Success,
 )
@@ -664,9 +666,12 @@ class HumanFullPlaythroughSupport:
 
     Closes the gap noted in the STORY-006 completion criteria in
     ``docs/TODO.md``: no other test connects a live model with live
-    persistence in one run. ``InitializeGameRun`` persists revision 1;
-    ``PlayStoryTurn`` persists revision 2 on top of it. The created run is
-    deleted again afterwards so repeated human runs stay clean.
+    persistence in one run. ``InitializeGameRun`` persists a DRAFT template
+    at revision 1; ``StartPlaythrough`` forks it into a new ACTIVE run (also
+    revision 1); ``PlayStoryTurn`` persists revision 2 on top of that fork.
+    A DRAFT can no longer take a turn directly — see the run-lifecycle work
+    that introduced ``StartPlaythrough``. Both created runs are deleted
+    again afterwards so repeated human runs stay clean.
     """
 
     def __init__(self) -> None:
@@ -708,6 +713,7 @@ class HumanFullPlaythroughSupport:
         store = PostgresGameStore(connections)
         client = _live_client()
         diagnostics = _debug_diagnostics()
+        draft_run_id: StableId | None = None
         run_id: StableId | None = None
         try:
             printing = PrintingLmStudioClient(client)
@@ -742,15 +748,38 @@ class HumanFullPlaythroughSupport:
                 )
             )
             assert isinstance(initialized, Success), initialized
-            run_id = initialized.data.run.id
+            draft_run_id = initialized.data.run.id
             print(
                 json.dumps(
                     {
                         "postgres_initialized_run": {
-                            "run_id": str(run_id),
+                            "run_id": str(draft_run_id),
                             "revision": initialized.data.state.revision.value,
                             "narration": initialized.data.state.story.initialization.narration,
                             "world_state": _world_document(initialized.data.state.world),
+                        }
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                )
+            )
+
+            playthrough_operation = StartPlaythrough(
+                LoadGame(store, store),
+                CreateGameRun(store, PromptProfileValidator(_catalog())),
+                diagnostics=diagnostics,
+            )
+            started = playthrough_operation.apply(
+                StartPlaythroughRequest(draft_run_id, self.initiator)
+            )
+            assert isinstance(started, Success), started
+            run_id = started.data.run.id
+            print(
+                json.dumps(
+                    {
+                        "postgres_started_playthrough": {
+                            "source_run_id": str(draft_run_id),
+                            "run_id": str(run_id),
                         }
                     },
                     ensure_ascii=False,
@@ -805,6 +834,8 @@ class HumanFullPlaythroughSupport:
             client.close()
             if run_id is not None:
                 _delete_run(connections, run_id)
+            if draft_run_id is not None:
+                _delete_run(connections, draft_run_id)
 
 
 def _delete_run(connections: PostgresConnectionFactory, run_id: StableId) -> None:

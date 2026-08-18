@@ -84,7 +84,6 @@ def game_from_api(document: GameDocument) -> LoadedGame:
 
 def game_to_api(game: LoadedGame) -> GameDocument:
     run = game.run
-    state = game.state
     return GameDocument(
         game_run=GameRunModel(
             id=run.id.value,
@@ -107,13 +106,17 @@ def game_to_api(game: LoadedGame) -> GameDocument:
             created_at=run.created_at,
             updated_at=run.updated_at,
         ),
-        game_state=GameStateModel(
-            run_id=state.run_id.value,
-            revision=state.revision.value,
-            configuration=_configuration_to_api(state.configuration),
-            world=_world_to_api(state.world),
-            story=_story_to_api(state.story),
-        ),
+        game_state=game_state_to_api(game.state),
+    )
+
+
+def game_state_to_api(state: GameState) -> GameStateModel:
+    return GameStateModel(
+        run_id=state.run_id.value,
+        revision=state.revision.value,
+        configuration=_configuration_to_api(state.configuration),
+        world=_world_to_api(state.world),
+        story=_story_to_api(state.story),
     )
 
 

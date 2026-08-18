@@ -16,6 +16,14 @@ class ApiSettings:
     prompt_root: str = "prompts"
     auto_migrate: bool = True
     config_path: str = "configs/app.toml"
+    llm_config_path: str = "configs/llm.toml"
+    dev_issuer: str = "https://dev.story-game.local/realm"
+    """Fixed development identity until Keycloak token parsing lands.
+
+    Every request currently resolves to this one identity — see
+    ``get_current_initiator`` in ``dependencies.py``.
+    """
+    dev_subject: str = "dev-user"
 
     @classmethod
     def from_environment(cls) -> ApiSettings:
@@ -31,6 +39,11 @@ class ApiSettings:
                 "STORY_GAME_AUTO_MIGRATE", default=defaults.auto_migrate
             ),
             config_path=os.environ.get("STORY_GAME_CONFIG_PATH", defaults.config_path),
+            llm_config_path=os.environ.get(
+                "STORY_GAME_LLM_CONFIG_PATH", defaults.llm_config_path
+            ),
+            dev_issuer=os.environ.get("STORY_GAME_DEV_ISSUER", defaults.dev_issuer),
+            dev_subject=os.environ.get("STORY_GAME_DEV_SUBJECT", defaults.dev_subject),
         )
 
 

@@ -15,6 +15,7 @@ class StoryTurnErrorKind(StrEnum):
     INVALID_CANDIDATE_REFERENCE = "invalid_candidate_reference"
     DOMAIN_REJECTION = "domain_rejection"
     UNKNOWN_MEMBER = "unknown_member"
+    RUN_NOT_ACTIVE = "run_not_active"
 
 
 @dataclass(frozen=True, slots=True)

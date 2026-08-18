@@ -40,6 +40,12 @@ from .story_turn_context import (
     SelectStoryTurnContextRequest,
     build_story_turn_context_selection,
 )
+from .start_playthrough import (
+    StartPlaythrough,
+    StartPlaythroughError,
+    StartPlaythroughRequest,
+)
+from .start_playthrough_errors import PlaythroughError, PlaythroughErrorKind
 from .summarize_story import SummarizeStory, SummarizeStoryRequest
 from .story_turn_errors import StoryTurnError, StoryTurnErrorKind
 from .story_turn_context_errors import (
@@ -147,7 +153,12 @@ __all__ = [
     "PromptTaskNotFoundError",
     "OperationResult",
     "PlayerCharacterSeed",
+    "PlaythroughError",
+    "PlaythroughErrorKind",
     "RunInitiator",
+    "StartPlaythrough",
+    "StartPlaythroughError",
+    "StartPlaythroughRequest",
     "ProposalStatus",
     "ProposalEvidence",
     "ProposedChange",

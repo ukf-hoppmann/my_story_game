@@ -67,11 +67,24 @@ Die Application besitzt getrennte Operationen für:
   startet als `DRAFT`; die Initiator-Identität wird als `OWNER` gespeichert.
   Im Player Mode wird die einzige `ActorRole.PLAYER`-Entität über ihre UUID als
   `player_entity_id` gebunden. Der Director Mode erlaubt keine solche Bindung.
+- `StartPlaythrough`: eine `DRAFT`-Vorlage laden und als neuen, unabhängigen
+  GameRun im Status `ACTIVE` (eigene `run_id`, wieder Revision 1) atomar
+  anlegen — über denselben `CreateGameRun`-Port wie `InitializeGameRun`. Die
+  Quell-Vorlage bleibt unverändert und kann beliebig oft erneut abgezweigt
+  werden. Nur `DRAFT`-Läufe können Quelle eines Abzweigs sein.
 - `CreateGameRun`: den bereits erzeugten Run-State über den Persistenzport
   validieren und schreiben;
 - GameRun und aktuellen oder historischen GameState laden;
+- alle Läufe einer Identität auflisten (`ListPlayableRuns` /
+  `PlayableRunLister.list_for_member`) — liest nur `game_runs` und
+  `game_run_members`, nicht den vollen WorldState-Snapshot pro Lauf. Ein
+  zusätzlicher Index `game_run_members_issuer_subject_idx` auf
+  `(issuer, subject)` trägt diese Abfrage; der Primärschlüssel allein
+  (`run_id, issuer, subject`) unterstützt sie nicht effizient;
 - eine reine Konfigurationsrevision schreiben;
-- einen abgeschlossenen StoryTurn mit der resultierenden Revision schreiben.
+- einen abgeschlossenen StoryTurn mit der resultierenden Revision schreiben
+  — nur gegen einen `ACTIVE`-Lauf; ein Zug gegen eine `DRAFT`-Vorlage wird
+  bereits in der Application abgewiesen, bevor ein Modellaufruf stattfindet.
 
 Beim Turn-Abschluss sperrt PostgreSQL kurz den Kopf des GameRuns und prüft die
 erwartete Basisrevision. Neue Revision, WorldState, Story-Metadaten,

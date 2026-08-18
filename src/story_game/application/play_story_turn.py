@@ -34,7 +34,7 @@ from story_game.application.story_turn_context import (
 from story_game.application.story_turn_context_errors import ContextSelectionError
 from story_game.application.story_turn_errors import StoryTurnError, StoryTurnErrorKind
 from story_game.application.summarize_story import SummarizeStory, SummarizeStoryRequest
-from story_game.domain import GameRun, GameState, StableId
+from story_game.domain import GameRun, GameRunStatus, GameState, StableId
 
 
 StoryTurnWorkflowError: TypeAlias = (
@@ -124,6 +124,15 @@ class PlayStoryTurn:
         if isinstance(loaded, Failure):
             return loaded
         run, state = loaded.data.run, loaded.data.state
+
+        if run.status is not GameRunStatus.ACTIVE:
+            return Failure(
+                StoryTurnError(
+                    StoryTurnErrorKind.RUN_NOT_ACTIVE,
+                    "In diesem GameRun kann kein Zug gespielt werden, solange "
+                    "er nicht aktiv ist.",
+                )
+            )
 
         controlled = _controlled_entity_id(run, request.initiator)
         if isinstance(controlled, Failure):

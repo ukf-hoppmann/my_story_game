@@ -130,6 +130,11 @@ class GameRunMemberModel(APIModel):
     player_entity_id: UUID | None = None
 
 
+class PlayerCharacterSeedModel(APIModel):
+    name: str = Field(min_length=1)
+    description: str = ""
+
+
 class GameRunModel(APIModel):
     id: UUID
     name: str = Field(min_length=1)

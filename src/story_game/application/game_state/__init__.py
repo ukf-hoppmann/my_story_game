@@ -13,11 +13,13 @@ from .errors import (
     StateStoreUnavailable,
     StoredStateInvalid,
 )
+from .list_playable_runs import ListPlayableRuns, ListPlayableRunsRequest
 from .load_game import LoadGame, LoadGameRequest
 from story_game.application.game_models import (
     CompletedTurnPersistenceRequest,
     ConfigurationPersistenceRequest,
     LoadedGame,
+    RunSummary,
 )
 from .operations import GameStateOperations
 from .update_configuration import (
@@ -40,10 +42,13 @@ __all__ = [
     "LoadedGame",
     "InvalidPromptPackageReference",
     "InvalidPromptSelection",
+    "ListPlayableRuns",
+    "ListPlayableRunsRequest",
     "PromptPackageConfigurationInvalid",
     "PromptProfileValidator",
     "RunConflict",
     "RunNotFound",
+    "RunSummary",
     "StateRejected",
     "StateStoreUnavailable",
     "StoredStateInvalid",

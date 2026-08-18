@@ -8,6 +8,7 @@ src/story_game.egg-info/top_level.txt
 src/story_game/api/__init__.py
 src/story_game/api/app.py
 src/story_game/api/config.py
+src/story_game/api/default_configuration.py
 src/story_game/api/dependencies.py
 src/story_game/api/errors.py
 src/story_game/api/results.py
@@ -17,6 +18,7 @@ src/story_game/api/routers/__init__.py
 src/story_game/api/routers/runs.py
 src/story_game/api/schemas/__init__.py
 src/story_game/api/schemas/common.py
+src/story_game/api/schemas/runs.py
 src/story_game/api/schemas/state.py
 src/story_game/application/__init__.py
 src/story_game/application/apply_selection_budget.py
@@ -40,6 +42,8 @@ src/story_game/application/proposals.py
 src/story_game/application/resolve_mentioned_entities.py
 src/story_game/application/select_always_included.py
 src/story_game/application/select_referenced_facts_knowledge_goals.py
+src/story_game/application/start_playthrough.py
+src/story_game/application/start_playthrough_errors.py
 src/story_game/application/story_initialization.py
 src/story_game/application/story_prompt_sections.py
 src/story_game/application/story_turn_context.py
@@ -52,6 +56,7 @@ src/story_game/application/game_state/commit_completed_turn.py
 src/story_game/application/game_state/create_game_run.py
 src/story_game/application/game_state/error_mapping.py
 src/story_game/application/game_state/errors.py
+src/story_game/application/game_state/list_playable_runs.py
 src/story_game/application/game_state/load_game.py
 src/story_game/application/game_state/operations.py
 src/story_game/application/game_state/prompt_profile_validation.py
@@ -76,6 +81,7 @@ src/story_game/domain/world.py
 src/story_game/infrastructure/__init__.py
 src/story_game/infrastructure/logging_config.py
 src/story_game/infrastructure/configuration/__init__.py
+src/story_game/infrastructure/configuration/app_config.py
 src/story_game/infrastructure/configuration/llm.py
 src/story_game/infrastructure/diagnostics/__init__.py
 src/story_game/infrastructure/diagnostics/structlog_diagnostics.py
@@ -105,3 +111,4 @@ src/story_game/infrastructure/persistence/postgres/story_writer.py
 src/story_game/infrastructure/persistence/postgres/world_reader.py
 src/story_game/infrastructure/persistence/postgres/world_writer.py
 src/story_game/infrastructure/persistence/postgres/migrations/001_initial.sql
+src/story_game/infrastructure/persistence/postgres/migrations/002_game_run_members_identity_index.sql

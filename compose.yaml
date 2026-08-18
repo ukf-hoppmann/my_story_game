@@ -17,7 +17,7 @@ services:
 
   api:
     build:
-      context: .
+      context: ./Backend
       dockerfile: Dockerfile
     environment:
       STORY_GAME_POSTGRES_DSN: "postgresql://${POSTGRES_USER:-story_game}:${POSTGRES_PASSWORD:-story_game_dev}@postgres:5432/${POSTGRES_DB:-story_game}"
@@ -28,7 +28,7 @@ services:
     ports:
       - "${API_HOST_PORT:-8000}:8000"
     volumes:
-      - ./logs:/app/logs
+      - ./Backend/logs:/app/logs
     command:
       [
         "uvicorn",

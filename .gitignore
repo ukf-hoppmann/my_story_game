@@ -3,3 +3,9 @@
 __pycache__/
 *.py[cod]
 logs/
+.venv/
+*.egg-info/
+.pytest_cache/
+.DS_Store
+node_modules/
+Frontend-Web/dist/

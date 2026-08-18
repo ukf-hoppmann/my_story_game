@@ -27,6 +27,8 @@ services:
         condition: service_healthy
     ports:
       - "${API_HOST_PORT:-8000}:8000"
+    volumes:
+      - ./logs:/app/logs
     command:
       [
         "uvicorn",

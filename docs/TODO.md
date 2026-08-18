@@ -358,6 +358,38 @@ After explicit rejection:
   - Completion criteria: Ein eigener Initial-Extraction-Port erhält weder ursprünglichen Initialprompt noch Storyprofil oder vorhandenen WorldState; sein strukturiertes Schema enthält nur Entitäten, Beziehungen und Fakten mit lokalen Referenzen; das Modell erzeugt keine Spielerfigur, StableIds, Sichtbarkeit, Evidenz, KnowledgeEntries, WorldRules oder Goals; die Application erzeugt im Player Mode die Spielerfigur sowie in allen Modi StableIds und neutrale weitere Charaktere, validiert alle Referenzen und Domain-Invarianten und übernimmt nur einen vollständigen WorldState; Provider-, Schema-, Referenz- oder Domainfehler erzeugen keinen Teilzustand und keinen Retry. Eine übergeordnete Operation liefert StoryState und WorldState gemeinsam, persistiert aber nichts; der Live-Test gibt beide Requests und Ergebnisse aus.
   - Resolution: Implemented and verified on 2026-08-10.
 
+- `TASK-028` **Repetition-Loop und Entitäts-Relevanz bei der Initial-Extraction beheben**
+  - Type: Task.
+  - Status: Open.
+  - Parent: `STORY-009`.
+  - Required for parent: No.
+  - Created: 2026-08-18.
+  - Area: LLM-Integration, Initial-Extraction (Prompt und Sampling).
+  - Priority: Wichtig.
+  - Dependencies: `STORY-009`, `TASK-009`, `TASK-012`.
+  - Goal: Der Live-Test `test_state_extract` schlägt reproduzierbar fehl, weil das
+    Extraction-Modell (`llama@q4_k_m`, Temperature 0.1, striktes JSON-Schema) in
+    eine Wiederholungsschleife läuft und dieselbe Handvoll Entitäten wiederholt
+    ausgibt, bis das Kontextlimit erreicht und die Antwort abgeschnitten wird.
+    Unabhängig davon fragmentiert der Prompt Objekte zu grob in Teil-Entitäten
+    (z. B. "Griff des Schwertes" statt "Schwert") und extrahiert auch narrativ
+    irrelevante, transiente Requisiten (z. B. ein Buttermesser beim
+    Brotschmieren), während plotrelevante Gegenstände (ein Schwert, ein Messer
+    als Waffe) korrekt als Entität geführt werden sollen. `TASK-012` hat
+    Temperatur 0.1 ohne Tokenlimit bewusst bestätigt; diese Entscheidung muss
+    im Licht des Repetition-Loops erneut geprüft werden, nicht stillschweigend
+    überschrieben werden.
+  - Completion criteria: Entschieden und umgesetzt ist, wie die Wiederholungs-
+    schleife verhindert wird (z. B. Sampling-Anpassung, Modellwahl oder eine neue
+    Generation-Option) und wie der Prompt Objekte nach narrativer Relevanz statt
+    nach bloßer Erwähnung extrahiert, ohne plotrelevante Gegenstände wie Waffen
+    zu verlieren. Der Live-Test `test_state_extract` läuft wiederholt ohne
+    Abschneiden durch; der resultierende WorldState enthält keine künstlich
+    fragmentierten Teil-Entitäten und keine transienten Requisiten ohne
+    erwartbare Wiederverwendung. Jede Sampling- oder Modelländerung ist mit
+    Begründung dokumentiert und gegen die in `TASK-012` bestätigte Entscheidung
+    abgeglichen.
+
 - `TASK-008` **Kanonische Evidenz entfernen**
   - Type: Task.
   - Status: Completed.
@@ -611,7 +643,7 @@ After explicit rejection:
   - Priority: Wichtig.
   - Dependencies: None.
   - Goal: Eine schlanke, projektweite Logging-Grundlage schaffen. Das Projekt enthielt zuvor kein einziges Log: weder Modellaufrufe noch verworfene Vorschläge, Revisionskonflikte oder Providerfehler hinterließen eine Spur. Wiederkehrende Probleme im Spielbetrieb waren dadurch nicht erkennbar.
-  - Completion criteria: Es ist entschieden, welche Ereignisse geloggt werden und auf welcher Stufe, wie die Ausgabe konfiguriert wird und wie die Schichtengrenzen eingehalten bleiben — die Domain loggt nicht, die Application entscheidet fachlich über einen eigenen `DiagnosticsLog`-Port (`record()`/`trace()`), Infrastruktur (`structlog`) und Composition Root richten ein. Explizit vom Projektbesitzer nachträglich erweitert (2026-08-18): im PROD-Profil (Default) dürfen Spielerprosa, Prompts und Rohantworten nicht ungefiltert im Log landen — durchgesetzt über den geschlossenen, typisierten `DiagnosticEvent`-Schema, nicht nur per Konvention; im ausdrücklich aktivierten DEBUG-Profil (`STORY_GAME_LOG_MODE=debug`) wird dagegen bewusst exzessiv geloggt, inklusive roher Prompts/Provider-Antworten (in den LM-Studio-Adaptern) und transformierter Zwischendaten an jeder Operationsgrenze (`trace()` in Application), damit auch Fehler innerhalb einer Transformation auffindbar sind. Mindestens fehlgeschlagene Modellaufrufe, verworfene Änderungsvorschläge und Revisionskonflikte sind über `record()` sichtbar. Bestehende typisierte Fehler bleiben unverändert; das Log ergänzt sie, ersetzt sie nicht. `PlayStoryTurn`/`InitializeGameRun`/die Story-Workflow-Operationen sind mangels `STORY-003` noch nicht in der FastAPI-App verdrahtet; die Diagnostics-Verdrahtung für diese Operationen lebt daher aktuell im Human-Inspection-Testbündel (`tests/infrastructure/llm/lmstudio/human_test_support.py`) sowie — für den bereits live erreichbaren Teil (`CommitCompletedTurn`) — in `api/app.py`.
+  - Completion criteria: Es ist entschieden, welche Ereignisse geloggt werden und auf welcher Stufe, wie die Ausgabe konfiguriert wird und wie die Schichtengrenzen eingehalten bleiben — die Domain loggt nicht, die Application entscheidet fachlich über einen eigenen `DiagnosticsLog`-Port (`record()`/`trace()`), Infrastruktur (`structlog`) und Composition Root richten ein. Explizit vom Projektbesitzer nachträglich erweitert (2026-08-18): im PROD-Profil (Default) dürfen Spielerprosa, Prompts und Rohantworten nicht ungefiltert im Log landen — durchgesetzt über den geschlossenen, typisierten `DiagnosticEvent`-Schema, nicht nur per Konvention; im ausdrücklich aktivierten DEBUG-Profil wird dagegen bewusst exzessiv geloggt, inklusive roher Prompts/Provider-Antworten (in den LM-Studio-Adaptern) und transformierter Zwischendaten an jeder Operationsgrenze (`trace()` in Application), damit auch Fehler innerhalb einer Transformation auffindbar sind. Mindestens fehlgeschlagene Modellaufrufe, verworfene Änderungsvorschläge und Revisionskonflikte sind über `record()` sichtbar. Bestehende typisierte Fehler bleiben unverändert; das Log ergänzt sie, ersetzt sie nicht. Der Modus ist zentral in der versionierten `configs/app.toml` (`[logging]`) gepflegt — dort steht aktuell `mode = "debug"`, weil der Projektbesitzer derzeit durchgängig mit Debug arbeitet; `STORY_GAME_LOG_MODE`/`STORY_GAME_LOG_LEVEL` bleiben als Laufzeit-Override erhalten (Env-Var schlägt Datei schlägt Hardcoded-Default), geladen über `TomlAppConfigurationLoader`/`LoggingSettings.resolve()`. Geloggt wird gleichzeitig nach stdout und in eine rotierende Datei (`logs/story-game.log`, Default 10 MiB × 5 Backups, Pfad und Rotation in derselben Config-Datei einstellbar); `logs/` ist per `.gitignore` ausgeschlossen und in `compose.yaml` als Volume gemountet, damit die Datei Container-Neustarts übersteht. `PlayStoryTurn`/`InitializeGameRun`/die Story-Workflow-Operationen sind mangels `STORY-003` noch nicht in der FastAPI-App verdrahtet; die Diagnostics-Verdrahtung für diese Operationen lebt daher aktuell im Human-Inspection-Testbündel (`tests/infrastructure/llm/lmstudio/human_test_support.py`, dort fest auf Debug verdrahtet) sowie — für den bereits live erreichbaren Teil (`CommitCompletedTurn`) — in `api/app.py`.
 
 - `TASK-016` **Mehrere gesteuerte Figuren im Director Mode**
   - Type: Task.

@@ -15,6 +15,7 @@ class ApiSettings:
     )
     prompt_root: str = "prompts"
     auto_migrate: bool = True
+    config_path: str = "configs/app.toml"
 
     @classmethod
     def from_environment(cls) -> ApiSettings:
@@ -29,6 +30,7 @@ class ApiSettings:
             auto_migrate=_boolean_environment(
                 "STORY_GAME_AUTO_MIGRATE", default=defaults.auto_migrate
             ),
+            config_path=os.environ.get("STORY_GAME_CONFIG_PATH", defaults.config_path),
         )
 
 

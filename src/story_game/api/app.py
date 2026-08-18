@@ -36,7 +36,9 @@ def create_app(
     logging_settings: LoggingSettings | None = None,
 ) -> FastAPI:
     resolved_settings = settings or ApiSettings.from_environment()
-    resolved_logging_settings = logging_settings or LoggingSettings.from_environment()
+    resolved_logging_settings = logging_settings or LoggingSettings.resolve(
+        resolved_settings.config_path
+    )
     configure_logging(resolved_logging_settings)
     diagnostics = StructlogDiagnosticsLog(
         debug_enabled=resolved_logging_settings.debug_enabled

@@ -2,3 +2,4 @@
 .agent-harness-worktrees/
 __pycache__/
 *.py[cod]
+logs/

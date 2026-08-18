@@ -29,7 +29,7 @@ model_id = "mistralai/mistral-small-3.2"
 id = "model.extraction.default"
 task = "extraction"
 provider_id = "lmstudio"
-model_id = "Meta-Llama-3.1-8B-Instruct-GGUF-Q4_K_M"
+model_id = "llama@q4_k_m"
 
 [[models]]
 id = "model.summary.default"

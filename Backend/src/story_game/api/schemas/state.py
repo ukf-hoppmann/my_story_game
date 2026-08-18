@@ -47,7 +47,7 @@ class GameStateModel(APIModel):
 
 
 class GameDocument(APIModel):
-    """Temporary full-state API contract used to exercise persistence."""
+    """Versioned transport document for a complete run and game-state snapshot."""
 
     schema_version: Literal[1] = 1
     game_run: GameRunModel

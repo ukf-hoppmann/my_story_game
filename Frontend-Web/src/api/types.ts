@@ -1,6 +1,6 @@
 // Hand-written types mirroring the backend's Pydantic schemas
-// (Backend/src/story_game/api/schemas/). Kept in sync manually — see the
-// plan's reasoning for not introducing OpenAPI codegen at this scale yet.
+// (Backend/src/story_game/api/schemas/). They are deliberately maintained
+// without OpenAPI code generation while the frontend remains a small MVP.
 
 export type GameRunStatus = "draft" | "active" | "paused" | "completed";
 export type GameRole = "owner" | "player";

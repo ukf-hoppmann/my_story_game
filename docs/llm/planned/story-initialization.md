@@ -1,9 +1,9 @@
 # Story-Initialisierung: Vertrag und konkreter Umsetzungsplan
 
 Status: `STORY-008`, `STORY-009` und `TASK-007` bis `TASK-012` sind am
-2026-08-10 umgesetzt und verifiziert. Der vollständige Workflow liefert
-transient StoryState und WorldState. Persistenz, HTTP-API und der erste reguläre
-Spielzug bleiben außerhalb dieses Increments.
+2026-08-10 umgesetzt und verifiziert. Der hier beschriebene Initialisierungs-
+Workflow liefert transient StoryState und WorldState; Persistenz, HTTP-API und
+der reguläre Spielzug wurden anschließend in separaten Workflows umgesetzt.
 
 ## Umsetzungsergebnis
 
@@ -344,10 +344,10 @@ Erweiterung darf nicht zu einem untypisierten Universal-LLM-Service führen.
 - Kontext: Adapter verantwortet Providerformat, JSON-Parsing und Schema;
   Application-Vertrag verantwortet die fachliche Ergebnisform.
 - Abhängigkeiten: Subtask 1 für Modus-/Charakterkontext.
-- Akzeptanz: Der Request enthält keine verbotenen Storyfelder; das Schema
-  erlaubt nur Entities, Links und Facts; technisch ungültige Antworten werden
-  als sichtbarer `INVALID_RESPONSE` zurückgegeben; Rohantworten überschreiten
-  den Port nicht.
+  - Akzeptanz: Der Request enthält keine verbotenen Storyfelder; das Schema
+  erlaubt Entities, Links, Facts und geordnete Scene-Referenzen; technisch
+  ungültige Antworten werden als sichtbarer `INVALID_RESPONSE` zurückgegeben;
+  Rohantworten überschreiten den Port nicht.
 - Verifikation: Contract-, Client- und Adaptertests für Payload, Erfolg,
   unbekannte Felder, falsche Typen, ungültige Enums, leeres JSON, Text statt
   JSON, Abbruch und Providerfehler.

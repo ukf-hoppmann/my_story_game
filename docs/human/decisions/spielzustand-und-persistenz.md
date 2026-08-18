@@ -3,10 +3,11 @@
 Status: Beschlossen. Domain- und Persistenzmodell umgesetzt am 2026-08-06.
 
 Dieses Dokument erklärt die gemeinsam getroffenen fachlichen Entscheidungen.
-Das beschriebene Domain- und PostgreSQL-Modell ist umgesetzt. Promptkatalog,
-Story-Workflow und die fachliche LLM-Integration bleiben spätere
-Arbeitsschritte; die zentrale Provider- und Modellkonfiguration ist separat
-unter `configs/llm.toml` umgesetzt.
+Das beschriebene Domain- und PostgreSQL-Modell, der Promptkatalog, die
+fachliche LLM-Integration und der reguläre Story-Workflow sind umgesetzt. Die
+zentrale Provider- und Modellkonfiguration liegt separat unter
+`configs/llm.toml`; spätere UI- und Provider-Erweiterungen bleiben außerhalb
+dieser Entscheidung.
 
 ## Warum wir das Modell ändern
 
@@ -77,19 +78,16 @@ Spielpartie gelten und beim Fortsetzen erhalten bleiben müssen.
 
 Die spätere Entscheidung
 [`Promptprofil und aktuelle Modellwahl`](promptprofil-und-modellwahl.md)
-konkretisiert und ersetzt die folgende ursprüngliche Feldaufteilung: Die
-Erzählvorgaben sollen künftig als explizites Promptprofil gespeichert werden,
-während die aktive Modellwahl eine globale Systemeinstellung je Aufgabe bleibt.
-Dieser Zielstand ist noch nicht umgesetzt.
+konkretisiert die inzwischen umgesetzte Feldaufteilung: Die Erzählvorgaben
+werden als explizites Promptprofil gespeichert, während die aktive Modellwahl
+eine globale Systemeinstellung je Aufgabe bleibt.
 
-Sie enthält beispielsweise:
+Sie enthält:
 
 - Sprache;
-- Erzählstil;
-- Erzählperspektive;
-- Steuerungsmodus;
+- ein vollständiges `PromptProfile` mit Erzählstil, Perspektive und
+  Steuerungsmodus;
 - erzählerische Grenzen und feste Vorgaben;
-- ausgewählte Modelle für Story, Extraktion und Zusammenfassung;
 - ausgewähltes Prompt-Paket und dessen Version.
 
 API-Schlüssel, Anbieter-URLs und laufende Modellaufrufe gehören nicht hinein.
@@ -247,8 +245,8 @@ Repository verwaltet.
 - Das vollständige Promptpaket enthält Katalogdaten, Zuordnungen und Texte in
   einer versionierten TOML-Datei.
 - Separate Prompt-Textdateien werden für dieses Paket nicht verwendet.
-- JSON beschreibt weiterhin strukturierte Ausgabeformate für Modelle, sofern
-  ein späterer Application-Vertrag sie benötigt.
+- JSON beschreibt weiterhin die strukturierten Ausgabeformate der
+  modellbasierten Extraction-Verträge.
 - Statische Einträge verwenden lesbare IDs wie `story.base`.
 - Geheimnisse werden getrennt über die Laufzeitumgebung bereitgestellt.
 

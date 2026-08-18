@@ -1,7 +1,8 @@
 # Entscheidung: Promptprofil und aktuelle Modellwahl
 
-Status: Auswahlsemantik umgesetzt am 2026-08-10; die bedingte Control-Mode-
-Semantik ist beschlossen und für die nächste Story-Init-Erweiterung geplant.
+Status: Auswahlsemantik und bedingte Control-Mode-Semantik umgesetzt am
+2026-08-10. Story-Initialisierung und regulärer Story-Workflow verwenden diese
+Verträge.
 
 Diese Entscheidung konkretisiert die frühere Entscheidung zu Spielzustand und
 Persistenz für `GameConfiguration` und die Entscheidung zur
@@ -226,5 +227,5 @@ Darstellung, Transport und technische Ergebnisnormalisierung.
 
 Die Umsetzung ersetzt den bestehenden Domain-, API- und Persistenzvertrag
 bewusst ohne Legacy-Schicht. Technische Dokumente beschreiben den neuen
-Ist-Zustand; Story-Orchestrierung, Summary-Promptvorbereitung und eine UI für
-Paketoptionen oder globale Modellwahl bleiben davon getrennte Folgearbeiten.
+Ist-Zustand; eine UI für Paketoptionen oder globale Modellwahl und weitere
+Provider bleiben davon getrennte Folgearbeiten.

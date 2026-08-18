@@ -1,11 +1,13 @@
 # Geplante Story-Erzeugung über austauschbare Modelle
 
-Status: Ein vollständiger Storyzug ist implementiert — Kontextauswahl,
+Status: Der vollständige Storyzug ist implementiert — Kontextauswahl,
 Story-Erzeugung, Turn-Extraction, Freigabe, rollierende Zusammenfassung und
-atomarer Commit — und über einen Live-Checkpoint gegen echtes LM Studio prüfbar
-(`TestStoryTurnHuman.test_full_turn`, opt-in mit `--run-lmstudio-live`). Noch
-nicht implementiert sind die Verdrahtung des Providers im Composition Root und
-ein HTTP-Endpunkt.
+atomarer Commit. Die Provider-Verdrahtung im Composition Root und die
+Laufzeit-API sind ebenfalls umgesetzt. Ein vollständiger Ablauf ist über das
+opt-in Human-Inspection-Bündel gegen echtes LM Studio und PostgreSQL prüfbar.
+Offen bleiben ausgewählte Ausbaupunkte wie historische Kontextdaten,
+automatischer Review, die Kennzeichnung verdeckten Wissens und weitere
+Provider/UI-Konfiguration.
 Grundlage: [Entscheidung zur LLM-Anbindung](../../decisions/llm-anbindung.md),
 die [Entscheidung zu Promptprofil und Modellwahl](../../decisions/promptprofil-und-modellwahl.md)
 und der verbindliche
@@ -19,9 +21,9 @@ Turn-Commit-Grenze. Die zentrale Laufzeitkonfiguration unter
 `configs/llm.toml` definiert je ein Modell für Story, Extraction und Summary.
 Die LM-Studio-Infrastruktur kann die definierte Story-Grenze live aufrufen und
 normalisierte Prosa oder einen `LLMError` liefern. Das versionierte
-Ein-Datei-Promptpaket und der validierende dateibasierte Catalog sind umgesetzt;
-Story-Operation, Story-API und WorldState-Extraction-Workflow bleiben noch
-nicht implementiert.
+Ein-Datei-Promptpaket und der validierende dateibasierte Catalog sind umgesetzt.
+`PlayStoryTurn`, `InitializeGameRun`, die Turn-Extraction, die Summary und die
+HTTP-API sind in der Composition Root verdrahtet.
 
 `GameConfiguration` speichert ein vollständiges explizites Promptprofil,
 erzählerische Grenzen sowie Paket-ID und -version. Die drei Modellreferenzen
@@ -44,12 +46,12 @@ Extraction- und Summary-Modell. Sie löst die zum Auftrag gehörende logische
 Referenz in eine konkrete `ModelSelection` auf. Diese Auswahl wird nicht mehr
 in der Partie eingefroren.
 
-## Ziel
+## Umgesetztes Zielbild
 
-Die erste Umsetzung soll über LM Studio Story-Prosa erzeugen können, ohne die
-Application an LM Studio zu binden. Ein späterer Wechsel zu einem API-Provider
-soll durch Konfiguration, Provider-Client und Adapter erfolgen, nicht durch eine
-Änderung der Story-Operation.
+Die Umsetzung erzeugt über LM Studio Story-Prosa, ohne die Application an LM
+Studio zu binden. Ein späterer Wechsel zu einem API-Provider erfolgt durch
+Konfiguration, Provider-Client und Adapter, nicht durch eine Änderung der
+Story-Operation.
 
 Diese Planung behandelt nur die Story-Erzeugungsgrenze und ihre direkte
 Einordnung in den Storyzug. Extraction wird separat konkretisiert, verwendet
@@ -65,7 +67,7 @@ aber anschließend denselben allgemeinen Modellaufruf.
   Storyzugs;
 - keine vorsorgliche Unterstützung aller Provideroptionen.
 
-## Geplanter Ablauf
+## Implementierter Ablauf
 
 ```text
 aktuellen GameState und Userprompt laden
@@ -94,10 +96,10 @@ UI mit dem abgeschlossenen Zustand aktualisieren
 Modellaufruf und Extraction bleiben außerhalb der Datenbanktransaktion. Bei
 einem Fehler vor dem finalen Commit bleibt die vorherige Revision gültig.
 
-## Geplante Verträge
+## Implementierte Verträge
 
-Die folgenden Namen sind Arbeitsnamen für die spätere konkrete
-Schnittstellenplanung.
+Die folgenden Namen bezeichnen die aktuell implementierten fachlichen Grenzen;
+einzelne Ausbauentscheidungen bleiben in den unten genannten offenen Punkten.
 
 ### Gemeinsame Call-Hülle
 
@@ -168,7 +170,7 @@ Ob das Feld im Code `story`, `text` oder passend zum bestehenden Domainbegriff
 `narration` heißt, wird bei der Schnittstellendefinition entschieden. Es enthält
 immer ausschließlich normalisierte Story-Prosa.
 
-## Geplante Verantwortungen
+## Implementierte Verantwortungen
 
 ### Application
 
@@ -368,9 +370,10 @@ Scheitert sie, **bricht der Zug nicht ab**. Prosa und Änderungen sind zu diesem
 Zeitpunkt längst berechnet; sie wegen des Nebenprodukts zu verwerfen wäre der
 schlechtere Tausch. Der Zug wird regulär persistiert, und der Fehler bleibt im
 Ergebnis sichtbar, damit eine UI ihn anzeigen kann, statt still ohne
-Zusammenfassung weiterzulaufen. Ein dauerhafter Logeintrag, an dem sich
-wiederkehrende Fehlschläge erkennen ließen, fehlt noch — das Projekt hat
-bislang kein Logging.
+Zusammenfassung weiterzulaufen. Die projektweite Logging-Grundlage macht
+wiederkehrende Modell-, Vorschlags-, Konflikt- und Summaryfehler inzwischen
+als typisierte Diagnoseereignisse sichtbar; ausführliche Rohdaten bleiben auf
+das ausdrücklich aktivierte Debug-Profil begrenzt.
 
 ## Vollständiger Zug
 
@@ -394,27 +397,18 @@ persistierten Vorschlag samt Modellbegründungen, siehe „Belege" — und
 Sonderfall. Beide Felder sind optional und `None`, wenn nichts zu berichten
 ist.
 
-## Offene Entscheidungen vor der Implementierung
+## Verbleibende Ausbauentscheidungen
 
-- konkrete Python-Typen und Modulpfade;
-- genaue Struktur der Kontextprojektionen;
-- erste verbindliche `LLMError`-Varianten und Retryregeln;
-- LM-Studio-Endpoint und dessen Providerformat;
-- tatsächlich benötigte Generierungsoptionen;
-- Streaming ja oder nein;
-- Auswahl der ersten Extraction-Variante für den vollständigen Storyzug;
-- Grenze und Freigabe für einen optionalen Live-Test mit lokalem LM Studio;
 - ob und wie verdecktes Wissen im Prompt gekennzeichnet wird, damit das Modell
   es für Andeutungen nutzen kann, ohne es wörtlich zu verraten — der erste Wurf
   kennzeichnet bewusst gar nicht;
 - ob die Budgets zusätzlich zu Anzahlgrenzen ein Tokenbudget benötigen;
 - ob der Graph-Radius über einen Hop hinaus erweitert wird;
-- die Zustandsoperation, mit der die Turn-Extraction `scene_location_ids`
-  fortschreibt.
+- die Auswahl späterer spezialisierter Extraction-Varianten;
+- historische Daten im Turn-Kontext und eine UI für Provider-/Modellwahl.
 
 ## Dokumentationsfolgen
 
-Mit der Implementierung müssen aktuelle technische Dokumentation,
-Konfigurationsbeschreibung, Betriebsanleitung und API-Verhalten aktualisiert
-werden. Dieses Dokument bleibt bis dahin ein Zielbild und darf nicht als
-implementierter Stand beschrieben werden.
+Die aktuelle API-, Persistenz- und Betriebsdokumentation beschreibt die
+öffentlichen Verträge. Dieses Dokument bewahrt zusätzlich die fachliche
+Herleitung und die noch offenen Ausbaupunkte des Storyzuges.

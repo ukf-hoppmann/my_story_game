@@ -273,7 +273,7 @@ After explicit rejection:
 
 - `EPIC-002` **LLM-Anbindung und Storyzug-Workflow**
   - Type: Epic.
-  - Status: Open.
+  - Status: In progress.
   - Created: 2026-08-07.
   - Area: LLM-Integration und Story-Workflow.
   - Priority: Wichtig.
@@ -283,7 +283,7 @@ After explicit rejection:
 
 - `STORY-004` **Anbindungsverträge definieren**
   - Type: Story.
-  - Status: Open.
+  - Status: Awaiting confirmation.
   - Parent: `EPIC-002`.
   - Required for parent: Yes.
   - Created: 2026-08-06.
@@ -295,7 +295,7 @@ After explicit rejection:
 
 - `STORY-005` **LLM anbinden**
   - Type: Story.
-  - Status: Open.
+  - Status: Awaiting confirmation.
   - Parent: `EPIC-002`.
   - Required for parent: Yes.
   - Created: 2026-08-07.
@@ -655,7 +655,7 @@ After explicit rejection:
   - Priority: Wichtig.
   - Dependencies: None.
   - Goal: Eine schlanke, projektweite Logging-Grundlage schaffen. Das Projekt enthielt zuvor kein einziges Log: weder Modellaufrufe noch verworfene Vorschläge, Revisionskonflikte oder Providerfehler hinterließen eine Spur. Wiederkehrende Probleme im Spielbetrieb waren dadurch nicht erkennbar.
-  - Completion criteria: Es ist entschieden, welche Ereignisse geloggt werden und auf welcher Stufe, wie die Ausgabe konfiguriert wird und wie die Schichtengrenzen eingehalten bleiben — die Domain loggt nicht, die Application entscheidet fachlich über einen eigenen `DiagnosticsLog`-Port (`record()`/`trace()`), Infrastruktur (`structlog`) und Composition Root richten ein. Explizit vom Projektbesitzer nachträglich erweitert (2026-08-18): im PROD-Profil (Default) dürfen Spielerprosa, Prompts und Rohantworten nicht ungefiltert im Log landen — durchgesetzt über den geschlossenen, typisierten `DiagnosticEvent`-Schema, nicht nur per Konvention; im ausdrücklich aktivierten DEBUG-Profil wird dagegen bewusst exzessiv geloggt, inklusive roher Prompts/Provider-Antworten (in den LM-Studio-Adaptern) und transformierter Zwischendaten an jeder Operationsgrenze (`trace()` in Application), damit auch Fehler innerhalb einer Transformation auffindbar sind. Mindestens fehlgeschlagene Modellaufrufe, verworfene Änderungsvorschläge und Revisionskonflikte sind über `record()` sichtbar. Bestehende typisierte Fehler bleiben unverändert; das Log ergänzt sie, ersetzt sie nicht. Der Modus ist zentral in der versionierten `configs/app.toml` (`[logging]`) gepflegt — dort steht aktuell `mode = "debug"`, weil der Projektbesitzer derzeit durchgängig mit Debug arbeitet; `STORY_GAME_LOG_MODE`/`STORY_GAME_LOG_LEVEL` bleiben als Laufzeit-Override erhalten (Env-Var schlägt Datei schlägt Hardcoded-Default), geladen über `TomlAppConfigurationLoader`/`LoggingSettings.resolve()`. Geloggt wird gleichzeitig nach stdout und in eine rotierende Datei (`logs/story-game.log`, Default 10 MiB × 5 Backups, Pfad und Rotation in derselben Config-Datei einstellbar); `logs/` ist per `.gitignore` ausgeschlossen und in `compose.yaml` als Volume gemountet, damit die Datei Container-Neustarts übersteht. `PlayStoryTurn`/`InitializeGameRun`/die Story-Workflow-Operationen sind mangels `STORY-003` noch nicht in der FastAPI-App verdrahtet; die Diagnostics-Verdrahtung für diese Operationen lebt daher aktuell im Human-Inspection-Testbündel (`tests/infrastructure/llm/lmstudio/human_test_support.py`, dort fest auf Debug verdrahtet) sowie — für den bereits live erreichbaren Teil (`CommitCompletedTurn`) — in `api/app.py`.
+  - Completion criteria: Es ist entschieden, welche Ereignisse geloggt werden und auf welcher Stufe, wie die Ausgabe konfiguriert wird und wie die Schichtengrenzen eingehalten bleiben — die Domain loggt nicht, die Application entscheidet fachlich über einen eigenen `DiagnosticsLog`-Port (`record()`/`trace()`), Infrastruktur (`structlog`) und Composition Root richten ein. Explizit vom Projektbesitzer nachträglich erweitert (2026-08-18): im PROD-Profil (Default) dürfen Spielerprosa, Prompts und Rohantworten nicht ungefiltert im Log landen — durchgesetzt über das geschlossene, typisierte `DiagnosticEvent`-Schema, nicht nur per Konvention; im ausdrücklich aktivierten DEBUG-Profil wird dagegen bewusst exzessiv geloggt, inklusive roher Prompts/Provider-Antworten (in den LM-Studio-Adaptern) und transformierter Zwischendaten an jeder Operationsgrenze (`trace()` in Application), damit auch Fehler innerhalb einer Transformation auffindbar sind. Mindestens fehlgeschlagene Modellaufrufe, verworfene Änderungsvorschläge und Revisionskonflikte sind über `record()` sichtbar. Bestehende typisierte Fehler bleiben unverändert; das Log ergänzt sie, ersetzt sie nicht. Der Modus ist zentral in der versionierten `configs/app.toml` (`[logging]`) gepflegt — dort steht aktuell `mode = "debug"`, weil der Projektbesitzer derzeit durchgängig mit Debug arbeitet; `STORY_GAME_LOG_MODE`/`STORY_GAME_LOG_LEVEL` bleiben als Laufzeit-Override erhalten (Env-Var schlägt Datei schlägt Hardcoded-Default), geladen über `TomlAppConfigurationLoader`/`LoggingSettings.resolve()`. Geloggt wird gleichzeitig nach stdout und in eine rotierende Datei (`logs/story-game.log`, Default 10 MiB × 5 Backups, Pfad und Rotation in derselben Config-Datei einstellbar); `logs/` ist per `.gitignore` ausgeschlossen und in `compose.yaml` als Volume gemountet, damit die Datei Container-Neustarts übersteht. `PlayStoryTurn`, `InitializeGameRun` und die Story-Workflow-Operationen sind in der FastAPI-App verdrahtet; die Diagnostics-Verdrahtung lebt im Composition Root und im Human-Inspection-Testbündel (`tests/infrastructure/llm/lmstudio/human_test_support.py`, dort bewusst fest auf Debug verdrahtet).
 
 - `TASK-016` **Mehrere gesteuerte Figuren im Director Mode**
   - Type: Task.

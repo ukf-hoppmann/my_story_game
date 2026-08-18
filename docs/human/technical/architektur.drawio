@@ -277,7 +277,7 @@
         <mxCell id="applicationDetailApi" value="&lt;b&gt;REST API / Router&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;HTTP-Adapter&lt;br&gt;validiert Transportdaten&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EAF3FF;strokeColor=#6B93C6;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="applicationDetailDriving">
           <mxGeometry x="35" y="72" width="290" height="76" as="geometry" />
         </mxCell>
-        <mxCell id="applicationDetailRequests" value="&lt;b&gt;Typed Requests&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;Create · Load · Configure&lt;br&gt;Commit Turn&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EAF3FF;strokeColor=#6B93C6;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="applicationDetailDriving">
+        <mxCell id="applicationDetailRequests" value="&lt;b&gt;Typed Requests&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;Initialize · Create · Load · Fork&lt;br&gt;Play turn · Configure · Commit&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EAF3FF;strokeColor=#6B93C6;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="applicationDetailDriving">
           <mxGeometry x="370" y="72" width="300" height="76" as="geometry" />
         </mxCell>
         <mxCell id="applicationDetailContract" value="&lt;b&gt;Operation.apply(request)&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;Success&lt;Data&gt; oder Failure&lt;Error&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EAF3FF;strokeColor=#6B93C6;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="applicationDetailDriving">
@@ -296,25 +296,25 @@
         <mxCell id="applicationDetailUseCases" value="&lt;b&gt;Use Cases&lt;/b&gt;" style="swimlane;html=1;rounded=1;horizontal=1;startSize=36;fillColor=#FFE1DF;strokeColor=#D97A73;strokeWidth=1.5;fontColor=#26364D;fontSize=15;fontStyle=1;spacingTop=8;" vertex="1" parent="applicationDetailCore">
           <mxGeometry x="25" y="62" width="1010" height="330" as="geometry" />
         </mxCell>
-        <mxCell id="applicationDetailCreate" value="&lt;b&gt;CreateGameRun&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;Revision 1 prüfen&lt;br&gt;Run + State anlegen&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8F7;strokeColor=#D97A73;strokeWidth=1;fontColor=#26364D;fontSize=13;align=left;verticalAlign=middle;spacingLeft=12;" vertex="1" parent="applicationDetailUseCases">
+        <mxCell id="applicationDetailCreate" value="&lt;b&gt;InitializeGameRun&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;Story + World initialisieren&lt;br&gt;an CreateGameRun übergeben&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8F7;strokeColor=#D97A73;strokeWidth=1;fontColor=#26364D;fontSize=13;align=left;verticalAlign=middle;spacingLeft=12;" vertex="1" parent="applicationDetailUseCases">
           <mxGeometry x="20" y="58" width="225" height="82" as="geometry" />
         </mxCell>
-        <mxCell id="applicationDetailLoad" value="&lt;b&gt;LoadGame&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;Run + State laden&lt;br&gt;Mitglieder validieren&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8F7;strokeColor=#D97A73;strokeWidth=1;fontColor=#26364D;fontSize=13;align=left;verticalAlign=middle;spacingLeft=12;" vertex="1" parent="applicationDetailUseCases">
+        <mxCell id="applicationDetailLoad" value="&lt;b&gt;LoadGame / StartPlaythrough&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;Vorlage laden oder Lauf laden&lt;br&gt;Mitgliedschaft validieren&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8F7;strokeColor=#D97A73;strokeWidth=1;fontColor=#26364D;fontSize=13;align=left;verticalAlign=middle;spacingLeft=12;" vertex="1" parent="applicationDetailUseCases">
           <mxGeometry x="265" y="58" width="225" height="82" as="geometry" />
         </mxCell>
         <mxCell id="applicationDetailConfigure" value="&lt;b&gt;UpdateGameConfiguration&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;Configuration-Revision&lt;br&gt;persistieren&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8F7;strokeColor=#D97A73;strokeWidth=1;fontColor=#26364D;fontSize=13;align=left;verticalAlign=middle;spacingLeft=12;" vertex="1" parent="applicationDetailUseCases">
           <mxGeometry x="510" y="58" width="225" height="82" as="geometry" />
         </mxCell>
-        <mxCell id="applicationDetailCommit" value="&lt;b&gt;CommitCompletedTurn&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;Turn bauen&lt;br&gt;Änderungen + Story gemeinsam committen&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8F7;strokeColor=#D97A73;strokeWidth=1;fontColor=#26364D;fontSize=13;align=left;verticalAlign=middle;spacingLeft=12;" vertex="1" parent="applicationDetailUseCases">
+        <mxCell id="applicationDetailCommit" value="&lt;b&gt;PlayStoryTurn / CommitCompletedTurn&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;Storyzug orchestrieren&lt;br&gt;Änderungen + Story gemeinsam committen&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8F7;strokeColor=#D97A73;strokeWidth=1;fontColor=#26364D;fontSize=13;align=left;verticalAlign=middle;spacingLeft=12;" vertex="1" parent="applicationDetailUseCases">
           <mxGeometry x="755" y="58" width="230" height="82" as="geometry" />
         </mxCell>
-        <mxCell id="applicationDetailWorkflow" value="&lt;b&gt;Ablauf&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;lesen → Domain anwenden → schreiben&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8F7;strokeColor=#D97A73;strokeWidth=1;fontColor=#26364D;fontSize=13;align=left;verticalAlign=middle;spacingLeft=12;" vertex="1" parent="applicationDetailUseCases">
+        <mxCell id="applicationDetailWorkflow" value="&lt;b&gt;Abläufe&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;Initialisieren · Laden · Abzweigen · Spielen&lt;br&gt;mit fokussierten Operationen&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8F7;strokeColor=#D97A73;strokeWidth=1;fontColor=#26364D;fontSize=13;align=left;verticalAlign=middle;spacingLeft=12;" vertex="1" parent="applicationDetailUseCases">
           <mxGeometry x="20" y="190" width="300" height="72" as="geometry" />
         </mxCell>
         <mxCell id="applicationDetailErrorMapping" value="&lt;b&gt;Error Mapping&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;Domain- und Store-Fehler&lt;br&gt;→ typed Application-Fehler&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8F7;strokeColor=#D97A73;strokeWidth=1;fontColor=#26364D;fontSize=13;align=left;verticalAlign=middle;spacingLeft=12;" vertex="1" parent="applicationDetailUseCases">
           <mxGeometry x="345" y="190" width="300" height="72" as="geometry" />
         </mxCell>
-        <mxCell id="applicationDetailOperations" value="&lt;b&gt;GameStateOperations&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;create · load · update_configuration&lt;br&gt;commit_turn&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8F7;strokeColor=#D97A73;strokeWidth=1;fontColor=#26364D;fontSize=13;align=left;verticalAlign=middle;spacingLeft=12;" vertex="1" parent="applicationDetailUseCases">
+        <mxCell id="applicationDetailOperations" value="&lt;b&gt;GameStateOperations&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot;&gt;create · load · update_configuration&lt;br&gt;commit_turn · list_playable_runs&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8F7;strokeColor=#D97A73;strokeWidth=1;fontColor=#26364D;fontSize=13;align=left;verticalAlign=middle;spacingLeft=12;" vertex="1" parent="applicationDetailUseCases">
           <mxGeometry x="670" y="190" width="315" height="72" as="geometry" />
         </mxCell>
 
@@ -381,7 +381,7 @@
         <mxCell id="llmTitle" value="LLM-Ablauf – Story-Zug" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=28;fontStyle=1;fontColor=#26364D;" vertex="1" parent="llmDetail1">
           <mxGeometry x="60" y="30" width="850" height="45" as="geometry" />
         </mxCell>
-        <mxCell id="llmStatus" value="&lt;b&gt;Grundarchitektur umgesetzt&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;font-weight:normal&quot;&gt;Provider und Story-Start funktionieren; der reguläre Story-Zug mit Turn-Extraction folgt später.&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8E8;strokeColor=#D7A65C;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="llmDetail1">
+        <mxCell id="llmStatus" value="&lt;b&gt;Storyzug umgesetzt&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;font-weight:normal&quot;&gt;Provider, Story-Start, Turn-Extraction, Freigabe, Summary und atomarer Commit sind verdrahtet.&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E1;strokeColor=#7EB463;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="llmDetail1">
           <mxGeometry x="980" y="30" width="540" height="58" as="geometry" />
         </mxCell>
 
@@ -416,7 +416,7 @@
         <mxCell id="llmValidation" value="&lt;b&gt;Application + Domain-Prüfung&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:13px;font-weight:normal&quot;&gt;LLM-Ergebnisse sind Vorschläge – niemals direkt kanonischer Zustand.&lt;/font&gt;" style="swimlane;html=1;rounded=1;horizontal=1;startSize=48;fillColor=#F9DDA1;strokeColor=#D7A65C;strokeWidth=2;fontColor=#26364D;fontSize=18;fontStyle=1;spacingTop=10;" vertex="1" parent="llmDetail1">
           <mxGeometry x="60" y="440" width="1460" height="235" as="geometry" />
         </mxCell>
-        <mxCell id="llmCandidates" value="&lt;b&gt;Extraction-Kandidaten&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;Entities · Links · Facts&lt;br&gt;Knowledge · Goals&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3D6;strokeColor=#D7A65C;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="llmValidation">
+        <mxCell id="llmCandidates" value="&lt;b&gt;Extraction-Kandidaten&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;Entities · Links · Facts&lt;br&gt;Scene · removals&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3D6;strokeColor=#D7A65C;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="llmValidation">
           <mxGeometry x="30" y="75" width="285" height="95" as="geometry" />
         </mxCell>
         <mxCell id="llmSemanticValidation" value="&lt;b&gt;Fachlich prüfen&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px&quot;&gt;Referenzen · Domain-Regeln&lt;br&gt;Plausibilität · Aggregation&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3D6;strokeColor=#D7A65C;strokeWidth=1.5;fontColor=#26364D;fontSize=14;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="llmValidation">

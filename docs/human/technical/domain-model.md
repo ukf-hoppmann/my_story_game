@@ -99,8 +99,9 @@ und braucht eine eigene Aussage. Der Zeiger darf deshalb nicht als redundanter
 Zustand entfernt werden.
 
 Den ersten Wert setzt die initiale WorldState-Extraktion aus der
-Eröffnungsprosa. Eine Zustandsoperation zum Fortschreiben pro Zug gehört zur
-noch offenen Turn-Extraktion und existiert bewusst noch nicht.
+Eröffnungsprosa. Für reguläre Züge stehen `SetSceneLocations` und `RemoveFact`
+als freigegebene Zustandsoperationen zur Verfügung; die Turn-Extraction kann
+damit Schauplätze fortschreiben und nicht mehr geltende Fakten entfernen.
 
 ## StoryState
 

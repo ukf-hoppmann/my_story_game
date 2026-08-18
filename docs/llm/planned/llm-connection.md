@@ -1,8 +1,9 @@
 # Geplante LLM-Anbindung
 
-Status: Der allgemeine Rahmen und die Story-Grenze sind implementiert; die
-LM-Studio-Anbindung ist als erster Provider umgesetzt. Story-Workflow und
-Extraction bleiben geplant.
+Status: Der allgemeine Rahmen, die Story-Grenze, die LM-Studio-Anbindung als
+erster Provider und der reguläre StoryTurn-Workflow einschließlich Extraction
+sind umgesetzt. Verbleibende Punkte betreffen spezialisierte Extraction,
+historische Kontextdaten und weitere Provider/UI-Konfiguration.
 
 Verbindlichkeit: Der Architekturvertrag bleibt unter
 [`.harness/architecture/llm-integration.md`](../../../.harness/architecture/llm-integration.md)
@@ -167,9 +168,8 @@ Status: Vertrag auf Architekturebene geklärt.
 Paketversion bleiben Teil der Konfiguration.
 
 Die Application lädt das referenzierte Paket, prüft jede Options-ID in ihrer
-bekannten Kategorie und stellt die aufgelösten Beschreibungen für die spätere
-Request-Erzeugung bereit. Der noch geplante Story-Workflow bildet daraus den
-vollständigen `StoryGenerationRequest`. Der Adapter erhält keine
+bekannten Kategorie und bildet daraus im Story-Workflow den vollständigen
+`StoryGenerationRequest`. Der Adapter erhält keine
 unaufgelösten Profil-IDs und setzt keine Defaults.
 
 Paketdefaults belegen nur ein neues Profil vor. Das vollständige effektive
@@ -297,8 +297,9 @@ allgemeine Vertrag lediglich die Existenz von `generation_options` festlegt.
 
 ## Extraction
 
-Status: Der allgemeine Vertrag und der eigene Initial-Extraction-Vertrag sind
-umgesetzt; die Extraction nach regulären Spielzügen bleibt Folgearbeit.
+Status: Der allgemeine Vertrag, der Initial-Extraction-Vertrag und die
+Extraction nach regulären Spielzügen sind umgesetzt. Die erste Paketversion
+nutzt die gemeinsame Variante; spezialisierte Varianten bleiben offen.
 
 Die initiale Extraction verwendet `worldstate_initialization`, eine spätere
 Turn-Extraction `worldstate_extraction`; beide verwenden ausschließlich die

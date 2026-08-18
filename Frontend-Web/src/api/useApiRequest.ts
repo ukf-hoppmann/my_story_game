@@ -9,7 +9,8 @@ export type ApiRequestState<T> =
 
 /**
  * Wraps one async API action with a discriminated-union loading state.
- * No caching/revalidation library at this scale — see the plan's reasoning.
+ * The MVP intentionally leaves caching and revalidation to a later frontend
+ * increment.
  */
 export function useApiRequest<Args extends unknown[], T>(
   action: (...args: Args) => Promise<T>,

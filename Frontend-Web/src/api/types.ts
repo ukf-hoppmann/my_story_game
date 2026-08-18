@@ -9,7 +9,7 @@ export type ActorRole = "player" | "npc" | "neutral";
 export type GoalKind = "main" | "side";
 export type GoalStatus = "open" | "completed" | "failed";
 
-export interface PlayerCharacterSeed {
+export interface ControllableCharacterSeed {
   name: string;
   description?: string;
 }
@@ -31,7 +31,7 @@ export interface GameRunMember {
   issuer: string;
   subject: string;
   game_role: GameRole;
-  player_entity_id: string | null;
+  controlled_entity_ids: string[];
 }
 
 export interface GameRun {
@@ -120,7 +120,7 @@ export interface InitializeRunRequest {
   run_name: string;
   initial_prompt: string;
   control_mode: ControlMode;
-  player_character?: PlayerCharacterSeed;
+  controllable_characters: ControllableCharacterSeed[];
 }
 
 export interface PlayTurnRequest {

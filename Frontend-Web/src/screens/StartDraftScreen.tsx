@@ -26,9 +26,10 @@ export function StartDraftScreen({ onBack, onPlaythroughStarted }: Props) {
       run_name: runName,
       initial_prompt: initialPrompt,
       control_mode: controlMode,
-      ...(controlMode === "player"
-        ? { player_character: { name: characterName, description: characterDescription } }
-        : {}),
+      controllable_characters:
+        controlMode === "player"
+          ? [{ name: characterName, description: characterDescription }]
+          : [],
     });
     if (!draft) return;
 

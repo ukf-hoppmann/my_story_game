@@ -9,7 +9,7 @@ import subprocess
 from typing import Sequence
 
 
-KNOWN_SERVICES = ("api", "postgres")
+KNOWN_SERVICES = ("backend", "postgres", "frontend")
 SERVICE_CHOICES = ("all", *KNOWN_SERVICES)
 
 
@@ -23,11 +23,12 @@ class ComposeConfig:
 
     repository_root: Path
     compose_file: Path
+    env_file: Path | None = None
     project_name: str | None = None
 
     @classmethod
     def from_arguments(
-        cls, compose_file: str | None, project_name: str | None
+        cls, compose_file: str | None, env_file: str | None, project_name: str | None
     ) -> "ComposeConfig":
         repository_root = Path(__file__).resolve().parents[2]
         resolved_compose_file = Path(compose_file or repository_root / "compose.yaml")
@@ -35,7 +36,16 @@ class ComposeConfig:
             resolved_compose_file = (Path.cwd() / resolved_compose_file).resolve()
         else:
             resolved_compose_file = resolved_compose_file.resolve()
-        return cls(repository_root, resolved_compose_file, project_name)
+
+        resolved_env_file = None
+        if env_file:
+            resolved_env_file = Path(env_file)
+            if not resolved_env_file.is_absolute():
+                resolved_env_file = (Path.cwd() / resolved_env_file).resolve()
+            else:
+                resolved_env_file = resolved_env_file.resolve()
+
+        return cls(repository_root, resolved_compose_file, resolved_env_file, project_name)
 
 
 def resolve_services(services: Sequence[str]) -> tuple[str, ...]:
@@ -57,6 +67,8 @@ class ComposeRunner:
 
     def _command(self, arguments: Sequence[str]) -> list[str]:
         command = ["docker", "compose"]
+        if self.config.env_file:
+            command.extend(["--env-file", str(self.config.env_file)])
         if self.config.project_name:
             command.extend(["--project-name", self.config.project_name])
         command.extend(["--file", str(self.config.compose_file)])

@@ -15,7 +15,7 @@ services:
       timeout: 3s
       retries: 15
 
-  api:
+  backend:
     build:
       context: ./Backend
       dockerfile: Dockerfile
@@ -26,7 +26,7 @@ services:
       postgres:
         condition: service_healthy
     ports:
-      - "${API_HOST_PORT:-8000}:8000"
+      - "${BACKEND_HOST_PORT:-8000}:8000"
     volumes:
       - ./Backend/logs:/app/logs
     command:
@@ -38,6 +38,17 @@ services:
         "--port",
         "8000"
       ]
+
+  frontend:
+    image: node:${FRONTEND_NODE_TAG:-20-alpine}
+    working_dir: /app
+    command: npm run dev
+    ports:
+      - "127.0.0.1:${FRONTEND_HOST_PORT:-5173}:5173"
+    volumes:
+      - ./Frontend-Web:/app:rw
+    depends_on:
+      - backend
 
 volumes:
   story-game-postgres-data:

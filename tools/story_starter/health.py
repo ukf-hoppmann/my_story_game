@@ -8,23 +8,23 @@ import time
 from urllib.request import urlopen
 
 
-def api_port() -> int:
+def backend_port() -> int:
     """Return the configured API host port, validating malformed overrides."""
 
-    value = os.environ.get("API_HOST_PORT", "8000")
+    value = os.environ.get("BACKEND_HOST_PORT", "8000")
     try:
         port = int(value)
     except ValueError as error:
-        raise ValueError(f"API_HOST_PORT ist keine gültige Portnummer: {value!r}") from error
+        raise ValueError(f"BACKEND_HOST_PORT ist keine gültige Portnummer: {value!r}") from error
     if not 1 <= port <= 65535:
-        raise ValueError(f"API_HOST_PORT liegt außerhalb des gültigen Bereichs: {port}")
+        raise ValueError(f"BACKEND_HOST_PORT liegt außerhalb des gültigen Bereichs: {port}")
     return port
 
 
-def api_health() -> tuple[bool, str]:
+def backend_health() -> tuple[bool, str]:
     """Check the public API health endpoint without adding a dependency."""
 
-    url = f"http://localhost:{api_port()}/health"
+    url = f"http://localhost:{backend_port()}/health"
     try:
         with urlopen(url, timeout=3) as response:  # noqa: S310 - fixed localhost URL
             body = json.loads(response.read().decode("utf-8"))
@@ -35,13 +35,13 @@ def api_health() -> tuple[bool, str]:
     return True, url
 
 
-def wait_for_api_health(timeout_seconds: float = 15.0) -> tuple[bool, str]:
+def wait_for_backend_health(timeout_seconds: float = 15.0) -> tuple[bool, str]:
     """Poll the API briefly after a container restart."""
 
     deadline = time.monotonic() + timeout_seconds
     last_detail = "keine Antwort"
     while time.monotonic() < deadline:
-        healthy, detail = api_health()
+        healthy, detail = backend_health()
         if healthy:
             return True, detail
         last_detail = detail

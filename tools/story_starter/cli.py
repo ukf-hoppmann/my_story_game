@@ -15,7 +15,7 @@ from .compose import (
     ComposeRunner,
     resolve_services,
 )
-from .health import api_health, api_port, wait_for_api_health
+from .health import backend_health, backend_port, wait_for_backend_health
 
 
 @dataclass(frozen=True)
@@ -25,6 +25,7 @@ class Arguments:
     command: str
     services: tuple[str, ...] = ()
     compose_file: str | None = None
+    env_file: str | None = None
     project_name: str | None = None
     follow: bool = False
     tail: str = "all"
@@ -37,8 +38,8 @@ def _service_argument(parser: argparse.ArgumentParser) -> None:
         "services",
         nargs="*",
         choices=SERVICE_CHOICES,
-        metavar="{all,api,postgres}",
-        help="Service(s), standardmäßig alle: api, postgres",
+        metavar="{all,backend,postgres}",
+        help="Service(s), standardmäßig alle: backend, postgres",
     )
 
 
@@ -54,6 +55,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Alternative Docker-Compose-Datei verwenden.",
     )
     parser.add_argument(
+        "--env-file",
+        metavar="PATH",
+        help="Docker-Compose .env-Datei verwenden.",
+    )
+    parser.add_argument(
         "--project-name",
         metavar="NAME",
         help="Expliziten Docker-Compose-Projektnamen verwenden.",
@@ -66,7 +72,7 @@ def build_parser() -> argparse.ArgumentParser:
     stop = subparsers.add_parser("stop", help="Alle Services stoppen und das Netzwerk entfernen.")
     stop.set_defaults(command="stop")
 
-    upgrade = subparsers.add_parser("upgrade", help="API-Image neu bauen und alle Services starten.")
+    upgrade = subparsers.add_parser("upgrade", help="Backend-Image neu bauen und alle Services starten.")
     upgrade.set_defaults(command="upgrade")
 
     restart = subparsers.add_parser(
@@ -87,7 +93,7 @@ def build_parser() -> argparse.ArgumentParser:
     logs.set_defaults(command="logs")
 
     check = subparsers.add_parser(
-        "check", help="Compose-Konfiguration, laufende Services und API prüfen."
+        "check", help="Compose-Konfiguration, laufende Services und Backend prüfen."
     )
     check.set_defaults(command="check")
 
@@ -108,6 +114,7 @@ def _arguments(namespace: argparse.Namespace) -> Arguments:
         command=namespace.command,
         services=tuple(getattr(namespace, "services", ())),
         compose_file=namespace.compose_file,
+        env_file=namespace.env_file,
         project_name=namespace.project_name,
         follow=getattr(namespace, "follow", False),
         tail=getattr(namespace, "tail", "all"),
@@ -117,14 +124,14 @@ def _arguments(namespace: argparse.Namespace) -> Arguments:
 
 
 def _start(runner: ComposeRunner, *, build: bool) -> None:
-    port = api_port()
+    port = backend_port()
     arguments = ["up"]
     if build:
         arguments.append("--build")
     arguments.extend(["--detach", "--wait", *KNOWN_SERVICES])
     runner.run(arguments)
     print("Story Game läuft.")
-    print(f"  API:        http://localhost:{port}")
+    print(f"  Backend:    http://localhost:{port}")
     print(f"  Swagger UI: http://localhost:{port}/docs")
     print(f"  OpenAPI:    http://localhost:{port}/openapi.json")
     print(f"  ReDoc:      http://localhost:{port}/redoc")
@@ -132,13 +139,13 @@ def _start(runner: ComposeRunner, *, build: bool) -> None:
 
 def _restart(runner: ComposeRunner, services: Sequence[str]) -> None:
     selected = resolve_services(services)
-    if "api" in selected:
-        api_port()
+    if "backend" in selected:
+        backend_port()
     runner.run(["restart", *selected])
-    if "api" in selected:
-        healthy, detail = wait_for_api_health()
+    if "backend" in selected:
+        healthy, detail = wait_for_backend_health()
         if not healthy:
-            raise ComposeError(f"API ist nach dem Neustart nicht gesund: {detail}")
+            raise ComposeError(f"Backend ist nach dem Neustart nicht gesund: {detail}")
     print(f"Neu gestartet: {', '.join(selected)}")
 
 
@@ -165,11 +172,11 @@ def _check(runner: ComposeRunner) -> int:
     running_services = set((running.stdout or "").split())
     print("Compose-Konfiguration: OK")
     print("Laufende Services: " + (", ".join(sorted(running_services)) or "keine"))
-    healthy, detail = api_health()
+    healthy, detail = backend_health()
     if healthy:
-        print(f"API: OK ({detail})")
+        print(f"Backend: OK ({detail})")
         return 0
-    print(f"API: FEHLER ({detail})", file=sys.stderr)
+    print(f"Backend: FEHLER ({detail})", file=sys.stderr)
     return 1
 
 
@@ -186,7 +193,7 @@ def _confirm_clean(confirmed: bool) -> None:
 
 
 def _clean(runner: ComposeRunner, *, confirmed: bool) -> None:
-    api_port()
+    backend_port()
     _confirm_clean(confirmed)
     runner.run(["down", "--volumes"])
     _start(runner, build=False)
@@ -194,7 +201,7 @@ def _clean(runner: ComposeRunner, *, confirmed: bool) -> None:
 
 
 def execute(arguments: Arguments) -> int:
-    config = ComposeConfig.from_arguments(arguments.compose_file, arguments.project_name)
+    config = ComposeConfig.from_arguments(arguments.compose_file, arguments.env_file, arguments.project_name)
     runner = ComposeRunner(config)
     runner.ensure_available()
 

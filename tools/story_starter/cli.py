@@ -214,7 +214,7 @@ def execute(arguments: Arguments) -> int:
         runner.run(["down"])
         print("Story Game wurde gestoppt.")
     elif arguments.command == "down":
-        runner.run(["down", "--volumes"])
+        runner.run(["down", "--volumes", "--remove-orphans"])
         print("Story Game wurde gestoppt und alle Volumes entfernt.")
     elif arguments.command == "upgrade":
         _start(runner, build=True)

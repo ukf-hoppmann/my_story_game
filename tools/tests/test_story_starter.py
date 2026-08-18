@@ -83,7 +83,7 @@ def test_down_removes_containers_and_volumes() -> None:
     with patch("tools.story_starter.cli.ComposeRunner", return_value=fake_runner):
         assert execute(Arguments("down")) == 0
 
-    assert fake_runner.commands == [["down", "--volumes"]]
+    assert fake_runner.commands == [["down", "--volumes", "--remove-orphans"]]
 
 
 def test_confirmed_clean_removes_volumes_then_starts_without_build() -> None:

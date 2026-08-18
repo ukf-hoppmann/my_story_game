@@ -26,7 +26,7 @@ from story_game.api.schemas.runs import (
 from story_game.api.schemas.state import GameDocument
 from story_game.application import (
     InitializeGameRunRequest,
-    PlayerCharacterSeed,
+    ControllableCharacterSeed,
     PlayStoryTurnRequest,
     RunInitiator,
     StartPlaythroughRequest,
@@ -112,12 +112,9 @@ def create_run(
             control_mode=payload.control_mode,
         ),
     )
-    player_character = (
-        None
-        if payload.player_character is None
-        else PlayerCharacterSeed(
-            payload.player_character.name, payload.player_character.description
-        )
+    controllable_characters = tuple(
+        ControllableCharacterSeed(item.name, item.description)
+        for item in payload.controllable_characters
     )
     created = unwrap(
         dependencies.initialize_run.apply(
@@ -126,7 +123,7 @@ def create_run(
                 run_name=payload.run_name,
                 initial_prompt=payload.initial_prompt,
                 initiator=initiator,
-                player_character=player_character,
+                controllable_characters=controllable_characters,
             )
         )
     )

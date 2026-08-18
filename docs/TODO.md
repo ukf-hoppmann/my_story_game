@@ -659,13 +659,11 @@ After explicit rejection:
 
 - `TASK-016` **Mehrere gesteuerte Figuren im Director Mode**
   - Type: Task.
-  - Status: Open.
+  - Status: Resolved.
   - Parent: `EPIC-001`.
   - Required for parent: No.
   - Created: 2026-08-17.
-  - Area: Domainmodell und Persistenz.
-  - Priority: Perspektivisch.
-  - Dependencies: `STORY-001`, `STORY-002`.
+  - Resolution: Umgesetzt am 2026-08-18. `GameRunMember.player_entity_id` (ein optionaler Wert) wurde zu `controlled_entity_ids: tuple[StableId, ...]` generalisiert; `PlayerCharacterSeed` wurde zu `ControllableCharacterSeed` und der Request nimmt eine Liste `controllable_characters` statt eines Einzelwerts. Player Mode verlangt weiterhin genau eine Figur; Director Mode erlaubt 0..N explizit benannte Figuren (neuer Policy-Fehler `duplicate_controllable_character` bei doppelten Namen). Die reservierte Referenz bei der Welt-Extraktion wurde von einem festen `player_character`-Wort auf eine Liste (`player_character`, `player_character_2`, …) erweitert. Betroffen: Domain (`game_run.py`, `game_state.py`), Application (`initialization_policy.py`, `initial_world_extraction.py`, `play_story_turn.py`, `story_turn_context.py`, `select_always_included.py`, `story_turn_context_models.py`), LM-Studio-Adapter, API (`schemas/common.py`, `schemas/runs.py`, `routers/runs.py`, `mappers/state.py`), Postgres-Migration `003_controllable_characters.sql` (neue Tabelle `game_run_member_controlled_entities` statt der Spalte `player_entity_id`). Zusätzlich wurde `generate_story.py`s System-Prompt um eine feste NPC-Agency-Anweisung ergänzt (nur gesteuerte Figuren handeln auf Prompt-Basis) — best effort, ohne Durchsetzung.
   - Goal: Klären und umsetzen, wie ein Benutzer im Director Mode eine oder mehrere Figuren steuert. Heute bindet `GameRunMember` genau eine Figur, und die Director-Initialisierung lässt die Bindung bewusst leer.
   - Completion criteria: Entschieden und dokumentiert ist, ob eine Mitgliedschaft mehrere gesteuerte Figuren binden darf und wie diese bei der Welt-Erzeugung entstehen; Domain, Persistenz und API bilden das Ergebnis ab; die Kontextauswahl nimmt alle gesteuerten Figuren auf.
 

@@ -61,7 +61,7 @@ class RecordingGenerator:
 def context(player_input: str = "Ich frage den Wirt.", *narrations: str):
     state = w.game_state((w.TAVERN,), *narrations)
     result = build_story_turn_context_selection().apply(
-        SelectStoryTurnContextRequest(state, w.MAREN, player_input)
+        SelectStoryTurnContextRequest(state, (w.MAREN,), player_input)
     )
     assert isinstance(result, Success), result
     return result.data
@@ -102,7 +102,18 @@ def test_the_prepared_request_carries_the_projected_sections() -> None:
     assert "Wirtshaus" in prepared.world_state
     assert "Bertram" in prepared.world_state
     assert prepared.story_state.strip() != ""
-    assert len(prepared.system_prompts) == 2
+    assert len(prepared.system_prompts) == 3
+
+
+def test_every_call_carries_the_npc_agency_directive() -> None:
+    generator = RecordingGenerator()
+
+    operation(generator).apply(request("Ich frage den Wirt."))
+
+    prepared = generator.call.request
+    assert any(
+        "handeln ausschließlich aus" in prompt for prompt in prepared.system_prompts
+    )
 
 
 def test_the_resolved_story_model_and_options_reach_the_port() -> None:
@@ -226,7 +237,7 @@ def test_an_empty_world_selection_still_produces_a_valid_request() -> None:
         knowledge=(),
         rules=(),
         goals=(),
-        controlled_entity=None,
+        controlled_entities=(),
     )
 
     result = operation(generator).apply(

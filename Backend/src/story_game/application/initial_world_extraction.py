@@ -18,7 +18,7 @@ from story_game.application.initialization_errors import (
     StoryInitializationStage,
     extraction_model_failure,
 )
-from story_game.application.initialization_models import PlayerCharacterSeed
+from story_game.application.initialization_models import ControllableCharacterSeed
 from story_game.application.initialization_policy import validate_initialization_choices
 from story_game.application.llm import (
     GenerationConfigurationResolver,
@@ -30,6 +30,7 @@ from story_game.application.llm import (
     InitialWorldExtractionRequest,
     LLMGenerationCall,
     WorldInitializationCandidate,
+    reserved_reference,
 )
 from story_game.domain import (
     ActorProfile,
@@ -48,16 +49,13 @@ from story_game.domain import (
 )
 
 
-_PLAYER_REFERENCE = "player_character"
-
-
 @dataclass(frozen=True, slots=True)
 class ExtractInitialWorldStateRequest:
     """Input for extraction after opening prose has been generated."""
 
     configuration: GameConfiguration
     story_state: StoryState
-    player_character: PlayerCharacterSeed | None = None
+    controllable_characters: tuple[ControllableCharacterSeed, ...] = ()
 
 
 class ExtractInitialWorldState:
@@ -82,7 +80,7 @@ class ExtractInitialWorldState:
     ) -> OperationResult[WorldState, StoryInitializationError]:
         invalid = validate_initialization_choices(
             request.configuration,
-            request.player_character,
+            request.controllable_characters,
             StoryInitializationStage.WORLD_EXTRACTION,
         )
         if invalid is not None:
@@ -111,13 +109,13 @@ class ExtractInitialWorldState:
                 generation_options=generation.data.generation_options,
                 request=InitialWorldExtractionRequest(
                     system_prompts=_system_prompts(
-                        selection.task.text, request.player_character
+                        selection.task.text, request.controllable_characters
                     ),
                     opening_narration=initialization.narration,
                     language=request.configuration.language,
                     perspective=request.configuration.prompt_profile.perspective,
                     control_mode=request.configuration.prompt_profile.control_mode,
-                    player_character=request.player_character,
+                    controllable_characters=request.controllable_characters,
                 ),
             )
             self._diagnostics.trace(
@@ -142,7 +140,9 @@ class ExtractInitialWorldState:
         self._diagnostics.trace(
             "extract_initial_world_state.candidate", candidate=extracted.data
         )
-        built = _build_world(extracted.data, request.player_character, self._new_id)
+        built = _build_world(
+            extracted.data, request.controllable_characters, self._new_id
+        )
         if isinstance(built, Failure):
             self._diagnostics.record(ProposalRejected(reason=str(built.error)))
         return built
@@ -150,34 +150,38 @@ class ExtractInitialWorldState:
 
 def _build_world(
     candidate: WorldInitializationCandidate,
-    player_character: PlayerCharacterSeed | None,
+    controllable_characters: tuple[ControllableCharacterSeed, ...],
     new_id: Callable[[], StableId],
 ) -> OperationResult[WorldState, StoryInitializationError]:
     reference_ids: dict[str, StableId] = {}
+    reserved_references = {
+        reserved_reference(index) for index in range(len(controllable_characters))
+    }
     entities: list[WorldEntity] = []
     try:
-        if player_character is not None:
-            player_id = new_id()
-            reference_ids[_PLAYER_REFERENCE] = player_id
+        for index, character in enumerate(controllable_characters):
+            character_id = new_id()
+            reference_ids[reserved_reference(index)] = character_id
             entities.append(
                 WorldEntity(
-                    id=player_id,
+                    id=character_id,
                     kind=EntityKind.CHARACTER,
-                    label=player_character.name,
-                    description=player_character.description,
+                    label=character.name,
+                    description=character.description,
                     actor=ActorProfile(ActorRole.PLAYER),
                 )
             )
 
         for item in candidate.entities:
             reference = _reference_key(item.local_ref)
-            if reference == _PLAYER_REFERENCE or reference in reference_ids:
+            if reference in reserved_references or reference in reference_ids:
                 return _reference_failure(
                     f"Die lokale Referenz {item.local_ref!r} ist reserviert oder doppelt."
                 )
-            if player_character is not None and _duplicates_player(item, player_character):
+            if _duplicates_reserved_name(item, controllable_characters):
                 return _reference_failure(
-                    "Eine extrahierte Entität dupliziert Name oder Alias des Spielercharakters."
+                    "Eine extrahierte Entität dupliziert Name oder Alias "
+                    "einer steuerbaren Figur."
                 )
             entity_id = new_id()
             reference_ids[reference] = entity_id
@@ -279,18 +283,23 @@ def _deduplicated_links(links: tuple[CandidateLink, ...]) -> tuple[CandidateLink
 
 def _system_prompts(
     task_prompt: str,
-    player_character: PlayerCharacterSeed | None,
+    controllable_characters: tuple[ControllableCharacterSeed, ...],
 ) -> tuple[str, ...]:
-    if player_character is None:
+    if not controllable_characters:
         return (task_prompt,)
-    name = player_character.name
+    entries = ", ".join(
+        f"{character.name!r} (Referenz {reserved_reference(index)})"
+        for index, character in enumerate(controllable_characters)
+    )
     return (
         task_prompt,
         (
-            f"VERBINDLICHE SPIELERREFERENZ: Der bekannte Spieler heißt {name!r}. "
-            f"entities darf {name!r} weder als local_ref, label noch alias enthalten. "
-            f"Jede source_ref, target_ref oder subject_ref für {name!r} muss exakt "
-            "player_character sein. Prüfe diese Ersetzung unmittelbar vor der Antwort."
+            f"VERBINDLICHE SPIELERREFERENZ(EN): Folgende Namen sind bekannte, vom "
+            f"Spieler gesteuerte Figuren: {entries}. entities darf keinen dieser "
+            "Namen weder als local_ref, label noch alias enthalten. Jede source_ref, "
+            "target_ref oder subject_ref für einen dieser Namen muss exakt die "
+            "zugehörige reservierte Referenz sein. Prüfe diese Ersetzung unmittelbar "
+            "vor der Antwort."
         ),
     )
 
@@ -299,11 +308,13 @@ def _resolve_reference(value: str, references: dict[str, StableId]) -> StableId:
     return references[_reference_key(value)]
 
 
-def _duplicates_player(item: CandidateEntity, player: PlayerCharacterSeed) -> bool:
-    player_name = player.name.casefold()
-    return item.label.casefold() == player_name or any(
-        alias.casefold() == player_name for alias in item.aliases
-    )
+def _duplicates_reserved_name(
+    item: CandidateEntity, controllable_characters: tuple[ControllableCharacterSeed, ...]
+) -> bool:
+    reserved_names = {character.name.casefold() for character in controllable_characters}
+    if item.label.casefold() in reserved_names:
+        return True
+    return any(alias.casefold() in reserved_names for alias in item.aliases)
 
 
 def _reference_failure(message: str) -> Failure[StoryInitializationError]:

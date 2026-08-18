@@ -37,7 +37,7 @@ from story_game.application import (
     InitializeStory,
     InitializeStoryRequest,
     PlayedStoryTurn,
-    PlayerCharacterSeed,
+    ControllableCharacterSeed,
     PlayStoryTurn,
     PlayStoryTurnRequest,
     RunInitiator,
@@ -349,8 +349,8 @@ class HumanInitStorySupport:
             "Maren und Alma stehen gemeinsam in einer einzigen "
             "verschlossenen Dungeonkammer. Noch bewegt sich niemand."
         )
-        self.player_character = PlayerCharacterSeed(
-            "Maren", "Eine vorsichtige Kartografin."
+        self.controllable_characters = (
+            ControllableCharacterSeed("Maren", "Eine vorsichtige Kartografin."),
         )
 
     def prepare_prompt(self) -> LLMGenerationCall:
@@ -363,7 +363,7 @@ class HumanInitStorySupport:
         )
         result = operation.apply(
             GenerateInitialStoryStateRequest(
-                self.configuration, self.initial_prompt, self.player_character
+                self.configuration, self.initial_prompt, self.controllable_characters
             )
         )
         assert isinstance(result, Success), result
@@ -391,7 +391,7 @@ class HumanInitStorySupport:
             )
             result = operation.apply(
                 GenerateInitialStoryStateRequest(
-                    self.configuration, self.initial_prompt, self.player_character
+                    self.configuration, self.initial_prompt, self.controllable_characters
                 )
             )
             assert isinstance(result, Success), result
@@ -424,7 +424,7 @@ class HumanInitStorySupport:
                 InitializeStoryRequest(
                     configuration=self.configuration,
                     initial_prompt=self.initial_prompt,
-                    player_character=self.player_character,
+                    controllable_characters=self.controllable_characters,
                 )
             )
             assert isinstance(result, Success), result
@@ -453,11 +453,11 @@ def _request_shape(call: LLMGenerationCall) -> dict[str, object]:
     for field in ("configuration", "initial_prompt", "world_state", "story_state", "user_prompt", "narration"):
         if hasattr(request, field):
             document[field] = getattr(request, field)
-    if hasattr(request, "player_character") and request.player_character is not None:
-        document["player_character"] = {
-            "name": request.player_character.name,
-            "description": request.player_character.description,
-        }
+    if getattr(request, "controllable_characters", ()):
+        document["controllable_characters"] = [
+            {"name": character.name, "description": character.description}
+            for character in request.controllable_characters
+        ]
     return document
 
 
@@ -690,8 +690,8 @@ class HumanFullPlaythroughSupport:
             "Maren und Alma stehen gemeinsam in einer einzigen "
             "verschlossenen Dungeonkammer. Noch bewegt sich niemand."
         )
-        self.player_character = PlayerCharacterSeed(
-            "Maren", "Eine vorsichtige Kartografin."
+        self.controllable_characters = (
+            ControllableCharacterSeed("Maren", "Eine vorsichtige Kartografin."),
         )
         self.initiator = RunInitiator(
             "https://human-test.example/realm", "human-tester"
@@ -744,7 +744,7 @@ class HumanFullPlaythroughSupport:
                     run_name=self.run_name,
                     initial_prompt=self.initial_prompt,
                     initiator=self.initiator,
-                    player_character=self.player_character,
+                    controllable_characters=self.controllable_characters,
                 )
             )
             assert isinstance(initialized, Success), initialized

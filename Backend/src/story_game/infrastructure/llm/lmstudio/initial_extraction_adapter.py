@@ -18,6 +18,7 @@ from story_game.application.llm import (
     LLMErrorKind,
     LLMGenerationCall,
     WorldInitializationCandidate,
+    reserved_reference,
 )
 from story_game.domain import EntityKind, RelationKind
 
@@ -47,7 +48,7 @@ class _WireCondition(_WireModel):
 class _WireEntity(_WireModel):
     local_ref: str = Field(
         min_length=1,
-        description="Unique single reference; never the known player character.",
+        description="Unique single reference; never one of the known controllable characters.",
     )
     kind: Literal["character", "location", "item", "creature", "faction"]
     label: str = Field(
@@ -62,11 +63,17 @@ class _WireEntity(_WireModel):
 class _WireLink(_WireModel):
     source_ref: str = Field(
         min_length=1,
-        description="Exactly one entity local_ref or player_character.",
+        description=(
+            "Exactly one entity local_ref, or one of the reserved controllable-"
+            "character references (see [known_controllable_characters])."
+        ),
     )
     target_ref: str = Field(
         min_length=1,
-        description="Exactly one entity local_ref or player_character.",
+        description=(
+            "Exactly one entity local_ref, or one of the reserved controllable-"
+            "character references (see [known_controllable_characters])."
+        ),
     )
     kind: Literal[
         "located_in",
@@ -87,8 +94,9 @@ class _WireFact(_WireModel):
     subject_ref: str | None = Field(
         default=None,
         description=(
-            "Exactly one entity local_ref or player_character; use null when the fact "
-            "has no single subject. Never combine references."
+            "Exactly one entity local_ref, or one of the reserved controllable-"
+            "character references (see [known_controllable_characters]); use null "
+            "when the fact has no single subject. Never combine references."
         ),
     )
 
@@ -162,14 +170,13 @@ def _messages_for(
         "[control_mode]\n" + request.control_mode,
     ]
     system_sections = [*request.system_prompts]
-    if request.player_character is not None:
-        character = request.player_character
-        system_sections.append(
-            "[known_player_character]\n"
-            f"Reservierte Referenz: player_character\n"
-            f"Name: {character.name}\n"
-            f"Beschreibung: {character.description or 'Keine zusätzliche Beschreibung.'}"
-        )
+    if request.controllable_characters:
+        lines = [
+            f"- Referenz {reserved_reference(index)}: Name={character.name}, "
+            f"Beschreibung={character.description or 'Keine zusätzliche Beschreibung.'}"
+            for index, character in enumerate(request.controllable_characters)
+        ]
+        system_sections.append("[known_controllable_characters]\n" + "\n".join(lines))
     sections.append("[opening_narration]\n" + request.opening_narration)
     return (
         LmStudioChatMessage(role="system", content="\n\n".join(system_sections)),

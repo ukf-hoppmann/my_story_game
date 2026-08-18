@@ -37,7 +37,7 @@ _STORY_INIT_STATUS: dict[StoryInitializationErrorKind, tuple[int, str]] = {
         422,
         "invalid_player_character_seed",
     ),
-    StoryInitializationErrorKind.UNEXPECTED_PLAYER_CHARACTER: (
+    StoryInitializationErrorKind.DUPLICATE_CONTROLLABLE_CHARACTER: (
         422,
         "invalid_player_character_seed",
     ),

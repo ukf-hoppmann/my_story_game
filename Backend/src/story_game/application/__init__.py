@@ -6,7 +6,7 @@ from .initialization_errors import (
     StoryInitializationErrorKind,
     StoryInitializationStage,
 )
-from .initialization_models import InitializedStory, PlayerCharacterSeed
+from .initialization_models import InitializedStory, ControllableCharacterSeed
 from .initialize_game_run import (
     InitialGameRunError,
     InitializeGameRun,
@@ -152,7 +152,7 @@ __all__ = [
     "PromptTask",
     "PromptTaskNotFoundError",
     "OperationResult",
-    "PlayerCharacterSeed",
+    "ControllableCharacterSeed",
     "PlaythroughError",
     "PlaythroughErrorKind",
     "RunInitiator",

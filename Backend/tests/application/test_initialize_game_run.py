@@ -10,7 +10,10 @@ from story_game.application.initialize_game_run import (
     InitializeGameRunRequest,
     RunInitiator,
 )
-from story_game.application.initialization_models import InitializedStory, PlayerCharacterSeed
+from story_game.application.initialization_models import (
+    ControllableCharacterSeed,
+    InitializedStory,
+)
 from story_game.application.initialization_errors import (
     StoryInitializationError,
     StoryInitializationErrorKind,
@@ -87,14 +90,16 @@ def initialized_story(*entities: WorldEntity) -> InitializedStory:
 def request(
     *,
     control_mode: str = "player",
-    player_character: PlayerCharacterSeed | None = PlayerCharacterSeed("Maren"),
+    controllable_characters: tuple[ControllableCharacterSeed, ...] = (
+        ControllableCharacterSeed("Maren"),
+    ),
 ) -> InitializeGameRunRequest:
     return InitializeGameRunRequest(
         configuration=configuration(control_mode),
         run_name="Maren und das magische Schwert",
         initial_prompt="Maren betritt den Dungeon.",
         initiator=RunInitiator("https://identity.example/story", "user-1"),
-        player_character=player_character,
+        controllable_characters=controllable_characters,
     )
 
 
@@ -130,7 +135,7 @@ def test_initializes_and_persists_a_player_game_at_revision_one() -> None:
         "user-1",
     )
     assert persisted.run.members[0].game_role is GameRole.OWNER
-    assert persisted.run.members[0].player_entity_id == player.id
+    assert persisted.run.members[0].controlled_entity_ids == (player.id,)
     assert persisted.state == GameState(
         sid("run"),
         StateRevision(1),
@@ -150,12 +155,53 @@ def test_initializes_a_director_game_without_a_player_binding() -> None:
         now=lambda: FIXED_TIME,
     )
 
-    result = operation.apply(request(control_mode="director", player_character=None))
+    result = operation.apply(
+        request(control_mode="director", controllable_characters=())
+    )
 
     assert isinstance(result, Success)
     member = creator.requests[0].run.members[0]
     assert member.game_role is GameRole.OWNER
-    assert member.player_entity_id is None
+    assert member.controlled_entity_ids == ()
+
+
+def test_initializes_a_director_game_with_multiple_controlled_characters() -> None:
+    maren = WorldEntity(
+        id=sid("maren"),
+        kind=EntityKind.CHARACTER,
+        label="Maren",
+        actor=ActorProfile(ActorRole.PLAYER),
+    )
+    jonas = WorldEntity(
+        id=sid("jonas"),
+        kind=EntityKind.CHARACTER,
+        label="Jonas",
+        actor=ActorProfile(ActorRole.PLAYER),
+    )
+    story_initializer = RecordingStoryInitializer(
+        Success(initialized_story(maren, jonas))
+    )
+    creator = RecordingGameRunCreator()
+    operation = InitializeGameRun(
+        story_initializer,
+        creator,
+        new_id=lambda: sid("run"),
+        now=lambda: FIXED_TIME,
+    )
+
+    result = operation.apply(
+        request(
+            control_mode="director",
+            controllable_characters=(
+                ControllableCharacterSeed("Maren"),
+                ControllableCharacterSeed("Jonas"),
+            ),
+        )
+    )
+
+    assert isinstance(result, Success)
+    member = creator.requests[0].run.members[0]
+    assert member.controlled_entity_ids == (maren.id, jonas.id)
 
 
 def test_does_not_persist_when_story_initialization_fails() -> None:
@@ -187,32 +233,15 @@ def test_rejects_player_mode_without_exactly_one_player_entity() -> None:
     assert creator.requests == []
 
 
-def test_rejects_director_mode_with_a_player_entity() -> None:
-    player = WorldEntity(
-        id=sid("player"),
-        kind=EntityKind.CHARACTER,
-        label="Maren",
-        actor=ActorProfile(ActorRole.PLAYER),
-    )
-    story_initializer = RecordingStoryInitializer(Success(initialized_story(player)))
-    creator = RecordingGameRunCreator()
-    operation = InitializeGameRun(story_initializer, creator)
-
-    result = operation.apply(request(control_mode="director", player_character=None))
-
-    assert result == Failure(
-        StateRejected("Der Director Mode darf keinen Spielercharakter im WorldState enthalten")
-    )
-    assert creator.requests == []
-
-
 def test_propagates_persistence_conflicts_without_a_partial_result() -> None:
     story_initializer = RecordingStoryInitializer(Success(initialized_story()))
     creator = RecordingGameRunCreator()
     creator.result = Failure(RunConflict("Die Run-ID existiert bereits."))
     operation = InitializeGameRun(story_initializer, creator)
 
-    result = operation.apply(request(control_mode="director", player_character=None))
+    result = operation.apply(
+        request(control_mode="director", controllable_characters=())
+    )
 
     assert result == Failure(RunConflict("Die Run-ID existiert bereits."))
     assert len(creator.requests) == 1

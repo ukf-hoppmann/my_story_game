@@ -13,8 +13,8 @@ from story_game.application.game_models import LoadedGame
 from story_game.application.game_state import CreateGameRun, CreateGameRunRequest
 from story_game.application.initialization_errors import StoryInitializationError
 from story_game.application.initialization_models import (
+    ControllableCharacterSeed,
     InitializedStory,
-    PlayerCharacterSeed,
 )
 from story_game.application.initialize_story import InitializeStory, InitializeStoryRequest
 from story_game.domain import (
@@ -63,7 +63,7 @@ class InitializeGameRunRequest:
     run_name: str
     initial_prompt: str
     initiator: RunInitiator
-    player_character: PlayerCharacterSeed | None = None
+    controllable_characters: tuple[ControllableCharacterSeed, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "run_name", _required(self.run_name, "Der Name"))
@@ -102,14 +102,14 @@ class InitializeGameRun:
             InitializeStoryRequest(
                 request.configuration,
                 request.initial_prompt,
-                request.player_character,
+                request.controllable_characters,
             )
         )
         if isinstance(initialized, Failure):
             return initialized
 
         try:
-            player_entity_id = _player_entity_id(
+            controlled_entity_ids = _controlled_entity_ids(
                 initialized.data,
                 request.configuration.prompt_profile.control_mode,
             )
@@ -125,7 +125,7 @@ class InitializeGameRun:
                         issuer=request.initiator.issuer,
                         subject=request.initiator.subject,
                         game_role=GameRole.OWNER,
-                        player_entity_id=player_entity_id,
+                        controlled_entity_ids=controlled_entity_ids,
                     ),
                 ),
                 created_at=timestamp,
@@ -150,10 +150,10 @@ class InitializeGameRun:
         return created
 
 
-def _player_entity_id(
+def _controlled_entity_ids(
     initialized: InitializedStory,
     control_mode: str,
-) -> StableId | None:
+) -> tuple[StableId, ...]:
     player_ids = tuple(
         entity.id
         for entity in initialized.world_state.entities
@@ -164,11 +164,7 @@ def _player_entity_id(
             raise ValueError(
                 "Der Player Mode benötigt genau einen Spielercharakter im WorldState"
             )
-        return player_ids[0]
+        return player_ids
     if control_mode == "director":
-        if player_ids:
-            raise ValueError(
-                "Der Director Mode darf keinen Spielercharakter im WorldState enthalten"
-            )
-        return None
+        return player_ids
     raise ValueError(f"Unbekannter Control Mode: {control_mode}")

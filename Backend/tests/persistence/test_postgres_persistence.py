@@ -30,7 +30,7 @@ from story_game.application.game_state import (  # noqa: E402
 )
 from story_game.application.initialization_models import (  # noqa: E402
     InitializedStory,
-    PlayerCharacterSeed,
+    ControllableCharacterSeed,
 )
 from story_game.domain import (  # noqa: E402
     ActorProfile,
@@ -127,7 +127,7 @@ def initial(run_id: StableId) -> tuple[GameRun, GameState]:
                 "https://identity.example/realms/story",
                 "user-1",
                 GameRole.OWNER,
-                almas.id,
+                (almas.id,),
             ),
         ),
         timestamp,
@@ -212,7 +212,7 @@ def test_initialize_game_run_persists_revision_one_atomically(
                 run_name="Almas und das magische Schwert",
                 initial_prompt="Almas betritt den Dungeon.",
                 initiator=RunInitiator("https://identity.example/story", "user-1"),
-                player_character=PlayerCharacterSeed("Almas"),
+                controllable_characters=(ControllableCharacterSeed("Almas"),),
             )
         )
 
@@ -431,7 +431,8 @@ def test_new_baseline_uses_native_uuid_for_internal_id_columns(
     expected_uuid_columns = {
         ("game_runs", "run_id"),
         ("game_run_members", "run_id"),
-        ("game_run_members", "player_entity_id"),
+        ("game_run_member_controlled_entities", "run_id"),
+        ("game_run_member_controlled_entities", "entity_id"),
         ("game_state_revisions", "run_id"),
         ("game_state_configurations", "run_id"),
         ("world_entities", "run_id"),

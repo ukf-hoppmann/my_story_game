@@ -21,13 +21,14 @@ from story_game.domain import (
     GoalStatus,
     InvalidReferenceError,
     StableId,
+    WorldEntity,
 )
 
 
 @dataclass(frozen=True, slots=True)
 class SelectAlwaysIncludedRequest:
     game_state: GameState
-    controlled_entity_id: StableId | None
+    controlled_entity_ids: tuple[StableId, ...]
     budget: SelectionBudget
 
 
@@ -38,11 +39,11 @@ class SelectAlwaysIncluded:
         self, request: SelectAlwaysIncludedRequest
     ) -> OperationResult[AlwaysIncludedContext, ContextSelectionError]:
         state = request.game_state
-        controlled = None
-        candidates: tuple[EntityCandidate, ...] = ()
-        if request.controlled_entity_id is not None:
+        controlled: list[WorldEntity] = []
+        candidates: list[EntityCandidate] = []
+        for entity_id in request.controlled_entity_ids:
             try:
-                controlled = state.world.entity(request.controlled_entity_id)
+                entity = state.world.entity(entity_id)
             except InvalidReferenceError:
                 return Failure(
                     ContextSelectionError(
@@ -50,12 +51,13 @@ class SelectAlwaysIncluded:
                         "Die gesteuerte Figur gehört nicht zu dieser Revision.",
                     )
                 )
-            candidates = (
+            controlled.append(entity)
+            candidates.append(
                 EntityCandidate(
-                    controlled.id,
+                    entity.id,
                     SelectionPriority.ALWAYS,
                     "gesteuerte Figur",
-                ),
+                )
             )
 
         turns = state.story.turns
@@ -75,11 +77,11 @@ class SelectAlwaysIncluded:
                     for goal in state.world.goals
                     if goal.kind is GoalKind.MAIN and goal.status is GoalStatus.OPEN
                 ),
-                controlled_entity=controlled,
+                controlled_entities=tuple(controlled),
                 language=state.configuration.language,
                 perspective=profile.perspective,
                 control_mode=profile.control_mode,
                 narrative_boundaries=state.configuration.narrative_boundaries,
-                candidates=candidates,
+                candidates=tuple(candidates),
             )
         )

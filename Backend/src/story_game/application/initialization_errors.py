@@ -16,7 +16,7 @@ class StoryInitializationStage(StrEnum):
 class StoryInitializationErrorKind(StrEnum):
     INVALID_CONFIGURATION = "invalid_configuration"
     MISSING_PLAYER_CHARACTER = "missing_player_character"
-    UNEXPECTED_PLAYER_CHARACTER = "unexpected_player_character"
+    DUPLICATE_CONTROLLABLE_CHARACTER = "duplicate_controllable_character"
     MODEL_FAILURE = "model_failure"
     INVALID_MODEL_RESPONSE = "invalid_model_response"
     INVALID_CANDIDATE_REFERENCE = "invalid_candidate_reference"

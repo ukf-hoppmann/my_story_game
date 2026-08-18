@@ -68,19 +68,33 @@ class PostgresGameStore:
                         connection.execute(
                             """
                             INSERT INTO game_run_members (
-                                run_id, issuer, subject, game_role, player_entity_id
-                            ) VALUES (%s, %s, %s, %s, %s)
+                                run_id, issuer, subject, game_role
+                            ) VALUES (%s, %s, %s, %s)
                             """,
                             (
                                 run.id.value,
                                 member.issuer,
                                 member.subject,
                                 member.game_role.value,
-                                None
-                                if member.player_entity_id is None
-                                else member.player_entity_id.value,
                             ),
                         )
+                        for position, entity_id in enumerate(
+                            member.controlled_entity_ids
+                        ):
+                            connection.execute(
+                                """
+                                INSERT INTO game_run_member_controlled_entities (
+                                    run_id, issuer, subject, position, entity_id
+                                ) VALUES (%s, %s, %s, %s, %s)
+                                """,
+                                (
+                                    run.id.value,
+                                    member.issuer,
+                                    member.subject,
+                                    position,
+                                    entity_id.value,
+                                ),
+                            )
                     self._insert_revision(
                         connection, run.id, StateRevision(1), previous=None
                     )
@@ -112,6 +126,21 @@ class PostgresGameStore:
                     """,
                     (run_id.value,),
                 ).fetchall()
+                controlled_rows = connection.execute(
+                    """
+                    SELECT issuer, subject, entity_id
+                    FROM game_run_member_controlled_entities
+                    WHERE run_id = %s
+                    ORDER BY issuer, subject, position
+                    """,
+                    (run_id.value,),
+                ).fetchall()
+                controlled_by_member: dict[tuple[str, str], list[StableId]] = {}
+                for controlled in controlled_rows:
+                    key = (str(controlled["issuer"]), str(controlled["subject"]))
+                    controlled_by_member.setdefault(key, []).append(
+                        StableId(controlled["entity_id"])
+                    )
                 return GameRun(
                     id=run_id,
                     name=str(row["name"]),
@@ -122,10 +151,10 @@ class PostgresGameStore:
                             issuer=str(member["issuer"]),
                             subject=str(member["subject"]),
                             game_role=GameRole(str(member["game_role"])),
-                            player_entity_id=(
-                                None
-                                if member["player_entity_id"] is None
-                                else StableId(member["player_entity_id"])
+                            controlled_entity_ids=tuple(
+                                controlled_by_member.get(
+                                    (str(member["issuer"]), str(member["subject"])), ()
+                                )
                             ),
                         )
                         for member in member_rows

@@ -37,8 +37,11 @@ einen bereits aktiven Lauf erneut abzuzweigen, ergibt HTTP 409
 ## Anfrage- und Antwortformen
 
 `POST /api/v1/runs` verlangt `run_name`, `initial_prompt`, `control_mode`
-(`"player"` oder `"director"`) und im Player Mode genau ein
-`player_character` (`name`, optional `description`). Die API verwendet
+(`"player"` oder `"director"`) und eine Liste `controllable_characters`
+steuerbarer Figuren (`name`, optional `description`). Im Player Mode muss die
+Liste genau ein Element enthalten; im Director Mode darf sie null oder
+mehrere Elemente enthalten — jede genannte Figur wird zu einer eigenen, vom
+aufrufenden Mitglied gesteuerten Figur im `WorldState`. Die API verwendet
 dafür eine feste serverseitige `GameConfiguration`
 (`api/default_configuration.py`) — es gibt noch keine
 Konfigurations-Auswahl über die API; nur `control_mode` wird aus der

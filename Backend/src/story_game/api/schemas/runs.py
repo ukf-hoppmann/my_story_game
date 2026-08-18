@@ -10,7 +10,7 @@ from pydantic import Field
 
 from story_game.domain import GameRole, GameRunStatus
 
-from .common import APIModel, PlayerCharacterSeedModel
+from .common import APIModel, ControllableCharacterSeedModel
 from .state import GameStateModel
 
 
@@ -25,7 +25,9 @@ class InitializeRunRequestModel(APIModel):
     run_name: str = Field(min_length=1)
     initial_prompt: str = Field(min_length=1)
     control_mode: Literal["player", "director"]
-    player_character: PlayerCharacterSeedModel | None = None
+    controllable_characters: list[ControllableCharacterSeedModel] = Field(
+        default_factory=list
+    )
 
 
 class PlayTurnRequestModel(APIModel):

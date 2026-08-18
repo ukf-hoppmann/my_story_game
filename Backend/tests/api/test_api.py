@@ -198,7 +198,7 @@ def complete_state_document() -> dict[str, object]:
                     "issuer": "issuer",
                     "subject": "subject",
                     "game_role": "owner",
-                    "player_entity_id": uuid_text("almas"),
+                    "controlled_entity_ids": [uuid_text("almas")],
                 }
             ],
             "created_at": timestamp,
@@ -327,6 +327,31 @@ def test_api_starts_a_new_draft_run(client: TestClient) -> None:
     assert body["game_state"]["revision"] == 1
 
 
+def test_api_starts_a_director_run_with_multiple_controllable_characters(
+    client: TestClient,
+) -> None:
+    response = client.post(
+        "/api/v1/runs",
+        json={
+            "run_name": "Der Leuchtturm von Talmoor",
+            "initial_prompt": "Ein Licht brennt, wo keines brennen sollte.",
+            "control_mode": "director",
+            "controllable_characters": [
+                {"name": "Maren", "description": "Eine vorsichtige Kartografin."},
+                {"name": "Jonas"},
+            ],
+        },
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    member = body["game_run"]["members"][0]
+    assert len(member["controlled_entity_ids"]) == 2
+    entity_ids = set(member["controlled_entity_ids"])
+    world_entity_ids = {entity["id"] for entity in body["game_state"]["world"]["entities"]}
+    assert entity_ids <= world_entity_ids
+
+
 def test_api_lists_runs_for_the_dev_identity(client: TestClient) -> None:
     created = client.post(
         "/api/v1/runs",
@@ -442,7 +467,6 @@ def test_api_rejects_a_turn_for_an_unknown_member(
                 issuer="https://someone-else.example/realm",
                 subject="someone-else",
                 game_role=GameRole.OWNER,
-                player_entity_id=None,
             ),
         ),
         created_at=timestamp,

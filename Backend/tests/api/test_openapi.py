@@ -26,7 +26,6 @@ def test_openapi_describes_the_run_lifecycle(
         "WorldRuleModel": ("id",),
         "GoalModel": ("id",),
         "StoryTurnModel": ("id",),
-        "GameRunMemberModel": ("player_entity_id",),
         "GameRunModel": ("id",),
         "GameStateModel": ("run_id",),
         "RunSummaryModel": ("id",),
@@ -40,6 +39,11 @@ def test_openapi_describes_the_run_lifecycle(
         "related_entity_ids"
     ]
     assert goal_references["items"]["format"] == "uuid"
+
+    controlled_entity_ids = schema["components"]["schemas"]["GameRunMemberModel"][
+        "properties"
+    ]["controlled_entity_ids"]
+    assert controlled_entity_ids["items"]["format"] == "uuid"
 
     path_parameter = schema["paths"]["/api/v1/runs/{run_id}"]["get"]["parameters"][0]
     assert path_parameter["schema"]["format"] == "uuid"

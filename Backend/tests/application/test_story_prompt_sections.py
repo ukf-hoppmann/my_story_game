@@ -31,7 +31,7 @@ def selection():
 def context(player_input: str = "Ich frage den Wirt.", *narrations: str):
     state = w.game_state((w.TAVERN,), *narrations)
     result = build_story_turn_context_selection().apply(
-        SelectStoryTurnContextRequest(state, w.MAREN, player_input)
+        SelectStoryTurnContextRequest(state, (w.MAREN,), player_input)
     )
     assert isinstance(result, Success), result
     return result.data
@@ -91,7 +91,7 @@ def test_an_empty_selection_yields_a_readable_placeholder() -> None:
         knowledge=(),
         rules=(),
         goals=(),
-        controlled_entity=None,
+        controlled_entities=(),
     )
 
     text = world_state_text(empty)
@@ -178,7 +178,7 @@ def test_the_projection_survives_an_empty_selection() -> None:
         knowledge=(),
         rules=(),
         goals=(),
-        controlled_entity=None,
+        controlled_entities=(),
     )
 
     projection = extraction_projection(empty)

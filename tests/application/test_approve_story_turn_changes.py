@@ -22,6 +22,7 @@ from story_game.application.story_turn_context import (
     SelectStoryTurnContextRequest,
     build_story_turn_context_selection,
 )
+from story_game.application.diagnostics import ProposalRejected
 from story_game.application.story_turn_errors import StoryTurnErrorKind
 from story_game.domain import (
     AddFact,
@@ -36,6 +37,7 @@ from story_game.domain import (
     UpdateEntity,
 )
 from tests.application import turn_context_world as w
+from tests.application.diagnostics_double import FakeDiagnosticsLog
 
 
 def state():
@@ -65,11 +67,13 @@ def fact_handle_of(fact_id) -> str:
     return next(handle for handle, value in found.items() if value == fact_id)
 
 
-def approve(candidate: TurnChangeCandidate):
+def approve(candidate: TurnChangeCandidate, diagnostics=None):
     ids = iter(f"new-{number}" for number in range(1, 20))
     from tests.ids import sid
 
-    return ApproveStoryTurnChanges(lambda: sid(next(ids))).apply(
+    return ApproveStoryTurnChanges(
+        lambda: sid(next(ids)), diagnostics or FakeDiagnosticsLog()
+    ).apply(
         ApproveStoryTurnChangesRequest(
             state(), ExtractedTurnChanges(candidate, projection())
         )
@@ -224,6 +228,19 @@ def test_a_local_reference_may_not_shadow_an_existing_handle() -> None:
 
     assert isinstance(result, Failure)
     assert result.error.kind is StoryTurnErrorKind.INVALID_CANDIDATE_REFERENCE
+
+
+def test_a_rejected_reference_is_recorded_as_a_diagnostic_event() -> None:
+    diagnostics = FakeDiagnosticsLog()
+
+    result = approve(
+        TurnChangeCandidate(entity_updates=(CandidateEntityUpdate("unbekannt"),)),
+        diagnostics,
+    )
+
+    assert isinstance(result, Failure)
+    assert len(diagnostics.recorded) == 1
+    assert isinstance(diagnostics.recorded[0], ProposalRejected)
 
 
 def test_a_domain_violation_discards_the_whole_proposal() -> None:

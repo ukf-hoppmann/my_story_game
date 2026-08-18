@@ -14,7 +14,7 @@ summary = "model.summary.default"
 temperature = 0.5
 
 [generation_options.extraction]
-temperature = 0.1
+temperature = 0.3
 
 [generation_options.summary]
 temperature = 0.5

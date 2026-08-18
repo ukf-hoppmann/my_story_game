@@ -6,6 +6,12 @@ from dataclasses import dataclass
 from typing import Callable
 
 from story_game.application.contracts import Failure, OperationResult, Success
+from story_game.application.diagnostics import (
+    DiagnosticsLog,
+    ModelCallFailed,
+    NullDiagnosticsLog,
+    ProposalRejected,
+)
 from story_game.application.initialization_errors import (
     StoryInitializationError,
     StoryInitializationErrorKind,
@@ -63,11 +69,13 @@ class ExtractInitialWorldState:
         generation_configuration_resolver: GenerationConfigurationResolver,
         extractor: InitialWorldExtractionPort,
         new_id: Callable[[], StableId] = StableId.new,
+        diagnostics: DiagnosticsLog = NullDiagnosticsLog(),
     ) -> None:
         self._prompt_resolver = prompt_resolver
         self._generation_configuration_resolver = generation_configuration_resolver
         self._extractor = extractor
         self._new_id = new_id
+        self._diagnostics = diagnostics
 
     def apply(
         self, request: ExtractInitialWorldStateRequest
@@ -98,22 +106,26 @@ class ExtractInitialWorldState:
             )
             if isinstance(generation, Failure):
                 return Failure(extraction_model_failure(generation.error))
-            extracted = self._extractor.extract(
-                LLMGenerationCall(
-                    model_selection=generation.data.model_selection,
-                    generation_options=generation.data.generation_options,
-                    request=InitialWorldExtractionRequest(
-                        system_prompts=_system_prompts(
-                            selection.task.text, request.player_character
-                        ),
-                        opening_narration=initialization.narration,
-                        language=request.configuration.language,
-                        perspective=request.configuration.prompt_profile.perspective,
-                        control_mode=request.configuration.prompt_profile.control_mode,
-                        player_character=request.player_character,
+            call = LLMGenerationCall(
+                model_selection=generation.data.model_selection,
+                generation_options=generation.data.generation_options,
+                request=InitialWorldExtractionRequest(
+                    system_prompts=_system_prompts(
+                        selection.task.text, request.player_character
                     ),
-                )
+                    opening_narration=initialization.narration,
+                    language=request.configuration.language,
+                    perspective=request.configuration.prompt_profile.perspective,
+                    control_mode=request.configuration.prompt_profile.control_mode,
+                    player_character=request.player_character,
+                ),
             )
+            self._diagnostics.trace(
+                "extract_initial_world_state.call",
+                system_prompts=call.request.system_prompts,
+                opening_narration=call.request.opening_narration,
+            )
+            extracted = self._extractor.extract(call)
         except (KeyError, ValueError) as error:
             return Failure(
                 StoryInitializationError(
@@ -123,8 +135,17 @@ class ExtractInitialWorldState:
                 )
             )
         if isinstance(extracted, Failure):
+            self._diagnostics.record(
+                ModelCallFailed(task="initial_world_extraction", error=extracted.error)
+            )
             return Failure(extraction_model_failure(extracted.error))
-        return _build_world(extracted.data, request.player_character, self._new_id)
+        self._diagnostics.trace(
+            "extract_initial_world_state.candidate", candidate=extracted.data
+        )
+        built = _build_world(extracted.data, request.player_character, self._new_id)
+        if isinstance(built, Failure):
+            self._diagnostics.record(ProposalRejected(reason=str(built.error)))
+        return built
 
 
 def _build_world(

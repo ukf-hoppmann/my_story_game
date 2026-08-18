@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from story_game.application import Failure, Success
+from story_game.application.diagnostics import ModelCallFailed
 from story_game.application.generate_story import (
     GenerateStory,
     GenerateStoryRequest,
@@ -26,6 +27,7 @@ from story_game.application.story_turn_context import (
 from story_game.application.story_turn_errors import StoryTurnErrorKind
 from story_game.infrastructure.llm import FilePromptPackageCatalog
 from tests.application import turn_context_world as w
+from tests.application.diagnostics_double import FakeDiagnosticsLog
 
 
 PROMPT_ROOT = Path(__file__).parents[2] / "prompts"
@@ -65,11 +67,14 @@ def context(player_input: str = "Ich frage den Wirt.", *narrations: str):
     return result.data
 
 
-def operation(generator=None, configuration_resolver=None) -> GenerateStory:
+def operation(
+    generator=None, configuration_resolver=None, diagnostics=None
+) -> GenerateStory:
     return GenerateStory(
         StoryPromptSelectionResolver(FilePromptPackageCatalog(PROMPT_ROOT)),
         configuration_resolver or FixedConfigurationResolver(),
         generator or RecordingGenerator(),
+        diagnostics or FakeDiagnosticsLog(),
     )
 
 
@@ -182,6 +187,32 @@ def test_an_unknown_prompt_package_fails_before_the_port_call() -> None:
     assert isinstance(result, Failure)
     assert result.error.kind is StoryTurnErrorKind.INVALID_CONFIGURATION
     assert generator.call is None
+
+
+def test_a_model_failure_is_recorded_as_a_diagnostic_event() -> None:
+    diagnostics = FakeDiagnosticsLog()
+    generator = RecordingGenerator(
+        Failure(LLMError(LLMErrorKind.UNAVAILABLE, "Nicht erreichbar."))
+    )
+
+    operation(generator, diagnostics=diagnostics).apply(request())
+
+    assert len(diagnostics.recorded) == 1
+    event = diagnostics.recorded[0]
+    assert isinstance(event, ModelCallFailed)
+    assert event.task == "story"
+    assert event.error.kind is LLMErrorKind.UNAVAILABLE
+
+
+def test_a_successful_call_only_traces_and_never_records() -> None:
+    diagnostics = FakeDiagnosticsLog()
+
+    operation(diagnostics=diagnostics).apply(request())
+
+    assert diagnostics.recorded == []
+    traced_steps = [step for step, _ in diagnostics.traced]
+    assert "generate_story.call" in traced_steps
+    assert "generate_story.result" in traced_steps
 
 
 def test_an_empty_world_selection_still_produces_a_valid_request() -> None:

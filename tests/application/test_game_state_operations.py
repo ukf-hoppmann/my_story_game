@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 
 import story_game.application.game_state as operations
 from story_game.application import Failure, Success
+from story_game.application.diagnostics import RevisionConflict
 from story_game.application.game_models import ConfigurationPersistenceRequest
 from story_game.application.llm import PromptCategory, PromptOption, PromptPackage
 from story_game.application.ports import (
@@ -24,6 +25,7 @@ from story_game.domain import (
     StoryState,
     WorldState,
 )
+from tests.application.diagnostics_double import FakeDiagnosticsLog
 from tests.ids import sid
 
 
@@ -277,6 +279,9 @@ def test_completed_turn_maps_a_stale_revision_to_conflict() -> None:
     )
 
     store = ConflictingStore()
-    result = operations.CommitCompletedTurn(store, store).apply(request)
+    diagnostics = FakeDiagnosticsLog()
+    result = operations.CommitCompletedTurn(store, store, diagnostics).apply(request)
 
     assert isinstance(result, Failure)
+    assert len(diagnostics.recorded) == 1
+    assert isinstance(diagnostics.recorded[0], RevisionConflict)

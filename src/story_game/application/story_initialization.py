@@ -7,6 +7,11 @@ from datetime import datetime
 from typing import Callable
 
 from story_game.application.contracts import Failure, OperationResult, Success
+from story_game.application.diagnostics import (
+    DiagnosticsLog,
+    ModelCallFailed,
+    NullDiagnosticsLog,
+)
 from story_game.application.initialization_errors import (
     StoryInitializationError,
     StoryInitializationErrorKind,
@@ -51,11 +56,13 @@ class GenerateInitialStoryState:
         generation_configuration_resolver: GenerationConfigurationResolver,
         generator: StoryInitializationPort,
         now: Callable[[], datetime],
+        diagnostics: DiagnosticsLog = NullDiagnosticsLog(),
     ) -> None:
         self._prompt_resolver = prompt_resolver
         self._generation_configuration_resolver = generation_configuration_resolver
         self._generator = generator
         self._now = now
+        self._diagnostics = diagnostics
 
     def apply(
         self,
@@ -99,14 +106,26 @@ class GenerateInitialStoryState:
                 )
             )
 
+        self._diagnostics.trace(
+            "generate_initial_story_state.call",
+            system_prompts=call.request.system_prompts,
+            configuration=call.request.configuration,
+            initial_prompt=call.request.initial_prompt,
+        )
         generated = self._generator.generate(call)
         if isinstance(generated, Failure):
+            self._diagnostics.record(
+                ModelCallFailed(task="story_initialization", error=generated.error)
+            )
             return Failure(
                 model_failure(
                     StoryInitializationStage.STORY_GENERATION,
                     generated.error,
                 )
             )
+        self._diagnostics.trace(
+            "generate_initial_story_state.result", text=generated.data.text
+        )
 
         initialization = StoryInitialization(
             prompt=request.initial_prompt,

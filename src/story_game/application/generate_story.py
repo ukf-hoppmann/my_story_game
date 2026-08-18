@@ -5,6 +5,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from story_game.application.contracts import Failure, OperationResult, Success
+from story_game.application.diagnostics import (
+    DiagnosticsLog,
+    ModelCallFailed,
+    NullDiagnosticsLog,
+)
 from story_game.application.llm import (
     GenerationConfigurationResolver,
     GenerationTask,
@@ -59,14 +64,20 @@ class GenerateStory:
         prompt_resolver: StoryPromptSelectionResolver,
         generation_configuration_resolver: GenerationConfigurationResolver,
         generator: StoryGenerationPort,
+        diagnostics: DiagnosticsLog = NullDiagnosticsLog(),
     ) -> None:
         self._prompt_resolver = prompt_resolver
         self._generation_configuration_resolver = generation_configuration_resolver
         self._generator = generator
+        self._diagnostics = diagnostics
 
     def apply(
         self, request: GenerateStoryRequest
     ) -> OperationResult[StoryGenerationData, StoryTurnError]:
+        self._diagnostics.trace(
+            "generate_story.request",
+            player_input=request.player_input,
+        )
         try:
             selection = self._prompt_resolver.resolve(request.configuration)
             generation = self._generation_configuration_resolver.resolve(
@@ -96,7 +107,17 @@ class GenerateStory:
                 )
             )
 
+        self._diagnostics.trace(
+            "generate_story.call",
+            system_prompts=call.request.system_prompts,
+            configuration=call.request.configuration,
+            world_state=call.request.world_state,
+            story_state=call.request.story_state,
+            user_prompt=call.request.user_prompt,
+        )
         generated = self._generator.generate(call)
         if isinstance(generated, Failure):
+            self._diagnostics.record(ModelCallFailed(task="story", error=generated.error))
             return Failure(story_model_failure(generated.error))
+        self._diagnostics.trace("generate_story.result", text=generated.data.text)
         return Success(generated.data)

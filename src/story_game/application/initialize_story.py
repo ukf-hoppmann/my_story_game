@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from story_game.application.contracts import Failure, OperationResult, Success
+from story_game.application.diagnostics import DiagnosticsLog, NullDiagnosticsLog
 from story_game.application.initial_world_extraction import (
     ExtractInitialWorldState,
     ExtractInitialWorldStateRequest,
@@ -43,13 +44,16 @@ class InitializeStory:
         self,
         story_generation: GenerateInitialStoryState,
         world_extraction: ExtractInitialWorldState,
+        diagnostics: DiagnosticsLog = NullDiagnosticsLog(),
     ) -> None:
         self._story_generation = story_generation
         self._world_extraction = world_extraction
+        self._diagnostics = diagnostics
 
     def apply(
         self, request: InitializeStoryRequest
     ) -> OperationResult[InitializedStory, StoryInitializationError]:
+        self._diagnostics.trace("initialize_story.story_generation.start")
         generated = self._story_generation.apply(
             GenerateInitialStoryStateRequest(
                 request.configuration,
@@ -59,6 +63,7 @@ class InitializeStory:
         )
         if isinstance(generated, Failure):
             return generated
+        self._diagnostics.trace("initialize_story.world_extraction.start")
         extracted = self._world_extraction.apply(
             ExtractInitialWorldStateRequest(
                 request.configuration,
@@ -68,4 +73,5 @@ class InitializeStory:
         )
         if isinstance(extracted, Failure):
             return extracted
+        self._diagnostics.trace("initialize_story.done")
         return Success(InitializedStory(generated.data, extracted.data))

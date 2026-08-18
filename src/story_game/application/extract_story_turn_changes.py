@@ -5,6 +5,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from story_game.application.contracts import Failure, OperationResult, Success
+from story_game.application.diagnostics import (
+    DiagnosticsLog,
+    ModelCallFailed,
+    NullDiagnosticsLog,
+)
 from story_game.application.llm import (
     ExtractionPromptSelectionResolver,
     GenerationConfigurationResolver,
@@ -66,15 +71,22 @@ class ExtractStoryTurnChanges:
         prompt_resolver: ExtractionPromptSelectionResolver,
         generation_configuration_resolver: GenerationConfigurationResolver,
         extractor: TurnExtractionPort,
+        diagnostics: DiagnosticsLog = NullDiagnosticsLog(),
     ) -> None:
         self._prompt_resolver = prompt_resolver
         self._generation_configuration_resolver = generation_configuration_resolver
         self._extractor = extractor
+        self._diagnostics = diagnostics
 
     def apply(
         self, request: ExtractStoryTurnChangesRequest
     ) -> OperationResult[ExtractedTurnChanges, StoryTurnError]:
         projection = extraction_projection(request.context)
+        self._diagnostics.trace(
+            "extract_story_turn_changes.request",
+            narration=request.narration,
+            world_state=projection.text,
+        )
         try:
             selection = self._prompt_resolver.resolve(
                 request.configuration.prompt_package_id,
@@ -103,5 +115,9 @@ class ExtractStoryTurnChanges:
 
         extracted = self._extractor.extract(call)
         if isinstance(extracted, Failure):
+            self._diagnostics.record(
+                ModelCallFailed(task="extraction", error=extracted.error)
+            )
             return Failure(story_model_failure(extracted.error))
+        self._diagnostics.trace("extract_story_turn_changes.result", candidate=extracted.data)
         return Success(ExtractedTurnChanges(extracted.data, projection))

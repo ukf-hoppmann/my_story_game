@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 from typing import TypeAlias
 
 from story_game.application.contracts import Failure, OperationResult
+from story_game.application.diagnostics import DiagnosticsLog, NullDiagnosticsLog
 from story_game.application.game_models import LoadedGame
 from story_game.application.game_state import CreateGameRun, CreateGameRunRequest
 from story_game.application.initialization_errors import StoryInitializationError
@@ -83,15 +84,20 @@ class InitializeGameRun:
         *,
         new_id: Callable[[], StableId] = StableId.new,
         now: Callable[[], datetime] = lambda: datetime.now(UTC),
+        diagnostics: DiagnosticsLog = NullDiagnosticsLog(),
     ) -> None:
         self._story_initializer = story_initializer
         self._game_run_creator = game_run_creator
         self._new_id = new_id
         self._now = now
+        self._diagnostics = diagnostics
 
     def apply(
         self, request: InitializeGameRunRequest
     ) -> OperationResult[LoadedGame, InitialGameRunError]:
+        self._diagnostics.trace(
+            "initialize_game_run.start", run_name=request.run_name
+        )
         initialized = self._story_initializer.apply(
             InitializeStoryRequest(
                 request.configuration,
@@ -135,7 +141,13 @@ class InitializeGameRun:
         except (DomainError, ValueError) as error:
             return Failure(StateRejected(str(error)))
 
-        return self._game_run_creator.apply(CreateGameRunRequest(run, state))
+        created = self._game_run_creator.apply(CreateGameRunRequest(run, state))
+        self._diagnostics.trace(
+            "initialize_game_run.done",
+            run_id=str(run_id),
+            success=not isinstance(created, Failure),
+        )
+        return created
 
 
 def _player_entity_id(

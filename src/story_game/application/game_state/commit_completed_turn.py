@@ -6,6 +6,11 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from story_game.application.contracts import Failure, OperationResult, Success
+from story_game.application.diagnostics import (
+    DiagnosticsLog,
+    NullDiagnosticsLog,
+    RevisionConflict,
+)
 from story_game.application.game_models import CompletedTurnPersistenceRequest
 from story_game.application.ports import (
     CompletedTurnWriter,
@@ -23,7 +28,7 @@ from story_game.domain import (
 )
 
 from .error_mapping import map_game_state_error
-from .errors import GameStateOperationError
+from .errors import GameStateOperationError, RunConflict
 
 
 @dataclass(frozen=True, slots=True)
@@ -42,9 +47,11 @@ class CommitCompletedTurn:
         self,
         writer: CompletedTurnWriter,
         reader: GameStateReader,
+        diagnostics: DiagnosticsLog = NullDiagnosticsLog(),
     ) -> None:
         self.writer = writer
         self.reader = reader
+        self._diagnostics = diagnostics
 
     def apply(
         self, request: CommitCompletedTurnRequest
@@ -73,5 +80,10 @@ class CommitCompletedTurn:
                 )
             )
         except (GameStateStoreError, DomainError) as error:
-            return Failure(map_game_state_error(error))
+            mapped = map_game_state_error(error)
+            if isinstance(mapped, RunConflict):
+                self._diagnostics.record(
+                    RevisionConflict(detail=mapped.detail, run_id=str(request.run_id))
+                )
+            return Failure(mapped)
         return Success(state)

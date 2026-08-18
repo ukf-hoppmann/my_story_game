@@ -16,7 +16,9 @@ from story_game.application.game_state import (
     UpdateGameConfiguration,
     PromptProfileValidator,
 )
+from story_game.infrastructure.diagnostics import StructlogDiagnosticsLog
 from story_game.infrastructure.llm import FilePromptPackageCatalog
+from story_game.infrastructure.logging_config import LoggingSettings, configure_logging
 from story_game.infrastructure.persistence.postgres import (
     PostgresConnectionFactory,
     PostgresGameStore,
@@ -31,8 +33,14 @@ from .routers import router
 def create_app(
     dependencies: ApiDependencies | None = None,
     settings: ApiSettings | None = None,
+    logging_settings: LoggingSettings | None = None,
 ) -> FastAPI:
     resolved_settings = settings or ApiSettings.from_environment()
+    resolved_logging_settings = logging_settings or LoggingSettings.from_environment()
+    configure_logging(resolved_logging_settings)
+    diagnostics = StructlogDiagnosticsLog(
+        debug_enabled=resolved_logging_settings.debug_enabled
+    )
 
     @asynccontextmanager
     async def lifespan(application: FastAPI) -> AsyncIterator[None]:
@@ -43,7 +51,9 @@ def create_app(
                 PostgresSchemaMigrator(connections).migrate()
             store = PostgresGameStore(connections)
             resolved = ApiDependencies(
-                _compose_game_state_operations(store, resolved_settings.prompt_root)
+                _compose_game_state_operations(
+                    store, resolved_settings.prompt_root, diagnostics
+                )
             )
         application.state.api_dependencies = resolved
         yield
@@ -60,14 +70,16 @@ def create_app(
 
 
 def _compose_game_state_operations(
-    store: PostgresGameStore, prompt_root: str
+    store: PostgresGameStore,
+    prompt_root: str,
+    diagnostics: StructlogDiagnosticsLog,
 ) -> GameStateOperations:
     validator = PromptProfileValidator(FilePromptPackageCatalog(prompt_root))
     return GameStateOperations(
         create=CreateGameRun(store, validator),
         load=LoadGame(store, store),
         update_configuration=UpdateGameConfiguration(store, validator),
-        commit_turn=CommitCompletedTurn(store, store),
+        commit_turn=CommitCompletedTurn(store, store, diagnostics),
     )
 
 

@@ -5,6 +5,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from story_game.application.contracts import Failure, OperationResult, Success
+from story_game.application.diagnostics import (
+    DiagnosticsLog,
+    NullDiagnosticsLog,
+    SummaryGenerationFailed,
+)
 from story_game.application.llm import (
     GenerationConfigurationResolver,
     GenerationTask,
@@ -55,10 +60,12 @@ class SummarizeStory:
         prompt_resolver: SummaryPromptSelectionResolver,
         generation_configuration_resolver: GenerationConfigurationResolver,
         summarizer: StorySummaryPort,
+        diagnostics: DiagnosticsLog = NullDiagnosticsLog(),
     ) -> None:
         self._prompt_resolver = prompt_resolver
         self._generation_configuration_resolver = generation_configuration_resolver
         self._summarizer = summarizer
+        self._diagnostics = diagnostics
 
     def apply(
         self, request: SummarizeStoryRequest
@@ -90,7 +97,14 @@ class SummarizeStory:
                 StoryTurnError(StoryTurnErrorKind.INVALID_CONFIGURATION, str(error))
             )
 
+        self._diagnostics.trace(
+            "summarize_story.call",
+            narration=call.request.narration,
+            previous_summary=call.request.previous_summary,
+        )
         summarized = self._summarizer.summarize(call)
         if isinstance(summarized, Failure):
+            self._diagnostics.record(SummaryGenerationFailed(error=summarized.error))
             return Failure(story_model_failure(summarized.error))
+        self._diagnostics.trace("summarize_story.result", text=summarized.data.text)
         return Success(summarized.data)

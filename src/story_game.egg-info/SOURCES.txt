@@ -22,6 +22,7 @@ src/story_game/application/__init__.py
 src/story_game/application/apply_selection_budget.py
 src/story_game/application/approve_story_turn_changes.py
 src/story_game/application/contracts.py
+src/story_game/application/diagnostics.py
 src/story_game/application/expand_one_hop.py
 src/story_game/application/extract_story_turn_changes.py
 src/story_game/application/game_models.py
@@ -73,8 +74,11 @@ src/story_game/domain/story.py
 src/story_game/domain/value_objects.py
 src/story_game/domain/world.py
 src/story_game/infrastructure/__init__.py
+src/story_game/infrastructure/logging_config.py
 src/story_game/infrastructure/configuration/__init__.py
 src/story_game/infrastructure/configuration/llm.py
+src/story_game/infrastructure/diagnostics/__init__.py
+src/story_game/infrastructure/diagnostics/structlog_diagnostics.py
 src/story_game/infrastructure/llm/__init__.py
 src/story_game/infrastructure/llm/prompts.py
 src/story_game/infrastructure/llm/lmstudio/__init__.py

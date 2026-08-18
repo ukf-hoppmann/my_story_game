@@ -6,6 +6,11 @@ from dataclasses import dataclass, replace
 from typing import Callable
 
 from story_game.application.contracts import Failure, OperationResult, Success
+from story_game.application.diagnostics import (
+    DiagnosticsLog,
+    NullDiagnosticsLog,
+    ProposalRejected,
+)
 from story_game.application.extract_story_turn_changes import ExtractedTurnChanges
 from story_game.application.llm import (
     CandidateEntity,
@@ -75,8 +80,13 @@ class ApproveStoryTurnChanges:
     approved set is handed on and only committed elsewhere.
     """
 
-    def __init__(self, new_id: Callable[[], StableId] = StableId.new) -> None:
+    def __init__(
+        self,
+        new_id: Callable[[], StableId] = StableId.new,
+        diagnostics: DiagnosticsLog = NullDiagnosticsLog(),
+    ) -> None:
         self._new_id = new_id
+        self._diagnostics = diagnostics
 
     def apply(
         self, request: ApproveStoryTurnChangesRequest
@@ -84,11 +94,13 @@ class ApproveStoryTurnChanges:
         state = request.game_state
         candidate = request.extracted.candidate
         projection = request.extracted.projection
+        self._diagnostics.trace("approve_story_turn_changes.candidate", candidate=candidate)
 
         try:
             entities = self._entity_references(candidate, projection)
             operations = self._operations(candidate, projection, entities, state)
         except _UnknownReference as error:
+            self._diagnostics.record(ProposalRejected(reason=str(error)))
             return Failure(
                 StoryTurnError(
                     StoryTurnErrorKind.INVALID_CANDIDATE_REFERENCE, str(error)
@@ -123,9 +135,13 @@ class ApproveStoryTurnChanges:
         try:
             state.apply(approved)
         except DomainError as error:
+            self._diagnostics.record(ProposalRejected(reason=str(error)))
             return Failure(
                 StoryTurnError(StoryTurnErrorKind.DOMAIN_REJECTION, str(error))
             )
+        self._diagnostics.trace(
+            "approve_story_turn_changes.approved", approved=approved
+        )
         return Success(ApprovedTurnChanges(approved, proposed))
 
     def _entity_references(

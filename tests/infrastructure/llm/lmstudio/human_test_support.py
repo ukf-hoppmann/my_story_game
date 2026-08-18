@@ -60,6 +60,7 @@ from story_game.application.llm import (
     StoryPromptSelectionResolver,
     SummaryPromptSelectionResolver,
 )
+from story_game.application.diagnostics import DiagnosticsLog
 from story_game.application.summarize_story import SummarizeStory
 from story_game.application.story_initialization import (
     GenerateInitialStoryState,
@@ -87,7 +88,13 @@ from story_game.infrastructure.configuration import (
     TomlGenerationConfigurationResolver,
     TomlLlmConfigurationLoader,
 )
+from story_game.infrastructure.diagnostics import StructlogDiagnosticsLog
 from story_game.infrastructure.llm import FilePromptPackageCatalog
+from story_game.infrastructure.logging_config import (
+    LoggingMode,
+    LoggingSettings,
+    configure_logging,
+)
 from story_game.infrastructure.llm.lmstudio import (
     LmStudioClient,
     LmStudioInitialWorldExtractionAdapter,
@@ -193,6 +200,20 @@ def _resolver() -> TomlGenerationConfigurationResolver:
     return TomlGenerationConfigurationResolver(_configuration_path())
 
 
+def _debug_diagnostics() -> DiagnosticsLog:
+    """Turn on TASK-024's excessive DEBUG profile for this human-inspection run.
+
+    A human running this bundle with ``-s`` wants everything: raw
+    prompts/responses (handled separately by ``LmStudioClient``'s own debug
+    logging) plus every transformed intermediate value on the way there, so
+    a bug inside a transformation step is visible too, not only a failed
+    model call. Safe to call repeatedly — it just reconfigures the shared
+    structlog setup.
+    """
+    configure_logging(LoggingSettings(mode=LoggingMode.DEBUG))
+    return StructlogDiagnosticsLog(debug_enabled=True)
+
+
 def _live_client() -> LmStudioClient:
     """Build a real client for LM Studio, verifying the story/extraction
     tasks are actually configured against it before making a call."""
@@ -206,7 +227,8 @@ def _live_client() -> LmStudioClient:
         LmStudioSettings(
             live_base_url(provider.base_url),
             timeout_seconds=provider.timeout_seconds,
-        )
+        ),
+        debug_enabled=True,
     )
 
 
@@ -355,6 +377,7 @@ class HumanInitStorySupport:
 
     def call_llm(self) -> StoryState:
         client = _live_client()
+        diagnostics = _debug_diagnostics()
         try:
             printing = PrintingLmStudioClient(client)
             operation = GenerateInitialStoryState(
@@ -362,6 +385,7 @@ class HumanInitStorySupport:
                 _resolver(),
                 LmStudioStoryInitializationAdapter(printing),
                 lambda: datetime.now(UTC),
+                diagnostics,
             )
             result = operation.apply(
                 GenerateInitialStoryStateRequest(
@@ -375,6 +399,7 @@ class HumanInitStorySupport:
 
     def extract_state(self) -> tuple[StoryState, WorldState]:
         client = _live_client()
+        diagnostics = _debug_diagnostics()
         try:
             printing = PrintingLmStudioClient(client)
             operation = InitializeStory(
@@ -383,12 +408,15 @@ class HumanInitStorySupport:
                     _resolver(),
                     LmStudioStoryInitializationAdapter(printing),
                     lambda: datetime.now(UTC),
+                    diagnostics,
                 ),
                 ExtractInitialWorldState(
                     InitialExtractionPromptSelectionResolver(_catalog()),
                     _resolver(),
                     LmStudioInitialWorldExtractionAdapter(printing),
+                    diagnostics=diagnostics,
                 ),
+                diagnostics,
             )
             result = operation.apply(
                 InitializeStoryRequest(
@@ -492,12 +520,14 @@ class HumanStoryTurnSupport:
 
     def call_llm(self) -> str:
         client = _live_client()
+        diagnostics = _debug_diagnostics()
         try:
             printing = PrintingLmStudioClient(client)
             operation = GenerateStory(
                 StoryPromptSelectionResolver(_catalog()),
                 _resolver(),
                 LmStudioStoryGenerationAdapter(printing),
+                diagnostics,
             )
             result = operation.apply(
                 GenerateStoryRequest(self.context, self.configuration, self.player_input)
@@ -509,12 +539,14 @@ class HumanStoryTurnSupport:
 
     def extract_state(self) -> ExtractedTurnChanges:
         client = _live_client()
+        diagnostics = _debug_diagnostics()
         try:
             printing = PrintingLmStudioClient(client)
             generate = GenerateStory(
                 StoryPromptSelectionResolver(_catalog()),
                 _resolver(),
                 LmStudioStoryGenerationAdapter(printing),
+                diagnostics,
             )
             generated = generate.apply(
                 GenerateStoryRequest(self.context, self.configuration, self.player_input)
@@ -525,6 +557,7 @@ class HumanStoryTurnSupport:
                 ExtractionPromptSelectionResolver(_catalog()),
                 _resolver(),
                 LmStudioTurnExtractionAdapter(printing),
+                diagnostics,
             )
             extracted = extract.apply(
                 ExtractStoryTurnChangesRequest(
@@ -552,6 +585,7 @@ class HumanStoryTurnSupport:
         approval, summary, and commit — against an in-memory store so nothing
         touches a database, but every non-model step is the production one."""
         client = _live_client()
+        diagnostics = _debug_diagnostics()
         try:
             printing = PrintingLmStudioClient(client)
             run = GameRun(
@@ -577,24 +611,28 @@ class HumanStoryTurnSupport:
             store = InMemoryTurnStore(run, self.state)
             operation = PlayStoryTurn(
                 LoadGame(store, store),
-                build_story_turn_context_selection(),
+                build_story_turn_context_selection(diagnostics=diagnostics),
                 GenerateStory(
                     StoryPromptSelectionResolver(_catalog()),
                     _resolver(),
                     LmStudioStoryGenerationAdapter(printing),
+                    diagnostics,
                 ),
                 ExtractStoryTurnChanges(
                     ExtractionPromptSelectionResolver(_catalog()),
                     _resolver(),
                     LmStudioTurnExtractionAdapter(printing),
+                    diagnostics,
                 ),
-                ApproveStoryTurnChanges(),
+                ApproveStoryTurnChanges(diagnostics=diagnostics),
                 SummarizeStory(
                     SummaryPromptSelectionResolver(_catalog()),
                     _resolver(),
                     LmStudioStorySummaryAdapter(printing),
+                    diagnostics,
                 ),
-                CommitCompletedTurn(store, store),
+                CommitCompletedTurn(store, store, diagnostics),
+                diagnostics=diagnostics,
             )
             result = operation.apply(
                 PlayStoryTurnRequest(run.id, self.initiator, self.player_input)
@@ -669,6 +707,7 @@ class HumanFullPlaythroughSupport:
         PostgresSchemaMigrator(connections).migrate()
         store = PostgresGameStore(connections)
         client = _live_client()
+        diagnostics = _debug_diagnostics()
         run_id: StableId | None = None
         try:
             printing = PrintingLmStudioClient(client)
@@ -680,14 +719,18 @@ class HumanFullPlaythroughSupport:
                         _resolver(),
                         LmStudioStoryInitializationAdapter(printing),
                         lambda: datetime.now(UTC),
+                        diagnostics,
                     ),
                     ExtractInitialWorldState(
                         InitialExtractionPromptSelectionResolver(_catalog()),
                         _resolver(),
                         LmStudioInitialWorldExtractionAdapter(printing),
+                        diagnostics=diagnostics,
                     ),
+                    diagnostics,
                 ),
                 CreateGameRun(store, PromptProfileValidator(_catalog())),
+                diagnostics=diagnostics,
             )
             initialized = init_operation.apply(
                 InitializeGameRunRequest(
@@ -717,24 +760,28 @@ class HumanFullPlaythroughSupport:
 
             turn_operation = PlayStoryTurn(
                 LoadGame(store, store),
-                build_story_turn_context_selection(),
+                build_story_turn_context_selection(diagnostics=diagnostics),
                 GenerateStory(
                     StoryPromptSelectionResolver(_catalog()),
                     _resolver(),
                     LmStudioStoryGenerationAdapter(printing),
+                    diagnostics,
                 ),
                 ExtractStoryTurnChanges(
                     ExtractionPromptSelectionResolver(_catalog()),
                     _resolver(),
                     LmStudioTurnExtractionAdapter(printing),
+                    diagnostics,
                 ),
-                ApproveStoryTurnChanges(),
+                ApproveStoryTurnChanges(diagnostics=diagnostics),
                 SummarizeStory(
                     SummaryPromptSelectionResolver(_catalog()),
                     _resolver(),
                     LmStudioStorySummaryAdapter(printing),
+                    diagnostics,
                 ),
-                CommitCompletedTurn(store, store),
+                CommitCompletedTurn(store, store, diagnostics),
+                diagnostics=diagnostics,
             )
             played = turn_operation.apply(
                 PlayStoryTurnRequest(run_id, self.initiator, turn_input)

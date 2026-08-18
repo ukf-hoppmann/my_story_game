@@ -9,6 +9,7 @@ from story_game.application.apply_selection_budget import (
     ApplySelectionBudgetRequest,
 )
 from story_game.application.contracts import Failure, OperationResult, Success
+from story_game.application.diagnostics import DiagnosticsLog, NullDiagnosticsLog
 from story_game.application.expand_one_hop import ExpandOneHop, ExpandOneHopRequest
 from story_game.application.populate_scene_locations import (
     PopulateSceneLocations,
@@ -61,6 +62,7 @@ class SelectStoryTurnContext:
         referenced_data: SelectReferencedFactsKnowledgeGoals,
         selection_budget: ApplySelectionBudget,
         budget: SelectionBudget = SelectionBudget(),
+        diagnostics: DiagnosticsLog = NullDiagnosticsLog(),
     ) -> None:
         self._always_included = always_included
         self._mentioned_entities = mentioned_entities
@@ -69,11 +71,19 @@ class SelectStoryTurnContext:
         self._referenced_data = referenced_data
         self._selection_budget = selection_budget
         self._budget = budget
+        self._diagnostics = diagnostics
 
     def apply(
         self, request: SelectStoryTurnContextRequest
     ) -> OperationResult[SelectedStoryTurnContext, ContextSelectionError]:
         world = request.game_state.world
+        self._diagnostics.trace(
+            "select_story_turn_context.request",
+            player_input=request.player_input,
+            controlled_entity_id=str(request.controlled_entity_id)
+            if request.controlled_entity_id
+            else None,
+        )
 
         frame = self._always_included.apply(
             SelectAlwaysIncludedRequest(
@@ -131,34 +141,41 @@ class SelectStoryTurnContext:
             return budgeted
 
         kept = {entity.id for entity in budgeted.data.entities}
-        return Success(
-            SelectedStoryTurnContext(
-                summary=frame.data.summary,
-                recent_turns=frame.data.recent_turns,
-                controlled_entity=frame.data.controlled_entity,
-                scene_locations=tuple(
-                    location
-                    for location in scene.data.scene_locations
-                    if location.id in kept
-                ),
-                entities=budgeted.data.entities,
-                links=budgeted.data.links,
-                facts=budgeted.data.facts,
-                knowledge=budgeted.data.knowledge,
-                rules=frame.data.rules,
-                goals=budgeted.data.goals,
-                language=frame.data.language,
-                perspective=frame.data.perspective,
-                control_mode=frame.data.control_mode,
-                narrative_boundaries=frame.data.narrative_boundaries,
-                selection_reasons=budgeted.data.reasons,
-                truncated=budgeted.data.truncated,
-            )
+        selected_context = SelectedStoryTurnContext(
+            summary=frame.data.summary,
+            recent_turns=frame.data.recent_turns,
+            controlled_entity=frame.data.controlled_entity,
+            scene_locations=tuple(
+                location
+                for location in scene.data.scene_locations
+                if location.id in kept
+            ),
+            entities=budgeted.data.entities,
+            links=budgeted.data.links,
+            facts=budgeted.data.facts,
+            knowledge=budgeted.data.knowledge,
+            rules=frame.data.rules,
+            goals=budgeted.data.goals,
+            language=frame.data.language,
+            perspective=frame.data.perspective,
+            control_mode=frame.data.control_mode,
+            narrative_boundaries=frame.data.narrative_boundaries,
+            selection_reasons=budgeted.data.reasons,
+            truncated=budgeted.data.truncated,
         )
+        self._diagnostics.trace(
+            "select_story_turn_context.result",
+            entity_count=len(selected_context.entities),
+            fact_count=len(selected_context.facts),
+            truncated=selected_context.truncated,
+            selection_reasons=selected_context.selection_reasons,
+        )
+        return Success(selected_context)
 
 
 def build_story_turn_context_selection(
     budget: SelectionBudget = SelectionBudget(),
+    diagnostics: DiagnosticsLog = NullDiagnosticsLog(),
 ) -> SelectStoryTurnContext:
     """Wire the default selection so callers need not know its six steps."""
     return SelectStoryTurnContext(
@@ -169,6 +186,7 @@ def build_story_turn_context_selection(
         SelectReferencedFactsKnowledgeGoals(),
         ApplySelectionBudget(),
         budget,
+        diagnostics,
     )
 
 

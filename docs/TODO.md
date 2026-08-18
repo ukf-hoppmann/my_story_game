@@ -604,14 +604,14 @@ After explicit rejection:
 
 - `TASK-024` **Logging-Grundlage einführen**
   - Type: Task.
-  - Status: Open.
+  - Status: Awaiting confirmation.
   - Parent: None.
   - Created: 2026-08-17.
   - Area: Betrieb und Diagnose.
   - Priority: Wichtig.
   - Dependencies: None.
-  - Goal: Eine schlanke, projektweite Logging-Grundlage schaffen. Das Projekt enthält heute kein einziges Log: weder Modellaufrufe noch verworfene Vorschläge, Revisionskonflikte oder Providerfehler hinterlassen eine Spur. Wiederkehrende Probleme im Spielbetrieb sind dadurch nicht erkennbar.
-  - Completion criteria: Es ist entschieden, welche Ereignisse geloggt werden und auf welcher Stufe, wie die Ausgabe konfiguriert wird und wie die Schichtengrenzen eingehalten bleiben — die Domain loggt nicht, die Application entscheidet fachlich, Infrastruktur und Composition Root richten ein. Spielerprosa, Prompts und Rohantworten dürfen nicht ungefiltert im Log landen. Mindestens fehlgeschlagene Modellaufrufe, verworfene Änderungsvorschläge und Revisionskonflikte sind sichtbar. Bestehende typisierte Fehler bleiben unverändert; das Log ergänzt sie, ersetzt sie nicht.
+  - Goal: Eine schlanke, projektweite Logging-Grundlage schaffen. Das Projekt enthielt zuvor kein einziges Log: weder Modellaufrufe noch verworfene Vorschläge, Revisionskonflikte oder Providerfehler hinterließen eine Spur. Wiederkehrende Probleme im Spielbetrieb waren dadurch nicht erkennbar.
+  - Completion criteria: Es ist entschieden, welche Ereignisse geloggt werden und auf welcher Stufe, wie die Ausgabe konfiguriert wird und wie die Schichtengrenzen eingehalten bleiben — die Domain loggt nicht, die Application entscheidet fachlich über einen eigenen `DiagnosticsLog`-Port (`record()`/`trace()`), Infrastruktur (`structlog`) und Composition Root richten ein. Explizit vom Projektbesitzer nachträglich erweitert (2026-08-18): im PROD-Profil (Default) dürfen Spielerprosa, Prompts und Rohantworten nicht ungefiltert im Log landen — durchgesetzt über den geschlossenen, typisierten `DiagnosticEvent`-Schema, nicht nur per Konvention; im ausdrücklich aktivierten DEBUG-Profil (`STORY_GAME_LOG_MODE=debug`) wird dagegen bewusst exzessiv geloggt, inklusive roher Prompts/Provider-Antworten (in den LM-Studio-Adaptern) und transformierter Zwischendaten an jeder Operationsgrenze (`trace()` in Application), damit auch Fehler innerhalb einer Transformation auffindbar sind. Mindestens fehlgeschlagene Modellaufrufe, verworfene Änderungsvorschläge und Revisionskonflikte sind über `record()` sichtbar. Bestehende typisierte Fehler bleiben unverändert; das Log ergänzt sie, ersetzt sie nicht. `PlayStoryTurn`/`InitializeGameRun`/die Story-Workflow-Operationen sind mangels `STORY-003` noch nicht in der FastAPI-App verdrahtet; die Diagnostics-Verdrahtung für diese Operationen lebt daher aktuell im Human-Inspection-Testbündel (`tests/infrastructure/llm/lmstudio/human_test_support.py`) sowie — für den bereits live erreichbaren Teil (`CommitCompletedTurn`) — in `api/app.py`.
 
 - `TASK-016` **Mehrere gesteuerte Figuren im Director Mode**
   - Type: Task.

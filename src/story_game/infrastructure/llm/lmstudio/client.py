@@ -7,9 +7,12 @@ from typing import Any
 from urllib.parse import urlparse
 
 import httpx
+import structlog
 
 from .errors import LmStudioClientError, LmStudioErrorKind
 from .models import LmStudioChatRequest, LmStudioChatResponse
+
+_logger = structlog.get_logger("story_game.lmstudio")
 
 
 @dataclass(frozen=True, slots=True)
@@ -40,6 +43,7 @@ class LmStudioClient:
         settings: LmStudioSettings,
         *,
         http_client: httpx.Client | None = None,
+        debug_enabled: bool = False,
     ) -> None:
         self._settings = settings
         self._owns_client = http_client is None
@@ -47,6 +51,7 @@ class LmStudioClient:
             base_url=f"{settings.base_url}/",
             timeout=settings.timeout_seconds,
         )
+        self._debug_enabled = debug_enabled
 
     def close(self) -> None:
         """Close the internally owned HTTP client."""
@@ -82,20 +87,34 @@ class LmStudioClient:
         if self._settings.api_token:
             headers["Authorization"] = f"Bearer {self._settings.api_token}"
 
+        if self._debug_enabled:
+            _logger.debug("lmstudio.request", payload=payload)
+
         try:
             response = self._http_client.post("chat/completions", json=payload, headers=headers)
         except httpx.TimeoutException as error:
+            if self._debug_enabled:
+                _logger.debug("lmstudio.transport_error", kind="timeout")
             raise LmStudioClientError(
                 LmStudioErrorKind.TIMEOUT,
                 "Die Verbindung zu LM Studio hat das Zeitlimit überschritten.",
                 retryable=True,
             ) from error
         except httpx.HTTPError as error:
+            if self._debug_enabled:
+                _logger.debug("lmstudio.transport_error", kind="unavailable")
             raise LmStudioClientError(
                 LmStudioErrorKind.UNAVAILABLE,
                 "LM Studio ist nicht erreichbar.",
                 retryable=True,
             ) from error
+
+        if self._debug_enabled:
+            _logger.debug(
+                "lmstudio.raw_response",
+                status_code=response.status_code,
+                body=response.text,
+            )
 
         if response.status_code >= 400:
             raise _error_for_status(response.status_code, response.text)

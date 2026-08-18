@@ -12,6 +12,7 @@ from story_game.application.approve_story_turn_changes import (
     ApproveStoryTurnChangesRequest,
 )
 from story_game.application.contracts import Failure, OperationResult, Success
+from story_game.application.diagnostics import DiagnosticsLog, NullDiagnosticsLog
 from story_game.application.extract_story_turn_changes import (
     ExtractStoryTurnChanges,
     ExtractStoryTurnChangesRequest,
@@ -98,6 +99,7 @@ class PlayStoryTurn:
         *,
         new_id: Callable[[], StableId] = StableId.new,
         now: Callable[[], datetime] = lambda: datetime.now(UTC),
+        diagnostics: DiagnosticsLog = NullDiagnosticsLog(),
     ) -> None:
         self._load_game = load_game
         self._select_context = select_context
@@ -108,10 +110,16 @@ class PlayStoryTurn:
         self._commit_turn = commit_turn
         self._new_id = new_id
         self._now = now
+        self._diagnostics = diagnostics
 
     def apply(
         self, request: PlayStoryTurnRequest
     ) -> OperationResult[PlayedStoryTurn, StoryTurnWorkflowError]:
+        self._diagnostics.trace(
+            "play_story_turn.start",
+            run_id=str(request.run_id),
+            player_input=request.player_input,
+        )
         loaded = self._load_game.apply(LoadGameRequest(request.run_id))
         if isinstance(loaded, Failure):
             return loaded
@@ -172,6 +180,11 @@ class PlayStoryTurn:
         )
         if isinstance(committed, Failure):
             return committed
+        self._diagnostics.trace(
+            "play_story_turn.done",
+            run_id=str(request.run_id),
+            revision=committed.data.revision.value,
+        )
         return Success(
             PlayedStoryTurn(committed.data, approved.data.proposed, summary_failure)
         )

@@ -158,7 +158,7 @@ After explicit rejection:
 
 - `STORY-001` **Fachliche Domain-Entities für den Storygame-Zustand**
   - Type: Story.
-  - Status: Awaiting confirmation.
+  - Status: Completed.
   - Parent: `EPIC-001`.
   - Required for parent: Yes.
   - Created: 2026-08-04.
@@ -167,10 +167,11 @@ After explicit rejection:
   - Dependencies: None.
   - Goal: Einen technologieunabhängigen Domain-Kern aus `GameRun` und revisioniertem `GameState` definieren. Der GameState trennt die partielle Konfiguration, die strukturierte Welt einschließlich Goals und die konkrete Turn-Chronologie, ohne LLM-, API- oder Persistenzabhängigkeiten.
   - Completion criteria: GameRun, Mitgliedschaften, GameConfiguration, WorldState, Goals, StoryTurns und StorySummary besitzen verständliche Verantwortlichkeiten und fachliche Invarianten. Goals liegen ausschließlich im WorldState; der StoryState enthält nur abgeschlossene Turns, aktuelle Zusammenfassung und Zugnummer; automatisierte Domain- und Architekturtests sichern die Regeln.
+  - Resolution: Confirmed by the project owner on 2026-08-18.
 
 - `TASK-001` **Domain-Grundtypen und Aggregatgrenzen festlegen**
   - Type: Task.
-  - Status: Awaiting confirmation.
+  - Status: Completed.
   - Parent: `STORY-001`.
   - Required for parent: Yes.
   - Created: 2026-08-04.
@@ -179,10 +180,11 @@ After explicit rejection:
   - Dependencies: None.
   - Goal: Die technologieunabhängigen Grundtypen und die Grenze zwischen `GameRun` und revisioniertem `GameState` mit `GameConfiguration`, `WorldState` und `StoryState` festlegen.
   - Completion criteria: IDs, Revisionen, Run-Status, Mitgliedsrollen und Sichtbarkeit sind typisiert und validiert. Evidenz gehört ausschließlich zu transienten Application-Vorschlägen und nicht zu kanonischen Facts oder WorldRules. Die Verantwortlichkeiten sind dokumentiert; die Domain importiert keine Datenbank-, API- oder LLM-spezifischen Typen.
+  - Resolution: Confirmed by the project owner on 2026-08-18.
 
 - `TASK-002` **WorldState mit Entitäten und kanonischen Beziehungen modellieren**
   - Type: Task.
-  - Status: Awaiting confirmation.
+  - Status: Completed.
   - Parent: `STORY-001`.
   - Required for parent: Yes.
   - Created: 2026-08-04.
@@ -191,10 +193,11 @@ After explicit rejection:
   - Dependencies: `TASK-001`.
   - Goal: Figuren, Orte, Gegenstände, Kreaturen und Fraktionen sowie ihre Beziehungen, Fakten, Wissen, Weltregeln und Haupt- beziehungsweise Nebenziele im WorldState abbilden.
   - Completion criteria: Entitäten und Goal-Referenzen sind konsistent. Beziehungen wie Aufenthaltsort, Besitz, Behälter, Zugehörigkeit und soziale Verbindung referenzieren nur vorhandene Entitäten. Goals unterscheiden `main` und `side` sowie `open`, `completed` und `failed`; Inventar wird aus Besitzbeziehungen abgeleitet.
+  - Resolution: Confirmed by the project owner on 2026-08-18.
 
 - `TASK-003` **StoryState als konkrete Turn-Chronologie modellieren**
   - Type: Task.
-  - Status: Awaiting confirmation.
+  - Status: Completed.
   - Parent: `STORY-001`.
   - Required for parent: Yes.
   - Created: 2026-08-04.
@@ -203,10 +206,11 @@ After explicit rejection:
   - Dependencies: `TASK-002`.
   - Goal: Die konkrete Geschichte als Folge vollständig abgeschlossener StoryTurns mit einer aktuellen rollierenden Zusammenfassung und Zugnummer modellieren.
   - Completion criteria: StoryTurns enthalten `player_input`, Erzählung, Sequenz, Basis- und Ergebnisrevision sowie Abschlusszeitpunkt. Sequenzen sind lückenlos; Goals, Chapters, Scenes, StoryThreads und ein zusätzliches StoryEvent sind nicht Teil des StoryState.
+  - Resolution: Confirmed by the project owner on 2026-08-18.
 
 - `TASK-004` **Vorschlags- und Freigabegrenze für Zustandsänderungen definieren**
   - Type: Task.
-  - Status: Awaiting confirmation.
+  - Status: Completed.
   - Parent: `STORY-001`.
   - Required for parent: Yes.
   - Created: 2026-08-04.
@@ -215,10 +219,11 @@ After explicit rejection:
   - Dependencies: `TASK-002`, `TASK-003`.
   - Goal: Unbestätigte LLM-Vorschläge als transiente Application-Daten von freigegebenen Domain-Operationen und dem kanonischen GameState trennen.
   - Completion criteria: `ProposedChangeSet` liegt ausschließlich in der Application und wird nicht persistiert. Rohdaten oder Prosa können den GameState nicht direkt verändern. Nur ein `ApprovedChangeSet` kann auf der erwarteten Revision angewendet werden; veraltete Revisionen und ungültige Referenzen werden abgewiesen.
+  - Resolution: Confirmed by the project owner on 2026-08-18.
 
 - `TASK-005` **Domain-Invarianten und Storygame-Beispielfälle testen**
   - Type: Task.
-  - Status: Awaiting confirmation.
+  - Status: Completed.
   - Parent: `STORY-001`.
   - Required for parent: Yes.
   - Created: 2026-08-04.
@@ -227,10 +232,11 @@ After explicit rejection:
   - Dependencies: `TASK-004`.
   - Goal: Die fachlichen Regeln des Domain-Kerns deterministisch absichern und anhand eines kleinen zielorientierten Storygame-Szenarios prüfen.
   - Completion criteria: Tests decken IDs, Mitgliedschaften, Referenzkonsistenz, Sichtbarkeit, Wissen, Besitz, Goals, Turn-Chronologie und Revisionskonflikte ab. Das Beispiel kann Almas, ein Hauptziel und einen abgeschlossenen Turn konsistent in den nächsten GameState überführen.
+  - Resolution: Confirmed by the project owner on 2026-08-18.
 
 - `STORY-002` **Datenbankanbindung für den Storygame-Zustand**
   - Type: Story.
-  - Status: Awaiting confirmation.
+  - Status: Completed.
   - Parent: `EPIC-001`.
   - Required for parent: Yes.
   - Created: 2026-08-04.
@@ -239,6 +245,7 @@ After explicit rejection:
   - Dependencies: `STORY-001`.
   - Goal: GameRun und revisionierten GameState über einen PostgreSQL-Adapter dauerhaft speichern, ohne die Domain an PostgreSQL zu koppeln.
   - Completion criteria: Ein vollständiger neuer Lauf sowie aktuelle und historische Revisionen können gespeichert und geladen werden. GameConfiguration, WorldState einschließlich Goals und StoryState werden rekonstruiert. Konfigurationsrevisionen benötigen keinen Turn; ein abgeschlossener Turn und seine Ergebnisrevision werden atomar gespeichert. Das alte JSON- und Story-Tabellenmodell ist entfernt; PostgreSQL-Integrationstests bestehen.
+  - Resolution: Confirmed by the project owner on 2026-08-18.
 
 - `STORY-003` **API für den Storygame-Zustand**
   - Type: Story.
@@ -288,7 +295,7 @@ After explicit rejection:
 
 - `STORY-006` **Story Generation erstellen**
   - Type: Story.
-  - Status: Open.
+  - Status: Completed.
   - Parent: `EPIC-002`.
   - Required for parent: Yes.
   - Created: 2026-08-07.
@@ -297,10 +304,11 @@ After explicit rejection:
   - Dependencies: `STORY-005`, `STORY-010`.
   - Goal: Aus GameConfiguration, relevantem WorldState, StoryState und aktuellem Spielerprompt eine fachlich definierte Story-Generation-Anfrage zusammensetzen und daraus normalisierte Story-Prosa erzeugen.
   - Completion criteria: Der Workflow wählt und strukturiert den Kontext in der Application, ruft den Story-Port auf und liefert bei Erfolg nichtleere, valide Prosa. Adapter wählen keine Spieldaten aus und verändern keinen kanonischen GameState. Provider-, Timeout-, Leer- und Fehlerszenarien sind über beobachtbares Workflowverhalten getestet.
+  - Resolution: Confirmed by the project owner on 2026-08-18.
 
 - `STORY-007` **Extraktion erstellen**
   - Type: Story.
-  - Status: Open.
+  - Status: Completed.
   - Parent: `EPIC-002`.
   - Required for parent: Yes.
   - Created: 2026-08-07.
@@ -309,6 +317,7 @@ After explicit rejection:
   - Dependencies: `STORY-006`, `STORY-001`, `STORY-002`.
   - Goal: Aus der erzeugten Story-Prosa strukturierte WorldState-Änderungskandidaten extrahieren, fachlich validieren und gemeinsam mit dem abgeschlossenen StoryTurn atomar übernehmen.
   - Completion criteria: Technisch valide Extraktionsdaten werden in typisierte, noch nicht freigegebene Kandidaten überführt. Referenzen, Domain-Invarianten, Revisionen und fachliche Plausibilität werden geprüft; unbestätigte oder teilweise fehlerhafte Ergebnisse schreiben keinen kanonischen Zustand. Nur ein vollständiger, freigegebener Turn persistiert den StoryTurn und die resultierende GameState-Revision gemeinsam.
+  - Resolution: Confirmed by the project owner on 2026-08-18.
 
 - `STORY-008` **Initialen StoryState erzeugen**
   - Type: Story.
@@ -442,7 +451,7 @@ After explicit rejection:
 
 - `TASK-014` **Szenenzeiger im WorldState einführen**
   - Type: Task.
-  - Status: Awaiting confirmation.
+  - Status: Completed.
   - Parent: `STORY-006`.
   - Required for parent: Yes.
   - Created: 2026-08-17.
@@ -451,10 +460,11 @@ After explicit rejection:
   - Dependencies: `STORY-009`, `TASK-009`, `STORY-002`.
   - Goal: Den aktuellen Schauplatz der Erzählung als eigene geordnete Aussage im WorldState führen, damit die Kontextauswahl eines Storyzugs nicht auf Ableitungen aus Aufenthaltsbeziehungen angewiesen ist. Aufenthaltsbeziehungen sagen, wo eine Entität ist; der Szenenzeiger sagt, wohin die Erzählung blickt. Im Director Mode fallen beide legitim auseinander. Dieser Task erweitert ausdrücklich den mit `TASK-009` bestätigten Initial-Extraction-Vertrag: der Kandidat besteht nicht mehr nur aus Entities, Links und Facts, sondern zusätzlich aus geordneten lokalen Schauplatzreferenzen. Autoritative Quelle für den erweiterten Vertrag bleibt `.harness/architecture/llm-integration.md` Abschnitt 6a; `TASK-009` wird als abgeschlossene Historie nicht rückwirkend umgeschrieben.
   - Completion criteria: `WorldState.scene_location_ids` ist eine geordnete, duplikatfreie Liste vorhandener Orte mit `primary_scene_location()`; PostgreSQL speichert sie relational und revisionsgebunden in `world_scene_locations`; die API überträgt sie als UUID-Liste; die Initial-Extraction liefert geordnete lokale Schauplatzreferenzen, und unbekannte, doppelte oder nicht auf einen Ort zeigende Referenzen verwerfen den gesamten Kandidaten; `.harness/architecture/llm-integration.md` Abschnitt 6a ist entsprechend erweitert; die Begründung gegen Redundanz ist dokumentiert; bestehende Entwicklungsdatenbanken müssen ohne Upgrade-Migration neu angelegt werden; die vollständige Verifikation einschließlich PostgreSQL besteht.
+  - Resolution: Confirmed by the project owner on 2026-08-18.
 
 - `TASK-015` **Kontextauswahl für einen regulären Storyzug**
   - Type: Task.
-  - Status: Awaiting confirmation.
+  - Status: Completed.
   - Parent: `STORY-006`.
   - Required for parent: Yes.
   - Created: 2026-08-17.
@@ -463,10 +473,11 @@ After explicit rejection:
   - Dependencies: `TASK-014`.
   - Goal: Aus dem vollständigen GameState und der Spielereingabe einen deterministischen, erklärbaren und budgetierten Ausschnitt auswählen, den der folgende Story-Modellaufruf als Kontext erhält.
   - Completion criteria: Eine zusammengesetzte Application-Operation delegiert an einzeln testbare Schritte für Grundgerüst, Namenserkennung, Schauplatzbevölkerung, Ein-Hop-Erweiterung, zugehörige Fakten/Wissen/Ziele und Budgetierung; gleicher Zustand und gleiche Eingabe liefern dasselbe Ergebnis; der Eingabezustand bleibt unverändert; die Auswahl filtert nicht nach Visibility; die Budgetkappung bleibt referenziell geschlossen; kein Modellaufruf und keine Persistenz finden statt.
+  - Resolution: Confirmed by the project owner on 2026-08-18.
 
 - `TASK-017` **Story-Generation-Aufruf für einen regulären Storyzug**
   - Type: Task.
-  - Status: Awaiting confirmation.
+  - Status: Completed.
   - Parent: `STORY-006`.
   - Required for parent: Yes.
   - Created: 2026-08-17.
@@ -475,6 +486,7 @@ After explicit rejection:
   - Dependencies: `TASK-015`, `STORY-005`.
   - Goal: Den ausgewählten Turn-Kontext in den bestehenden `StoryGenerationRequest` projizieren, den Story-Port aufrufen und daraus normalisierte Prosa für den nächsten Zug erhalten. Zusammen mit `TASK-015` erfüllt dieser Task die Completion criteria von `STORY-006`.
   - Completion criteria: Eine Application-Operation bildet den Kontext auf die fünf Textfelder des Requests ab, löst Promptprofil und aktives Story-Modell auf und ruft den Story-Port auf; Erfolg liefert nichtleere normalisierte Prosa; Provider-, Timeout-, Leer- und Fehlerszenarien führen zu typisierten, sichtbaren Failures ohne Retry; der Adapter wählt keine Spieldaten aus; kein kanonischer GameState wird gelesen oder geschrieben; ein leerer Weltausschnitt erzeugt einen gültigen Request statt eines Abbruchs. Verdecktes Wissen wird in diesem ersten Wurf bewusst nicht gekennzeichnet; diese Entscheidung wird unter `TASK-018` beobachtet und gegebenenfalls nachgezogen.
+  - Resolution: Confirmed by the project owner on 2026-08-18.
 
 - `TASK-018` **Verdecktes Wissen im Story-Prompt kennzeichnen**
   - Type: Task.
@@ -490,7 +502,7 @@ After explicit rejection:
 
 - `TASK-019` **Zustandsoperationen für einen Zug ergänzen**
   - Type: Task.
-  - Status: Awaiting confirmation.
+  - Status: Completed.
   - Parent: `STORY-007`.
   - Required for parent: Yes.
   - Created: 2026-08-17.
@@ -499,10 +511,11 @@ After explicit rejection:
   - Dependencies: `TASK-014`.
   - Goal: Die beiden Zustandsoperationen ergänzen, ohne die ein regulärer Zug den Weltzustand nicht sinnvoll fortschreiben kann: den Szenenzeiger weiterbewegen und eine nicht mehr geltende Tatsache entfernen.
   - Completion criteria: `SetSceneLocations` setzt geordnete Schauplätze und weist unbekannte Entitäten sowie Nicht-Orte ab; eine leere Liste löscht die Szene. `RemoveFact` entfernt genau eine Tatsache und nimmt das Wissen darüber mit, sodass kein verwaistes Wissen zurückbleibt; eine unbekannte Tatsache wird abgewiesen. Beide Operationen laufen über den freigegebenen Änderungssatz und erhöhen die Revision wie jede andere Änderung. Die Persistenz benötigt keine Schemaänderung, weil je Revision der vollständige Weltsnapshot geschrieben wird.
+  - Resolution: Confirmed by the project owner on 2026-08-18.
 
 - `TASK-020` **Extraktionsvertrag und Modellaufruf für einen Zug**
   - Type: Task.
-  - Status: Awaiting confirmation.
+  - Status: Completed.
   - Parent: `STORY-007`.
   - Required for parent: Yes.
   - Created: 2026-08-17.
@@ -511,10 +524,11 @@ After explicit rejection:
   - Dependencies: `TASK-019`, `TASK-017`.
   - Goal: Aus der neu erzeugten Prosa und dem relevanten bestehenden Weltausschnitt strukturierte, noch nicht freigegebene Änderungskandidaten gewinnen. Ein kombinierter Aufruf, weil lokale Modellaufrufe lange dauern; eine spätere Aufteilung in gezielte Teilaufrufe bleibt möglich.
   - Completion criteria: Ein eigener Extraktionsport mit typisiertem Request und Kandidatentyp existiert; der Kandidat trägt ausschließlich Handles und lokale Referenzen, nie stabile IDs oder freigegebene Operationen. Eine eigene Extraktionsprojektion nennt bestehende Entitäten über kurze Handles, getrennt von der Story-Projektion, die bewusst keine Identifikatoren enthält. Der Adapter übermittelt ein geschlossenes JSON-Schema und lehnt unbekannte Felder, falsche Typen, leere und abgeschnittene Antworten ab; Rohantworten überschreiten die Portgrenze nicht. Der Modellrequest enthält Systemprompts, die neue Prosa und den Vergleichsausschnitt, aber keine Spielereingabe und kein Storyprofil.
+  - Resolution: Confirmed by the project owner on 2026-08-18.
 
 - `TASK-021` **Kandidaten fachlich prüfen und freigeben**
   - Type: Task.
-  - Status: Awaiting confirmation.
+  - Status: Completed.
   - Parent: `STORY-007`.
   - Required for parent: Yes.
   - Created: 2026-08-17.
@@ -523,10 +537,11 @@ After explicit rejection:
   - Dependencies: `TASK-020`.
   - Goal: Den unbestätigten Kandidaten in einen freigegebenen Änderungssatz überführen. Dieser Pfad ist der gemeinsame Trichter, auf den später auch spezialisierte Extraktionsvarianten münden.
   - Completion criteria: Handles und lokale Referenzen werden gegen die aktuelle Revision aufgelöst, neue Entitäten erhalten erst dabei stabile IDs; ein transienter `ProposedChangeSet` entsteht als Zwischenstufe, an der Reviewevidenz hängen kann. Unbekannte oder doppelte Referenzen, nicht vorhandene zu entfernende Beziehungen, Revisionskonflikte und Domainverstöße verwerfen jeweils den gesamten Vorschlag; es entsteht kein Teilzustand und kein Retry. Die Domain-Invarianten werden über einen verworfenen Trockenlauf geprüft, statt in der Application nachgebaut zu werden. Erfolg liefert genau einen `ApprovedChangeSet`.
+  - Resolution: Confirmed by the project owner on 2026-08-18.
 
 - `TASK-022` **Vollständigen Storyzug orchestrieren**
   - Type: Task.
-  - Status: Awaiting confirmation.
+  - Status: Completed.
   - Parent: `STORY-007`.
   - Required for parent: Yes.
   - Created: 2026-08-17.
@@ -535,10 +550,11 @@ After explicit rejection:
   - Dependencies: `TASK-021`.
   - Goal: Laden, Kontextauswahl, Story-Erzeugung, Extraktion, Freigabe und atomaren Commit als einen sichtbaren Workflow verbinden.
   - Completion criteria: Die Reihenfolge ist auf Workflowebene sichtbar und über beobachtbares Verhalten getestet; die gesteuerte Figur wird aus der Mitgliedschaft aufgelöst; Modellaufrufe liegen außerhalb der Datenbanktransaktion; ein Fehler vor dem Commit lässt GameState und StoryTurn unverändert; Erfolg persistiert StoryTurn und resultierende Revision gemeinsam. Ein ausdrücklich aktivierter Live-Test führt einen vollständigen Zug gegen LM Studio aus — erfüllt durch `TestStoryTurnHuman.test_full_turn`, das `PlayStoryTurn` gegen echtes LM Studio und einen In-Memory-Store laufen lässt. Die zuvor offene Lücke, dass kein Lauf echtes LM Studio und echte PostgreSQL-Persistenz verbindet, ist geschlossen durch `TestFullPlaythroughHuman.test_init_and_play_one_turn` (`InitializeGameRun` gefolgt von `PlayStoryTurn`, beide gegen echtes LM Studio und eine echte PostgreSQL-Instanz, mit Aufräumen des angelegten Runs danach; verifiziert am 2026-08-17).
+  - Resolution: Confirmed by the project owner on 2026-08-18.
 
 - `TASK-023` **Rollierende Zusammenfassung erzeugen**
   - Type: Task.
-  - Status: Awaiting confirmation.
+  - Status: Completed.
   - Parent: `STORY-007`.
   - Required for parent: Yes.
   - Created: 2026-08-17.
@@ -547,6 +563,7 @@ After explicit rejection:
   - Dependencies: `TASK-022`.
   - Goal: Nach einem abgeschlossenen Zug die fortlaufende Zusammenfassung der bisherigen Geschichte erzeugen und mit dem Zug persistieren.
   - Completion criteria: Ein eigener Port und ein neuer Prompt-Task im Paket existieren; `GenerationTask.SUMMARY` war bereits konfiguriert, der Prompt-Task fehlte. Der Zug übergibt die erzeugte Zusammenfassung an den atomaren Commit. Ein Fehlschlag der Zusammenfassung bricht den Zug **nicht** ab: Prosa und Änderungen werden regulär persistiert, und der typisierte Fehler bleibt über das Zugergebnis sichtbar. Der dauerhafte Logeintrag, an dem sich wiederkehrende Fehlschläge erkennen lassen, steht noch aus und gehört zu `TASK-024`.
+  - Resolution: Confirmed by the project owner on 2026-08-18.
 
 - `TASK-025` **Historische Daten in den Turn-Kontext aufnehmen**
   - Type: Task.
@@ -574,7 +591,7 @@ After explicit rejection:
 
 - `TASK-027` **Belege der Änderungsvorschläge optional anfordern**
   - Type: Task.
-  - Status: Awaiting confirmation.
+  - Status: Completed.
   - Parent: `STORY-007`.
   - Required for parent: No.
   - Created: 2026-08-17.
@@ -583,6 +600,7 @@ After explicit rejection:
   - Dependencies: `TASK-021`.
   - Goal: Das Modell je vorgeschlagener Änderung ein wörtliches Zitat aus der Erzählung mitliefern lassen, als Grundlage für den automatischen Review und für eine spätere Anzeige. Weil Ausgabetoken lokal die langsamste und bei API-Abrechnung die teuerste Ressource sind, muss die Anforderung abschaltbar sein.
   - Completion criteria: Der Extraktions-Request trägt einen Schalter; der Adapter wählt danach zwischen zwei Schemavarianten, sodass ohne Schalter kein Belegfeld im Schema erscheint. Belege erreichen als Zitat die `ProposalEvidence` der jeweiligen Änderung. Der transiente Vorschlag ist im Zugergebnis lesbar, damit die Begründungen überhaupt sichtbar werden können; persistiert wird er nicht. Eine fehlende Begründung verwirft einen Vorschlag nicht. Die Initial-Extraction bleibt unberührt.
+  - Resolution: Confirmed by the project owner on 2026-08-18.
 
 - `TASK-024` **Logging-Grundlage einführen**
   - Type: Task.

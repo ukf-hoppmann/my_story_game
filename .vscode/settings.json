@@ -3,7 +3,8 @@
         "tests",
         "-s",
         "-o",
-        "pythonpath=src"
+        "pythonpath=src",
+        "--run-lmstudio-live"
     ],
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,

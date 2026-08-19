@@ -7,6 +7,7 @@ from typing import Protocol
 from story_game.domain import GameRun, GameState, StableId, StateRevision
 
 from .game_models import (
+    CachedGameRunProposal,
     CompletedTurnPersistenceRequest,
     ConfigurationPersistenceRequest,
     RunSummary,
@@ -58,3 +59,21 @@ class CompletedTurnWriter(Protocol):
 
 class PlayableRunLister(Protocol):
     def list_for_member(self, issuer: str, subject: str) -> tuple[RunSummary, ...]: ...
+
+
+class InitialProposalStore(Protocol):
+    """Short-lived, caller-owned storage for a not-yet-persisted run proposal.
+
+    Deliberately narrower than ``GameRunCreator``: nothing saved here is
+    canonical persistence, so the port carries no revision or conflict
+    semantics — just save, load, and delete by ``proposal_id``. An expired or
+    unknown ``proposal_id`` is not an error at this boundary; ``load`` simply
+    returns ``None`` and the caller (``ConfirmGameRunProposal``) turns that
+    into a typed ``RunNotFound`` failure.
+    """
+
+    def save(self, proposal_id: StableId, proposal: CachedGameRunProposal) -> None: ...
+
+    def load(self, proposal_id: StableId) -> CachedGameRunProposal | None: ...
+
+    def delete(self, proposal_id: StableId) -> None: ...

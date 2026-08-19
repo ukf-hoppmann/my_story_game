@@ -20,7 +20,6 @@ from .initial_extraction import (
     CandidateLink,
     InitialWorldExtractionRequest,
     WorldInitializationCandidate,
-    reserved_reference,
 )
 from .ports import (
     GenerationConfigurationResolver,
@@ -83,7 +82,6 @@ __all__ = [
     "InitialStoryText",
     "InitialWorldExtractionPort",
     "InitialWorldExtractionRequest",
-    "reserved_reference",
     "ModelSelectionResolver",
     "ModelSelection",
     "InvalidPromptPackageError",

@@ -14,14 +14,16 @@ from story_game.api.dependencies import ApiDependencies
 from story_game.api.mappers import game_from_api
 from story_game.api.schemas.state import GameDocument
 from story_game.application import (
+    ConfirmGameRunProposal,
     ExtractInitialWorldState,
     ExtractStoryTurnChanges,
     GenerateStory,
-    InitializeGameRun,
     InitializeStory,
     PlayStoryTurn,
+    ProposeGameRun,
     StartPlaythrough,
     SummarizeStory,
+    Success,
 )
 from story_game.application.approve_story_turn_changes import ApproveStoryTurnChanges
 from story_game.application.game_models import RunSummary
@@ -35,17 +37,31 @@ from story_game.application.game_state import (
     UpdateGameConfiguration,
 )
 from story_game.application.llm import (
+    CandidateEntity,
     ExtractionPromptSelectionResolver,
     InitialExtractionPromptSelectionResolver,
     StoryInitializationPromptResolver,
     StoryPromptSelectionResolver,
     SummaryPromptSelectionResolver,
+    WorldInitializationCandidate,
 )
 from story_game.application.ports import GameStateConflictError, GameStateNotFoundError
 from story_game.application.story_initialization import GenerateInitialStoryState
 from story_game.application.story_turn_context import build_story_turn_context_selection
-from story_game.domain import GameRole, GameRun, GameRunMember, GameRunStatus, GameState, StableId, StateRevision
+from story_game.domain import (
+    EntityKind,
+    GameRole,
+    GameRun,
+    GameRunMember,
+    GameRunStatus,
+    GameState,
+    StableId,
+    StateRevision,
+)
 from story_game.infrastructure.llm import FilePromptPackageCatalog
+from story_game.infrastructure.persistence.in_memory_proposal_store import (
+    InMemoryProposalStore,
+)
 from tests.ids import uuid_text
 
 from tests.api.llm_doubles import (
@@ -120,10 +136,13 @@ class MemoryGameStore:
         )
 
 
-def build_dependencies(store: MemoryGameStore) -> ApiDependencies:
+def build_dependencies(
+    store: MemoryGameStore, *, extraction_port=None
+) -> ApiDependencies:
     catalog = FilePromptPackageCatalog(PROMPT_ROOT)
     validator = PromptProfileValidator(catalog)
     generation_config = FakeGenerationConfigurationResolver()
+    proposal_store = InMemoryProposalStore()
 
     operations = GameStateOperations(
         create=CreateGameRun(store, validator),
@@ -132,7 +151,7 @@ def build_dependencies(store: MemoryGameStore) -> ApiDependencies:
         commit_turn=CommitCompletedTurn(store, store),
         list_playable_runs=ListPlayableRuns(store),
     )
-    initialize_run = InitializeGameRun(
+    propose_run = ProposeGameRun(
         InitializeStory(
             GenerateInitialStoryState(
                 StoryInitializationPromptResolver(catalog),
@@ -143,11 +162,12 @@ def build_dependencies(store: MemoryGameStore) -> ApiDependencies:
             ExtractInitialWorldState(
                 InitialExtractionPromptSelectionResolver(catalog),
                 generation_config,
-                FakeInitialWorldExtractionPort(),
+                extraction_port or FakeInitialWorldExtractionPort(),
             ),
         ),
-        CreateGameRun(store, validator),
+        proposal_store,
     )
+    confirm_proposal = ConfirmGameRunProposal(proposal_store, CreateGameRun(store, validator))
     play_turn = PlayStoryTurn(
         LoadGame(store, store),
         build_story_turn_context_selection(),
@@ -170,7 +190,7 @@ def build_dependencies(store: MemoryGameStore) -> ApiDependencies:
         CommitCompletedTurn(store, store),
     )
     start_playthrough = StartPlaythrough(LoadGame(store, store), CreateGameRun(store, validator))
-    return ApiDependencies(operations, initialize_run, play_turn, start_playthrough)
+    return ApiDependencies(operations, propose_run, confirm_proposal, play_turn, start_playthrough)
 
 
 @pytest.fixture
@@ -182,6 +202,40 @@ def store() -> MemoryGameStore:
 def client(store: MemoryGameStore) -> Iterator[TestClient]:
     with TestClient(create_app(build_dependencies(store), settings=ApiSettings())) as test_client:
         yield test_client
+
+
+def start_draft_run(
+    client: TestClient,
+    *,
+    run_name: str = "Der Leuchtturm von Talmoor",
+    initial_prompt: str = "Ein Licht brennt, wo keines brennen sollte.",
+    control_mode: str = "director",
+    controllable_characters: list[dict] | None = None,
+    character_decisions: list[dict] | None = None,
+    item_decisions: list[dict] | None = None,
+) -> dict:
+    """Propose then immediately confirm — the two-step equivalent of what
+    used to be one ``POST /api/v1/runs`` call, for tests that only care
+    about the resulting DRAFT and are not exercising the proposal step
+    itself."""
+    proposal = client.post(
+        "/api/v1/runs/proposals",
+        json={
+            "initial_prompt": initial_prompt,
+            "control_mode": control_mode,
+            "controllable_characters": controllable_characters or [],
+        },
+    ).json()
+    confirmed = client.post(
+        "/api/v1/runs",
+        json={
+            "proposal_id": proposal["proposal_id"],
+            "run_name": run_name,
+            "character_decisions": character_decisions or [],
+            "item_decisions": item_decisions or [],
+        },
+    )
+    return confirmed.json()
 
 
 def complete_state_document() -> dict[str, object]:
@@ -311,56 +365,92 @@ def test_health_endpoint_is_independent_of_persistence(client: TestClient) -> No
     assert client.get("/health").json() == {"status": "ok"}
 
 
-def test_api_starts_a_new_draft_run(client: TestClient) -> None:
-    response = client.post(
-        "/api/v1/runs",
-        json={
-            "run_name": "Der Leuchtturm von Talmoor",
-            "initial_prompt": "Ein Licht brennt, wo keines brennen sollte.",
-            "control_mode": "director",
-        },
-    )
+def test_api_proposes_without_persisting_anything() -> None:
+    store = MemoryGameStore()
+    with TestClient(
+        create_app(build_dependencies(store), settings=ApiSettings())
+    ) as client:
+        response = client.post(
+            "/api/v1/runs/proposals",
+            json={
+                "initial_prompt": "Ein Licht brennt, wo keines brennen sollte.",
+                "control_mode": "director",
+            },
+        )
 
-    assert response.status_code == 201
-    body = response.json()
+        assert response.status_code == 201
+        body = response.json()
+        assert "proposal_id" in body
+        assert body["opening_narration"]
+        assert store.runs == {}
+
+
+def test_api_starts_a_new_draft_run(client: TestClient) -> None:
+    body = start_draft_run(client)
+
     assert body["game_run"]["status"] == "draft"
     assert body["game_state"]["revision"] == 1
 
 
-def test_api_starts_a_director_run_with_multiple_controllable_characters(
-    client: TestClient,
+def test_api_confirming_lets_the_caller_assign_and_reject_proposed_characters(
+    store: MemoryGameStore,
 ) -> None:
-    response = client.post(
-        "/api/v1/runs",
-        json={
-            "run_name": "Der Leuchtturm von Talmoor",
-            "initial_prompt": "Ein Licht brennt, wo keines brennen sollte.",
-            "control_mode": "director",
-            "controllable_characters": [
-                {"name": "Maren", "description": "Eine vorsichtige Kartografin."},
-                {"name": "Jonas"},
-            ],
-        },
-    )
+    class TwoCharacterExtractionPort:
+        def extract(self, call):
+            return Success(
+                WorldInitializationCandidate(
+                    entities=(
+                        CandidateEntity("maren", EntityKind.CHARACTER, "Maren"),
+                        CandidateEntity("jonas", EntityKind.CHARACTER, "Jonas"),
+                    )
+                )
+            )
 
-    assert response.status_code == 201
-    body = response.json()
-    member = body["game_run"]["members"][0]
-    assert len(member["controlled_entity_ids"]) == 2
-    entity_ids = set(member["controlled_entity_ids"])
-    world_entity_ids = {entity["id"] for entity in body["game_state"]["world"]["entities"]}
-    assert entity_ids <= world_entity_ids
+    with TestClient(
+        create_app(
+            build_dependencies(store, extraction_port=TwoCharacterExtractionPort()),
+            settings=ApiSettings(),
+        )
+    ) as client:
+        proposal = client.post(
+            "/api/v1/runs/proposals",
+            json={
+                "initial_prompt": "Maren und Jonas erreichen den Turm.",
+                "control_mode": "director",
+                "controllable_characters": [{"name": "Maren"}],
+            },
+        ).json()
+
+        assert len(proposal["suggested_player_entity_ids"]) == 1
+        maren_id, jonas_id = (
+            entity["id"] for entity in proposal["world"]["entities"]
+        )
+        assert proposal["suggested_player_entity_ids"] == [maren_id]
+
+        confirmed = client.post(
+            "/api/v1/runs",
+            json={
+                "proposal_id": proposal["proposal_id"],
+                "run_name": "Der Leuchtturm von Talmoor",
+                "character_decisions": [
+                    {"entity_id": maren_id, "role": "player", "removed": False},
+                    {"entity_id": jonas_id, "role": "npc", "removed": True},
+                ],
+            },
+        )
+
+        assert confirmed.status_code == 201
+        body = confirmed.json()
+        member = body["game_run"]["members"][0]
+        assert member["controlled_entity_ids"] == [maren_id]
+        world_entity_ids = {
+            entity["id"] for entity in body["game_state"]["world"]["entities"]
+        }
+        assert world_entity_ids == {maren_id}
 
 
 def test_api_lists_runs_for_the_dev_identity(client: TestClient) -> None:
-    created = client.post(
-        "/api/v1/runs",
-        json={
-            "run_name": "Der Leuchtturm von Talmoor",
-            "initial_prompt": "Ein Licht brennt, wo keines brennen sollte.",
-            "control_mode": "director",
-        },
-    ).json()
+    created = start_draft_run(client)
 
     listed = client.get("/api/v1/runs")
 
@@ -370,14 +460,7 @@ def test_api_lists_runs_for_the_dev_identity(client: TestClient) -> None:
 
 
 def test_api_starts_a_playthrough_from_a_draft(client: TestClient) -> None:
-    draft = client.post(
-        "/api/v1/runs",
-        json={
-            "run_name": "Der Leuchtturm von Talmoor",
-            "initial_prompt": "Ein Licht brennt, wo keines brennen sollte.",
-            "control_mode": "director",
-        },
-    ).json()
+    draft = start_draft_run(client)
 
     playthrough = client.post(
         f"/api/v1/runs/{draft['game_run']['id']}/playthroughs"
@@ -391,14 +474,7 @@ def test_api_starts_a_playthrough_from_a_draft(client: TestClient) -> None:
 
 
 def test_api_rejects_a_playthrough_from_a_non_draft_source(client: TestClient) -> None:
-    draft = client.post(
-        "/api/v1/runs",
-        json={
-            "run_name": "Der Leuchtturm von Talmoor",
-            "initial_prompt": "Ein Licht brennt, wo keines brennen sollte.",
-            "control_mode": "director",
-        },
-    ).json()
+    draft = start_draft_run(client)
     active = client.post(
         f"/api/v1/runs/{draft['game_run']['id']}/playthroughs"
     ).json()
@@ -410,14 +486,7 @@ def test_api_rejects_a_playthrough_from_a_non_draft_source(client: TestClient) -
 
 
 def test_api_plays_a_turn_in_an_active_run(client: TestClient) -> None:
-    draft = client.post(
-        "/api/v1/runs",
-        json={
-            "run_name": "Der Leuchtturm von Talmoor",
-            "initial_prompt": "Ein Licht brennt, wo keines brennen sollte.",
-            "control_mode": "director",
-        },
-    ).json()
+    draft = start_draft_run(client)
     active = client.post(
         f"/api/v1/runs/{draft['game_run']['id']}/playthroughs"
     ).json()
@@ -434,14 +503,7 @@ def test_api_plays_a_turn_in_an_active_run(client: TestClient) -> None:
 
 
 def test_api_rejects_a_turn_against_a_draft_run(client: TestClient) -> None:
-    draft = client.post(
-        "/api/v1/runs",
-        json={
-            "run_name": "Der Leuchtturm von Talmoor",
-            "initial_prompt": "Ein Licht brennt, wo keines brennen sollte.",
-            "control_mode": "director",
-        },
-    ).json()
+    draft = start_draft_run(client)
 
     response = client.post(
         f"/api/v1/runs/{draft['game_run']['id']}/turns",

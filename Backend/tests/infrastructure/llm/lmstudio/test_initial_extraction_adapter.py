@@ -5,7 +5,6 @@ import json
 import pytest
 
 from story_game.application import Failure, LLMGenerationCall, ModelSelection, Success
-from story_game.application.initialization_models import ControllableCharacterSeed
 from story_game.application.llm import (
     CandidateEntity,
     GenerationOptions,
@@ -39,7 +38,6 @@ def extraction_request() -> InitialWorldExtractionRequest:
         language="de",
         perspective="first_person",
         control_mode="player",
-        controllable_characters=(ControllableCharacterSeed("Maren", "Eine Kartografin."),),
     )
 
 
@@ -56,6 +54,14 @@ def test_adapter_requests_strict_json_and_returns_a_typed_candidate() -> None:
         json.dumps(
             {
                 "entities": [
+                    {
+                        "local_ref": "maren",
+                        "kind": "character",
+                        "label": "Maren",
+                        "description": "",
+                        "conditions": [],
+                        "aliases": [],
+                    },
                     {
                         "local_ref": "alma",
                         "kind": "character",
@@ -85,7 +91,7 @@ def test_adapter_requests_strict_json_and_returns_a_typed_candidate() -> None:
                 "facts": [
                     {
                         "statement": "Maren hat den Dungeon betreten.",
-                        "subject_ref": "player_character",
+                        "subject_ref": "maren",
                     }
                 ],
                 "scene_refs": ["dungeon"],
@@ -98,10 +104,10 @@ def test_adapter_requests_strict_json_and_returns_a_typed_candidate() -> None:
     )
 
     assert isinstance(result, Success)
-    assert result.data.entities[0] == CandidateEntity(
+    assert result.data.entities[1] == CandidateEntity(
         "alma", EntityKind.CHARACTER, "Alma", "Begleitet Maren."
     )
-    assert result.data.facts[0].subject_ref == "player_character"
+    assert result.data.facts[0].subject_ref == "maren"
     assert result.data.scene_refs == ("dungeon",)
     assert client.request is not None
     assert client.request.temperature == 0.1
@@ -114,18 +120,22 @@ def test_adapter_requests_strict_json_and_returns_a_typed_candidate() -> None:
     assert "Never combine references" in schema_text
     user_message = client.request.messages[1].content
     assert "[opening_narration]" in user_message
-    assert "[known_controllable_characters]" in client.request.messages[0].content
-    assert "[known_controllable_characters]" not in user_message
     assert "initial_prompt" not in user_message
     assert "genre" not in user_message
     assert "tone" not in user_message
 
 
-def test_multiple_controllable_characters_each_get_a_reserved_reference() -> None:
+def test_no_seed_context_is_sent_any_more() -> None:
+    """The extraction call carries no player-character seed context at all.
+
+    Which characters exist and who (if anyone) is player-controlled are
+    entirely post-extraction Application decisions now — see
+    ``propose_game_run.py`` — so the extraction request has nothing to say
+    about seeds, and the adapter has nothing controllable-character-specific
+    left to render into the system message.
+    """
     client = RecordingClient(
-        json.dumps(
-            {"entities": [], "links": [], "facts": [], "scene_refs": []}
-        )
+        json.dumps({"entities": [], "links": [], "facts": [], "scene_refs": []})
     )
     request = InitialWorldExtractionRequest(
         system_prompts=("Extrahiere den initialen WorldState.",),
@@ -133,36 +143,15 @@ def test_multiple_controllable_characters_each_get_a_reserved_reference() -> Non
         language="de",
         perspective="third_person_omniscient",
         control_mode="director",
-        controllable_characters=(
-            ControllableCharacterSeed("Maren", "Eine Kartografin."),
-            ControllableCharacterSeed("Jonas"),
-        ),
     )
 
     result = LmStudioInitialWorldExtractionAdapter(client).extract(call(request))
 
     assert isinstance(result, Success)
     system_message = client.request.messages[0].content
-    assert "player_character: Name=Maren" in system_message
-    assert "player_character_2: Name=Jonas" in system_message
-
-
-def test_no_reserved_section_when_there_are_no_controllable_characters() -> None:
-    client = RecordingClient(
-        json.dumps({"entities": [], "links": [], "facts": [], "scene_refs": []})
-    )
-    request = InitialWorldExtractionRequest(
-        system_prompts=("Extrahiere den initialen WorldState.",),
-        opening_narration="Die Szene beginnt.",
-        language="de",
-        perspective="third_person_omniscient",
-        control_mode="director",
-    )
-
-    result = LmStudioInitialWorldExtractionAdapter(client).extract(call(request))
-
-    assert isinstance(result, Success)
-    assert "[known_controllable_characters]" not in client.request.messages[0].content
+    assert "controllable_character" not in system_message
+    assert "player_character" not in system_message
+    assert not hasattr(request, "controllable_characters")
 
 
 @pytest.mark.parametrize(

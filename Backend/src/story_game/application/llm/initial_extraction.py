@@ -4,20 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from story_game.application.initialization_models import ControllableCharacterSeed
 from story_game.domain import EntityKind, RelationKind
-
-
-def reserved_reference(index: int) -> str:
-    """The local reference reserved for the controllable character at ``index``.
-
-    Index 0 keeps the original ``player_character`` string so Player Mode's
-    wire contract stays unchanged; Director Mode extends it additively
-    (``player_character_2``, ``player_character_3``, ...). Both the
-    extraction system prompt and the LM Studio wire schema derive names from
-    this single function so they cannot drift apart.
-    """
-    return "player_character" if index == 0 else f"player_character_{index + 1}"
 
 
 def _stripped_or_none(value: str | None) -> str | None:
@@ -130,14 +117,21 @@ class WorldInitializationCandidate:
 
 @dataclass(frozen=True, slots=True)
 class InitialWorldExtractionRequest:
-    """Prepared initial extraction context without prompt or canonical state."""
+    """Prepared initial extraction context without prompt or canonical state.
+
+    Deliberately carries no player-character seed: the model extracts every
+    narratively established character the same way, without any reserved
+    reference for "the" player. Which extracted character (if any) becomes
+    player-controlled is an Application decision made after extraction, at
+    proposal-confirmation time — see ``propose_game_run.py`` and
+    ``confirm_game_run_proposal.py``.
+    """
 
     system_prompts: tuple[str, ...]
     opening_narration: str
     language: str
     perspective: str
     control_mode: str
-    controllable_characters: tuple[ControllableCharacterSeed, ...] = ()
 
     def __post_init__(self) -> None:
         prompts = tuple(prompt.strip() for prompt in self.system_prompts if prompt.strip())

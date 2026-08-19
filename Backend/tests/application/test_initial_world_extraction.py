@@ -111,18 +111,25 @@ def operation(extractor: RecordingExtractor) -> ExtractInitialWorldState:
     )
 
 
-def test_builds_complete_initial_world_state_and_keeps_request_minimal() -> None:
+def test_builds_complete_initial_world_state_as_one_neutral_cast() -> None:
+    """No entity is pre-assigned the player role during extraction.
+
+    Even though a ``controllable_characters`` seed is supplied (for prose
+    grounding and, later, the confirmation-time role suggestion), the
+    extracted "Maren" entity comes back exactly like any other character:
+    role assignment is a caller decision made after this step, not part of
+    it — see ``propose_game_run.py`` / ``confirm_game_run_proposal.py``.
+    """
     extractor = RecordingExtractor(
         Success(
             WorldInitializationCandidate(
                 entities=(
+                    CandidateEntity("maren", EntityKind.CHARACTER, "Maren"),
                     CandidateEntity("alma", EntityKind.CHARACTER, "Alma"),
                     CandidateEntity("dungeon", EntityKind.LOCATION, "Alter Dungeon"),
                 ),
                 links=(
-                    CandidateLink(
-                        "player_character", "dungeon", RelationKind.LOCATED_IN
-                    ),
+                    CandidateLink("maren", "dungeon", RelationKind.LOCATED_IN),
                     CandidateLink("alma", "dungeon", RelationKind.LOCATED_IN),
                 ),
                 facts=(CandidateFact("Alma begleitet Maren.", "alma"),),
@@ -144,7 +151,7 @@ def test_builds_complete_initial_world_state_and_keeps_request_minimal() -> None
         "Alter Dungeon",
     ]
     assert world.entities[0].actor is not None
-    assert world.entities[0].actor.role is ActorRole.PLAYER
+    assert world.entities[0].actor.role is ActorRole.NEUTRAL
     assert world.entities[1].actor is not None
     assert world.entities[1].actor.role is ActorRole.NEUTRAL
     assert world.entities[2].actor is None
@@ -155,11 +162,11 @@ def test_builds_complete_initial_world_state_and_keeps_request_minimal() -> None
     assert world.facts[0].visibility.scope.value == "public"
     request = extractor.call.request
     assert request.opening_narration == story_state().initialization.narration
-    assert request.controllable_characters == (player_character(),)
+    assert not hasattr(request, "controllable_characters")
     assert request.perspective == "first_person"
     assert request.control_mode == "player"
-    assert len(request.system_prompts) == 2
-    assert "'Maren' (Referenz player_character)" in request.system_prompts[1]
+    assert len(request.system_prompts) == 1
+    assert "player_character" not in request.system_prompts[0]
     assert "unbestätigten Vorschlagsresultat" not in request.system_prompts[0]
     assert "Dieser Prompt darf nicht extrahiert werden." not in repr(request)
     assert not hasattr(request, "initial_prompt")
@@ -276,68 +283,46 @@ def test_director_mode_can_produce_an_empty_world_without_a_character() -> None:
 
     assert isinstance(result, Success)
     assert result.data.entities == ()
-    assert extractor.call.request.controllable_characters == ()
 
 
-def test_director_mode_can_bind_multiple_named_controllable_characters() -> None:
+def test_director_mode_freely_extracts_several_characters_as_neutral() -> None:
+    """Director Mode without any seed no longer needs a reserved reference.
+
+    Nothing tells the model "player_character" exists in this run — it just
+    is not mentioned at all — so a model that extracts several ordinary
+    characters cannot accidentally collide with a reservation that was never
+    made. This is the fix for the reported Director-Mode crash.
+    """
     extractor = RecordingExtractor(
         Success(
             WorldInitializationCandidate(
-                entities=(CandidateEntity("dungeon", EntityKind.LOCATION, "Dungeon"),),
-                links=(
-                    CandidateLink(
-                        "player_character_2", "dungeon", RelationKind.LOCATED_IN
-                    ),
+                entities=(
+                    CandidateEntity("maren", EntityKind.CHARACTER, "Maren"),
+                    CandidateEntity("jonas", EntityKind.CHARACTER, "Jonas"),
+                    CandidateEntity("dungeon", EntityKind.LOCATION, "Dungeon"),
                 ),
+                links=(
+                    CandidateLink("jonas", "dungeon", RelationKind.LOCATED_IN),
+                ),
+                facts=(CandidateFact("Maren kennt den Dungeon.", "maren"),),
             )
         )
     )
-    maren = ControllableCharacterSeed("Maren", "Eine vorsichtige Kartografin.")
-    jonas = ControllableCharacterSeed("Jonas")
 
     result = operation(extractor).apply(
         ExtractInitialWorldStateRequest(
-            configuration("third_person_omniscient", "director"),
-            story_state(),
-            (maren, jonas),
+            configuration("third_person_omniscient", "director"), story_state()
         )
     )
 
     assert isinstance(result, Success)
     world = result.data
     assert [entity.label for entity in world.entities[:2]] == ["Maren", "Jonas"]
-    assert world.entities[0].actor.role is ActorRole.PLAYER
-    assert world.entities[1].actor.role is ActorRole.PLAYER
+    assert world.entities[0].actor.role is ActorRole.NEUTRAL
+    assert world.entities[1].actor.role is ActorRole.NEUTRAL
     request = extractor.call.request
-    assert request.controllable_characters == (maren, jonas)
-    assert len(request.system_prompts) == 2
-    assert "player_character" in request.system_prompts[1]
-    assert "player_character_2" in request.system_prompts[1]
-
-
-def test_rejects_a_candidate_entity_defining_the_second_reserved_reference() -> None:
-    extractor = RecordingExtractor(
-        Success(
-            WorldInitializationCandidate(
-                entities=(
-                    CandidateEntity("player_character_2", EntityKind.CHARACTER, "Alma"),
-                )
-            )
-        )
-    )
-    maren = ControllableCharacterSeed("Maren")
-    jonas = ControllableCharacterSeed("Jonas")
-
-    result = operation(extractor).apply(
-        ExtractInitialWorldStateRequest(
-            configuration("third_person_omniscient", "director"),
-            story_state(),
-            (maren, jonas),
-        )
-    )
-
-    assert isinstance(result, Failure)
-    assert result.error.kind is StoryInitializationErrorKind.INVALID_CANDIDATE_REFERENCE
+    assert len(request.system_prompts) == 1
+    assert "player_character" not in request.system_prompts[0]
 
 
 def test_duplicate_controllable_character_names_are_rejected_before_the_model_call() -> None:
@@ -389,24 +374,82 @@ def test_requires_an_opening_before_calling_the_model() -> None:
     assert extractor.call is None
 
 
+def test_a_local_ref_that_happens_to_look_like_the_old_reserved_word_is_ordinary() -> None:
+    """``player_character`` carries no special meaning any more.
+
+    It is just a string a model could pick as a local_ref like any other —
+    nothing rejects it, and nothing treats it as "the" player.
+    """
+    extractor = RecordingExtractor(
+        Success(
+            WorldInitializationCandidate(
+                entities=(
+                    CandidateEntity("player_character", EntityKind.CHARACTER, "Alma"),
+                )
+            )
+        )
+    )
+
+    result = operation(extractor).apply(
+        ExtractInitialWorldStateRequest(
+            configuration(), story_state(), (player_character(),)
+        )
+    )
+
+    assert isinstance(result, Success)
+    assert result.data.entities[0].label == "Alma"
+    assert result.data.entities[0].actor.role is ActorRole.NEUTRAL
+
+
+def test_a_label_or_alias_matching_a_controllable_character_name_is_no_longer_rejected() -> None:
+    """Extraction no longer polices name collisions with caller seeds.
+
+    A model is free to also extract a character named/aliased like a seed;
+    whether that becomes "the" player is a caller decision made later, not a
+    reason to reject the whole batch here.
+    """
+    extractor = RecordingExtractor(
+        Success(
+            WorldInitializationCandidate(
+                entities=(
+                    CandidateEntity(
+                        "alma", EntityKind.CHARACTER, "Alma", aliases=("maren",)
+                    ),
+                )
+            )
+        )
+    )
+
+    result = operation(extractor).apply(
+        ExtractInitialWorldStateRequest(
+            configuration(), story_state(), (player_character(),)
+        )
+    )
+
+    assert isinstance(result, Success)
+
+
 @pytest.mark.parametrize(
     "candidate",
     [
-        WorldInitializationCandidate(
-            entities=(CandidateEntity("player_character", EntityKind.CHARACTER, "Alma"),)
+        pytest.param(
+            WorldInitializationCandidate(
+                entities=(
+                    CandidateEntity("maren", EntityKind.CHARACTER, "Maren"),
+                    CandidateEntity("maren", EntityKind.CHARACTER, "Andere Maren"),
+                )
+            ),
+            id="duplicate_local_ref",
         ),
-        WorldInitializationCandidate(
-            entities=(CandidateEntity("maren_copy", EntityKind.CHARACTER, "MAREN"),)
-        ),
-        WorldInitializationCandidate(
-            entities=(CandidateEntity("alma", EntityKind.CHARACTER, "Alma", aliases=("maren",)),)
-        ),
-        WorldInitializationCandidate(
-            links=(CandidateLink("missing", "player_character", RelationKind.KNOWS),)
+        pytest.param(
+            WorldInitializationCandidate(
+                links=(CandidateLink("missing", "also_missing", RelationKind.KNOWS),)
+            ),
+            id="unknown_reference",
         ),
     ],
 )
-def test_rejects_reserved_duplicate_or_unknown_candidate_references(candidate) -> None:
+def test_rejects_duplicate_or_unknown_candidate_references(candidate) -> None:
     extractor = RecordingExtractor(Success(candidate))
 
     result = operation(extractor).apply(
@@ -423,11 +466,12 @@ def test_domain_invariant_rejects_the_entire_candidate() -> None:
     extractor = RecordingExtractor(
         Success(
             WorldInitializationCandidate(
-                entities=(CandidateEntity("sword", EntityKind.ITEM, "Schwert"),),
+                entities=(
+                    CandidateEntity("maren", EntityKind.CHARACTER, "Maren"),
+                    CandidateEntity("sword", EntityKind.ITEM, "Schwert"),
+                ),
                 links=(
-                    CandidateLink(
-                        "player_character", "sword", RelationKind.LOCATED_IN
-                    ),
+                    CandidateLink("maren", "sword", RelationKind.LOCATED_IN),
                 ),
             )
         )
@@ -447,10 +491,13 @@ def test_exact_duplicate_located_in_links_are_deduplicated() -> None:
     extractor = RecordingExtractor(
         Success(
             WorldInitializationCandidate(
-                entities=(CandidateEntity("room", EntityKind.LOCATION, "Kammer"),),
+                entities=(
+                    CandidateEntity("maren", EntityKind.CHARACTER, "Maren"),
+                    CandidateEntity("room", EntityKind.LOCATION, "Kammer"),
+                ),
                 links=(
-                    CandidateLink("player_character", "room", RelationKind.LOCATED_IN),
-                    CandidateLink("player_character", "room", RelationKind.LOCATED_IN),
+                    CandidateLink("maren", "room", RelationKind.LOCATED_IN),
+                    CandidateLink("maren", "room", RelationKind.LOCATED_IN),
                 ),
             )
         )
@@ -474,12 +521,13 @@ def test_conflicting_located_in_links_still_reject_the_entire_candidate() -> Non
         Success(
             WorldInitializationCandidate(
                 entities=(
+                    CandidateEntity("maren", EntityKind.CHARACTER, "Maren"),
                     CandidateEntity("room_a", EntityKind.LOCATION, "Kammer A"),
                     CandidateEntity("room_b", EntityKind.LOCATION, "Kammer B"),
                 ),
                 links=(
-                    CandidateLink("player_character", "room_a", RelationKind.LOCATED_IN),
-                    CandidateLink("player_character", "room_b", RelationKind.LOCATED_IN),
+                    CandidateLink("maren", "room_a", RelationKind.LOCATED_IN),
+                    CandidateLink("maren", "room_b", RelationKind.LOCATED_IN),
                 ),
             )
         )

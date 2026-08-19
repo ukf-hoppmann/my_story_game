@@ -12,14 +12,16 @@ import pytest
 psycopg = pytest.importorskip("psycopg")
 
 from story_game.application.game_models import (  # noqa: E402
+    CachedGameRunProposal,
     CompletedTurnPersistenceRequest,
     ConfigurationPersistenceRequest,
     LoadedGame,
 )
 from story_game.application import (  # noqa: E402
+    CharacterDecision,
+    ConfirmGameRunProposal,
+    ConfirmGameRunProposalRequest,
     Failure,
-    InitializeGameRun,
-    InitializeGameRunRequest,
     RunInitiator,
     Success,
 )
@@ -28,9 +30,8 @@ from story_game.application.game_state import (  # noqa: E402
     PromptProfileValidator,
     RunConflict,
 )
-from story_game.application.initialization_models import (  # noqa: E402
-    InitializedStory,
-    ControllableCharacterSeed,
+from story_game.infrastructure.persistence.in_memory_proposal_store import (  # noqa: E402
+    InMemoryProposalStore,
 )
 from story_game.domain import (  # noqa: E402
     ActorProfile,
@@ -174,29 +175,28 @@ def test_postgres_roundtrips_a_complete_initial_game(
         _delete_run(connections, run_id)
 
 
-def test_initialize_game_run_persists_revision_one_atomically(
+def test_confirm_game_run_proposal_persists_revision_one_atomically(
     postgres_store: tuple[PostgresGameStore, PostgresConnectionFactory],
 ) -> None:
     store, connections = postgres_store
     run_id = sid(f"initial-{uuid4()}")
+    proposal_id = sid(f"proposal-{uuid4()}")
     timestamp = datetime(2026, 8, 11, 9, tzinfo=UTC)
-    player = WorldEntity(
-        sid("initial-player"),
-        EntityKind.CHARACTER,
-        "Almas",
-        actor=ActorProfile(ActorRole.PLAYER),
-    )
-    initialized = InitializedStory(
-        StoryState(),
-        WorldState(entities=(player,)),
+    player = WorldEntity(sid("initial-player"), EntityKind.CHARACTER, "Almas")
+    proposal_store = InMemoryProposalStore()
+    proposal_store.save(
+        proposal_id,
+        CachedGameRunProposal(
+            issuer="https://identity.example/story",
+            subject="user-1",
+            configuration=configuration(),
+            story_state=StoryState(),
+            world_state=WorldState(entities=(player,)),
+        ),
     )
 
-    class FixedInitializer:
-        def apply(self, request: object) -> object:
-            return Success(initialized)
-
-    operation = InitializeGameRun(
-        FixedInitializer(),  # type: ignore[arg-type]
+    operation = ConfirmGameRunProposal(
+        proposal_store,
         CreateGameRun(
             store,
             PromptProfileValidator(FilePromptPackageCatalog(PROMPT_ROOT)),
@@ -207,12 +207,11 @@ def test_initialize_game_run_persists_revision_one_atomically(
 
     try:
         result = operation.apply(
-            InitializeGameRunRequest(
-                configuration=configuration(),
+            ConfirmGameRunProposalRequest(
+                proposal_id=proposal_id,
                 run_name="Almas und das magische Schwert",
-                initial_prompt="Almas betritt den Dungeon.",
                 initiator=RunInitiator("https://identity.example/story", "user-1"),
-                controllable_characters=(ControllableCharacterSeed("Almas"),),
+                character_decisions=(CharacterDecision(player.id, "player"),),
             )
         )
 
@@ -223,45 +222,57 @@ def test_initialize_game_run_persists_revision_one_atomically(
         assert result.data.state.revision == StateRevision(1)
         assert store.load_run(run_id) == result.data.run
         assert store.load_state(run_id) == result.data.state
+        assert proposal_store.load(proposal_id) is None
     finally:
         _delete_run(connections, run_id)
 
 
-def test_initialize_game_run_maps_duplicate_uuid_to_conflict_without_overwrite(
+def test_confirm_game_run_proposal_maps_duplicate_uuid_to_conflict_without_overwrite(
     postgres_store: tuple[PostgresGameStore, PostgresConnectionFactory],
 ) -> None:
     store, connections = postgres_store
     run_id = sid(f"duplicate-{uuid4()}")
+    proposal_id = sid(f"proposal-{uuid4()}")
     timestamp = datetime(2026, 8, 11, 9, tzinfo=UTC)
-    initialized = InitializedStory(StoryState(), WorldState())
-
-    class FixedInitializer:
-        def apply(self, request: object) -> object:
-            return Success(initialized)
-
     creator = CreateGameRun(
         store,
         PromptProfileValidator(FilePromptPackageCatalog(PROMPT_ROOT)),
     )
 
-    def operation() -> InitializeGameRun:
-        return InitializeGameRun(
-            FixedInitializer(),  # type: ignore[arg-type]
+    def operation(proposal_store: InMemoryProposalStore) -> ConfirmGameRunProposal:
+        return ConfirmGameRunProposal(
+            proposal_store,
             creator,
             new_id=lambda: run_id,
             now=lambda: timestamp,
         )
 
-    request = InitializeGameRunRequest(
-        configuration=configuration(control_mode="director"),
+    def seeded_store() -> InMemoryProposalStore:
+        proposal_store = InMemoryProposalStore()
+        proposal_store.save(
+            proposal_id,
+            CachedGameRunProposal(
+                issuer="https://identity.example/story",
+                subject="user-1",
+                configuration=configuration(control_mode="director"),
+                story_state=StoryState(),
+                world_state=WorldState(),
+            ),
+        )
+        return proposal_store
+
+    request = ConfirmGameRunProposalRequest(
+        proposal_id=proposal_id,
         run_name="Leerer Regie-Start",
-        initial_prompt="Die Szene beginnt.",
         initiator=RunInitiator("https://identity.example/story", "user-1"),
     )
 
     try:
-        first = operation().apply(request)
-        second = operation().apply(request)
+        first = operation(seeded_store()).apply(request)
+        # A confirmed proposal is deleted from its cache, so the second
+        # attempt needs its own — this test is about the *persistence* layer
+        # rejecting a duplicate run id, not about re-confirming one proposal.
+        second = operation(seeded_store()).apply(request)
 
         assert isinstance(first, Success)
         assert second == Failure(

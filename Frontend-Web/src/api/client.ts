@@ -1,8 +1,10 @@
 import type {
   ApiErrorBody,
+  ConfirmRunProposalRequest,
   GameDocument,
-  InitializeRunRequest,
   PlayTurnRequest,
+  ProposeRunRequest,
+  RunProposal,
   RunSummaryList,
   TurnResult,
 } from "./types";
@@ -76,8 +78,17 @@ export async function loadRun(
   return request(`/api/v1/runs/${runId}${query}`);
 }
 
-export async function createDraft(
-  payload: InitializeRunRequest,
+export async function proposeRun(
+  payload: ProposeRunRequest,
+): Promise<RunProposal> {
+  return request("/api/v1/runs/proposals", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function confirmRun(
+  payload: ConfirmRunProposalRequest,
 ): Promise<GameDocument> {
   return request("/api/v1/runs", {
     method: "POST",

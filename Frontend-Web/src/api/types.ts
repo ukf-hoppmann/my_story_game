@@ -8,6 +8,7 @@ export type ControlMode = "player" | "director";
 export type ActorRole = "player" | "npc" | "neutral";
 export type GoalKind = "main" | "side";
 export type GoalStatus = "open" | "completed" | "failed";
+export type EntityKind = "character" | "location" | "item" | "creature" | "faction";
 
 export interface ControllableCharacterSeed {
   name: string;
@@ -46,7 +47,7 @@ export interface GameRun {
 
 export interface WorldEntity {
   id: string;
-  kind: string;
+  kind: EntityKind;
   label: string;
   description: string;
   actor: { role: ActorRole } | null;
@@ -116,11 +117,35 @@ export interface GameDocument {
   game_state: GameState;
 }
 
-export interface InitializeRunRequest {
-  run_name: string;
+export interface ProposeRunRequest {
   initial_prompt: string;
   control_mode: ControlMode;
   controllable_characters: ControllableCharacterSeed[];
+}
+
+export interface RunProposal {
+  proposal_id: string;
+  opening_narration: string;
+  world: WorldState;
+  suggested_player_entity_ids: string[];
+}
+
+export interface CharacterDecision {
+  entity_id: string;
+  role: "player" | "npc";
+  removed: boolean;
+}
+
+export interface ItemDecision {
+  entity_id: string;
+  removed: boolean;
+}
+
+export interface ConfirmRunProposalRequest {
+  proposal_id: string;
+  run_name: string;
+  character_decisions: CharacterDecision[];
+  item_decisions: ItemDecision[];
 }
 
 export interface PlayTurnRequest {

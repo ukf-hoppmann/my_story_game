@@ -25,7 +25,7 @@ from story_game.application.game_state import (
     LoadGameRequest,
 )
 from story_game.application.game_state.errors import GameStateOperationError
-from story_game.application.initialize_game_run import RunInitiator
+from story_game.application.run_initiator import RunInitiator
 from story_game.application.start_playthrough_errors import (
     PlaythroughError,
     PlaythroughErrorKind,

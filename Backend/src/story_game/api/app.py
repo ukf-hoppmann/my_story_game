@@ -11,12 +11,13 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from story_game.api.dependencies import ApiDependencies
 from story_game.application import (
+    ConfirmGameRunProposal,
     ExtractInitialWorldState,
     ExtractStoryTurnChanges,
     GenerateStory,
-    InitializeGameRun,
     InitializeStory,
     PlayStoryTurn,
+    ProposeGameRun,
     StartPlaythrough,
     SummarizeStory,
 )
@@ -55,6 +56,9 @@ from story_game.infrastructure.llm.lmstudio import (
     LmStudioTurnExtractionAdapter,
 )
 from story_game.infrastructure.logging_config import LoggingSettings, configure_logging
+from story_game.infrastructure.persistence.in_memory_proposal_store import (
+    InMemoryProposalStore,
+)
 from story_game.infrastructure.persistence.postgres import (
     PostgresConnectionFactory,
     PostgresGameStore,
@@ -92,13 +96,17 @@ def create_app(
             if resolved_settings.auto_migrate:
                 PostgresSchemaMigrator(connections).migrate()
             store = PostgresGameStore(connections)
+            proposal_store = InMemoryProposalStore()
             llm_client = _build_llm_client(resolved_settings)
             resolved = ApiDependencies(
                 operations=_compose_game_state_operations(
                     store, resolved_settings.prompt_root, diagnostics
                 ),
-                initialize_run=_compose_initialize_game_run(
-                    store, resolved_settings, llm_client, diagnostics
+                propose_run=_compose_propose_game_run(
+                    proposal_store, resolved_settings, llm_client, diagnostics
+                ),
+                confirm_proposal=_compose_confirm_game_run_proposal(
+                    store, proposal_store, resolved_settings, diagnostics
                 ),
                 play_turn=_compose_play_story_turn(
                     store, resolved_settings, llm_client, diagnostics
@@ -156,15 +164,14 @@ def _build_llm_client(settings: ApiSettings) -> LmStudioClient:
     )
 
 
-def _compose_initialize_game_run(
-    store: PostgresGameStore,
+def _compose_propose_game_run(
+    proposal_store: InMemoryProposalStore,
     settings: ApiSettings,
     client: LmStudioClient,
     diagnostics: StructlogDiagnosticsLog,
-) -> InitializeGameRun:
+) -> ProposeGameRun:
     catalog = FilePromptPackageCatalog(settings.prompt_root)
     generation_config = TomlGenerationConfigurationResolver(settings.llm_config_path)
-    validator = PromptProfileValidator(catalog)
     story_initializer = InitializeStory(
         GenerateInitialStoryState(
             StoryInitializationPromptResolver(catalog),
@@ -181,8 +188,18 @@ def _compose_initialize_game_run(
         ),
         diagnostics,
     )
-    return InitializeGameRun(
-        story_initializer,
+    return ProposeGameRun(story_initializer, proposal_store, diagnostics=diagnostics)
+
+
+def _compose_confirm_game_run_proposal(
+    store: PostgresGameStore,
+    proposal_store: InMemoryProposalStore,
+    settings: ApiSettings,
+    diagnostics: StructlogDiagnosticsLog,
+) -> ConfirmGameRunProposal:
+    validator = PromptProfileValidator(FilePromptPackageCatalog(settings.prompt_root))
+    return ConfirmGameRunProposal(
+        proposal_store,
         CreateGameRun(store, validator),
         diagnostics=diagnostics,
     )

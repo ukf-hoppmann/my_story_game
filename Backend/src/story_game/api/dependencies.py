@@ -6,7 +6,13 @@ from dataclasses import dataclass
 
 from fastapi import Request
 
-from story_game.application import InitializeGameRun, PlayStoryTurn, StartPlaythrough, RunInitiator
+from story_game.application import (
+    ConfirmGameRunProposal,
+    PlayStoryTurn,
+    ProposeGameRun,
+    RunInitiator,
+    StartPlaythrough,
+)
 from story_game.application.game_state import GameStateOperations
 
 from .config import ApiSettings
@@ -17,7 +23,8 @@ class ApiDependencies:
     """Application-facing dependencies required by the HTTP adapter."""
 
     operations: GameStateOperations
-    initialize_run: InitializeGameRun
+    propose_run: ProposeGameRun
+    confirm_proposal: ConfirmGameRunProposal
     play_turn: PlayStoryTurn
     start_playthrough: StartPlaythrough
 

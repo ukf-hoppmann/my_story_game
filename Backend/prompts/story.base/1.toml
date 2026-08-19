@@ -34,13 +34,14 @@ etablierten Entitäten, Beziehungen und Fakten. Die Erzählung ist der
 Goldstandard. Erfinde keine Angaben aus Genre, Ton, Erzählkonventionen oder
 typischer Fantasy-Logik.
 
-Der bekannte Spielercharakter wird ausschließlich von der Application
-angelegt. Gib ihn niemals in entities zurück, auch nicht unter seinem Namen,
-seiner Rolle oder einem Alias. Jede Referenz auf ihn in links und facts muss
-exakt player_character lauten. local_ref, source_ref, target_ref und subject_ref
-sind jeweils genau eine einzelne Referenz; kombiniere nie mehrere Namen in
-einem Feld. Verwende bei Charakteren ihren Eigennamen als label, nicht Beruf
-oder Rolle. subject_ref ist null, wenn ein Fakt kein einzelnes Subjekt hat.
+Extrahiere jede in der Eröffnung etablierte Figur als ganz normale Entität,
+ohne eine von ihnen als Spielerfigur zu markieren oder auszulassen — welche
+Figur (falls überhaupt eine) vom Spieler gesteuert wird, entscheidet die
+Anwendung erst nach der Extraktion. local_ref, source_ref, target_ref und
+subject_ref sind jeweils genau eine einzelne Referenz; kombiniere nie mehrere
+Namen in einem Feld. Verwende bei Charakteren ihren Eigennamen als label,
+nicht Beruf oder Rolle. subject_ref ist null, wenn ein Fakt kein einzelnes
+Subjekt hat.
 
 located_in beschreibt nur den aktuellsten, spezifischsten Aufenthaltsort und
 darf je source_ref höchstens einmal vorkommen. Gib geplante oder frühere Orte
@@ -59,15 +60,13 @@ Entität ist, scene_refs sagt, wohin die Erzählung blickt. Nenne mehrere
 Schauplätze nur, wenn die Prosa tatsächlich zwischen ihnen wechselt. Gib eine
 leere Liste nur zurück, wenn die Eröffnung überhaupt keinen Ort etabliert.
 
-Minimalbeispiel, dessen Inhalte nicht kopiert werden dürfen: Ist Maren der
-bekannte Spieler und lautet die Prosa "Maren betritt mit Alma die Höhle", dann
-enthält entities nur Alma und die Höhle. Der Link zur Höhle verwendet
-source_ref player_character; ein Fakt über Maren verwendet subject_ref
-player_character. Unmittelbar vor der Antwort: Entferne jede Entity, die den
-bekannten Spieler bezeichnet, und ersetze jede Namensreferenz auf ihn durch
-player_character. Zähle danach alle Links mit kind located_in je source_ref.
-Kommt eine source_ref mehrfach vor, entferne alle älteren oder weniger
-spezifischen located_in-Links, sodass genau der aktuelle Ort übrig bleibt.
+Minimalbeispiel, dessen Inhalte nicht kopiert werden dürfen: Lautet die Prosa
+"Maren betritt mit Alma die Höhle", dann enthält entities Maren, Alma und die
+Höhle. Der Link von Maren zur Höhle verwendet source_ref maren, der Link von
+Alma zur Höhle source_ref alma. Zähle vor der Antwort alle Links mit kind
+located_in je source_ref. Kommt eine source_ref mehrfach vor, entferne alle
+älteren oder weniger spezifischen located_in-Links, sodass genau der aktuelle
+Ort übrig bleibt.
 
 Liefere ausschließlich das vorgegebene JSON-Schema. Weltregeln, Ziele, Wissen,
 Sichtbarkeit und stabile IDs gehören nicht in diese initiale Extraktion.

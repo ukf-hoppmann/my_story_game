@@ -25,7 +25,7 @@ from story_game.application.game_state import (
 )
 from story_game.application.game_state.errors import GameStateOperationError
 from story_game.application.generate_story import GenerateStory, GenerateStoryRequest
-from story_game.application.initialize_game_run import RunInitiator
+from story_game.application.run_initiator import RunInitiator
 from story_game.application.proposals import ProposedChangeSet
 from story_game.application.story_turn_context import (
     SelectStoryTurnContext,

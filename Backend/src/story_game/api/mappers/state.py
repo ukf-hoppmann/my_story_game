@@ -18,13 +18,14 @@ from story_game.api.schemas.common import (
     WorldEntityModel,
     WorldRuleModel,
 )
+from story_game.api.schemas.runs import RunProposalModel
 from story_game.api.schemas.state import (
     GameDocument,
     GameStateModel,
     StoryStateModel,
     WorldStateModel,
 )
-from story_game.application.game_models import LoadedGame
+from story_game.application.game_models import GameRunProposal, LoadedGame
 from story_game.domain import (
     ActorProfile,
     Condition,
@@ -103,6 +104,22 @@ def game_to_api(game: LoadedGame) -> GameDocument:
             updated_at=run.updated_at,
         ),
         game_state=game_state_to_api(game.state),
+    )
+
+
+def proposal_to_api(proposal: GameRunProposal) -> RunProposalModel:
+    initialization = proposal.story_state.initialization
+    assert initialization is not None, (
+        "A GameRunProposal is only ever built from a successful "
+        "story-initialization result, which always carries an opening narration."
+    )
+    return RunProposalModel(
+        proposal_id=proposal.proposal_id.value,
+        opening_narration=initialization.narration,
+        world=_world_to_api(proposal.world_state),
+        suggested_player_entity_ids=[
+            entity_id.value for entity_id in proposal.suggested_player_entity_ids
+        ],
     )
 
 

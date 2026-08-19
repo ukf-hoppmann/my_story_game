@@ -26,20 +26,23 @@ if TYPE_CHECKING:
 
 from story_game.application import (
     ApproveStoryTurnChanges,
+    CharacterDecision,
+    ConfirmGameRunProposal,
+    ConfirmGameRunProposalRequest,
     ExtractedTurnChanges,
     ExtractInitialWorldState,
     ExtractStoryTurnChanges,
     ExtractStoryTurnChangesRequest,
     GenerateStory,
     GenerateStoryRequest,
-    InitializeGameRun,
-    InitializeGameRunRequest,
     InitializeStory,
     InitializeStoryRequest,
     PlayedStoryTurn,
     ControllableCharacterSeed,
     PlayStoryTurn,
     PlayStoryTurnRequest,
+    ProposeGameRun,
+    ProposeGameRunRequest,
     RunInitiator,
     StartPlaythrough,
     StartPlaythroughRequest,
@@ -47,6 +50,9 @@ from story_game.application import (
     Success,
 )
 from story_game.application.game_models import LoadedGame
+from story_game.infrastructure.persistence.in_memory_proposal_store import (
+    InMemoryProposalStore,
+)
 from story_game.application.game_state import (
     CommitCompletedTurn,
     CreateGameRun,
@@ -666,12 +672,13 @@ class HumanFullPlaythroughSupport:
 
     Closes the gap noted in the STORY-006 completion criteria in
     ``docs/TODO.md``: no other test connects a live model with live
-    persistence in one run. ``InitializeGameRun`` persists a DRAFT template
-    at revision 1; ``StartPlaythrough`` forks it into a new ACTIVE run (also
-    revision 1); ``PlayStoryTurn`` persists revision 2 on top of that fork.
-    A DRAFT can no longer take a turn directly — see the run-lifecycle work
-    that introduced ``StartPlaythrough``. Both created runs are deleted
-    again afterwards so repeated human runs stay clean.
+    persistence in one run. ``ProposeGameRun`` generates a reviewable,
+    unsaved proposal; ``ConfirmGameRunProposal`` persists it as a DRAFT
+    template at revision 1; ``StartPlaythrough`` forks it into a new ACTIVE
+    run (also revision 1); ``PlayStoryTurn`` persists revision 2 on top of
+    that fork. A DRAFT can no longer take a turn directly — see the
+    run-lifecycle work that introduced ``StartPlaythrough``. Both created
+    runs are deleted again afterwards so repeated human runs stay clean.
     """
 
     def __init__(self) -> None:
@@ -718,7 +725,8 @@ class HumanFullPlaythroughSupport:
         try:
             printing = PrintingLmStudioClient(client)
 
-            init_operation = InitializeGameRun(
+            proposal_store = InMemoryProposalStore()
+            propose_operation = ProposeGameRun(
                 InitializeStory(
                     GenerateInitialStoryState(
                         StoryInitializationPromptResolver(_catalog()),
@@ -735,16 +743,49 @@ class HumanFullPlaythroughSupport:
                     ),
                     diagnostics,
                 ),
-                CreateGameRun(store, PromptProfileValidator(_catalog())),
+                proposal_store,
                 diagnostics=diagnostics,
             )
-            initialized = init_operation.apply(
-                InitializeGameRunRequest(
+            proposed = propose_operation.apply(
+                ProposeGameRunRequest(
                     configuration=self.configuration,
-                    run_name=self.run_name,
                     initial_prompt=self.initial_prompt,
                     initiator=self.initiator,
                     controllable_characters=self.controllable_characters,
+                )
+            )
+            assert isinstance(proposed, Success), proposed
+            print(
+                json.dumps(
+                    {
+                        "postgres_proposal": {
+                            "proposal_id": str(proposed.data.proposal_id),
+                            "suggested_player_entity_ids": [
+                                str(entity_id)
+                                for entity_id in proposed.data.suggested_player_entity_ids
+                            ],
+                            "world_state": _world_document(proposed.data.world_state),
+                        }
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                )
+            )
+
+            confirm_operation = ConfirmGameRunProposal(
+                proposal_store,
+                CreateGameRun(store, PromptProfileValidator(_catalog())),
+                diagnostics=diagnostics,
+            )
+            initialized = confirm_operation.apply(
+                ConfirmGameRunProposalRequest(
+                    proposal_id=proposed.data.proposal_id,
+                    run_name=self.run_name,
+                    initiator=self.initiator,
+                    character_decisions=tuple(
+                        CharacterDecision(entity_id, "player")
+                        for entity_id in proposed.data.suggested_player_entity_ids
+                    ),
                 )
             )
             assert isinstance(initialized, Success), initialized

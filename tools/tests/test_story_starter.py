@@ -1,11 +1,18 @@
 from __future__ import annotations
 
+import os
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 
 from tools.story_starter.cli import Arguments, build_parser, execute, main
-from tools.story_starter.compose import ComposeError, ComposeRunner, resolve_services
+from tools.story_starter.compose import (
+    ComposeConfig,
+    ComposeError,
+    ComposeRunner,
+    resolve_services,
+)
 
 
 def test_logs_help_lists_all_supported_services(capsys: pytest.CaptureFixture[str]) -> None:
@@ -96,6 +103,44 @@ def test_confirmed_clean_removes_volumes_then_starts_without_build() -> None:
         ["down", "--volumes"],
         ["up", "--detach", "--wait", "backend", "postgres", "frontend"],
     ]
+
+
+def test_execute_loads_the_resolved_env_file_into_the_process_environment(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    env_file = tmp_path / "docker.env"
+    env_file.write_text("FRONTEND_HOST_PORT=5172\n")
+    monkeypatch.delenv("FRONTEND_HOST_PORT", raising=False)
+    fake_runner = _FakeRunner()
+    fake_config = ComposeConfig(
+        repository_root=tmp_path, compose_file=tmp_path / "compose.yaml", env_file=env_file
+    )
+
+    with patch(
+        "tools.story_starter.cli.ComposeConfig.from_arguments", return_value=fake_config
+    ), patch("tools.story_starter.cli.ComposeRunner", return_value=fake_runner):
+        assert execute(Arguments("start")) == 0
+
+    assert os.environ["FRONTEND_HOST_PORT"] == "5172"
+
+
+def test_execute_does_not_override_an_already_exported_variable(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    env_file = tmp_path / "docker.env"
+    env_file.write_text("FRONTEND_HOST_PORT=5172\n")
+    monkeypatch.setenv("FRONTEND_HOST_PORT", "9999")
+    fake_runner = _FakeRunner()
+    fake_config = ComposeConfig(
+        repository_root=tmp_path, compose_file=tmp_path / "compose.yaml", env_file=env_file
+    )
+
+    with patch(
+        "tools.story_starter.cli.ComposeConfig.from_arguments", return_value=fake_config
+    ), patch("tools.story_starter.cli.ComposeRunner", return_value=fake_runner):
+        assert execute(Arguments("start")) == 0
+
+    assert os.environ["FRONTEND_HOST_PORT"] == "9999"
 
 
 class _FakeRunner:

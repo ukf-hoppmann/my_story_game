@@ -12,6 +12,17 @@ from typing import Sequence
 KNOWN_SERVICES = ("backend", "postgres", "frontend")
 SERVICE_CHOICES = ("all", *KNOWN_SERVICES)
 
+DEFAULT_ENV_FILE = Path("configs") / "docker" / "docker.env"
+"""The project-owned Compose env file, used when --env-file is not given.
+
+Docker Compose never loads this on its own — only a plain ``.env`` file next
+to the compose file is picked up automatically, and this repository's
+compose file has none. Without this default, editing
+``configs/docker/docker.env`` (e.g. to move the frontend off a port already
+used by another project) silently has no effect until someone remembers to
+pass ``--env-file`` by hand.
+"""
+
 
 class ComposeError(RuntimeError):
     """Raised when Docker Compose cannot be invoked successfully."""
@@ -44,8 +55,27 @@ class ComposeConfig:
                 resolved_env_file = (Path.cwd() / resolved_env_file).resolve()
             else:
                 resolved_env_file = resolved_env_file.resolve()
+        else:
+            default_env_file = repository_root / DEFAULT_ENV_FILE
+            if default_env_file.is_file():
+                resolved_env_file = default_env_file
 
         return cls(repository_root, resolved_compose_file, resolved_env_file, project_name)
+
+
+def parse_env_file(path: Path) -> dict[str, str]:
+    """Parse simple ``KEY=VALUE`` lines, ignoring blank lines and comments."""
+
+    values: dict[str, str] = {}
+    for line in path.read_text().splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        key, separator, value = stripped.partition("=")
+        if not separator:
+            continue
+        values[key.strip()] = value.strip()
+    return values
 
 
 def resolve_services(services: Sequence[str]) -> tuple[str, ...]:

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import dataclass
+import os
 import sys
 from typing import Sequence
 
@@ -13,6 +14,7 @@ from .compose import (
     ComposeConfig,
     ComposeError,
     ComposeRunner,
+    parse_env_file,
     resolve_services,
 )
 from .health import backend_health, backend_port, wait_for_backend_health
@@ -205,6 +207,13 @@ def _clean(runner: ComposeRunner, *, confirmed: bool) -> None:
 
 def execute(arguments: Arguments) -> int:
     config = ComposeConfig.from_arguments(arguments.compose_file, arguments.env_file, arguments.project_name)
+    if config.env_file:
+        # Matches Docker Compose's own precedence for --env-file: an already
+        # exported shell variable wins over the file. This only affects what
+        # this CLI process prints (e.g. backend_port()); the container
+        # variables themselves come from Compose's --env-file handling.
+        for key, value in parse_env_file(config.env_file).items():
+            os.environ.setdefault(key, value)
     runner = ComposeRunner(config)
     runner.ensure_available()
 

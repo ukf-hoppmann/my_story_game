@@ -90,6 +90,7 @@ class ProposeGameRun:
                 configuration=request.configuration,
                 story_state=initialized.data.story_state,
                 world_state=initialized.data.world_state,
+                suggested_title=initialized.data.suggested_title,
             ),
         )
         self._diagnostics.trace("propose_game_run.done", proposal_id=str(proposal_id))
@@ -102,6 +103,7 @@ class ProposeGameRun:
                     initialized.data.world_state.entities,
                     request.controllable_characters,
                 ),
+                suggested_title=initialized.data.suggested_title,
             )
         )
 

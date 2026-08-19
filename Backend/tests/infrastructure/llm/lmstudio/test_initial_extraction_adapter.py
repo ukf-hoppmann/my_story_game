@@ -95,6 +95,7 @@ def test_adapter_requests_strict_json_and_returns_a_typed_candidate() -> None:
                     }
                 ],
                 "scene_refs": ["dungeon"],
+                "suggested_title": "Der alte Dungeon",
             }
         )
     )
@@ -109,6 +110,7 @@ def test_adapter_requests_strict_json_and_returns_a_typed_candidate() -> None:
     )
     assert result.data.facts[0].subject_ref == "maren"
     assert result.data.scene_refs == ("dungeon",)
+    assert result.data.suggested_title == "Der alte Dungeon"
     assert client.request is not None
     assert client.request.temperature == 0.1
     assert client.request.response_format is not None
@@ -135,7 +137,15 @@ def test_no_seed_context_is_sent_any_more() -> None:
     left to render into the system message.
     """
     client = RecordingClient(
-        json.dumps({"entities": [], "links": [], "facts": [], "scene_refs": []})
+        json.dumps(
+            {
+                "entities": [],
+                "links": [],
+                "facts": [],
+                "scene_refs": [],
+                "suggested_title": "Der Dungeon",
+            }
+        )
     )
     request = InitialWorldExtractionRequest(
         system_prompts=("Extrahiere den initialen WorldState.",),
@@ -159,10 +169,11 @@ def test_no_seed_context_is_sent_any_more() -> None:
     [
         "not-json",
         "{}",
-        '{"entities": [], "links": [], "facts": [], "scene_refs": [], "evidence": []}',
-        '{"entities": [{"local_ref": "x", "kind": "unknown", "label": "X", "description": "", "conditions": [], "aliases": []}], "links": [], "facts": [], "scene_refs": []}',
-        '{"entities": [], "links": [], "facts": []}',
-        '{"entities": [], "links": [], "facts": [], "scene_refs": [""]}',
+        '{"entities": [], "links": [], "facts": [], "scene_refs": [], "suggested_title": "X", "evidence": []}',
+        '{"entities": [{"local_ref": "x", "kind": "unknown", "label": "X", "description": "", "conditions": [], "aliases": []}], "links": [], "facts": [], "scene_refs": [], "suggested_title": "X"}',
+        '{"entities": [], "links": [], "facts": [], "suggested_title": "X"}',
+        '{"entities": [], "links": [], "facts": [], "scene_refs": [""], "suggested_title": "X"}',
+        '{"entities": [], "links": [], "facts": [], "scene_refs": []}',
     ],
 )
 def test_adapter_rejects_malformed_or_nonconforming_json(response_text: str) -> None:

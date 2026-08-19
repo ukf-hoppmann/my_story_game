@@ -105,6 +105,12 @@ class _WireCandidate(_WireModel):
             "the opening establishes no location at all."
         ),
     )
+    suggested_title: str = Field(
+        description=(
+            "A short, evocative title for this opening scene, based only on the "
+            "provided narration."
+        ),
+    )
 
 
 class LmStudioInitialWorldExtractionAdapter(InitialWorldExtractionPort):
@@ -200,4 +206,5 @@ def _candidate_from_wire(wire: _WireCandidate) -> WorldInitializationCandidate:
             CandidateFact(item.statement, item.subject_ref) for item in wire.facts
         ),
         scene_refs=tuple(wire.scene_refs),
+        suggested_title=wire.suggested_title,
     )

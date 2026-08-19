@@ -99,7 +99,10 @@ def player_character() -> ControllableCharacterSeed:
     return ControllableCharacterSeed("Maren", "Eine vorsichtige Kartografin.")
 
 
-def operation(extractor: RecordingExtractor) -> ExtractInitialWorldState:
+def operation(
+    extractor: RecordingExtractor,
+    now=lambda: datetime(2026, 8, 19, 12, 0, tzinfo=UTC),
+) -> ExtractInitialWorldState:
     values = iter((f"id-{number}" for number in range(1, 20)))
     return ExtractInitialWorldState(
         InitialExtractionPromptSelectionResolver(
@@ -108,6 +111,7 @@ def operation(extractor: RecordingExtractor) -> ExtractInitialWorldState:
         FixedConfigurationResolver(),
         extractor,
         lambda: sid(next(values)),
+        now=now,
     )
 
 
@@ -144,7 +148,7 @@ def test_builds_complete_initial_world_state_as_one_neutral_cast() -> None:
     )
 
     assert isinstance(result, Success)
-    world = result.data
+    world = result.data.world_state
     assert [entity.label for entity in world.entities] == [
         "Maren",
         "Alma",
@@ -194,7 +198,7 @@ def test_scene_references_become_ordered_stable_ids() -> None:
     )
 
     assert isinstance(result, Success)
-    world = result.data
+    world = result.data.world_state
     hall = next(item for item in world.entities if item.label == "Große Halle")
     dungeon = next(item for item in world.entities if item.label == "Alter Dungeon")
     assert world.scene_location_ids == (hall.id, dungeon.id)
@@ -217,7 +221,7 @@ def test_a_world_without_scene_references_has_no_scene() -> None:
     )
 
     assert isinstance(result, Success)
-    assert result.data.scene_location_ids == ()
+    assert result.data.world_state.scene_location_ids == ()
 
 
 def test_unknown_scene_reference_rejects_the_entire_candidate() -> None:
@@ -282,7 +286,7 @@ def test_director_mode_can_produce_an_empty_world_without_a_character() -> None:
     )
 
     assert isinstance(result, Success)
-    assert result.data.entities == ()
+    assert result.data.world_state.entities == ()
 
 
 def test_director_mode_freely_extracts_several_characters_as_neutral() -> None:
@@ -316,7 +320,7 @@ def test_director_mode_freely_extracts_several_characters_as_neutral() -> None:
     )
 
     assert isinstance(result, Success)
-    world = result.data
+    world = result.data.world_state
     assert [entity.label for entity in world.entities[:2]] == ["Maren", "Jonas"]
     assert world.entities[0].actor.role is ActorRole.NEUTRAL
     assert world.entities[1].actor.role is ActorRole.NEUTRAL
@@ -397,8 +401,8 @@ def test_a_local_ref_that_happens_to_look_like_the_old_reserved_word_is_ordinary
     )
 
     assert isinstance(result, Success)
-    assert result.data.entities[0].label == "Alma"
-    assert result.data.entities[0].actor.role is ActorRole.NEUTRAL
+    assert result.data.world_state.entities[0].label == "Alma"
+    assert result.data.world_state.entities[0].actor.role is ActorRole.NEUTRAL
 
 
 def test_a_label_or_alias_matching_a_controllable_character_name_is_no_longer_rejected() -> None:
@@ -511,7 +515,9 @@ def test_exact_duplicate_located_in_links_are_deduplicated() -> None:
 
     assert isinstance(result, Success)
     located_in_links = [
-        link for link in result.data.links if link.kind is RelationKind.LOCATED_IN
+        link
+        for link in result.data.world_state.links
+        if link.kind is RelationKind.LOCATED_IN
     ]
     assert len(located_in_links) == 1
 
@@ -541,6 +547,40 @@ def test_conflicting_located_in_links_still_reject_the_entire_candidate() -> Non
 
     assert isinstance(result, Failure)
     assert result.error.kind is StoryInitializationErrorKind.DOMAIN_REJECTION
+
+
+def test_suggested_title_is_passed_through_unchanged_when_present() -> None:
+    extractor = RecordingExtractor(
+        Success(WorldInitializationCandidate(suggested_title="Der alte Dungeon"))
+    )
+
+    result = operation(extractor).apply(
+        ExtractInitialWorldStateRequest(
+            configuration(), story_state(), (player_character(),)
+        )
+    )
+
+    assert isinstance(result, Success)
+    assert result.data.suggested_title == "Der alte Dungeon"
+
+
+@pytest.mark.parametrize("blank_title", ["", "   "], ids=["empty", "whitespace"])
+def test_blank_suggested_title_falls_back_to_a_timestamped_default(
+    blank_title: str,
+) -> None:
+    extractor = RecordingExtractor(
+        Success(WorldInitializationCandidate(suggested_title=blank_title))
+    )
+    fixed_now = datetime(2026, 8, 19, 14, 30, tzinfo=UTC)
+
+    result = operation(extractor, now=lambda: fixed_now).apply(
+        ExtractInitialWorldStateRequest(
+            configuration(), story_state(), (player_character(),)
+        )
+    )
+
+    assert isinstance(result, Success)
+    assert result.data.suggested_title == "Neue Geschichte – 19.08.2026 14:30"
 
 
 def test_invalid_model_response_remains_visible_without_retry() -> None:

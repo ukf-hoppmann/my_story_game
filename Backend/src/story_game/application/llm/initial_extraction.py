@@ -103,6 +103,13 @@ class WorldInitializationCandidate:
     where the narration looks. The Application maps them to stable IDs and
     rejects references that are unknown, duplicated, or not locations.
     """
+    suggested_title: str = ""
+    """A short, model-proposed title for the opening scene/story.
+
+    A pure display suggestion, not canonical: the Application normalizes and
+    may replace it (see ``initial_world_extraction.py``) before it is ever
+    shown to a caller. May be blank if the model omitted or emptied it.
+    """
 
     def __post_init__(self) -> None:
         object.__setattr__(
@@ -113,6 +120,7 @@ class WorldInitializationCandidate:
                 for reference in self.scene_refs
             ),
         )
+        object.__setattr__(self, "suggested_title", self.suggested_title.strip())
 
 
 @dataclass(frozen=True, slots=True)

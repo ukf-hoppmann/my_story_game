@@ -128,6 +128,7 @@ export interface RunProposal {
   opening_narration: string;
   world: WorldState;
   suggested_player_entity_ids: string[];
+  suggested_title: string;
 }
 
 export interface CharacterDecision {
@@ -143,7 +144,7 @@ export interface ItemDecision {
 
 export interface ConfirmRunProposalRequest {
   proposal_id: string;
-  run_name: string;
+  run_name?: string;
   character_decisions: CharacterDecision[];
   item_decisions: ItemDecision[];
 }

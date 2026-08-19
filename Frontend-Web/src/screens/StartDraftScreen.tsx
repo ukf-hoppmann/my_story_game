@@ -58,7 +58,7 @@ export function StartDraftScreen({ onBack, onPlaythroughStarted }: Props) {
     setProposal(result);
     setCharacterRoles(initialRoles);
     setRemovedEntityIds(new Set());
-    setRunName("");
+    setRunName(result.suggested_title);
     setStep("review");
   }
 
@@ -100,7 +100,7 @@ export function StartDraftScreen({ onBack, onPlaythroughStarted }: Props) {
 
     const draft = await runConfirm({
       proposal_id: proposal.proposal_id,
-      run_name: runName,
+      run_name: runName.trim() || undefined,
       character_decisions: characterDecisions,
       item_decisions: itemDecisions,
     });
@@ -139,10 +139,9 @@ export function StartDraftScreen({ onBack, onPlaythroughStarted }: Props) {
 
         <form onSubmit={handleSubmitReview}>
           <div className="field">
-            <label htmlFor="run_name">Titel</label>
+            <label htmlFor="run_name">Titel (Vorschlag, kann angepasst werden)</label>
             <input
               id="run_name"
-              required
               value={runName}
               onChange={(event) => setRunName(event.target.value)}
             />

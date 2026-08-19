@@ -120,6 +120,7 @@ def proposal_to_api(proposal: GameRunProposal) -> RunProposalModel:
         suggested_player_entity_ids=[
             entity_id.value for entity_id in proposal.suggested_player_entity_ids
         ],
+        suggested_title=proposal.suggested_title,
     )
 
 

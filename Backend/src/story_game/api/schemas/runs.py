@@ -45,6 +45,7 @@ class RunProposalModel(APIModel):
     opening_narration: str = Field(min_length=1)
     world: WorldStateModel
     suggested_player_entity_ids: list[UUID] = Field(default_factory=list)
+    suggested_title: str = Field(min_length=1)
 
 
 class CharacterDecisionModel(APIModel):
@@ -59,10 +60,14 @@ class ItemDecisionModel(APIModel):
 
 
 class ConfirmRunProposalRequestModel(APIModel):
-    """What a caller submits to persist a previously generated proposal."""
+    """What a caller submits to persist a previously generated proposal.
+
+    ``run_name`` is optional: a blank or omitted value falls back to the
+    proposal's model-suggested title (see ``RunProposalModel.suggested_title``).
+    """
 
     proposal_id: UUID
-    run_name: str = Field(min_length=1)
+    run_name: str | None = None
     character_decisions: list[CharacterDecisionModel] = Field(default_factory=list)
     item_decisions: list[ItemDecisionModel] = Field(default_factory=list)
 

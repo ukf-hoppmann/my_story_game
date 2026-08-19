@@ -249,7 +249,7 @@ After explicit rejection:
 
 - `STORY-003` **API für den Storygame-Zustand**
   - Type: Story.
-  - Status: In progress.
+  - Status: Completed.
   - Parent: `EPIC-001`.
   - Required for parent: Yes.
   - Created: 2026-08-04.
@@ -257,11 +257,12 @@ After explicit rejection:
   - Priority: Wichtig.
   - Dependencies: `STORY-002`.
   - Goal: Den Storygame-Zustand über eine stabile API für die späteren Benutzeroberflächen und Anwendungsfälle zugänglich machen. Die API trennt Lesen, fachliche Änderungsanträge und deren geprüfte Übernahme.
-  - Completion criteria: Ein Client kann einen Storygame-Zustand anlegen, laden und fachlich valide Änderungen anfordern. Die API gibt keine direkten LLM-Schreibrechte frei, validiert Referenzen und Zustandsrevisionen und liefert verständliche Fehler bei ungültigen oder veralteten Änderungen. API- und Integrations-Tests prüfen die unterstützten Abläufe.
+  - Completion criteria: Ein Client kann einen Storygame-Zustand anlegen, laden und fachlich valide Änderungen anfordern. Die API gibt keine direkten LLM-Schreibrechte frei, validiert Referenzen und Zustandsrevisionen und liefert verständliche Fehler bei ungültigen oder veralteten Änderungen. API- und Integrations-Tests prüfen die unterstützten Abläufe. Erfüllt über `TASK-029` (Lauf-Lebenszyklus-Endpunkte: Liste, Laden, Vorlage anlegen, Abzweig, Zug) und den Propose/Confirm-Init-Flow (`POST /api/v1/runs/proposals`, `POST /api/v1/runs`); Fehlerabbildung in `Backend/src/story_game/api/errors.py` deckt Revisionskonflikte, ungültige Referenzen, Domain-Ablehnung und Statusverletzungen typisiert ab; `Backend/tests/api/test_api.py` (12 Tests) prüft Laden, Liste, Propose/Confirm, Playthrough-Start und Turn-Play inklusive Ablehnungsfällen.
+  - Resolution: Confirmed by the project owner on 2026-08-19.
 
 - `TASK-029` **Lauf-Lebenszyklus-Endpunkte mit fester Entwicklungsidentität**
   - Type: Task.
-  - Status: Awaiting confirmation.
+  - Status: Completed.
   - Parent: `STORY-003`.
   - Required for parent: Yes.
   - Created: 2026-08-18.
@@ -270,6 +271,7 @@ After explicit rejection:
   - Dependencies: `STORY-008`, `STORY-009`, `STORY-010`, `TASK-022`.
   - Goal: Die vorhandenen `InitializeGameRun`- und `PlayStoryTurn`-Workflows über echte HTTP-Endpunkte erreichbar machen, damit eine UI eine Geschichte auflisten, laden, starten und einen Zug spielen kann — ohne Keycloak, über eine fest verdrahtete, austauschbare Entwicklungsidentität. Ergänzt eine neue `StartPlaythrough`-Operation: `InitializeGameRun` legt eine unveränderliche `DRAFT`-Vorlage an; erst ein expliziter Abzweig kopiert sie in einen unabhängigen `ACTIVE`-Lauf, sodass dasselbe Szenario mehrfach gespielt werden kann.
   - Completion criteria: `GET /api/v1/runs` (Liste), `GET /api/v1/runs/{run_id}` (laden), `POST /api/v1/runs` (Vorlage erzeugen), `POST /api/v1/runs/{run_id}/playthroughs` (Abzweig) und `POST /api/v1/runs/{run_id}/turns` (Zug) sind implementiert; die alten provisorischen Endpunkte (`POST /api/v1/runs` mit rohem GameDocument, `GET .../state`) sind ersetzt. Ein Zug gegen eine `DRAFT`-Vorlage wird mit `run_not_active` abgewiesen; ein Abzweig von einem bereits aktiven Lauf mit `playthrough_source_not_draft`. Eine feste, über `STORY_GAME_DEV_ISSUER`/`STORY_GAME_DEV_SUBJECT` konfigurierbare Identität wird über eine einzige austauschbare Dependency aufgelöst. `StoryInitializationError`, `StoryTurnError` und `ContextSelectionError` sind vollständig auf HTTP-Fehlercodes abgebildet. Ein neuer `PlayableRunLister`-Port mit PostgreSQL-Adapter und zusätzlichem `(issuer, subject)`-Index liefert die Liste ohne vollen WorldState pro Zeile. Alle betroffenen Tests (`tests/api`) sind angepasst und bestehen; der volle End-to-End-Ablauf (Vorlage → Abzweig → Zug) wurde manuell gegen echtes PostgreSQL und LM Studio geprüft. Ein öffentlicher Konfigurations- oder Auth-Endpunkt ist weiterhin nicht Teil dieser Arbeit.
+  - Resolution: Confirmed by the project owner on 2026-08-19.
 
 - `EPIC-002` **LLM-Anbindung und Storyzug-Workflow**
   - Type: Epic.
@@ -283,7 +285,7 @@ After explicit rejection:
 
 - `STORY-004` **Anbindungsverträge definieren**
   - Type: Story.
-  - Status: Awaiting confirmation.
+  - Status: Completed.
   - Parent: `EPIC-002`.
   - Required for parent: Yes.
   - Created: 2026-08-06.
@@ -292,10 +294,11 @@ After explicit rejection:
   - Dependencies: None.
   - Goal: Die providerunabhängigen, typisierten Verträge für Story-Erzeugung, Extraktion und Modellaufrufe als Application-eigene Ports festlegen.
   - Completion criteria: Task-spezifische Requests und Success-Daten, eine geeignete typisierte Generation-Call-Hülle sowie die gemeinsame `Success`-/`Failure`- und `LLMError`-Grenze sind dokumentiert, implementiert und unabhängig testbar. Providerobjekte, Rohantworten und konkrete Providerformate überschreiten die Application-Grenze nicht.
+  - Resolution: Confirmed by the project owner on 2026-08-19.
 
 - `STORY-005` **LLM anbinden**
   - Type: Story.
-  - Status: Awaiting confirmation.
+  - Status: Completed.
   - Parent: `EPIC-002`.
   - Required for parent: Yes.
   - Created: 2026-08-07.
@@ -304,6 +307,7 @@ After explicit rejection:
   - Dependencies: `STORY-004`, `STORY-001`, `STORY-002`.
   - Goal: Die vereinbarten Modellverträge mit dateibasierten Modell- und Promptkatalogen sowie einem austauschbaren Provider-Adapter und Provider-Client ausführbar verbinden.
   - Completion criteria: TOML-basierte globale Konfiguration und versionierte Promptdateien werden über Application-Ports geladen. Provider-Geheimnisse kommen aus einer zugelassenen externen Laufzeitquelle. Ein tatsächlicher Modellaufruf kann über einen Testdouble und den vorgesehenen Providerpfad ausgeführt werden; Rohantworten und Providerfehler bleiben transient beziehungsweise werden in die Application-eigene Fehlerfamilie übersetzt.
+  - Resolution: Confirmed by the project owner on 2026-08-19.
 
 - `STORY-006` **Story Generation erstellen**
   - Type: Story.
@@ -648,7 +652,7 @@ After explicit rejection:
 
 - `TASK-024` **Logging-Grundlage einführen**
   - Type: Task.
-  - Status: Awaiting confirmation.
+  - Status: Completed.
   - Parent: None.
   - Created: 2026-08-17.
   - Area: Betrieb und Diagnose.
@@ -656,24 +660,26 @@ After explicit rejection:
   - Dependencies: None.
   - Goal: Eine schlanke, projektweite Logging-Grundlage schaffen. Das Projekt enthielt zuvor kein einziges Log: weder Modellaufrufe noch verworfene Vorschläge, Revisionskonflikte oder Providerfehler hinterließen eine Spur. Wiederkehrende Probleme im Spielbetrieb waren dadurch nicht erkennbar.
   - Completion criteria: Es ist entschieden, welche Ereignisse geloggt werden und auf welcher Stufe, wie die Ausgabe konfiguriert wird und wie die Schichtengrenzen eingehalten bleiben — die Domain loggt nicht, die Application entscheidet fachlich über einen eigenen `DiagnosticsLog`-Port (`record()`/`trace()`), Infrastruktur (`structlog`) und Composition Root richten ein. Explizit vom Projektbesitzer nachträglich erweitert (2026-08-18): im PROD-Profil (Default) dürfen Spielerprosa, Prompts und Rohantworten nicht ungefiltert im Log landen — durchgesetzt über das geschlossene, typisierte `DiagnosticEvent`-Schema, nicht nur per Konvention; im ausdrücklich aktivierten DEBUG-Profil wird dagegen bewusst exzessiv geloggt, inklusive roher Prompts/Provider-Antworten (in den LM-Studio-Adaptern) und transformierter Zwischendaten an jeder Operationsgrenze (`trace()` in Application), damit auch Fehler innerhalb einer Transformation auffindbar sind. Mindestens fehlgeschlagene Modellaufrufe, verworfene Änderungsvorschläge und Revisionskonflikte sind über `record()` sichtbar. Bestehende typisierte Fehler bleiben unverändert; das Log ergänzt sie, ersetzt sie nicht. Der Modus ist zentral in der versionierten `configs/app.toml` (`[logging]`) gepflegt — dort steht aktuell `mode = "debug"`, weil der Projektbesitzer derzeit durchgängig mit Debug arbeitet; `STORY_GAME_LOG_MODE`/`STORY_GAME_LOG_LEVEL` bleiben als Laufzeit-Override erhalten (Env-Var schlägt Datei schlägt Hardcoded-Default), geladen über `TomlAppConfigurationLoader`/`LoggingSettings.resolve()`. Geloggt wird gleichzeitig nach stdout und in eine rotierende Datei (`logs/story-game.log`, Default 10 MiB × 5 Backups, Pfad und Rotation in derselben Config-Datei einstellbar); `logs/` ist per `.gitignore` ausgeschlossen und in `compose.yaml` als Volume gemountet, damit die Datei Container-Neustarts übersteht. `PlayStoryTurn`, `InitializeGameRun` und die Story-Workflow-Operationen sind in der FastAPI-App verdrahtet; die Diagnostics-Verdrahtung lebt im Composition Root und im Human-Inspection-Testbündel (`tests/infrastructure/llm/lmstudio/human_test_support.py`, dort bewusst fest auf Debug verdrahtet).
+  - Resolution: Confirmed by the project owner on 2026-08-19.
 
 - `TASK-016` **Mehrere gesteuerte Figuren im Director Mode**
   - Type: Task.
-  - Status: Resolved.
+  - Status: Completed.
   - Parent: `EPIC-001`.
   - Required for parent: No.
   - Created: 2026-08-17.
-  - Resolution: Umgesetzt am 2026-08-18. `GameRunMember.player_entity_id` (ein optionaler Wert) wurde zu `controlled_entity_ids: tuple[StableId, ...]` generalisiert; `PlayerCharacterSeed` wurde zu `ControllableCharacterSeed` und der Request nimmt eine Liste `controllable_characters` statt eines Einzelwerts. Player Mode verlangt weiterhin genau eine Figur; Director Mode erlaubt 0..N explizit benannte Figuren (neuer Policy-Fehler `duplicate_controllable_character` bei doppelten Namen). Die reservierte Referenz bei der Welt-Extraktion wurde von einem festen `player_character`-Wort auf eine Liste (`player_character`, `player_character_2`, …) erweitert. Betroffen: Domain (`game_run.py`, `game_state.py`), Application (`initialization_policy.py`, `initial_world_extraction.py`, `play_story_turn.py`, `story_turn_context.py`, `select_always_included.py`, `story_turn_context_models.py`), LM-Studio-Adapter, API (`schemas/common.py`, `schemas/runs.py`, `routers/runs.py`, `mappers/state.py`), Postgres-Migration `003_controllable_characters.sql` (neue Tabelle `game_run_member_controlled_entities` statt der Spalte `player_entity_id`). Zusätzlich wurde `generate_story.py`s System-Prompt um eine feste NPC-Agency-Anweisung ergänzt (nur gesteuerte Figuren handeln auf Prompt-Basis) — best effort, ohne Durchsetzung.
+  - Resolution: Confirmed by the project owner on 2026-08-19. Umgesetzt am 2026-08-18. `GameRunMember.player_entity_id` (ein optionaler Wert) wurde zu `controlled_entity_ids: tuple[StableId, ...]` generalisiert; `PlayerCharacterSeed` wurde zu `ControllableCharacterSeed` und der Request nimmt eine Liste `controllable_characters` statt eines Einzelwerts. Player Mode verlangt weiterhin genau eine Figur; Director Mode erlaubt 0..N explizit benannte Figuren (neuer Policy-Fehler `duplicate_controllable_character` bei doppelten Namen). Die reservierte Referenz bei der Welt-Extraktion wurde von einem festen `player_character`-Wort auf eine Liste (`player_character`, `player_character_2`, …) erweitert. Betroffen: Domain (`game_run.py`, `game_state.py`), Application (`initialization_policy.py`, `initial_world_extraction.py`, `play_story_turn.py`, `story_turn_context.py`, `select_always_included.py`, `story_turn_context_models.py`), LM-Studio-Adapter, API (`schemas/common.py`, `schemas/runs.py`, `routers/runs.py`, `mappers/state.py`), Postgres-Migration `003_controllable_characters.sql` (neue Tabelle `game_run_member_controlled_entities` statt der Spalte `player_entity_id`). Zusätzlich wurde `generate_story.py`s System-Prompt um eine feste NPC-Agency-Anweisung ergänzt (nur gesteuerte Figuren handeln auf Prompt-Basis) — best effort, ohne Durchsetzung.
   - Goal: Klären und umsetzen, wie ein Benutzer im Director Mode eine oder mehrere Figuren steuert. Heute bindet `GameRunMember` genau eine Figur, und die Director-Initialisierung lässt die Bindung bewusst leer.
   - Completion criteria: Entschieden und dokumentiert ist, ob eine Mitgliedschaft mehrere gesteuerte Figuren binden darf und wie diese bei der Welt-Erzeugung entstehen; Domain, Persistenz und API bilden das Ergebnis ab; die Kontextauswahl nimmt alle gesteuerten Figuren auf.
 
 - `STORY-011` **Web-Frontend-Grundgerüst**
   - Type: Story.
   - Parent: None.
-  - Status: Awaiting confirmation.
+  - Status: Completed.
   - Created: 2026-08-18.
   - Area: Repo-Struktur und Web-Frontend.
   - Priority: Wichtig.
   - Dependencies: `TASK-029`.
   - Goal: Das Repo in Subprojekte gliedern (`Backend/`, `Frontend-Web/`, Platz für spätere Subprojekte wie Mobile oder Keycloak) und ein minimales, echt gegen die Backend-API sprechendes React/Vite/TypeScript-Grundgerüst anlegen — Runs-Liste, Vorlage starten, Zug spielen.
   - Completion criteria: `src/`, `tests/`, `configs/`, `prompts/`, `pyproject.toml`, `requirements.txt`, `Dockerfile`, `.env.example` liegen unter `Backend/`; `compose.yaml`, `story-starter`, `.devcontainer/` bleiben am Root und funktionieren unverändert (verifiziert: `cd Backend && pytest` — 405 Tests grün; `docker compose build`; `./story-starter` mit funktionierendem `GET /health`, inklusive behobenem fehlenden `COPY prompts` im Dockerfile). Backend erlaubt CORS für den Vite-Dev-Server (`STORY_GAME_CORS_ALLOWED_ORIGINS`). `Frontend-Web/` enthält einen typisierten API-Client (`client.ts`, `types.ts`), einen `useApiRequest`-Hook für Lade-/Fehlerzustände und drei Screens (Runs-Liste, Vorlage starten, Zug spielen) ohne Router und ohne OpenAPI-Codegen (bewusste MVP-Entscheidungen, siehe `Frontend-Web/README.md`). Live gegen echtes Docker-Backend verifiziert: CORS-Preflight, Runs-Liste lädt echte Daten, Formular-Fehler (`invalid_candidate_reference`) wird korrekt als Fehler-Banner angezeigt. Ein vollständiger Klick-Durchlauf bis zum gespielten Zug wurde wegen unzuverlässiger lokaler Modellantworten nicht abschließend live bestätigt — die Turn-Play-Logik selbst ist nicht anders verifiziert als durch Code-Review und TypeScript-Typprüfung.
+  - Resolution: Confirmed by the project owner on 2026-08-19.

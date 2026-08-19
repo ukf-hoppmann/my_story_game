@@ -24,7 +24,7 @@ def test_logs_help_lists_all_supported_services(capsys: pytest.CaptureFixture[st
 
 
 def test_resolve_services_defaults_to_all_and_rejects_mixed_all() -> None:
-    assert resolve_services(()) == ("backend", "postgres", "frontend")
+    assert resolve_services(()) == ("backend", "postgres", "frontend", "nginx")
     assert resolve_services(("postgres",)) == ("postgres",)
 
     with pytest.raises(ComposeError, match="all"):
@@ -37,7 +37,7 @@ def test_start_runs_the_stack_without_building() -> None:
     with patch("tools.story_starter.cli.ComposeRunner", return_value=fake_runner):
         assert execute(Arguments("start")) == 0
 
-    assert fake_runner.commands == [["up", "--detach", "--wait", "backend", "postgres", "frontend"]]
+    assert fake_runner.commands == [["up", "--detach", "--wait", "backend", "postgres", "frontend", "nginx"]]
 
 
 def test_upgrade_adds_build_flag() -> None:
@@ -46,7 +46,7 @@ def test_upgrade_adds_build_flag() -> None:
     with patch("tools.story_starter.cli.ComposeRunner", return_value=fake_runner):
         assert execute(Arguments("upgrade")) == 0
 
-    assert fake_runner.commands == [["up", "--build", "--detach", "--wait", "backend", "postgres", "frontend"]]
+    assert fake_runner.commands == [["up", "--build", "--detach", "--wait", "backend", "postgres", "frontend", "nginx"]]
 
 
 def test_restart_defaults_to_all_but_accepts_one_service() -> None:
@@ -60,7 +60,7 @@ def test_restart_defaults_to_all_but_accepts_one_service() -> None:
         assert execute(Arguments("restart", services=("backend",))) == 0
 
     assert fake_runner.commands == [
-        ["restart", "backend", "postgres", "frontend"],
+        ["restart", "backend", "postgres", "frontend", "nginx"],
         ["restart", "backend"],
     ]
 
@@ -101,7 +101,7 @@ def test_confirmed_clean_removes_volumes_then_starts_without_build() -> None:
 
     assert fake_runner.commands == [
         ["down", "--volumes"],
-        ["up", "--detach", "--wait", "backend", "postgres", "frontend"],
+        ["up", "--detach", "--wait", "backend", "postgres", "frontend", "nginx"],
     ]
 
 

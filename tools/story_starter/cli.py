@@ -136,6 +136,7 @@ def _start(runner: ComposeRunner, *, build: bool) -> None:
     arguments.extend(["--detach", "--wait", *KNOWN_SERVICES])
     runner.run(arguments)
     print("Story Game läuft.")
+    print("  App:        http://storygame.localhost/")
     print(f"  Backend:    http://localhost:{port}")
     print(f"  Swagger UI: http://localhost:{port}/docs")
     print(f"  OpenAPI:    http://localhost:{port}/openapi.json")

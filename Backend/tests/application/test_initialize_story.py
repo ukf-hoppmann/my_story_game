@@ -12,6 +12,7 @@ from story_game.application.initialization_models import (
     ControllableCharacterSeed,
     InitializedStory,
 )
+from story_game.application.initial_world_extraction import WorldExtractionResult
 from story_game.application.initialize_story import InitializeStory, InitializeStoryRequest
 from story_game.domain import (
     GameConfiguration,
@@ -63,7 +64,9 @@ def test_orchestrates_story_then_world_and_returns_both_transient_states() -> No
     )
     world = WorldState()
     story_generation = RecordingOperation(Success(story))
-    world_extraction = RecordingOperation(Success(world))
+    world_extraction = RecordingOperation(
+        Success(WorldExtractionResult(world, "Der Dungeon"))
+    )
     seed = ControllableCharacterSeed("Maren")
 
     result = InitializeStory(story_generation, world_extraction).apply(
@@ -72,7 +75,7 @@ def test_orchestrates_story_then_world_and_returns_both_transient_states() -> No
         )
     )
 
-    assert result == Success(InitializedStory(story, world))
+    assert result == Success(InitializedStory(story, world, "Der Dungeon"))
     assert story_generation.requests[0].initial_prompt == "Maren geht in den Dungeon."
     extraction_request = world_extraction.requests[0]
     assert extraction_request.story_state is story

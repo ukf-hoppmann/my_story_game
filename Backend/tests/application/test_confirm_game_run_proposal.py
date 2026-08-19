@@ -94,7 +94,10 @@ def maren(role: ActorRole = ActorRole.NEUTRAL) -> WorldEntity:
 
 
 def cached_proposal(
-    *, control_mode: str = "player", world: WorldState | None = None
+    *,
+    control_mode: str = "player",
+    world: WorldState | None = None,
+    suggested_title: str = "Der vorgeschlagene Titel",
 ) -> CachedGameRunProposal:
     return CachedGameRunProposal(
         issuer="https://identity.example/story",
@@ -102,17 +105,19 @@ def cached_proposal(
         configuration=configuration(control_mode),
         story_state=StoryState(),
         world_state=world if world is not None else WorldState(entities=(maren(),)),
+        suggested_title=suggested_title,
     )
 
 
 def request(
     *,
+    run_name: str | None = "Marens Abenteuer",
     character_decisions: tuple[CharacterDecision, ...] = (),
     item_decisions: tuple[ItemDecision, ...] = (),
 ) -> ConfirmGameRunProposalRequest:
     return ConfirmGameRunProposalRequest(
         proposal_id=sid("proposal"),
-        run_name="Marens Abenteuer",
+        run_name=run_name,
         initiator=initiator(),
         character_decisions=character_decisions,
         item_decisions=item_decisions,
@@ -205,6 +210,66 @@ def test_removed_item_and_its_links_are_dropped() -> None:
     world_state = creator.requests[0].state.world
     assert [entity.id for entity in world_state.entities] == [sid("maren")]
     assert world_state.links == ()
+
+
+def test_omitted_run_name_falls_back_to_the_suggested_title() -> None:
+    store = RecordingProposalStore(
+        cached_proposal(suggested_title="Der alte Dungeon")
+    )
+    creator = RecordingGameRunCreator()
+    operation = ConfirmGameRunProposal(
+        store, creator, new_id=lambda: sid("run"), now=lambda: FIXED_TIME
+    )
+
+    result = operation.apply(
+        request(
+            run_name=None,
+            character_decisions=(CharacterDecision(sid("maren"), "player"),),
+        )
+    )
+
+    assert isinstance(result, Success)
+    assert creator.requests[0].run.name == "Der alte Dungeon"
+
+
+def test_blank_run_name_falls_back_to_the_suggested_title() -> None:
+    store = RecordingProposalStore(
+        cached_proposal(suggested_title="Der alte Dungeon")
+    )
+    creator = RecordingGameRunCreator()
+    operation = ConfirmGameRunProposal(
+        store, creator, new_id=lambda: sid("run"), now=lambda: FIXED_TIME
+    )
+
+    result = operation.apply(
+        request(
+            run_name="   ",
+            character_decisions=(CharacterDecision(sid("maren"), "player"),),
+        )
+    )
+
+    assert isinstance(result, Success)
+    assert creator.requests[0].run.name == "Der alte Dungeon"
+
+
+def test_explicit_run_name_wins_over_the_suggested_title() -> None:
+    store = RecordingProposalStore(
+        cached_proposal(suggested_title="Der alte Dungeon")
+    )
+    creator = RecordingGameRunCreator()
+    operation = ConfirmGameRunProposal(
+        store, creator, new_id=lambda: sid("run"), now=lambda: FIXED_TIME
+    )
+
+    result = operation.apply(
+        request(
+            run_name="Marens Abenteuer",
+            character_decisions=(CharacterDecision(sid("maren"), "player"),),
+        )
+    )
+
+    assert isinstance(result, Success)
+    assert creator.requests[0].run.name == "Marens Abenteuer"
 
 
 def test_director_mode_allows_zero_confirmed_player_characters() -> None:

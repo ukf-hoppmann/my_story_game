@@ -94,7 +94,11 @@ def test_proposes_without_persisting_a_game_run() -> None:
         actor=ActorProfile(ActorRole.NEUTRAL),
     )
     initializer = RecordingStoryInitializer(
-        Success(InitializedStory(StoryState(), WorldState(entities=(alma,))))
+        Success(
+            InitializedStory(
+                StoryState(), WorldState(entities=(alma,)), "Der Dungeon"
+            )
+        )
     )
     store = RecordingProposalStore()
     operation = ProposeGameRun(initializer, store, new_id=lambda: sid("proposal"))
@@ -105,6 +109,7 @@ def test_proposes_without_persisting_a_game_run() -> None:
     proposal = result.data
     assert proposal.proposal_id == sid("proposal")
     assert proposal.world_state.entities == (alma,)
+    assert proposal.suggested_title == "Der Dungeon"
     cached = store.load(sid("proposal"))
     assert cached == CachedGameRunProposal(
         issuer="https://identity.example/story",
@@ -112,6 +117,7 @@ def test_proposes_without_persisting_a_game_run() -> None:
         configuration=configuration(),
         story_state=StoryState(),
         world_state=WorldState(entities=(alma,)),
+        suggested_title="Der Dungeon",
     )
 
 

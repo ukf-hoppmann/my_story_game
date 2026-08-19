@@ -382,6 +382,7 @@ def test_api_proposes_without_persisting_anything() -> None:
         body = response.json()
         assert "proposal_id" in body
         assert body["opening_narration"]
+        assert body["suggested_title"]
         assert store.runs == {}
 
 
@@ -390,6 +391,43 @@ def test_api_starts_a_new_draft_run(client: TestClient) -> None:
 
     assert body["game_run"]["status"] == "draft"
     assert body["game_state"]["revision"] == 1
+
+
+def test_api_confirming_without_a_run_name_uses_the_suggested_title(
+    store: MemoryGameStore,
+) -> None:
+    class TitledExtractionPort:
+        def extract(self, call):
+            return Success(
+                WorldInitializationCandidate(suggested_title="Der Turm von Talmoor")
+            )
+
+    with TestClient(
+        create_app(
+            build_dependencies(store, extraction_port=TitledExtractionPort()),
+            settings=ApiSettings(),
+        )
+    ) as client:
+        proposal = client.post(
+            "/api/v1/runs/proposals",
+            json={
+                "initial_prompt": "Ein Licht brennt, wo keines brennen sollte.",
+                "control_mode": "director",
+            },
+        ).json()
+        assert proposal["suggested_title"] == "Der Turm von Talmoor"
+
+        confirmed = client.post(
+            "/api/v1/runs",
+            json={
+                "proposal_id": proposal["proposal_id"],
+                "character_decisions": [],
+                "item_decisions": [],
+            },
+        )
+
+        assert confirmed.status_code == 201
+        assert confirmed.json()["game_run"]["name"] == "Der Turm von Talmoor"
 
 
 def test_api_confirming_lets_the_caller_assign_and_reject_proposed_characters(

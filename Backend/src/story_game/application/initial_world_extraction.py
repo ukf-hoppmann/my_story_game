@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import Callable
 
 from story_game.application.contracts import Failure, OperationResult, Success
@@ -56,6 +57,14 @@ class ExtractInitialWorldStateRequest:
     controllable_characters: tuple[ControllableCharacterSeed, ...] = ()
 
 
+@dataclass(frozen=True, slots=True)
+class WorldExtractionResult:
+    """The canonical proposal world plus a non-canonical title suggestion."""
+
+    world_state: WorldState
+    suggested_title: str
+
+
 class ExtractInitialWorldState:
     """Extract and validate an all-or-nothing initial canonical world."""
 
@@ -66,16 +75,18 @@ class ExtractInitialWorldState:
         extractor: InitialWorldExtractionPort,
         new_id: Callable[[], StableId] = StableId.new,
         diagnostics: DiagnosticsLog = NullDiagnosticsLog(),
+        now: Callable[[], datetime] = lambda: datetime.now(UTC),
     ) -> None:
         self._prompt_resolver = prompt_resolver
         self._generation_configuration_resolver = generation_configuration_resolver
         self._extractor = extractor
         self._new_id = new_id
         self._diagnostics = diagnostics
+        self._now = now
 
     def apply(
         self, request: ExtractInitialWorldStateRequest
-    ) -> OperationResult[WorldState, StoryInitializationError]:
+    ) -> OperationResult[WorldExtractionResult, StoryInitializationError]:
         invalid = validate_initialization_choices(
             request.configuration,
             request.controllable_characters,
@@ -138,7 +149,16 @@ class ExtractInitialWorldState:
         built = _build_world(extracted.data, self._new_id)
         if isinstance(built, Failure):
             self._diagnostics.record(ProposalRejected(reason=str(built.error)))
-        return built
+            return built
+        return Success(
+            WorldExtractionResult(
+                world_state=built.data,
+                suggested_title=(
+                    extracted.data.suggested_title.strip()
+                    or _default_title(self._now())
+                ),
+            )
+        )
 
 
 def _build_world(
@@ -230,6 +250,10 @@ def _build_world(
                 str(error),
             )
         )
+
+
+def _default_title(now: datetime) -> str:
+    return f"Neue Geschichte – {now:%d.%m.%Y %H:%M}"
 
 
 def _reference_key(value: str) -> str:

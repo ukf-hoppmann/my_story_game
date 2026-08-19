@@ -74,4 +74,10 @@ class InitializeStory:
         if isinstance(extracted, Failure):
             return extracted
         self._diagnostics.trace("initialize_story.done")
-        return Success(InitializedStory(generated.data, extracted.data))
+        return Success(
+            InitializedStory(
+                generated.data,
+                extracted.data.world_state,
+                extracted.data.suggested_title,
+            )
+        )

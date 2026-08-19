@@ -28,3 +28,4 @@ class InitializedStory:
 
     story_state: StoryState
     world_state: WorldState
+    suggested_title: str = ""

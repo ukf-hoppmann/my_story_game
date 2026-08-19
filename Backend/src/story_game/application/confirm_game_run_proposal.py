@@ -36,13 +36,6 @@ from .game_state.errors import StateRejected
 ConfirmGameRunProposalError: TypeAlias = GameStateOperationError
 
 
-def _required(value: str, label: str) -> str:
-    value = value.strip()
-    if not value:
-        raise ValueError(f"{label} darf nicht leer sein")
-    return value
-
-
 @dataclass(frozen=True, slots=True)
 class CharacterDecision:
     """The caller's Spieler/NPC/entfernen choice for one proposed character."""
@@ -62,16 +55,23 @@ class ItemDecision:
 
 @dataclass(frozen=True, slots=True)
 class ConfirmGameRunProposalRequest:
-    """Caller input needed to persist a previously generated proposal."""
+    """Caller input needed to persist a previously generated proposal.
+
+    ``run_name`` is optional: a blank or omitted value falls back to the
+    cached proposal's model-suggested title at confirmation time (see
+    ``ConfirmGameRunProposal.apply``), which is always non-blank.
+    """
 
     proposal_id: StableId
-    run_name: str
+    run_name: str | None
     initiator: RunInitiator
     character_decisions: tuple[CharacterDecision, ...] = ()
     item_decisions: tuple[ItemDecision, ...] = ()
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "run_name", _required(self.run_name, "Der Name"))
+        object.__setattr__(
+            self, "run_name", None if self.run_name is None else self.run_name.strip()
+        )
 
 
 class ConfirmGameRunProposal:
@@ -115,9 +115,10 @@ class ConfirmGameRunProposal:
             controlled_entity_ids = _controlled_entity_ids(world, control_mode)
             run_id = self._new_id()
             timestamp = self._now()
+            run_name = (request.run_name or "").strip() or cached.suggested_title
             run = GameRun(
                 id=run_id,
-                name=request.run_name,
+                name=run_name,
                 status=GameRunStatus.DRAFT,
                 current_revision=StateRevision(1),
                 members=(

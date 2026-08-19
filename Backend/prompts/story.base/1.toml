@@ -68,6 +68,10 @@ located_in je source_ref. Kommt eine source_ref mehrfach vor, entferne alle
 älteren oder weniger spezifischen located_in-Links, sodass genau der aktuelle
 Ort übrig bleibt.
 
+Schlage außerdem in suggested_title einen kurzen, einprägsamen Titel für
+diese Geschichte vor, ausschließlich basierend auf der Eröffnungsprosa. Kein
+Untertitel, keine Anführungszeichen, keine Gattungsbezeichnung wie "Kapitel 1".
+
 Liefere ausschließlich das vorgegebene JSON-Schema. Weltregeln, Ziele, Wissen,
 Sichtbarkeit und stabile IDs gehören nicht in diese initiale Extraktion.
 """

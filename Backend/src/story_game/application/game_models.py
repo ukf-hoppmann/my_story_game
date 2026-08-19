@@ -42,6 +42,7 @@ class CachedGameRunProposal:
     configuration: GameConfiguration
     story_state: StoryState
     world_state: WorldState
+    suggested_title: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -52,6 +53,7 @@ class GameRunProposal:
     story_state: StoryState
     world_state: WorldState
     suggested_player_entity_ids: tuple[StableId, ...] = ()
+    suggested_title: str = ""
 
 
 @dataclass(frozen=True, slots=True)

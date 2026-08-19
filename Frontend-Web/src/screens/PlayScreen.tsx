@@ -3,6 +3,7 @@ import { loadRun, playTurn, startPlaythrough } from "../api/client";
 import { ApiError } from "../api/client";
 import { errorMessage, useApiRequest } from "../api/useApiRequest";
 import type { GameDocument } from "../api/types";
+import { WorldPanel } from "../components/WorldPanel";
 
 interface Props {
   runId: string;
@@ -13,6 +14,7 @@ export function PlayScreen({ runId, onBack }: Props) {
   const [currentRunId, setCurrentRunId] = useState(runId);
   const [doc, setDoc] = useState<GameDocument | null>(null);
   const [playerInput, setPlayerInput] = useState("");
+  const [showWorld, setShowWorld] = useState(false);
 
   const [loadState, runLoad] = useApiRequest(loadRun);
   const [playthroughState, runPlaythrough] = useApiRequest(startPlaythrough);
@@ -60,11 +62,20 @@ export function PlayScreen({ runId, onBack }: Props) {
 
       {doc && (
         <>
-          <h1>{doc.game_run.name}</h1>
-          <p style={{ color: "var(--ink-dim)" }}>
-            Status <span className="badge">{doc.game_run.status}</span> · Revision{" "}
-            {doc.game_state.revision}
-          </p>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <div>
+              <h1 style={{ margin: 0 }}>{doc.game_run.name}</h1>
+              <p style={{ color: "var(--ink-dim)" }}>
+                Status <span className="badge">{doc.game_run.status}</span> · Revision{" "}
+                {doc.game_state.revision}
+              </p>
+            </div>
+            {doc.game_run.status === "active" && (
+              <button onClick={() => setShowWorld((value) => !value)}>
+                {showWorld ? "Geschichte anzeigen" : "Figuren & Gegenstände"}
+              </button>
+            )}
+          </div>
 
           {doc.game_run.status !== "active" ? (
             <div className="card">
@@ -80,9 +91,17 @@ export function PlayScreen({ runId, onBack }: Props) {
                 {playthroughState.status === "loading" ? "Wird gestartet…" : "Spiel starten"}
               </button>
             </div>
+          ) : showWorld ? (
+            <WorldPanel entities={doc.game_state.world.entities} />
           ) : (
             <>
               <section>
+                {doc.game_state.story.initialization && (
+                  <div className="card" style={{ marginBottom: 18 }}>
+                    <p style={{ fontSize: "0.8rem", color: "var(--ink-dim)" }}>Eröffnung</p>
+                    <p>{doc.game_state.story.initialization.narration}</p>
+                  </div>
+                )}
                 {doc.game_state.story.turns.map((turn) => (
                   <div key={turn.id} style={{ marginBottom: 18 }}>
                     <p style={{ fontSize: "0.8rem", color: "var(--ink-dim)" }}>

@@ -9,6 +9,7 @@ import psycopg
 
 from story_game.domain import (
     StateRevision,
+    StoryInitialization,
     StorySequence,
     StoryState,
     StorySummary,
@@ -63,8 +64,18 @@ class StorySnapshotReader:
                 StateRevision(int(metadata["summary_based_on_revision"])),
             )
         )
+        initialization = (
+            None
+            if metadata["initialization_narration"] is None
+            else StoryInitialization(
+                str(metadata["initialization_prompt"]),
+                str(metadata["initialization_narration"]),
+                metadata["initialization_completed_at"],
+            )
+        )
         return StoryState(
             turns=turns,
             summary=summary,
             current_turn_sequence=int(metadata["current_turn_sequence"]),
+            initialization=initialization,
         )

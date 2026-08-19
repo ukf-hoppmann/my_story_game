@@ -12,6 +12,7 @@ from story_game.api.schemas.common import (
     GameRunModel,
     GoalModel,
     KnowledgeEntryModel,
+    StoryInitializationModel,
     StorySummaryModel,
     StoryTurnModel,
     VisibilityModel,
@@ -40,6 +41,7 @@ from story_game.domain import (
     PromptProfile,
     StableId,
     StateRevision,
+    StoryInitialization,
     StorySequence,
     StoryState,
     StorySummary,
@@ -363,6 +365,15 @@ def _story_from_api(model: StoryStateModel) -> StoryState:
             )
         ),
         current_turn_sequence=model.current_turn_sequence,
+        initialization=(
+            None
+            if model.initialization is None
+            else StoryInitialization(
+                model.initialization.prompt,
+                model.initialization.narration,
+                model.initialization.completed_at,
+            )
+        ),
     )
 
 
@@ -390,4 +401,13 @@ def _story_to_api(story: StoryState) -> StoryStateModel:
             )
         ),
         current_turn_sequence=story.current_turn_sequence,
+        initialization=(
+            None
+            if story.initialization is None
+            else StoryInitializationModel(
+                prompt=story.initialization.prompt,
+                narration=story.initialization.narration,
+                completed_at=story.initialization.completed_at,
+            )
+        ),
     )

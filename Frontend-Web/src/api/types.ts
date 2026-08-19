@@ -97,10 +97,17 @@ export interface StorySummary {
   based_on_revision: number;
 }
 
+export interface StoryInitialization {
+  prompt: string;
+  narration: string;
+  completed_at: string;
+}
+
 export interface StoryState {
   turns: StoryTurn[];
   summary: StorySummary | null;
   current_turn_sequence: number;
+  initialization: StoryInitialization | null;
 }
 
 export interface GameState {

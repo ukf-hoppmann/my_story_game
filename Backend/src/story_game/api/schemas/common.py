@@ -102,6 +102,14 @@ class StorySummaryModel(APIModel):
     based_on_revision: int = Field(ge=1)
 
 
+class StoryInitializationModel(APIModel):
+    """The user premise and normalized opening prose before the first turn."""
+
+    prompt: str = Field(min_length=1)
+    narration: str = Field(min_length=1)
+    completed_at: datetime
+
+
 class PromptProfileModel(APIModel):
     genre: str = Field(min_length=1)
     tone: str = Field(min_length=1)

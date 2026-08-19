@@ -52,6 +52,7 @@ from story_game.domain import (  # noqa: E402
     PromptProfile,
     StableId,
     StateRevision,
+    StoryInitialization,
     StorySequence,
     StoryState,
     StorySummary,
@@ -171,6 +172,31 @@ def test_postgres_roundtrips_a_complete_initial_game(
         assert store.load_run(run_id) == run
         assert store.load_state(run_id) == state
         assert store.load_state(run_id, revision=StateRevision(1)) == state
+    finally:
+        _delete_run(connections, run_id)
+
+
+def test_postgres_roundtrips_the_opening_initialization(
+    postgres_store: tuple[PostgresGameStore, PostgresConnectionFactory],
+) -> None:
+    store, connections = postgres_store
+    run_id = sid(f"integration-{uuid4()}")
+    run, state = initial(run_id)
+    state = replace(
+        state,
+        story=StoryState(
+            initialization=StoryInitialization(
+                prompt="Ein Licht brennt, wo keines brennen sollte.",
+                narration="[Test] Eröffnungsprosa.",
+                completed_at=datetime(2026, 8, 6, tzinfo=UTC),
+            )
+        ),
+    )
+
+    try:
+        store.create(run, state)
+
+        assert store.load_state(run_id).story.initialization == state.story.initialization
     finally:
         _delete_run(connections, run_id)
 

@@ -333,6 +333,7 @@ def complete_state_document() -> dict[str, object]:
                 "turns": [],
                 "summary": None,
                 "current_turn_sequence": 0,
+                "initialization": None,
             },
         },
     }
@@ -471,6 +472,44 @@ def test_api_starts_a_playthrough_from_a_draft(client: TestClient) -> None:
     assert body["game_run"]["status"] == "active"
     assert body["game_run"]["id"] != draft["game_run"]["id"]
     assert body["game_state"]["world"] == draft["game_state"]["world"]
+
+
+def test_api_persists_the_opening_narration_through_confirm_reload_and_fork(
+    client: TestClient,
+) -> None:
+    proposal = client.post(
+        "/api/v1/runs/proposals",
+        json={
+            "initial_prompt": "Ein Licht brennt, wo keines brennen sollte.",
+            "control_mode": "director",
+            "controllable_characters": [],
+        },
+    ).json()
+
+    draft = client.post(
+        "/api/v1/runs",
+        json={
+            "proposal_id": proposal["proposal_id"],
+            "run_name": "Der Leuchtturm von Talmoor",
+            "character_decisions": [],
+            "item_decisions": [],
+        },
+    ).json()
+
+    expected = {
+        "prompt": "Ein Licht brennt, wo keines brennen sollte.",
+        "narration": proposal["opening_narration"],
+        "completed_at": draft["game_state"]["story"]["initialization"]["completed_at"],
+    }
+    assert draft["game_state"]["story"]["initialization"] == expected
+
+    reloaded = client.get(f"/api/v1/runs/{draft['game_run']['id']}")
+    assert reloaded.json()["game_state"]["story"]["initialization"] == expected
+
+    active = client.post(
+        f"/api/v1/runs/{draft['game_run']['id']}/playthroughs"
+    ).json()
+    assert active["game_state"]["story"]["initialization"] == expected
 
 
 def test_api_rejects_a_playthrough_from_a_non_draft_source(client: TestClient) -> None:

@@ -11,16 +11,14 @@ from story_game.application.llm import (
     LLMGenerationCall,
     StorySummaryPort,
     StorySummaryRequest,
-    StorySummaryText,
 )
 
-from .adapter import _map_error
-from .errors import GroqClientError
-from .models import GroqChatMessage, GroqChatRequest, GroqChatResponse
+from ..openai_compatible import ChatRequest, ChatResponse, TransportError, to_llm_error
+from ..openai_compatible.summary_wire import build_request, parse_response
 
 
 class GroqSummaryClient(Protocol):
-    def complete(self, request: GroqChatRequest) -> GroqChatResponse: ...
+    def complete(self, request: ChatRequest) -> ChatResponse: ...
 
 
 class GroqStorySummaryAdapter(StorySummaryPort):
@@ -38,19 +36,12 @@ class GroqStorySummaryAdapter(StorySummaryPort):
                 )
             )
         try:
-            response = self._client.complete(
-                GroqChatRequest(
-                    model=call.model_selection.model_id,
-                    messages=_messages_for(call.request),
-                    temperature=call.generation_options.temperature,
-                    max_tokens=call.generation_options.max_output_tokens,
-                )
-            )
-        except GroqClientError as error:
-            return Failure(_map_error(error))
+            response = self._client.complete(build_request(call))
+        except TransportError as error:
+            return Failure(to_llm_error(error))
 
         try:
-            return Success(StorySummaryText(response.text))
+            return Success(parse_response(response))
         except ValueError:
             return Failure(
                 LLMError(
@@ -58,17 +49,3 @@ class GroqStorySummaryAdapter(StorySummaryPort):
                     "Groq hat keine gültige Zusammenfassung geliefert.",
                 )
             )
-
-
-def _messages_for(request: StorySummaryRequest) -> tuple[GroqChatMessage, ...]:
-    sections = [
-        "[language]\n" + request.language,
-        "[previous_summary]\n"
-        + (request.previous_summary or "Es gibt noch keine Zusammenfassung."),
-        "[player_input]\n" + request.player_input,
-        "[narration]\n" + request.narration,
-    ]
-    return (
-        GroqChatMessage(role="system", content="\n\n".join(request.system_prompts)),
-        GroqChatMessage(role="user", content="\n\n".join(sections)),
-    )

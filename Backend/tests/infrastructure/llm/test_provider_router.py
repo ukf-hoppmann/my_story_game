@@ -65,6 +65,26 @@ def test_router_re_evaluates_provider_id_on_every_call_without_reconstruction() 
     assert second.data == StoryGenerationData("groq-antwort")
 
 
+def test_router_dispatches_across_three_coexisting_providers() -> None:
+    """Adding Gemini as a third provider needed no router changes — this
+
+    proves the dict-based dispatch already scales past two providers.
+    """
+    lmstudio = RecordingAdapter("lmstudio-antwort")
+    groq = RecordingAdapter("groq-antwort")
+    gemini = RecordingAdapter("gemini-antwort")
+    router = RoutingStoryGenerationAdapter(
+        {"lmstudio": lmstudio, "groq": groq, "gemini": gemini}
+    )
+
+    result = router.generate(call("gemini"))
+
+    assert result.data == StoryGenerationData("gemini-antwort")
+    assert len(gemini.calls) == 1
+    assert lmstudio.calls == []
+    assert groq.calls == []
+
+
 def test_router_rejects_an_unconfigured_provider_without_a_silent_fallback() -> None:
     router = RoutingStoryGenerationAdapter({"lmstudio": RecordingAdapter("x")})
 

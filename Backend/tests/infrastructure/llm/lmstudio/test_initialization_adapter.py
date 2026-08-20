@@ -8,16 +8,16 @@ from story_game.application.llm import (
 )
 from story_game.application.initialization_models import ControllableCharacterSeed
 from story_game.infrastructure.llm.lmstudio import LmStudioStoryInitializationAdapter
-from story_game.infrastructure.llm.lmstudio.models import LmStudioChatRequest, LmStudioChatResponse
+from story_game.infrastructure.llm.openai_compatible.models import ChatRequest, ChatResponse
 
 
 class RecordingClient:
     def __init__(self) -> None:
-        self.request: LmStudioChatRequest | None = None
+        self.request: ChatRequest | None = None
 
-    def complete(self, request: LmStudioChatRequest) -> LmStudioChatResponse:
+    def complete(self, request: ChatRequest) -> ChatResponse:
         self.request = request
-        return LmStudioChatResponse("Maren hebt die Fackel.", "stop")
+        return ChatResponse("Maren hebt die Fackel.", "stop")
 
 
 def test_adapter_maps_opening_without_world_or_story_context() -> None:

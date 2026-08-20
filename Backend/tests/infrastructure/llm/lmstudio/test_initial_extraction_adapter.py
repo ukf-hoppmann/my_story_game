@@ -15,20 +15,20 @@ from story_game.domain import EntityKind
 from story_game.infrastructure.llm.lmstudio import (
     LmStudioInitialWorldExtractionAdapter,
 )
-from story_game.infrastructure.llm.lmstudio.models import (
-    LmStudioChatRequest,
-    LmStudioChatResponse,
+from story_game.infrastructure.llm.openai_compatible.models import (
+    ChatRequest,
+    ChatResponse,
 )
 
 
 class RecordingClient:
     def __init__(self, response_text: str) -> None:
         self.response_text = response_text
-        self.request: LmStudioChatRequest | None = None
+        self.request: ChatRequest | None = None
 
-    def complete(self, request: LmStudioChatRequest) -> LmStudioChatResponse:
+    def complete(self, request: ChatRequest) -> ChatResponse:
         self.request = request
-        return LmStudioChatResponse(self.response_text, "stop")
+        return ChatResponse(self.response_text, "stop")
 
 
 def extraction_request() -> InitialWorldExtractionRequest:

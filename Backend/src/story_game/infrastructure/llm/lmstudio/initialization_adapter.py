@@ -6,7 +6,6 @@ from typing import Protocol
 
 from story_game.application import Failure, Success
 from story_game.application.llm import (
-    InitialStoryText,
     LLMError,
     LLMErrorKind,
     LLMGenerationCall,
@@ -14,22 +13,20 @@ from story_game.application.llm import (
     StoryInitializationRequest,
 )
 
-from .adapter import _map_error
-from .client import LmStudioClient
-from .errors import LmStudioClientError
-from .models import LmStudioChatMessage, LmStudioChatRequest, LmStudioChatResponse
+from ..openai_compatible import ChatRequest, ChatResponse, TransportError, to_llm_error
+from ..openai_compatible.story_initialization_wire import build_request, parse_response
 
 
 class LmStudioInitializationClient(Protocol):
     """The narrow completion surface used by the opening adapter."""
 
-    def complete(self, request: LmStudioChatRequest) -> LmStudioChatResponse: ...
+    def complete(self, request: ChatRequest) -> ChatResponse: ...
 
 
 class LmStudioStoryInitializationAdapter(StoryInitializationPort):
     """Render a prepared opening request without selecting any game context."""
 
-    def __init__(self, client: LmStudioInitializationClient | LmStudioClient) -> None:
+    def __init__(self, client: LmStudioInitializationClient) -> None:
         self._client = client
 
     def generate(self, call: LLMGenerationCall[StoryInitializationRequest]):
@@ -41,18 +38,11 @@ class LmStudioStoryInitializationAdapter(StoryInitializationPort):
                 )
             )
         try:
-            response = self._client.complete(
-                LmStudioChatRequest(
-                    model=call.model_selection.model_id,
-                    messages=_messages_for(call.request),
-                    temperature=call.generation_options.temperature,
-                    max_tokens=call.generation_options.max_output_tokens,
-                )
-            )
-        except LmStudioClientError as error:
-            return Failure(_map_error(error))
+            response = self._client.complete(build_request(call))
+        except TransportError as error:
+            return Failure(to_llm_error(error))
         try:
-            return Success(InitialStoryText(response.text))
+            return Success(parse_response(response))
         except ValueError:
             return Failure(
                 LLMError(
@@ -60,24 +50,3 @@ class LmStudioStoryInitializationAdapter(StoryInitializationPort):
                     "LM Studio hat keine gültige Eröffnungsprosa geliefert.",
                 )
             )
-
-
-def _messages_for(request: StoryInitializationRequest) -> tuple[LmStudioChatMessage, ...]:
-    sections = [
-        "[configuration]\n" + request.configuration,
-        "[initial_prompt]\n" + request.initial_prompt,
-    ]
-    if request.controllable_characters:
-        lines = [
-            f"- Name: {character.name}\n"
-            f"  Beschreibung: {character.description or 'Keine zusätzliche Beschreibung.'}"
-            for character in request.controllable_characters
-        ]
-        sections.append("[controllable_characters]\n" + "\n".join(lines))
-    return (
-        LmStudioChatMessage(role="system", content="\n\n".join(request.system_prompts)),
-        LmStudioChatMessage(
-            role="user",
-            content="\n\n".join(sections),
-        ),
-    )

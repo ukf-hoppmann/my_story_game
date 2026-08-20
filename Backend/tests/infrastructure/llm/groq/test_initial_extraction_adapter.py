@@ -15,20 +15,20 @@ from story_game.domain import EntityKind
 from story_game.infrastructure.llm.groq import (
     GroqInitialWorldExtractionAdapter,
 )
-from story_game.infrastructure.llm.groq.models import (
-    GroqChatRequest,
-    GroqChatResponse,
+from story_game.infrastructure.llm.openai_compatible.models import (
+    ChatRequest,
+    ChatResponse,
 )
 
 
 class RecordingClient:
     def __init__(self, response_text: str) -> None:
         self.response_text = response_text
-        self.request: GroqChatRequest | None = None
+        self.request: ChatRequest | None = None
 
-    def complete(self, request: GroqChatRequest) -> GroqChatResponse:
+    def complete(self, request: ChatRequest) -> ChatResponse:
         self.request = request
-        return GroqChatResponse(self.response_text, "stop")
+        return ChatResponse(self.response_text, "stop")
 
 
 def extraction_request() -> InitialWorldExtractionRequest:

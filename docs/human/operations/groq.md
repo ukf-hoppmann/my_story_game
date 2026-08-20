@@ -30,7 +30,7 @@ zeigt.
 ## Provider pro Task wählen
 
 `configs/llm.toml` enthält bereits einen Katalogeintrag für Groq-Extraction
-(`model.extraction.groq`, Modell `llama-3.3-70b-versatile`). Um Extraction auf
+(`model.extraction.groq`, Modell `openai/gpt-oss-120b`). Um Extraction auf
 Groq umzustellen:
 
 ```toml

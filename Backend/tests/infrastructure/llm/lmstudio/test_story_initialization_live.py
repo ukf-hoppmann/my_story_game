@@ -28,14 +28,16 @@ from story_game.infrastructure.configuration import (
 )
 from story_game.infrastructure.llm import FilePromptPackageCatalog
 from story_game.infrastructure.llm.lmstudio import (
-    LmStudioClient,
     LmStudioInitialWorldExtractionAdapter,
-    LmStudioSettings,
     LmStudioStoryInitializationAdapter,
+    lmstudio_settings as LmStudioSettings,
 )
-from story_game.infrastructure.llm.lmstudio.models import (
-    LmStudioChatRequest,
-    LmStudioChatResponse,
+from story_game.infrastructure.llm.openai_compatible import (
+    OpenAiCompatibleClient as LmStudioClient,
+)
+from story_game.infrastructure.llm.openai_compatible.models import (
+    ChatRequest as LmStudioChatRequest,
+    ChatResponse as LmStudioChatResponse,
 )
 
 from .live_settings import live_base_url

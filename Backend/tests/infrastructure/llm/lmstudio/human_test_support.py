@@ -104,17 +104,19 @@ from story_game.infrastructure.logging_config import (
     configure_logging,
 )
 from story_game.infrastructure.llm.lmstudio import (
-    LmStudioClient,
     LmStudioInitialWorldExtractionAdapter,
-    LmStudioSettings,
     LmStudioStoryGenerationAdapter,
     LmStudioStoryInitializationAdapter,
     LmStudioStorySummaryAdapter,
     LmStudioTurnExtractionAdapter,
+    lmstudio_settings as LmStudioSettings,
 )
-from story_game.infrastructure.llm.lmstudio.models import (
-    LmStudioChatRequest,
-    LmStudioChatResponse,
+from story_game.infrastructure.llm.openai_compatible import (
+    OpenAiCompatibleClient as LmStudioClient,
+)
+from story_game.infrastructure.llm.openai_compatible.models import (
+    ChatRequest as LmStudioChatRequest,
+    ChatResponse as LmStudioChatResponse,
 )
 
 from tests.application import turn_context_world as w

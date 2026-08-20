@@ -97,7 +97,7 @@ def test_repository_configuration_defines_all_three_active_tasks() -> None:
     configuration = TomlLlmConfigurationLoader().load(path)
 
     assert configuration.task_models.story == "model.story.default"
-    assert configuration.task_models.extraction == "model.extraction.default"
+    assert configuration.task_models.extraction == "model.extraction.groq"
     assert configuration.task_models.summary == "model.summary.default"
     assert {model.task for model in configuration.models} == {
         LlmTask.STORY,

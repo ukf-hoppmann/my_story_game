@@ -43,7 +43,7 @@ model_id = "llama@f32"
 id = "model.extraction.groq"
 task = "extraction"
 provider_id = "groq"
-model_id = "llama-3.3-70b-versatile"
+model_id = "openai/gpt-oss-120b"
 
 [[models]]
 id = "model.summary.default"

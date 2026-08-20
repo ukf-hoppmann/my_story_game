@@ -137,10 +137,11 @@ def _start(runner: ComposeRunner, *, build: bool) -> None:
     runner.run(arguments)
     print("Story Game läuft.")
     print("  App:        http://storygame.localhost/")
-    print(f"  Backend:    http://localhost:{port}")
-    print(f"  Swagger UI: http://localhost:{port}/docs")
-    print(f"  OpenAPI:    http://localhost:{port}/openapi.json")
-    print(f"  ReDoc:      http://localhost:{port}/redoc")
+    print("  Backend:    http://backend.storygame.localhost/")
+    print("  Swagger UI: http://backend.storygame.localhost/docs")
+    print("  OpenAPI:    http://backend.storygame.localhost/openapi.json")
+    print("  ReDoc:      http://backend.storygame.localhost/redoc")
+    print(f"  Backend (direct, bypassing nginx): http://localhost:{port}")
 
 
 def _restart(runner: ComposeRunner, services: Sequence[str]) -> None:

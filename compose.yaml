@@ -22,10 +22,13 @@ services:
     environment:
       STORY_GAME_POSTGRES_DSN: "postgresql://${POSTGRES_USER:-story_game}:${POSTGRES_PASSWORD:-story_game_dev}@postgres:5432/${POSTGRES_DB:-story_game}"
       STORY_GAME_AUTO_MIGRATE: "true"
-      # Fixed on purpose: the nginx proxy always fronts the app at this one
-      # origin regardless of FRONTEND_HOST_PORT, so this never needs to track
-      # that variable. No port suffix — browsers omit the default port (80)
-      # from the Origin header, so a ":80" here would never match.
+      # This is the frontend's origin, not the backend's — CORS checks the
+      # request's Origin header, which is the caller (frontend), regardless
+      # of what domain the backend itself answers on. Fixed on purpose: the
+      # nginx proxy always fronts the frontend at this one origin regardless
+      # of FRONTEND_HOST_PORT, so this never needs to track that variable.
+      # No port suffix — browsers omit the default port (80) from the Origin
+      # header, so a ":80" here would never match.
       STORY_GAME_CORS_ALLOWED_ORIGINS: "http://storygame.localhost"
     depends_on:
       postgres:

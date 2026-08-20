@@ -175,3 +175,43 @@ def test_client_rejects_invalid_wire_response() -> None:
 
     assert failure.value.kind == LmStudioErrorKind.INVALID_RESPONSE
     http_client.close()
+
+
+def test_client_reloads_settings_from_a_resolver_on_every_call() -> None:
+    """A settings callable (e.g. re-reading llm.toml) is consulted per request,
+    so connection settings can change between calls without recreating the client."""
+
+    observed_urls: list[str] = []
+    observed_tokens: list[str | None] = []
+
+    def handler(incoming: httpx.Request) -> httpx.Response:
+        observed_urls.append(str(incoming.url))
+        observed_tokens.append(incoming.headers.get("authorization"))
+        return httpx.Response(
+            200,
+            json={
+                "choices": [
+                    {"message": {"role": "assistant", "content": "Antwort"}, "finish_reason": "stop"}
+                ]
+            },
+        )
+
+    transport = httpx.MockTransport(handler)
+    http_client = httpx.Client(transport=transport)
+    settings_sequence = iter(
+        [
+            LmStudioSettings("http://lmstudio.test/v1", api_token="first"),
+            LmStudioSettings("http://other-host.test/v1", api_token="second"),
+        ]
+    )
+    client = LmStudioClient(lambda: next(settings_sequence), http_client=http_client)
+
+    client.complete(request())
+    client.complete(request())
+
+    assert observed_urls == [
+        "http://lmstudio.test/v1/chat/completions",
+        "http://other-host.test/v1/chat/completions",
+    ]
+    assert observed_tokens == ["Bearer first", "Bearer second"]
+    http_client.close()

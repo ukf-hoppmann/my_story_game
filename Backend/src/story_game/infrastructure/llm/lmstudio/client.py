@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 from urllib.parse import urlparse
@@ -40,17 +41,21 @@ class LmStudioClient:
 
     def __init__(
         self,
-        settings: LmStudioSettings,
+        settings: LmStudioSettings | Callable[[], LmStudioSettings],
         *,
         http_client: httpx.Client | None = None,
         debug_enabled: bool = False,
     ) -> None:
-        self._settings = settings
+        self._resolve_settings = settings if callable(settings) else (lambda: settings)
         self._owns_client = http_client is None
-        self._http_client = http_client or httpx.Client(
-            base_url=f"{settings.base_url}/",
-            timeout=settings.timeout_seconds,
-        )
+        if http_client is not None:
+            self._http_client = http_client
+        else:
+            initial_settings = self._resolve_settings()
+            self._http_client = httpx.Client(
+                base_url=f"{initial_settings.base_url}/",
+                timeout=initial_settings.timeout_seconds,
+            )
         self._debug_enabled = debug_enabled
 
     def close(self) -> None:
@@ -60,6 +65,13 @@ class LmStudioClient:
             self._http_client.close()
 
     def complete(self, request: LmStudioChatRequest) -> LmStudioChatResponse:
+        settings = self._resolve_settings()
+        # Re-applying the current connection settings before every request lets
+        # provider config (base_url/timeout) be reloaded from disk on each call,
+        # matching how task/model selection is already reloaded per invocation.
+        self._http_client.base_url = httpx.URL(f"{settings.base_url}/")
+        self._http_client.timeout = httpx.Timeout(settings.timeout_seconds)
+
         payload: dict[str, Any] = {
             "model": request.model,
             "messages": [
@@ -84,8 +96,8 @@ class LmStudioClient:
             }
 
         headers = {"Content-Type": "application/json"}
-        if self._settings.api_token:
-            headers["Authorization"] = f"Bearer {self._settings.api_token}"
+        if settings.api_token:
+            headers["Authorization"] = f"Bearer {settings.api_token}"
 
         if self._debug_enabled:
             _logger.debug("lmstudio.request", payload=payload)

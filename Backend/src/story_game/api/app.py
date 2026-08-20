@@ -157,11 +157,15 @@ def _compose_game_state_operations(
 
 
 def _build_llm_client(settings: ApiSettings) -> LmStudioClient:
-    runtime_configuration = TomlLlmConfigurationLoader().load(settings.llm_config_path)
-    provider = runtime_configuration.provider("lmstudio")
-    return LmStudioClient(
-        LmStudioSettings(provider.base_url, timeout_seconds=provider.timeout_seconds)
-    )
+    def resolve_settings() -> LmStudioSettings:
+        # Reloaded on every call so that changes to configs/llm.toml (base_url,
+        # timeout) take effect without restarting the server, matching the
+        # per-call reload already used for task/model selection.
+        runtime_configuration = TomlLlmConfigurationLoader().load(settings.llm_config_path)
+        provider = runtime_configuration.provider("lmstudio")
+        return LmStudioSettings(provider.base_url, timeout_seconds=provider.timeout_seconds)
+
+    return LmStudioClient(resolve_settings)
 
 
 def _compose_propose_game_run(

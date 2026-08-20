@@ -15,7 +15,7 @@ timeout_seconds = 60
 
 [task_models]
 story = "model.story.default"
-extraction = "model.extraction.default"
+extraction = "model.extraction.groq"
 summary = "model.summary.default"
 
 [generation_options.story]

@@ -29,7 +29,7 @@ model_id = "mistralai/mistral-small-3.2"
 id = "model.extraction.default"
 task = "extraction"
 provider_id = "lmstudio"
-model_id = "qwen/qwen3.6-27b"
+model_id = "llama@f32"
 
 [[models]]
 id = "model.summary.default"

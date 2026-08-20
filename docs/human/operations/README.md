@@ -6,6 +6,9 @@ Datenbankmigrationen, Deployment und die Behebung typischer Betriebsprobleme.
 Für die lokale LM-Studio-Anbindung siehe
 [`lmstudio.md`](lmstudio.md).
 
+Für die Groq-Anbindung (API-Key, Provider pro Task wählen) siehe
+[`groq.md`](groq.md).
+
 Für Logging-Profile, Logdatei und Laufzeit-Overrides siehe
 [`logging.md`](logging.md).
 

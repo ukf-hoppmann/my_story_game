@@ -157,3 +157,52 @@ def test_loader_rejects_model_task_mismatch(tmp_path: Path) -> None:
 
     with pytest.raises(LlmConfigurationError, match="gehört zur Aufgabe story"):
         TomlLlmConfigurationLoader().load(write_config(tmp_path, document))
+
+
+def test_missing_secrets_file_leaves_provider_api_key_unset(tmp_path: Path) -> None:
+    configuration = TomlLlmConfigurationLoader().load(
+        write_config(tmp_path, valid_document())
+    )
+
+    assert configuration.provider("lmstudio").api_key is None
+
+
+def test_secrets_file_merges_api_key_into_matching_provider(tmp_path: Path) -> None:
+    config_path = write_config(tmp_path, valid_document())
+    (tmp_path / "llm.secrets.toml").write_text(
+        '[providers.lmstudio]\napi_key = "secret-value"\n', encoding="utf-8"
+    )
+
+    configuration = TomlLlmConfigurationLoader().load(config_path)
+
+    assert configuration.provider("lmstudio").api_key == "secret-value"
+
+
+def test_secrets_file_never_read_from_the_versioned_llm_toml_itself(
+    tmp_path: Path,
+) -> None:
+    document = valid_document().replace(
+        '[providers.lmstudio]\nbase_url = "http://localhost:1234/v1"\ntimeout_seconds = 60',
+        '[providers.lmstudio]\nbase_url = "http://localhost:1234/v1"\n'
+        'timeout_seconds = 60\napi_key = "should-not-be-allowed-here"',
+    )
+
+    with pytest.raises(LlmConfigurationError, match="Unbekannte Felder"):
+        TomlLlmConfigurationLoader().load(write_config(tmp_path, document))
+
+
+def test_secrets_file_reloads_on_every_call(tmp_path: Path) -> None:
+    config_path = write_config(tmp_path, valid_document())
+    secrets_path = tmp_path / "llm.secrets.toml"
+    secrets_path.write_text(
+        '[providers.lmstudio]\napi_key = "first"\n', encoding="utf-8"
+    )
+
+    first = TomlLlmConfigurationLoader().load(config_path)
+    secrets_path.write_text(
+        '[providers.lmstudio]\napi_key = "second"\n', encoding="utf-8"
+    )
+    second = TomlLlmConfigurationLoader().load(config_path)
+
+    assert first.provider("lmstudio").api_key == "first"
+    assert second.provider("lmstudio").api_key == "second"

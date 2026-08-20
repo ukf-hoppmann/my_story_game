@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 import tomllib
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import StrEnum
 from pathlib import Path
 from typing import Any
@@ -37,11 +37,18 @@ class LlmTask(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class ProviderConfiguration:
-    """Provider connection data needed by its infrastructure client."""
+    """Provider connection data needed by its infrastructure client.
+
+    ``api_key`` never comes from the versioned ``llm.toml`` catalog itself —
+    it is merged in from the sibling, gitignored ``llm.secrets.toml`` (see
+    ``TomlLlmConfigurationLoader._load_secrets``), or left ``None`` for a
+    provider that needs no key (e.g. a local LM Studio instance).
+    """
 
     id: str
     base_url: str
     timeout_seconds: float
+    api_key: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -139,6 +146,7 @@ class TomlLlmConfigurationLoader:
     def _parse(self, document: dict[str, Any], path: Path) -> LlmConfiguration:
         _keys(document, {"providers", "task_models", "generation_options", "models"}, "die Hauptkonfiguration")
         providers = self._providers(_table(document, "providers", path), path)
+        providers = self._with_secrets(providers, path)
         task_models = self._task_models(_table(document, "task_models", path), path)
         models = self._models(document.get("models"), providers, path)
         generation_options = self._generation_options(
@@ -146,6 +154,47 @@ class TomlLlmConfigurationLoader:
         )
         _validate_active_models(task_models, models)
         return LlmConfiguration(tuple(providers), tuple(models), task_models, generation_options)
+
+    def _with_secrets(
+        self, providers: list[ProviderConfiguration], path: Path
+    ) -> list[ProviderConfiguration]:
+        """Merge api_key values from the sibling, gitignored secrets file.
+
+        A missing secrets file is not an error: most providers (e.g. a local
+        LM Studio instance) need no key at all. The secrets file is reloaded
+        from disk on every ``load()`` call, same as ``llm.toml`` itself, so a
+        rotated key takes effect without a restart.
+        """
+        secrets_path = path.parent / "llm.secrets.toml"
+        api_keys = self._load_secrets(secrets_path)
+        return [
+            replace(provider, api_key=api_keys.get(provider.id))
+            for provider in providers
+        ]
+
+    def _load_secrets(self, path: Path) -> dict[str, str]:
+        if not path.is_file():
+            return {}
+        try:
+            document = tomllib.loads(path.read_text(encoding="utf-8"))
+        except OSError as error:
+            raise LlmConfigurationError(
+                f"Die LLM-Secrets-Datei konnte nicht gelesen werden: {path}"
+            ) from error
+        except tomllib.TOMLDecodeError as error:
+            raise LlmConfigurationError(
+                f"Die LLM-Secrets-Datei ist kein gültiges TOML: {path}"
+            ) from error
+        _keys(document, {"providers"}, "die Secrets-Konfiguration")
+        providers_table = _table(document, "providers", path) if "providers" in document else {}
+        api_keys: dict[str, str] = {}
+        for provider_id, raw in providers_table.items():
+            if not isinstance(provider_id, str) or not provider_id.strip():
+                raise LlmConfigurationError(f"{path}: Provider-IDs dürfen nicht leer sein")
+            table = _table_value(raw, f"providers.{provider_id}", path)
+            _keys(table, {"api_key"}, f"providers.{provider_id}")
+            api_keys[provider_id] = _text(table, "api_key", f"providers.{provider_id}", path)
+        return api_keys
 
     def _generation_options(
         self, document: dict[str, Any], path: Path

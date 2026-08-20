@@ -31,7 +31,8 @@ temperature = 0.5
 id = "model.story.default"
 task = "story"
 provider_id = "lmstudio"
-model_id = "mistralai/mistral-small-3.2"
+model_id = "fwvision-qwen3-vl-8b-v3"
+#model_id = "mistralai/mistral-small-3.2"
 
 [[models]]
 id = "model.extraction.default"

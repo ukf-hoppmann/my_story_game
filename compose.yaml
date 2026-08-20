@@ -37,6 +37,7 @@ services:
       - "${BACKEND_HOST_PORT:-8000}:8000"
     volumes:
       - ./Backend/logs:/app/logs
+      - ./Backend/configs:/app/configs:ro
     command:
       [
         "uvicorn",

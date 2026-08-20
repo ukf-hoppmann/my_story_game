@@ -47,6 +47,14 @@ from story_game.infrastructure.configuration import (
 )
 from story_game.infrastructure.diagnostics import StructlogDiagnosticsLog
 from story_game.infrastructure.llm import FilePromptPackageCatalog
+from story_game.infrastructure.llm.gemini import (
+    GeminiInitialWorldExtractionAdapter,
+    GeminiStoryGenerationAdapter,
+    GeminiStoryInitializationAdapter,
+    GeminiStorySummaryAdapter,
+    GeminiTurnExtractionAdapter,
+    gemini_settings,
+)
 from story_game.infrastructure.llm.groq import (
     GroqInitialWorldExtractionAdapter,
     GroqStoryGenerationAdapter,
@@ -142,6 +150,7 @@ def create_app(
             if llm_clients is not None:
                 llm_clients.lmstudio.close()
                 llm_clients.groq.close()
+                llm_clients.gemini.close()
 
     application = FastAPI(
         title=resolved_settings.title,
@@ -193,6 +202,7 @@ class _LlmClients:
 
     lmstudio: OpenAiCompatibleClient
     groq: OpenAiCompatibleClient
+    gemini: OpenAiCompatibleClient
 
 
 def _build_llm_clients(settings: ApiSettings) -> _LlmClients:
@@ -213,9 +223,19 @@ def _build_llm_clients(settings: ApiSettings) -> _LlmClients:
             timeout_seconds=provider.timeout_seconds,
         )
 
+    def resolve_gemini_settings() -> OpenAiCompatibleSettings:
+        runtime_configuration = TomlLlmConfigurationLoader().load(settings.llm_config_path)
+        provider = runtime_configuration.provider("gemini")
+        return gemini_settings(
+            provider.base_url,
+            api_token=provider.api_key,
+            timeout_seconds=provider.timeout_seconds,
+        )
+
     return _LlmClients(
         lmstudio=OpenAiCompatibleClient(resolve_lmstudio_settings),
         groq=OpenAiCompatibleClient(resolve_groq_settings),
+        gemini=OpenAiCompatibleClient(resolve_gemini_settings),
     )
 
 
@@ -235,6 +255,7 @@ def _compose_propose_game_run(
                 {
                     "lmstudio": LmStudioStoryInitializationAdapter(clients.lmstudio),
                     "groq": GroqStoryInitializationAdapter(clients.groq),
+                    "gemini": GeminiStoryInitializationAdapter(clients.gemini),
                 }
             ),
             lambda: datetime.now(UTC),
@@ -247,6 +268,7 @@ def _compose_propose_game_run(
                 {
                     "lmstudio": LmStudioInitialWorldExtractionAdapter(clients.lmstudio),
                     "groq": GroqInitialWorldExtractionAdapter(clients.groq),
+                    "gemini": GeminiInitialWorldExtractionAdapter(clients.gemini),
                 }
             ),
             diagnostics=diagnostics,
@@ -288,6 +310,7 @@ def _compose_play_story_turn(
                 {
                     "lmstudio": LmStudioStoryGenerationAdapter(clients.lmstudio),
                     "groq": GroqStoryGenerationAdapter(clients.groq),
+                    "gemini": GeminiStoryGenerationAdapter(clients.gemini),
                 }
             ),
             diagnostics,
@@ -299,6 +322,7 @@ def _compose_play_story_turn(
                 {
                     "lmstudio": LmStudioTurnExtractionAdapter(clients.lmstudio),
                     "groq": GroqTurnExtractionAdapter(clients.groq),
+                    "gemini": GeminiTurnExtractionAdapter(clients.gemini),
                 }
             ),
             diagnostics,
@@ -311,6 +335,7 @@ def _compose_play_story_turn(
                 {
                     "lmstudio": LmStudioStorySummaryAdapter(clients.lmstudio),
                     "groq": GroqStorySummaryAdapter(clients.groq),
+                    "gemini": GeminiStorySummaryAdapter(clients.gemini),
                 }
             ),
             diagnostics,

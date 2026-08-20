@@ -9,6 +9,9 @@ Für die lokale LM-Studio-Anbindung siehe
 Für die Groq-Anbindung (API-Key, Provider pro Task wählen) siehe
 [`groq.md`](groq.md).
 
+Für die Gemini-Anbindung (API-Key, Provider pro Task wählen) siehe
+[`gemini.md`](gemini.md).
+
 Für Logging-Profile, Logdatei und Laufzeit-Overrides siehe
 [`logging.md`](logging.md).
 

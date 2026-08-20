@@ -79,6 +79,10 @@ input, textarea, select {
   margin-bottom: 12px;
 }
 
+.card p {
+  white-space: pre-wrap;
+}
+
 .field {
   display: flex;
   flex-direction: column;

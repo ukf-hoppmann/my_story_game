@@ -4,6 +4,7 @@ import { ApiError } from "../api/client";
 import { errorMessage, useApiRequest } from "../api/useApiRequest";
 import type { GameDocument } from "../api/types";
 import { WorldPanel } from "../components/WorldPanel";
+import { Paragraphs } from "../components/Paragraphs";
 
 interface Props {
   runId: string;
@@ -99,7 +100,7 @@ export function PlayScreen({ runId, onBack }: Props) {
                 {doc.game_state.story.initialization && (
                   <div className="card" style={{ marginBottom: 18 }}>
                     <p style={{ fontSize: "0.8rem", color: "var(--ink-dim)" }}>Eröffnung</p>
-                    <p>{doc.game_state.story.initialization.narration}</p>
+                    <Paragraphs text={doc.game_state.story.initialization.narration} />
                   </div>
                 )}
                 {doc.game_state.story.turns.map((turn) => (
@@ -110,7 +111,7 @@ export function PlayScreen({ runId, onBack }: Props) {
                     <p style={{ fontStyle: "italic", color: "var(--accent)" }}>
                       {turn.player_input}
                     </p>
-                    <p>{turn.narration}</p>
+                    <Paragraphs text={turn.narration} />
                   </div>
                 ))}
               </section>

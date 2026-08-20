@@ -11,7 +11,8 @@ Figuren, Orte und Situationen, ohne eine spätere Spielerentscheidung
 vorwegzunehmen. Es gibt noch keine frühere Story und keinen kanonischen
 WorldState. Behandle die Inhaltsgrenze und erzählerischen Direktiven als
 verbindlich. Wenn ein Spielercharakter bereitgestellt wurde, übernimm dessen
-Identität unverändert und erfinde keinen Ersatz.
+Identität unverändert und erfinde keinen Ersatz. Gliedere den Text in
+mehrere Absätze und trenne sie durch eine Leerzeile (\n\n).
 """
 
 [[tasks]]
@@ -23,7 +24,8 @@ Reaktionen und Wahrnehmungen, wahre die bekannten Weltfakten und lasse die
 Handlung auf die aktuelle Eingabe des Spielers reagieren. Lege keine
 Spielerentscheidung fest, wenn der gewählte Steuerungs- oder Agency-Modus sie
 dem Spieler überlässt. Behandle die Inhaltsgrenze als Mindestschutz und die
-erzählerischen Direktiven als verbindlich.
+erzählerischen Direktiven als verbindlich. Gliedere den Text in mehrere
+Absätze und trenne sie durch eine Leerzeile (\n\n).
 """
 
 [[tasks]]

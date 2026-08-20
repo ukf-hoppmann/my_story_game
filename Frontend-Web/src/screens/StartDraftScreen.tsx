@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { confirmRun, proposeRun, startPlaythrough } from "../api/client";
 import { errorMessage, useApiRequest } from "../api/useApiRequest";
+import { Paragraphs } from "../components/Paragraphs";
 import type {
   CharacterDecision,
   ControlMode,
@@ -127,7 +128,7 @@ export function StartDraftScreen({ onBack, onPlaythroughStarted }: Props) {
         <h1>Vorschlag prüfen</h1>
 
         <div className="card">
-          <p>{proposal.opening_narration}</p>
+          <Paragraphs text={proposal.opening_narration} />
         </div>
 
         {confirmState.status === "error" && (

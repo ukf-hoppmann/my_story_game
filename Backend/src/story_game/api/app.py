@@ -48,22 +48,24 @@ from story_game.infrastructure.configuration import (
 from story_game.infrastructure.diagnostics import StructlogDiagnosticsLog
 from story_game.infrastructure.llm import FilePromptPackageCatalog
 from story_game.infrastructure.llm.groq import (
-    GroqClient,
     GroqInitialWorldExtractionAdapter,
-    GroqSettings,
     GroqStoryGenerationAdapter,
     GroqStoryInitializationAdapter,
     GroqStorySummaryAdapter,
     GroqTurnExtractionAdapter,
+    groq_settings,
 )
 from story_game.infrastructure.llm.lmstudio import (
-    LmStudioClient,
     LmStudioInitialWorldExtractionAdapter,
-    LmStudioSettings,
     LmStudioStoryGenerationAdapter,
     LmStudioStoryInitializationAdapter,
     LmStudioStorySummaryAdapter,
     LmStudioTurnExtractionAdapter,
+    lmstudio_settings,
+)
+from story_game.infrastructure.llm.openai_compatible import (
+    OpenAiCompatibleClient,
+    OpenAiCompatibleSettings,
 )
 from story_game.infrastructure.llm.provider_router import (
     RoutingInitialWorldExtractionAdapter,
@@ -176,42 +178,44 @@ def _compose_game_state_operations(
 
 @dataclass(frozen=True, slots=True)
 class _LlmClients:
-    """Both provider transports, built once and reused across every task.
+    """Every provider transport, built once and reused across every task.
 
-    Building both unconditionally — even when a fresh install only ever
-    routes to one of them — keeps Composition Root simple and matches how
+    Building all of them unconditionally — even when a fresh install only
+    ever routes to one — keeps Composition Root simple and matches how
     ``RoutingXAdapter`` picks between pre-built adapters per call rather than
-    constructing a client per request. Neither client resolves its
-    provider-specific settings (base_url, api_key) until a request actually
-    goes out, so an unconfigured provider (e.g. no Groq key yet) does not
-    prevent startup — see ``GroqClient.complete``.
+    constructing a client per request. After the shared-core refactor, every
+    provider uses the same ``OpenAiCompatibleClient``, differing only in
+    which settings-resolver closure it was built with. No client resolves
+    its settings (base_url, api_key) until a request actually goes out, so
+    an unconfigured provider (e.g. no Groq key yet) does not prevent
+    startup — see ``OpenAiCompatibleClient.complete``.
     """
 
-    lmstudio: LmStudioClient
-    groq: GroqClient
+    lmstudio: OpenAiCompatibleClient
+    groq: OpenAiCompatibleClient
 
 
 def _build_llm_clients(settings: ApiSettings) -> _LlmClients:
-    def resolve_lmstudio_settings() -> LmStudioSettings:
+    def resolve_lmstudio_settings() -> OpenAiCompatibleSettings:
         # Reloaded on every call so that changes to configs/llm.toml (base_url,
         # timeout) take effect without restarting the server, matching the
         # per-call reload already used for task/model selection.
         runtime_configuration = TomlLlmConfigurationLoader().load(settings.llm_config_path)
         provider = runtime_configuration.provider("lmstudio")
-        return LmStudioSettings(provider.base_url, timeout_seconds=provider.timeout_seconds)
+        return lmstudio_settings(provider.base_url, timeout_seconds=provider.timeout_seconds)
 
-    def resolve_groq_settings() -> GroqSettings:
+    def resolve_groq_settings() -> OpenAiCompatibleSettings:
         runtime_configuration = TomlLlmConfigurationLoader().load(settings.llm_config_path)
         provider = runtime_configuration.provider("groq")
-        return GroqSettings(
+        return groq_settings(
             provider.base_url,
             api_token=provider.api_key,
             timeout_seconds=provider.timeout_seconds,
         )
 
     return _LlmClients(
-        lmstudio=LmStudioClient(resolve_lmstudio_settings),
-        groq=GroqClient(resolve_groq_settings),
+        lmstudio=OpenAiCompatibleClient(resolve_lmstudio_settings),
+        groq=OpenAiCompatibleClient(resolve_groq_settings),
     )
 
 

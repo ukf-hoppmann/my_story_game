@@ -7,13 +7,13 @@ from story_game.application.llm import (
     StoryGenerationRequest,
 )
 from story_game.infrastructure.llm.groq.adapter import GroqStoryGenerationAdapter
-from story_game.infrastructure.llm.groq.errors import (
-    GroqClientError,
-    GroqErrorKind,
+from story_game.infrastructure.llm.openai_compatible.errors import (
+    TransportError,
+    TransportErrorKind,
 )
-from story_game.infrastructure.llm.groq.models import (
-    GroqChatRequest,
-    GroqChatResponse,
+from story_game.infrastructure.llm.openai_compatible.models import (
+    ChatRequest,
+    ChatResponse,
 )
 
 
@@ -32,12 +32,12 @@ def story_call(provider: str = "groq") -> LLMGenerationCall[StoryGenerationReque
 
 
 class RecordingClient:
-    def __init__(self, response: GroqChatResponse | None = None) -> None:
-        self.request: GroqChatRequest | None = None
-        self.response = response or GroqChatResponse("Die Tür antwortet.", "stop")
-        self.error: GroqClientError | None = None
+    def __init__(self, response: ChatResponse | None = None) -> None:
+        self.request: ChatRequest | None = None
+        self.response = response or ChatResponse("Die Tür antwortet.", "stop")
+        self.error: TransportError | None = None
 
-    def complete(self, request: GroqChatRequest) -> GroqChatResponse:
+    def complete(self, request: ChatRequest) -> ChatResponse:
         self.request = request
         if self.error is not None:
             raise self.error
@@ -75,8 +75,8 @@ def test_adapter_rejects_a_different_provider_before_transport() -> None:
 
 def test_adapter_translates_provider_failures_without_leaking_provider_errors() -> None:
     client = RecordingClient()
-    client.error = GroqClientError(
-        GroqErrorKind.TIMEOUT,
+    client.error = TransportError(
+        TransportErrorKind.TIMEOUT,
         "Die Verbindung zu Groq hat das Zeitlimit überschritten.",
         retryable=True,
     )
@@ -90,7 +90,7 @@ def test_adapter_translates_provider_failures_without_leaking_provider_errors() 
 
 
 def test_adapter_rejects_empty_normalized_output() -> None:
-    client = RecordingClient(GroqChatResponse("   ", "stop"))
+    client = RecordingClient(ChatResponse("   ", "stop"))
 
     result = GroqStoryGenerationAdapter(client).generate(story_call())
 

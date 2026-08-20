@@ -11,16 +11,14 @@ from story_game.application.llm import (
     LLMGenerationCall,
     StorySummaryPort,
     StorySummaryRequest,
-    StorySummaryText,
 )
 
-from .adapter import _map_error
-from .errors import LmStudioClientError
-from .models import LmStudioChatMessage, LmStudioChatRequest, LmStudioChatResponse
+from ..openai_compatible import ChatRequest, ChatResponse, TransportError, to_llm_error
+from ..openai_compatible.summary_wire import build_request, parse_response
 
 
 class LmStudioSummaryClient(Protocol):
-    def complete(self, request: LmStudioChatRequest) -> LmStudioChatResponse: ...
+    def complete(self, request: ChatRequest) -> ChatResponse: ...
 
 
 class LmStudioStorySummaryAdapter(StorySummaryPort):
@@ -38,19 +36,12 @@ class LmStudioStorySummaryAdapter(StorySummaryPort):
                 )
             )
         try:
-            response = self._client.complete(
-                LmStudioChatRequest(
-                    model=call.model_selection.model_id,
-                    messages=_messages_for(call.request),
-                    temperature=call.generation_options.temperature,
-                    max_tokens=call.generation_options.max_output_tokens,
-                )
-            )
-        except LmStudioClientError as error:
-            return Failure(_map_error(error))
+            response = self._client.complete(build_request(call))
+        except TransportError as error:
+            return Failure(to_llm_error(error))
 
         try:
-            return Success(StorySummaryText(response.text))
+            return Success(parse_response(response))
         except ValueError:
             return Failure(
                 LLMError(
@@ -58,17 +49,3 @@ class LmStudioStorySummaryAdapter(StorySummaryPort):
                     "LM Studio hat keine gültige Zusammenfassung geliefert.",
                 )
             )
-
-
-def _messages_for(request: StorySummaryRequest) -> tuple[LmStudioChatMessage, ...]:
-    sections = [
-        "[language]\n" + request.language,
-        "[previous_summary]\n"
-        + (request.previous_summary or "Es gibt noch keine Zusammenfassung."),
-        "[player_input]\n" + request.player_input,
-        "[narration]\n" + request.narration,
-    ]
-    return (
-        LmStudioChatMessage(role="system", content="\n\n".join(request.system_prompts)),
-        LmStudioChatMessage(role="user", content="\n\n".join(sections)),
-    )

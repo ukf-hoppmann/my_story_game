@@ -7,9 +7,11 @@ import pytest
 from story_game.application import Success
 from story_game.infrastructure.configuration import LlmTask, TomlLlmConfigurationLoader
 from story_game.infrastructure.llm.lmstudio import (
-    LmStudioClient,
-    LmStudioSettings,
     LmStudioStoryGenerationAdapter,
+    lmstudio_settings as LmStudioSettings,
+)
+from story_game.infrastructure.llm.openai_compatible import (
+    OpenAiCompatibleClient as LmStudioClient,
 )
 
 from .live_prompt import smoke_call

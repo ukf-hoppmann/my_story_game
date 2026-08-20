@@ -21,6 +21,7 @@ from story_game.application.llm import (
 )
 from story_game.domain import EntityKind, RelationKind
 
+from ..json_schema import strict_json_schema
 from .adapter import _map_error
 from .errors import GroqClientError
 from .models import (
@@ -140,7 +141,7 @@ class GroqInitialWorldExtractionAdapter(InitialWorldExtractionPort):
                     response_format=GroqJsonSchema(
                         name="world_initialization",
                         strict=True,
-                        schema=_WireCandidate.model_json_schema(),
+                        schema=strict_json_schema(_WireCandidate),
                     ),
                 )
             )

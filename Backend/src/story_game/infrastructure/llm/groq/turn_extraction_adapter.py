@@ -24,6 +24,7 @@ from story_game.application.llm import (
 )
 from story_game.domain import EntityKind, RelationKind
 
+from ..json_schema import strict_json_schema
 from .adapter import _map_error
 from .errors import GroqClientError
 from .models import (
@@ -205,7 +206,7 @@ class GroqTurnExtractionAdapter(TurnExtractionPort):
                     response_format=GroqJsonSchema(
                         name="turn_changes",
                         strict=True,
-                        schema=wire_model.model_json_schema(),
+                        schema=strict_json_schema(wire_model),
                     ),
                 )
             )

@@ -1,9 +1,17 @@
 # The single project-owned LLM configuration.
 # Replace the three concrete model IDs when the local LM Studio model differs.
+#
+# Secrets (e.g. a Groq api_key) never go in this file — they are merged in
+# from the sibling, gitignored configs/llm.secrets.toml at load time (copy
+# configs/llm.secrets.toml.example to get started).
 
 [providers.lmstudio]
 base_url = "http://host.docker.internal:1234/v1"
 timeout_seconds = 600
+
+[providers.groq]
+base_url = "https://api.groq.com/openai/v1"
+timeout_seconds = 60
 
 [task_models]
 story = "model.story.default"
@@ -30,6 +38,12 @@ id = "model.extraction.default"
 task = "extraction"
 provider_id = "lmstudio"
 model_id = "llama@f32"
+
+[[models]]
+id = "model.extraction.groq"
+task = "extraction"
+provider_id = "groq"
+model_id = "llama-3.3-70b-versatile"
 
 [[models]]
 id = "model.summary.default"

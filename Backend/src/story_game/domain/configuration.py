@@ -23,12 +23,12 @@ class PromptProfile:
     prose_style: str
     perspective: str
     pacing: str
-    length: str
     control_mode: str
     player_agency: str
     consequence: str
     challenge: str
     content_profile: str
+    length: str = "standard"
 
     def __post_init__(self) -> None:
         for field_name, label in (
@@ -37,12 +37,12 @@ class PromptProfile:
             ("prose_style", "Der Prosa-Stil"),
             ("perspective", "Die Perspektive"),
             ("pacing", "Das Erzähltempo"),
-            ("length", "Die Textlänge"),
             ("control_mode", "Der Steuerungsmodus"),
             ("player_agency", "Die Spielerautonomie"),
             ("consequence", "Die Konsequenz"),
             ("challenge", "Die Herausforderung"),
             ("content_profile", "Das Inhaltsprofil"),
+            ("length", "Die Textlänge"),
         ):
             object.__setattr__(self, field_name, _required(getattr(self, field_name), label))
 
@@ -54,12 +54,12 @@ class PromptProfile:
             ("prose_style", self.prose_style),
             ("perspective", self.perspective),
             ("pacing", self.pacing),
-            ("length", self.length),
             ("control_mode", self.control_mode),
             ("player_agency", self.player_agency),
             ("consequence", self.consequence),
             ("challenge", self.challenge),
             ("content_profile", self.content_profile),
+            ("length", self.length),
         )
 
 

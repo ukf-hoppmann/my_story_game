@@ -31,6 +31,7 @@ _CATEGORY_IDS = {
     "prose_style",
     "perspective",
     "pacing",
+    "length",
     "control_mode",
     "player_agency",
     "consequence",

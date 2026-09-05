@@ -53,6 +53,7 @@ def test_story_selection_resolves_all_profile_options_before_the_adapter() -> No
         "consequence",
         "challenge",
         "content_profile",
+        "length",
     ]
     assert selection.options[0].description.startswith("Bedrohliche Fantasy")
     assert selection.language == "de"

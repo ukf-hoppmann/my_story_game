@@ -43,6 +43,7 @@ def configuration(tone: str = "balanced") -> GameConfiguration:
             consequence="balanced",
             challenge="balanced",
             content_profile="teen",
+            length="standard",
         ),
         narrative_boundaries=(),
         prompt_package_id="story.base",
@@ -63,6 +64,7 @@ class PromptCatalog:
             "consequence": "balanced",
             "challenge": "balanced",
             "content_profile": "teen",
+            "length": "standard",
         }
         self.package = PromptPackage(
             id="story.base",

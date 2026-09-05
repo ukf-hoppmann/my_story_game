@@ -7,7 +7,7 @@ import pytest
 
 from story_game.application import Failure, Success
 from story_game.application.initialization_errors import StoryInitializationErrorKind
-from story_game.application.initialization_models import PlayerCharacterSeed
+from story_game.application.initialization_models import ControllableCharacterSeed
 from story_game.application.llm import (
     GenerationConfiguration,
     GenerationOptions,
@@ -73,8 +73,8 @@ def configuration(
     )
 
 
-def player_character() -> PlayerCharacterSeed:
-    return PlayerCharacterSeed("Maren", "Eine vorsichtige Kartografin.")
+def player_character() -> ControllableCharacterSeed:
+    return ControllableCharacterSeed("Maren", "Eine vorsichtige Kartografin.")
 
 
 def operation(generator: RecordingGenerator) -> GenerateInitialStoryState:
@@ -93,7 +93,7 @@ def test_generates_an_initialized_story_state_with_the_caller_character() -> Non
         GenerateInitialStoryStateRequest(
             configuration(),
             "Maren und Alma gehen in den Dungeon.",
-            player_character(),
+            (player_character(),),
         )
     )
 
@@ -102,7 +102,7 @@ def test_generates_an_initialized_story_state_with_the_caller_character() -> Non
     assert result.data.initialization.prompt == "Maren und Alma gehen in den Dungeon."
     assert result.data.turns == ()
     assert generator.call.request.initial_prompt == "Maren und Alma gehen in den Dungeon."
-    assert generator.call.request.player_character == player_character()
+    assert generator.call.request.controllable_characters == (player_character(),)
     assert not hasattr(generator.call.request, "world_state")
     assert not hasattr(generator.call.request, "story_state")
 
@@ -125,12 +125,12 @@ def test_player_mode_supports_every_character_bound_perspective(
         GenerateInitialStoryStateRequest(
             configuration(perspective, "player"),
             "Maren wartet am Tor.",
-            player_character(),
+            (player_character(),),
         )
     )
 
     assert isinstance(result, Success)
-    assert generator.call.request.player_character == player_character()
+    assert generator.call.request.controllable_characters == (player_character(),)
 
 
 @pytest.mark.parametrize(
@@ -180,26 +180,53 @@ def test_director_mode_rejects_character_bound_perspectives(
 @pytest.mark.parametrize(
     "perspective", ["third_person_limited", "third_person_omniscient"]
 )
-def test_director_mode_rejects_a_player_character(perspective: str) -> None:
+def test_director_mode_accepts_one_or_more_controllable_characters(
+    perspective: str,
+) -> None:
+    generator = RecordingGenerator(Success(InitialStoryText("Die Szene beginnt.")))
+    maren = ControllableCharacterSeed("Maren")
+    jonas = ControllableCharacterSeed("Jonas")
+
+    result = operation(generator).apply(
+        GenerateInitialStoryStateRequest(
+            configuration(perspective, "director"),
+            "Eine Geschichte beginnt.",
+            (maren, jonas),
+        )
+    )
+
+    assert isinstance(result, Success)
+    assert generator.call.request.controllable_characters == (maren, jonas)
+
+
+@pytest.mark.parametrize(
+    "perspective", ["third_person_limited", "third_person_omniscient"]
+)
+def test_director_mode_rejects_duplicate_controllable_character_names(
+    perspective: str,
+) -> None:
     generator = RecordingGenerator(Success(InitialStoryText("Nicht erreichbar.")))
 
     result = operation(generator).apply(
         GenerateInitialStoryStateRequest(
             configuration(perspective, "director"),
             "Eine Geschichte beginnt.",
-            player_character(),
+            (ControllableCharacterSeed("Maren"), ControllableCharacterSeed("maren")),
         )
     )
 
     assert isinstance(result, Failure)
-    assert result.error.kind is StoryInitializationErrorKind.UNEXPECTED_PLAYER_CHARACTER
+    assert (
+        result.error.kind
+        is StoryInitializationErrorKind.DUPLICATE_CONTROLLABLE_CHARACTER
+    )
     assert generator.call is None
 
 
 @pytest.mark.parametrize(
     "perspective", ["third_person_limited", "third_person_omniscient"]
 )
-def test_director_mode_omits_player_agency_and_character(
+def test_director_mode_omits_player_agency_and_allows_no_character(
     perspective: str,
 ) -> None:
     generator = RecordingGenerator(Success(InitialStoryText("Die Szene beginnt.")))
@@ -212,7 +239,7 @@ def test_director_mode_omits_player_agency_and_character(
     )
 
     assert isinstance(result, Success)
-    assert generator.call.request.player_character is None
+    assert generator.call.request.controllable_characters == ()
     assert "player_agency:" not in generator.call.request.configuration
 
 
@@ -225,7 +252,7 @@ def test_keeps_a_model_failure_as_the_visible_cause() -> None:
         GenerateInitialStoryStateRequest(
             configuration(),
             "Maren geht los.",
-            player_character(),
+            (player_character(),),
         )
     )
 

@@ -8,8 +8,9 @@ export type ControlMode = "player" | "director";
 export type ActorRole = "player" | "npc" | "neutral";
 export type GoalKind = "main" | "side";
 export type GoalStatus = "open" | "completed" | "failed";
+export type EntityKind = "character" | "location" | "item" | "creature" | "faction";
 
-export interface PlayerCharacterSeed {
+export interface ControllableCharacterSeed {
   name: string;
   description?: string;
 }
@@ -31,7 +32,7 @@ export interface GameRunMember {
   issuer: string;
   subject: string;
   game_role: GameRole;
-  player_entity_id: string | null;
+  controlled_entity_ids: string[];
 }
 
 export interface GameRun {
@@ -46,7 +47,7 @@ export interface GameRun {
 
 export interface WorldEntity {
   id: string;
-  kind: string;
+  kind: EntityKind;
   label: string;
   description: string;
   actor: { role: ActorRole } | null;
@@ -96,10 +97,17 @@ export interface StorySummary {
   based_on_revision: number;
 }
 
+export interface StoryInitialization {
+  prompt: string;
+  narration: string;
+  completed_at: string;
+}
+
 export interface StoryState {
   turns: StoryTurn[];
   summary: StorySummary | null;
   current_turn_sequence: number;
+  initialization: StoryInitialization | null;
 }
 
 export interface GameState {
@@ -116,11 +124,36 @@ export interface GameDocument {
   game_state: GameState;
 }
 
-export interface InitializeRunRequest {
-  run_name: string;
+export interface ProposeRunRequest {
   initial_prompt: string;
   control_mode: ControlMode;
-  player_character?: PlayerCharacterSeed;
+  controllable_characters: ControllableCharacterSeed[];
+}
+
+export interface RunProposal {
+  proposal_id: string;
+  opening_narration: string;
+  world: WorldState;
+  suggested_player_entity_ids: string[];
+  suggested_title: string;
+}
+
+export interface CharacterDecision {
+  entity_id: string;
+  role: "player" | "npc";
+  removed: boolean;
+}
+
+export interface ItemDecision {
+  entity_id: string;
+  removed: boolean;
+}
+
+export interface ConfirmRunProposalRequest {
+  proposal_id: string;
+  run_name?: string;
+  character_decisions: CharacterDecision[];
+  item_decisions: ItemDecision[];
 }
 
 export interface PlayTurnRequest {

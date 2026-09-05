@@ -12,19 +12,21 @@ from story_game.api.schemas.common import (
     GameRunModel,
     GoalModel,
     KnowledgeEntryModel,
+    StoryInitializationModel,
     StorySummaryModel,
     StoryTurnModel,
     VisibilityModel,
     WorldEntityModel,
     WorldRuleModel,
 )
+from story_game.api.schemas.runs import RunProposalModel
 from story_game.api.schemas.state import (
     GameDocument,
     GameStateModel,
     StoryStateModel,
     WorldStateModel,
 )
-from story_game.application.game_models import LoadedGame
+from story_game.application.game_models import GameRunProposal, LoadedGame
 from story_game.domain import (
     ActorProfile,
     Condition,
@@ -39,6 +41,7 @@ from story_game.domain import (
     PromptProfile,
     StableId,
     StateRevision,
+    StoryInitialization,
     StorySequence,
     StoryState,
     StorySummary,
@@ -63,9 +66,7 @@ def game_from_api(document: GameDocument) -> LoadedGame:
                 member.issuer,
                 member.subject,
                 member.game_role,
-                None
-                if member.player_entity_id is None
-                else StableId(member.player_entity_id),
+                tuple(StableId(item) for item in member.controlled_entity_ids),
             )
             for member in run_model.members
         ),
@@ -95,11 +96,9 @@ def game_to_api(game: LoadedGame) -> GameDocument:
                     issuer=member.issuer,
                     subject=member.subject,
                     game_role=member.game_role,
-                    player_entity_id=(
-                        None
-                        if member.player_entity_id is None
-                        else member.player_entity_id.value
-                    ),
+                    controlled_entity_ids=[
+                        item.value for item in member.controlled_entity_ids
+                    ],
                 )
                 for member in run.members
             ],
@@ -107,6 +106,23 @@ def game_to_api(game: LoadedGame) -> GameDocument:
             updated_at=run.updated_at,
         ),
         game_state=game_state_to_api(game.state),
+    )
+
+
+def proposal_to_api(proposal: GameRunProposal) -> RunProposalModel:
+    initialization = proposal.story_state.initialization
+    assert initialization is not None, (
+        "A GameRunProposal is only ever built from a successful "
+        "story-initialization result, which always carries an opening narration."
+    )
+    return RunProposalModel(
+        proposal_id=proposal.proposal_id.value,
+        opening_narration=initialization.narration,
+        world=_world_to_api(proposal.world_state),
+        suggested_player_entity_ids=[
+            entity_id.value for entity_id in proposal.suggested_player_entity_ids
+        ],
+        suggested_title=proposal.suggested_title,
     )
 
 
@@ -349,6 +365,15 @@ def _story_from_api(model: StoryStateModel) -> StoryState:
             )
         ),
         current_turn_sequence=model.current_turn_sequence,
+        initialization=(
+            None
+            if model.initialization is None
+            else StoryInitialization(
+                model.initialization.prompt,
+                model.initialization.narration,
+                model.initialization.completed_at,
+            )
+        ),
     )
 
 
@@ -376,4 +401,13 @@ def _story_to_api(story: StoryState) -> StoryStateModel:
             )
         ),
         current_turn_sequence=story.current_turn_sequence,
+        initialization=(
+            None
+            if story.initialization is None
+            else StoryInitializationModel(
+                prompt=story.initialization.prompt,
+                narration=story.initialization.narration,
+                completed_at=story.initialization.completed_at,
+            )
+        ),
     )

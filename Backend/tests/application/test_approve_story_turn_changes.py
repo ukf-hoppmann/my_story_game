@@ -46,7 +46,7 @@ def state():
 
 def projection():
     result = build_story_turn_context_selection().apply(
-        SelectStoryTurnContextRequest(state(), w.MAREN, "Ich gehe hinaus.")
+        SelectStoryTurnContextRequest(state(), (w.MAREN,), "Ich gehe hinaus.")
     )
     assert isinstance(result, Success), result
     return extraction_projection(result.data)

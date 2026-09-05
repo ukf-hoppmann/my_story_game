@@ -15,7 +15,9 @@ from story_game.domain import (
     StableId,
     StateRevision,
     StorySummary,
+    StoryState,
     StoryTurn,
+    WorldState,
 )
 
 
@@ -23,6 +25,35 @@ from story_game.domain import (
 class LoadedGame:
     run: GameRun
     state: GameState
+
+
+@dataclass(frozen=True, slots=True)
+class CachedGameRunProposal:
+    """A not-yet-persisted initialization result awaiting caller confirmation.
+
+    Held transiently by an ``InitialProposalStore`` between ``ProposeGameRun``
+    and ``ConfirmGameRunProposal`` — never written to canonical persistence
+    itself. ``issuer``/``subject`` pin the proposal to whoever requested it so
+    a confirmation cannot be made against someone else's proposal.
+    """
+
+    issuer: str
+    subject: str
+    configuration: GameConfiguration
+    story_state: StoryState
+    world_state: WorldState
+    suggested_title: str = ""
+
+
+@dataclass(frozen=True, slots=True)
+class GameRunProposal:
+    """What a caller reviews before deciding to confirm or discard a run."""
+
+    proposal_id: StableId
+    story_state: StoryState
+    world_state: WorldState
+    suggested_player_entity_ids: tuple[StableId, ...] = ()
+    suggested_title: str = ""
 
 
 @dataclass(frozen=True, slots=True)

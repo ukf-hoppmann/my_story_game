@@ -26,20 +26,23 @@ if TYPE_CHECKING:
 
 from story_game.application import (
     ApproveStoryTurnChanges,
+    CharacterDecision,
+    ConfirmGameRunProposal,
+    ConfirmGameRunProposalRequest,
     ExtractedTurnChanges,
     ExtractInitialWorldState,
     ExtractStoryTurnChanges,
     ExtractStoryTurnChangesRequest,
     GenerateStory,
     GenerateStoryRequest,
-    InitializeGameRun,
-    InitializeGameRunRequest,
     InitializeStory,
     InitializeStoryRequest,
     PlayedStoryTurn,
-    PlayerCharacterSeed,
+    ControllableCharacterSeed,
     PlayStoryTurn,
     PlayStoryTurnRequest,
+    ProposeGameRun,
+    ProposeGameRunRequest,
     RunInitiator,
     StartPlaythrough,
     StartPlaythroughRequest,
@@ -47,6 +50,9 @@ from story_game.application import (
     Success,
 )
 from story_game.application.game_models import LoadedGame
+from story_game.infrastructure.persistence.in_memory_proposal_store import (
+    InMemoryProposalStore,
+)
 from story_game.application.game_state import (
     CommitCompletedTurn,
     CreateGameRun,
@@ -98,17 +104,19 @@ from story_game.infrastructure.logging_config import (
     configure_logging,
 )
 from story_game.infrastructure.llm.lmstudio import (
-    LmStudioClient,
     LmStudioInitialWorldExtractionAdapter,
-    LmStudioSettings,
     LmStudioStoryGenerationAdapter,
     LmStudioStoryInitializationAdapter,
     LmStudioStorySummaryAdapter,
     LmStudioTurnExtractionAdapter,
+    lmstudio_settings as LmStudioSettings,
 )
-from story_game.infrastructure.llm.lmstudio.models import (
-    LmStudioChatRequest,
-    LmStudioChatResponse,
+from story_game.infrastructure.llm.openai_compatible import (
+    OpenAiCompatibleClient as LmStudioClient,
+)
+from story_game.infrastructure.llm.openai_compatible.models import (
+    ChatRequest as LmStudioChatRequest,
+    ChatResponse as LmStudioChatResponse,
 )
 
 from tests.application import turn_context_world as w
@@ -349,8 +357,8 @@ class HumanInitStorySupport:
             "Maren und Alma stehen gemeinsam in einer einzigen "
             "verschlossenen Dungeonkammer. Noch bewegt sich niemand."
         )
-        self.player_character = PlayerCharacterSeed(
-            "Maren", "Eine vorsichtige Kartografin."
+        self.controllable_characters = (
+            ControllableCharacterSeed("Maren", "Eine vorsichtige Kartografin."),
         )
 
     def prepare_prompt(self) -> LLMGenerationCall:
@@ -363,7 +371,7 @@ class HumanInitStorySupport:
         )
         result = operation.apply(
             GenerateInitialStoryStateRequest(
-                self.configuration, self.initial_prompt, self.player_character
+                self.configuration, self.initial_prompt, self.controllable_characters
             )
         )
         assert isinstance(result, Success), result
@@ -391,7 +399,7 @@ class HumanInitStorySupport:
             )
             result = operation.apply(
                 GenerateInitialStoryStateRequest(
-                    self.configuration, self.initial_prompt, self.player_character
+                    self.configuration, self.initial_prompt, self.controllable_characters
                 )
             )
             assert isinstance(result, Success), result
@@ -424,7 +432,7 @@ class HumanInitStorySupport:
                 InitializeStoryRequest(
                     configuration=self.configuration,
                     initial_prompt=self.initial_prompt,
-                    player_character=self.player_character,
+                    controllable_characters=self.controllable_characters,
                 )
             )
             assert isinstance(result, Success), result
@@ -453,11 +461,11 @@ def _request_shape(call: LLMGenerationCall) -> dict[str, object]:
     for field in ("configuration", "initial_prompt", "world_state", "story_state", "user_prompt", "narration"):
         if hasattr(request, field):
             document[field] = getattr(request, field)
-    if hasattr(request, "player_character") and request.player_character is not None:
-        document["player_character"] = {
-            "name": request.player_character.name,
-            "description": request.player_character.description,
-        }
+    if getattr(request, "controllable_characters", ()):
+        document["controllable_characters"] = [
+            {"name": character.name, "description": character.description}
+            for character in request.controllable_characters
+        ]
     return document
 
 
@@ -666,12 +674,13 @@ class HumanFullPlaythroughSupport:
 
     Closes the gap noted in the STORY-006 completion criteria in
     ``docs/TODO.md``: no other test connects a live model with live
-    persistence in one run. ``InitializeGameRun`` persists a DRAFT template
-    at revision 1; ``StartPlaythrough`` forks it into a new ACTIVE run (also
-    revision 1); ``PlayStoryTurn`` persists revision 2 on top of that fork.
-    A DRAFT can no longer take a turn directly — see the run-lifecycle work
-    that introduced ``StartPlaythrough``. Both created runs are deleted
-    again afterwards so repeated human runs stay clean.
+    persistence in one run. ``ProposeGameRun`` generates a reviewable,
+    unsaved proposal; ``ConfirmGameRunProposal`` persists it as a DRAFT
+    template at revision 1; ``StartPlaythrough`` forks it into a new ACTIVE
+    run (also revision 1); ``PlayStoryTurn`` persists revision 2 on top of
+    that fork. A DRAFT can no longer take a turn directly — see the
+    run-lifecycle work that introduced ``StartPlaythrough``. Both created
+    runs are deleted again afterwards so repeated human runs stay clean.
     """
 
     def __init__(self) -> None:
@@ -690,8 +699,8 @@ class HumanFullPlaythroughSupport:
             "Maren und Alma stehen gemeinsam in einer einzigen "
             "verschlossenen Dungeonkammer. Noch bewegt sich niemand."
         )
-        self.player_character = PlayerCharacterSeed(
-            "Maren", "Eine vorsichtige Kartografin."
+        self.controllable_characters = (
+            ControllableCharacterSeed("Maren", "Eine vorsichtige Kartografin."),
         )
         self.initiator = RunInitiator(
             "https://human-test.example/realm", "human-tester"
@@ -718,7 +727,8 @@ class HumanFullPlaythroughSupport:
         try:
             printing = PrintingLmStudioClient(client)
 
-            init_operation = InitializeGameRun(
+            proposal_store = InMemoryProposalStore()
+            propose_operation = ProposeGameRun(
                 InitializeStory(
                     GenerateInitialStoryState(
                         StoryInitializationPromptResolver(_catalog()),
@@ -735,16 +745,49 @@ class HumanFullPlaythroughSupport:
                     ),
                     diagnostics,
                 ),
+                proposal_store,
+                diagnostics=diagnostics,
+            )
+            proposed = propose_operation.apply(
+                ProposeGameRunRequest(
+                    configuration=self.configuration,
+                    initial_prompt=self.initial_prompt,
+                    initiator=self.initiator,
+                    controllable_characters=self.controllable_characters,
+                )
+            )
+            assert isinstance(proposed, Success), proposed
+            print(
+                json.dumps(
+                    {
+                        "postgres_proposal": {
+                            "proposal_id": str(proposed.data.proposal_id),
+                            "suggested_player_entity_ids": [
+                                str(entity_id)
+                                for entity_id in proposed.data.suggested_player_entity_ids
+                            ],
+                            "world_state": _world_document(proposed.data.world_state),
+                        }
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                )
+            )
+
+            confirm_operation = ConfirmGameRunProposal(
+                proposal_store,
                 CreateGameRun(store, PromptProfileValidator(_catalog())),
                 diagnostics=diagnostics,
             )
-            initialized = init_operation.apply(
-                InitializeGameRunRequest(
-                    configuration=self.configuration,
+            initialized = confirm_operation.apply(
+                ConfirmGameRunProposalRequest(
+                    proposal_id=proposed.data.proposal_id,
                     run_name=self.run_name,
-                    initial_prompt=self.initial_prompt,
                     initiator=self.initiator,
-                    player_character=self.player_character,
+                    character_decisions=tuple(
+                        CharacterDecision(entity_id, "player")
+                        for entity_id in proposed.data.suggested_player_entity_ids
+                    ),
                 )
             )
             assert isinstance(initialized, Success), initialized

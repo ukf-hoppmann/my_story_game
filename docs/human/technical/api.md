@@ -37,8 +37,11 @@ einen bereits aktiven Lauf erneut abzuzweigen, ergibt HTTP 409
 ## Anfrage- und Antwortformen
 
 `POST /api/v1/runs` verlangt `run_name`, `initial_prompt`, `control_mode`
-(`"player"` oder `"director"`) und im Player Mode genau ein
-`player_character` (`name`, optional `description`). Die API verwendet
+(`"player"` oder `"director"`) und eine Liste `controllable_characters`
+steuerbarer Figuren (`name`, optional `description`). Im Player Mode muss die
+Liste genau ein Element enthalten; im Director Mode darf sie null oder
+mehrere Elemente enthalten — jede genannte Figur wird zu einer eigenen, vom
+aufrufenden Mitglied gesteuerten Figur im `WorldState`. Die API verwendet
 dafür eine feste serverseitige `GameConfiguration`
 (`api/default_configuration.py`) — es gibt noch keine
 Konfigurations-Auswahl über die API; nur `control_mode` wird aus der
@@ -120,8 +123,29 @@ Mit gestarteter API sind die Verträge verfügbar unter:
 PostgreSQL und API können gemeinsam gestartet werden:
 
 ```bash
-./story-starter
+./story-starter start
 ```
+
+`./story-starter` ohne Subcommand bleibt als Alias für `start` erhalten.
+
+Der Root-Launcher unterstützt außerdem:
+
+| Befehl | Zweck |
+| --- | --- |
+| `start` | Services starten, ohne neu zu bauen |
+| `stop` | Container und Compose-Netzwerk entfernen |
+| `upgrade` | API-Image neu bauen und Services starten |
+| `restart [service ...]` | alle oder ausgewählte Services neu starten |
+| `status [service ...]` | Service-Status anzeigen |
+| `logs [service ...]` | Logs anzeigen; `-f` verfolgt sie fortlaufend |
+| `check` | Compose und API-Health prüfen |
+| `clean --yes` | lokales Datenbank-Volume löschen und Schema neu anlegen |
+
+Für die gültigen Services und alle Optionen steht pro Befehl eine eigene
+Hilfe zur Verfügung, zum Beispiel `./story-starter logs -h`. `clean` ist
+destruktiv und löscht alle lokal gespeicherten Story-Runs; ohne `--yes` wird
+eine interaktive Bestätigung verlangt. Eine ausführliche Betriebsanleitung
+steht in [`../operations/story-starter.md`](../operations/story-starter.md).
 
 Die API wendet beim Start das PostgreSQL-Basisschema an. Bei einem lokalen
 Volume mit dem früheren Schema ist wegen der bewusst fehlenden Datenmigration

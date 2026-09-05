@@ -81,7 +81,7 @@ class AlwaysIncludedContext:
     recent_turns: tuple[StoryTurn, ...]
     rules: tuple[WorldRule, ...]
     main_goals: tuple[Goal, ...]
-    controlled_entity: WorldEntity | None
+    controlled_entities: tuple[WorldEntity, ...]
     language: str
     perspective: str
     control_mode: str
@@ -130,7 +130,7 @@ class SelectedStoryTurnContext:
 
     summary: StorySummary | None
     recent_turns: tuple[StoryTurn, ...]
-    controlled_entity: WorldEntity | None
+    controlled_entities: tuple[WorldEntity, ...]
     scene_locations: tuple[WorldEntity, ...]
     entities: tuple[WorldEntity, ...]
     links: tuple[EntityLink, ...]

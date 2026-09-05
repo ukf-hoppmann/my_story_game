@@ -2,8 +2,9 @@
 
 Unlike ``tests/infrastructure/llm/lmstudio/human_test_support.py`` (which
 talks to a live LM Studio for human inspection), these doubles let
-``tests/api/test_api.py`` drive the real ``InitializeGameRun``/
-``PlayStoryTurn``/``StartPlaythrough`` workflows end to end — real prompt
+``tests/api/test_api.py`` drive the real ``ProposeGameRun``/
+``ConfirmGameRunProposal``/``PlayStoryTurn``/``StartPlaythrough`` workflows
+end to end — real prompt
 building, real domain validation, real (in-memory) persistence — without a
 model server. Every candidate returned is deliberately empty: an empty
 ``WorldInitializationCandidate``/``TurnChangeCandidate`` is a structurally

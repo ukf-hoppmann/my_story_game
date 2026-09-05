@@ -59,7 +59,7 @@ class RecordingExtractor:
 def context():
     state = w.game_state((w.TAVERN,), "Maren sitzt am Feuer.")
     result = build_story_turn_context_selection().apply(
-        SelectStoryTurnContextRequest(state, w.MAREN, "Ich gehe hinaus.")
+        SelectStoryTurnContextRequest(state, (w.MAREN,), "Ich gehe hinaus.")
     )
     assert isinstance(result, Success), result
     return result.data

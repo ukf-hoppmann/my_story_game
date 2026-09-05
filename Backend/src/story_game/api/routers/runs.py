@@ -14,20 +14,27 @@ from story_game.api.dependencies import (
     get_api_dependencies,
     get_current_initiator,
 )
-from story_game.api.mappers import game_state_to_api, game_to_api
+from story_game.api.mappers import game_state_to_api, game_to_api, proposal_to_api
 from story_game.api.results import unwrap
 from story_game.api.schemas.runs import (
-    InitializeRunRequestModel,
+    CharacterDecisionModel,
+    ConfirmRunProposalRequestModel,
+    ItemDecisionModel,
     PlayTurnRequestModel,
+    ProposeRunRequestModel,
+    RunProposalModel,
     RunSummaryListModel,
     RunSummaryModel,
     TurnResultModel,
 )
 from story_game.api.schemas.state import GameDocument
 from story_game.application import (
-    InitializeGameRunRequest,
-    PlayerCharacterSeed,
+    CharacterDecision,
+    ConfirmGameRunProposalRequest,
+    ControllableCharacterSeed,
+    ItemDecision,
     PlayStoryTurnRequest,
+    ProposeGameRunRequest,
     RunInitiator,
     StartPlaythroughRequest,
 )
@@ -95,16 +102,16 @@ def load_run(
 
 
 @runs_router.post(
-    "",
-    response_model=GameDocument,
+    "/proposals",
+    response_model=RunProposalModel,
     status_code=status.HTTP_201_CREATED,
-    summary="Start a new DRAFT scenario template",
+    summary="Generate a reviewable run proposal; persists nothing",
 )
-def create_run(
-    payload: InitializeRunRequestModel,
+def propose_run(
+    payload: ProposeRunRequestModel,
     dependencies: Annotated[ApiDependencies, Depends(get_api_dependencies)],
     initiator: Annotated[RunInitiator, Depends(get_current_initiator)],
-) -> GameDocument:
+) -> RunProposalModel:
     configuration = replace(
         DEFAULT_GAME_CONFIGURATION,
         prompt_profile=replace(
@@ -112,25 +119,58 @@ def create_run(
             control_mode=payload.control_mode,
         ),
     )
-    player_character = (
-        None
-        if payload.player_character is None
-        else PlayerCharacterSeed(
-            payload.player_character.name, payload.player_character.description
-        )
+    controllable_characters = tuple(
+        ControllableCharacterSeed(item.name, item.description)
+        for item in payload.controllable_characters
     )
-    created = unwrap(
-        dependencies.initialize_run.apply(
-            InitializeGameRunRequest(
+    proposed = unwrap(
+        dependencies.propose_run.apply(
+            ProposeGameRunRequest(
                 configuration=configuration,
-                run_name=payload.run_name,
                 initial_prompt=payload.initial_prompt,
                 initiator=initiator,
-                player_character=player_character,
+                controllable_characters=controllable_characters,
+            )
+        )
+    )
+    return proposal_to_api(proposed)
+
+
+@runs_router.post(
+    "",
+    response_model=GameDocument,
+    status_code=status.HTTP_201_CREATED,
+    summary="Confirm a proposal into a new DRAFT scenario template",
+)
+def confirm_run(
+    payload: ConfirmRunProposalRequestModel,
+    dependencies: Annotated[ApiDependencies, Depends(get_api_dependencies)],
+    initiator: Annotated[RunInitiator, Depends(get_current_initiator)],
+) -> GameDocument:
+    created = unwrap(
+        dependencies.confirm_proposal.apply(
+            ConfirmGameRunProposalRequest(
+                proposal_id=StableId(payload.proposal_id),
+                run_name=payload.run_name,
+                initiator=initiator,
+                character_decisions=tuple(
+                    _character_decision(item) for item in payload.character_decisions
+                ),
+                item_decisions=tuple(
+                    _item_decision(item) for item in payload.item_decisions
+                ),
             )
         )
     )
     return game_to_api(created)
+
+
+def _character_decision(model: CharacterDecisionModel) -> CharacterDecision:
+    return CharacterDecision(StableId(model.entity_id), model.role, model.removed)
+
+
+def _item_decision(model: ItemDecisionModel) -> ItemDecision:
+    return ItemDecision(StableId(model.entity_id), model.removed)
 
 
 @runs_router.post(

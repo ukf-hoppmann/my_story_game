@@ -25,7 +25,7 @@ from story_game.application.game_state import (
 )
 from story_game.application.game_state.errors import GameStateOperationError
 from story_game.application.generate_story import GenerateStory, GenerateStoryRequest
-from story_game.application.initialize_game_run import RunInitiator
+from story_game.application.run_initiator import RunInitiator
 from story_game.application.proposals import ProposedChangeSet
 from story_game.application.story_turn_context import (
     SelectStoryTurnContext,
@@ -134,7 +134,7 @@ class PlayStoryTurn:
                 )
             )
 
-        controlled = _controlled_entity_id(run, request.initiator)
+        controlled = _controlled_entity_ids(run, request.initiator)
         if isinstance(controlled, Failure):
             return controlled
 
@@ -199,17 +199,17 @@ class PlayStoryTurn:
         )
 
 
-def _controlled_entity_id(
+def _controlled_entity_ids(
     run: GameRun, initiator: RunInitiator
-) -> OperationResult[StableId | None, StoryTurnError]:
-    """Find which figure the caller steers, if any.
+) -> OperationResult[tuple[StableId, ...], StoryTurnError]:
+    """Find which figures the caller steers, if any.
 
-    Director control binds no figure today, so ``None`` is a valid answer and
-    not an error.
+    Director control may bind zero, one, or several figures, so an empty
+    tuple is a valid answer and not an error.
     """
     for member in run.members:
         if member.identity == (initiator.issuer, initiator.subject):
-            return Success(member.player_entity_id)
+            return Success(member.controlled_entity_ids)
     return Failure(
         StoryTurnError(
             StoryTurnErrorKind.UNKNOWN_MEMBER,

@@ -102,6 +102,14 @@ class StorySummaryModel(APIModel):
     based_on_revision: int = Field(ge=1)
 
 
+class StoryInitializationModel(APIModel):
+    """The user premise and normalized opening prose before the first turn."""
+
+    prompt: str = Field(min_length=1)
+    narration: str = Field(min_length=1)
+    completed_at: datetime
+
+
 class PromptProfileModel(APIModel):
     genre: str = Field(min_length=1)
     tone: str = Field(min_length=1)
@@ -127,10 +135,10 @@ class GameRunMemberModel(APIModel):
     issuer: str = Field(min_length=1)
     subject: str = Field(min_length=1)
     game_role: GameRole
-    player_entity_id: UUID | None = None
+    controlled_entity_ids: list[UUID] = Field(default_factory=list)
 
 
-class PlayerCharacterSeedModel(APIModel):
+class ControllableCharacterSeedModel(APIModel):
     name: str = Field(min_length=1)
     description: str = ""
 

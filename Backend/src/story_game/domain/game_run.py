@@ -23,11 +23,15 @@ class GameRunMember:
     issuer: str
     subject: str
     game_role: GameRole
-    player_entity_id: StableId | None = None
+    controlled_entity_ids: tuple[StableId, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "issuer", _required(self.issuer, "Der Issuer"))
         object.__setattr__(self, "subject", _required(self.subject, "Das Subject"))
+        if len(self.controlled_entity_ids) != len(set(self.controlled_entity_ids)):
+            raise ValidationError(
+                "Die gesteuerten Figuren einer Mitgliedschaft müssen eindeutig sein"
+            )
 
     @property
     def identity(self) -> tuple[str, str]:

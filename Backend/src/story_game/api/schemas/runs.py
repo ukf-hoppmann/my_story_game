@@ -10,22 +10,66 @@ from pydantic import Field
 
 from story_game.domain import GameRole, GameRunStatus
 
-from .common import APIModel, PlayerCharacterSeedModel
-from .state import GameStateModel
+from .common import APIModel, ControllableCharacterSeedModel
+from .state import GameStateModel, WorldStateModel
 
 
-class InitializeRunRequestModel(APIModel):
-    """What a caller supplies to start a new DRAFT scenario template.
+class ProposeRunRequestModel(APIModel):
+    """What a caller supplies to generate one reviewable, unsaved proposal.
 
     No ``configuration`` field: the API applies one fixed server-side
     ``GameConfiguration`` (see ``api/app.py``), only overriding
     ``control_mode`` from this request — there is no configuration UI yet.
+    No ``run_name`` either — that is only needed once the caller confirms
+    the proposal (``ConfirmRunProposalRequestModel``).
     """
 
-    run_name: str = Field(min_length=1)
     initial_prompt: str = Field(min_length=1)
     control_mode: Literal["player", "director"]
-    player_character: PlayerCharacterSeedModel | None = None
+    controllable_characters: list[ControllableCharacterSeedModel] = Field(
+        default_factory=list
+    )
+
+
+class RunProposalModel(APIModel):
+    """A not-yet-persisted proposal for the caller to review and edit.
+
+    ``world`` lists every extracted character/item/location as a neutral
+    entity — nobody is player-controlled yet. ``suggested_player_entity_ids``
+    is a display hint only (which switches to default to "Spieler"), not a
+    decision; the caller's actual choice is submitted via
+    ``ConfirmRunProposalRequestModel``.
+    """
+
+    proposal_id: UUID
+    opening_narration: str = Field(min_length=1)
+    world: WorldStateModel
+    suggested_player_entity_ids: list[UUID] = Field(default_factory=list)
+    suggested_title: str = Field(min_length=1)
+
+
+class CharacterDecisionModel(APIModel):
+    entity_id: UUID
+    role: Literal["player", "npc"]
+    removed: bool = False
+
+
+class ItemDecisionModel(APIModel):
+    entity_id: UUID
+    removed: bool = False
+
+
+class ConfirmRunProposalRequestModel(APIModel):
+    """What a caller submits to persist a previously generated proposal.
+
+    ``run_name`` is optional: a blank or omitted value falls back to the
+    proposal's model-suggested title (see ``RunProposalModel.suggested_title``).
+    """
+
+    proposal_id: UUID
+    run_name: str | None = None
+    character_decisions: list[CharacterDecisionModel] = Field(default_factory=list)
+    item_decisions: list[ItemDecisionModel] = Field(default_factory=list)
 
 
 class PlayTurnRequestModel(APIModel):

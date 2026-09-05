@@ -12,7 +12,7 @@ from story_game.application.game_state import (
 )
 from story_game.application.generate_story import GenerateStory
 from story_game.application.summarize_story import SummarizeStory
-from story_game.application.initialize_game_run import RunInitiator
+from story_game.application.run_initiator import RunInitiator
 from story_game.application.llm import (
     CandidateEntity,
     CandidateLink,
@@ -120,7 +120,7 @@ class FakeExtractionPort:
         return self.result
 
 
-def run_with(player_entity_id=w.MAREN) -> GameRun:
+def run_with(controlled_entity_ids=(w.MAREN,)) -> GameRun:
     timestamp = datetime(2026, 8, 17, tzinfo=UTC)
     return GameRun(
         RUN_ID,
@@ -129,7 +129,10 @@ def run_with(player_entity_id=w.MAREN) -> GameRun:
         StateRevision(1),
         (
             GameRunMember(
-                INITIATOR.issuer, INITIATOR.subject, GameRole.OWNER, player_entity_id
+                INITIATOR.issuer,
+                INITIATOR.subject,
+                GameRole.OWNER,
+                controlled_entity_ids,
             ),
         ),
         timestamp,
@@ -281,7 +284,7 @@ def test_an_identity_outside_the_run_cannot_play_a_turn() -> None:
 
 
 def test_director_control_without_a_bound_figure_can_still_play() -> None:
-    operation, _ = workflow(run=run_with(player_entity_id=None))
+    operation, _ = workflow(run=run_with(controlled_entity_ids=()))
 
     result = operation.apply(request())
 

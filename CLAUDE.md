@@ -62,3 +62,26 @@ concretely stated plan in the same turn, that counts and no separate
 confirmation round is needed — the point is to never silently skip the
 approval step, not to force a redundant extra round-trip when approval was
 already clearly given.
+
+## Integration and cleanup after approval (follow-on operations)
+
+`.harness/policy.toml`'s `[changes]` block — specifically
+`autonomous_follow_on` and `goal_default_operations` — is the single place
+that controls whether merging and worktree cleanup happen automatically
+after a "los"/"ok" go-ahead, or need their own separate confirmation each
+time. Re-read that block fresh each session, the same as the other harness
+files, and follow whatever it currently says rather than assuming today's
+values:
+
+- If `autonomous_follow_on = true` and `goal_default_operations` lists
+  `"integration"` and/or `"cleanup"`: once a concrete plan has its explicit
+  go-ahead, carry out those listed operations (merging the finished branch,
+  removing its worktree) as part of the same approved unit of work, without
+  asking again for each one — the same "one go-ahead covers the announced
+  work" principle as implementation itself. Destructive steps or anything
+  outside the approved plan still need their own explicit approval.
+- If `autonomous_follow_on = false`, or `goal_default_operations` is empty
+  or omits an operation: implement after go-ahead as usual, but ask again
+  separately before merging and before removing a worktree.
+
+To change this behavior, edit `.harness/policy.toml` — not this file.

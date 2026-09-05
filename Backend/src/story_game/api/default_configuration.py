@@ -6,9 +6,9 @@ from story_game.domain import GameConfiguration, PromptProfile
 
 # No Keycloak, no configuration UI yet: the API applies this one fixed
 # configuration for every new run. ``prompt_profile.control_mode`` is
-# overridden per request from ``InitializeRunRequestModel.control_mode``
+# overridden per request from ``ProposeRunRequestModel.control_mode``
 # before use — see ``routers/runs.py``. Mirrors the shape used throughout
-# ``tests/application/test_initialize_game_run.py``.
+# ``tests/application/test_confirm_game_run_proposal.py``.
 DEFAULT_GAME_CONFIGURATION = GameConfiguration(
     language="de",
     prompt_profile=PromptProfile(

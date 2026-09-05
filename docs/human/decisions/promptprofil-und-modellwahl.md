@@ -40,7 +40,8 @@ PromptProfile
 ├── player_agency
 ├── consequence
 ├── challenge
-└── content_profile
+├── content_profile
+└── length
 ```
 
 Jedes Feld speichert die lokale Options-ID seiner bekannten Kategorie, zum
@@ -57,9 +58,17 @@ Beispiel:
   "player_agency": "strict",
   "consequence": "balanced",
   "challenge": "balanced",
-  "content_profile": "teen"
+  "content_profile": "teen",
+  "length": "standard"
 }
 ```
+
+`length` (`short`/`standard`/`long`) steuert die gewünschte Textlänge der
+Story-Prosa als Instruktion im Systemprompt, analog zu `pacing`. Anders als
+die übrigen Kategorien hat das Feld einen Domain-Default (`"standard"`), damit
+bestehender Code, der `PromptProfile` ohne dieses Feld aufbaut, unverändert
+funktioniert; umgeschaltet wird bislang ausschließlich über den festen Wert in
+`api/default_configuration.py`, es gibt noch keinen Endpoint dafür.
 
 Die Kategorie muss im Wert nicht wiederholt werden. `balanced` bleibt trotz
 seiner Verwendung in mehreren Kategorien eindeutig, weil es immer in einem

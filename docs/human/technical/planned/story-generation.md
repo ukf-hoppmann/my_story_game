@@ -37,7 +37,8 @@ enthält außerdem alle vereinbarten Auswahlkategorien samt Defaults und
 die nicht auswählbare Directive `narrative_boundaries`. Die Auswahlfelder für
 Genre, Tone, Pacing, Player Agency, Consequence, Challenge und Content Profile
 sind Teil von `GameConfiguration`. Das Profil enthält außerdem Prose Style,
-Perspective und Control Mode. Die Application validiert und löst diese Auswahl
+Perspective, Control Mode und Length (Textlänge; `short`/`standard`/`long`,
+mit Domain-Default `"standard"`). Die Application validiert und löst diese Auswahl
 vor dem Adapter gegen das referenzierte Paket auf; der Loader trifft keine
 fachliche Auswahl.
 

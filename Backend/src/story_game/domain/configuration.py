@@ -23,6 +23,7 @@ class PromptProfile:
     prose_style: str
     perspective: str
     pacing: str
+    length: str
     control_mode: str
     player_agency: str
     consequence: str
@@ -36,6 +37,7 @@ class PromptProfile:
             ("prose_style", "Der Prosa-Stil"),
             ("perspective", "Die Perspektive"),
             ("pacing", "Das Erzähltempo"),
+            ("length", "Die Textlänge"),
             ("control_mode", "Der Steuerungsmodus"),
             ("player_agency", "Die Spielerautonomie"),
             ("consequence", "Die Konsequenz"),
@@ -52,6 +54,7 @@ class PromptProfile:
             ("prose_style", self.prose_style),
             ("perspective", self.perspective),
             ("pacing", self.pacing),
+            ("length", self.length),
             ("control_mode", self.control_mode),
             ("player_agency", self.player_agency),
             ("consequence", self.consequence),

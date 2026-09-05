@@ -17,6 +17,7 @@ DEFAULT_GAME_CONFIGURATION = GameConfiguration(
         prose_style="balanced",
         perspective="third_person_limited",
         pacing="balanced",
+        length="standard",
         control_mode="player",
         player_agency="strict",
         consequence="balanced",

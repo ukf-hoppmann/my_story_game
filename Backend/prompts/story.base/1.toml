@@ -237,6 +237,22 @@ id = "fast"
 description = "Führe zügig durch Handlung und Reaktion und halte nur entscheidende Details fest."
 
 [[categories]]
+id = "length"
+default = "standard"
+
+[[categories.options]]
+id = "short"
+description = "Erzähle in genau einem Absatz, der die Szene knapp abschließt."
+
+[[categories.options]]
+id = "standard"
+description = "Erzähle in ein bis zwei Absätzen, die zusammen die Szene abschließen."
+
+[[categories.options]]
+id = "long"
+description = "Erzähle in mehreren Absätzen mit ausführlicherer Atmosphäre und Detailtiefe."
+
+[[categories]]
 id = "control_mode"
 default = "player"
 

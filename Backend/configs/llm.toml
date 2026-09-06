@@ -19,7 +19,7 @@ timeout_seconds = 60
 
 [task_models]
 story = "model.story.default"
-extraction = "model.extraction.groq"
+extraction = "model.extraction.default"
 summary = "model.summary.default"
 
 [generation_options.story]
@@ -31,12 +31,27 @@ temperature = 0.3
 [generation_options.summary]
 temperature = 0.5
 
+
+#######################
+######## STORY ########
+#######################
+
 [[models]]
 id = "model.story.default"
 task = "story"
 provider_id = "lmstudio"
 #model_id = "fwvision-qwen3-vl-8b-v3"
 model_id = "mistralai/mistral-small-3.2"
+
+[[models]]
+id = "model.story.groq"
+task = "story"
+provider_id = "groq"
+model_id = "openai/gpt-oss-120b"
+
+############################
+######## EXTRACTION ########
+############################
 
 [[models]]
 id = "model.extraction.default"
@@ -56,8 +71,18 @@ task = "extraction"
 provider_id = "gemini"
 model_id = "gemini-3.5-flash-lite"
 
+#########################
+######## SUMMARY ########
+#########################
+
 [[models]]
 id = "model.summary.default"
 task = "summary"
 provider_id = "lmstudio"
 model_id = "mistralai/mistral-small-3.2"
+
+[[models]]
+id = "model.summary.gemini"
+task = "summary"
+provider_id = "gemini"
+model_id = "gemini-3.5-flash-lite"

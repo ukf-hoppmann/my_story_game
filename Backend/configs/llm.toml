@@ -41,7 +41,8 @@ id = "model.story.default"
 task = "story"
 provider_id = "lmstudio"
 #model_id = "fwvision-qwen3-vl-8b-v3"
-model_id = "mistralai/mistral-small-3.2"
+#model_id = "mistralai/mistral-small-3.2"
+model_id = "qwen3.8-27b-turbo-fable-cold-fusion-735-882-heretic-uncensored-neo-coder-max-mtp"
 
 [[models]]
 id = "model.story.groq"
@@ -57,7 +58,9 @@ model_id = "openai/gpt-oss-120b"
 id = "model.extraction.default"
 task = "extraction"
 provider_id = "lmstudio"
-model_id = "llama@f32"
+#model_id = "llama@f32"
+model_id = "qwen3.8-27b-turbo-fable-cold-fusion-735-882-heretic-uncensored-neo-coder-max-mtp"
+
 
 [[models]]
 id = "model.extraction.groq"
@@ -79,7 +82,8 @@ model_id = "gemini-3.5-flash-lite"
 id = "model.summary.default"
 task = "summary"
 provider_id = "lmstudio"
-model_id = "mistralai/mistral-small-3.2"
+#model_id = "mistralai/mistral-small-3.2"
+model_id = "qwen3.8-27b-turbo-fable-cold-fusion-735-882-heretic-uncensored-neo-coder-max-mtp"
 
 [[models]]
 id = "model.summary.gemini"

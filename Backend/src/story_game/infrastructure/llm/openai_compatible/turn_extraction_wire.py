@@ -22,6 +22,7 @@ from story_game.domain import EntityKind, RelationKind
 
 from ..json_schema import strict_json_schema
 from .models import ChatMessage, ChatRequest, JsonSchema
+from .wire_link import normalize_link_quantity
 
 
 class _WireModel(BaseModel):
@@ -228,7 +229,9 @@ def _candidate_from_wire(wire: _WireCandidate) -> TurnChangeCandidate:
                 item.source_ref,
                 item.target_ref,
                 RelationKind(item.kind),
-                item.quantity,
+                normalize_link_quantity(
+                    item.kind, item.quantity, item.source_ref, item.target_ref
+                ),
                 item.description,
                 _evidence(item),
             )

@@ -1,0 +1,71 @@
+{
+  "realm": "story-game",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "clients": [
+    {
+      "clientId": "story-game-frontend",
+      "name": "Story Game Frontend",
+      "enabled": true,
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://storygame.localhost/*",
+        "http://localhost:5173/*"
+      ],
+      "webOrigins": [
+        "http://storygame.localhost",
+        "http://localhost:5173"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      },
+      "protocolMappers": [
+        {
+          "name": "story-game-frontend-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "story-game-frontend",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "player-one",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "player-one@story-game.local",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "player-one",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "player-two",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "player-two@story-game.local",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "player-two",
+          "temporary": false
+        }
+      ]
+    }
+  ]
+}

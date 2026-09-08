@@ -9,13 +9,23 @@ from story_game.application.ports import GameRunReader, GameStateReader, GameSta
 from story_game.domain import DomainError, StableId, StateRevision
 
 from .error_mapping import map_game_state_error
-from .errors import GameStateOperationError
+from .errors import GameStateOperationError, RunAccessDenied
 from story_game.application.game_models import LoadedGame
 
 
 @dataclass(frozen=True, slots=True)
 class LoadGameRequest:
+    """Which run/revision to load, and as which identity.
+
+    ``issuer``/``subject`` are plain strings (not a ``RunInitiator``) to keep
+    this leaf module free of a dependency on ``run_initiator``, which itself
+    depends on this package — see ``ListPlayableRunsRequest`` for the same
+    precedent.
+    """
+
     run_id: StableId
+    issuer: str
+    subject: str
     revision: StateRevision | None = None
 
 
@@ -29,6 +39,13 @@ class LoadGame:
     ) -> OperationResult[LoadedGame, GameStateOperationError]:
         try:
             run = self.run_reader.load_run(request.run_id)
+            identity = (request.issuer, request.subject)
+            if not any(member.identity == identity for member in run.members):
+                return Failure(
+                    RunAccessDenied(
+                        "Die aufrufende Identität gehört nicht zu diesem GameRun."
+                    )
+                )
             state = self.state_reader.load_state(
                 request.run_id, revision=request.revision
             )

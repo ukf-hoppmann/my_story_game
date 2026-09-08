@@ -74,7 +74,13 @@ class StartPlaythrough:
         self._diagnostics.trace(
             "start_playthrough.start", source_run_id=str(request.source_run_id)
         )
-        loaded = self._load_game.apply(LoadGameRequest(request.source_run_id))
+        loaded = self._load_game.apply(
+            LoadGameRequest(
+                request.source_run_id,
+                request.initiator.issuer,
+                request.initiator.subject,
+            )
+        )
         if isinstance(loaded, Failure):
             return loaded
         source_run, source_state = loaded.data.run, loaded.data.state

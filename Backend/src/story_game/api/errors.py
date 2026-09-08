@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 
 from story_game.api.results import OperationFailed
 from story_game.application.game_state import (
+    RunAccessDenied,
     RunConflict,
     RunNotFound,
     InvalidPromptPackageReference,
@@ -72,6 +73,7 @@ def register_error_handlers(app: FastAPI) -> None:
     app.add_exception_handler(OperationFailed, _operation_failed)
     app.add_exception_handler(RevisionConflictError, _conflict)
     app.add_exception_handler(DomainError, _domain_error)
+    app.add_exception_handler(HTTPException, _http_exception)
 
 
 async def _operation_failed(request: Request, exc: Exception) -> JSONResponse:
@@ -81,6 +83,8 @@ async def _operation_failed(request: Request, exc: Exception) -> JSONResponse:
         return _error_response(404, "not_found", error.detail)
     if isinstance(error, RunConflict):
         return _error_response(409, "revision_conflict", error.detail)
+    if isinstance(error, RunAccessDenied):
+        return _error_response(403, "not_a_run_member", error.detail)
     if isinstance(error, StateRejected):
         return _error_response(422, "domain_validation_failed", error.detail)
     if isinstance(error, InvalidPromptSelection):
@@ -111,6 +115,19 @@ async def _operation_failed(request: Request, exc: Exception) -> JSONResponse:
         status_code, code = _PLAYTHROUGH_STATUS[error.kind]
         return _error_response(status_code, code, error.message)
     raise exc
+
+
+async def _http_exception(request: Request, exc: Exception) -> JSONResponse:
+    """Keep the ``{error, detail}`` envelope for framework-raised HTTP errors.
+
+    Currently only ``get_current_initiator`` raises ``HTTPException``
+    (missing/invalid Bearer token, HTTP 401) — everything else goes through
+    the typed ``OperationFailed``/``DomainError`` paths above. Any other
+    status here (e.g. Starlette's own 404/405) falls back to a generic code.
+    """
+    assert isinstance(exc, HTTPException)
+    code = "unauthorized" if exc.status_code == 401 else "http_error"
+    return _error_response(exc.status_code, code, exc.detail)
 
 
 async def _conflict(request: Request, exc: Exception) -> JSONResponse:

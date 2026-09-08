@@ -18,14 +18,27 @@ class ApiSettings:
     config_path: str = "configs/app.toml"
     llm_config_path: str = "configs/llm.toml"
     dev_issuer: str = "https://dev.story-game.local/realm"
-    """Fixed development identity until Keycloak token parsing lands.
+    """Identity used only by tests that override ``get_current_initiator``.
 
-    Every request currently resolves to this one identity — see
-    ``get_current_initiator`` in ``dependencies.py``.
+    Production requests are never resolved this way — see
+    ``get_current_initiator`` in ``dependencies.py``, which verifies a real
+    Keycloak Bearer token instead.
     """
     dev_subject: str = "dev-user"
     cors_allowed_origins: tuple[str, ...] = ("http://localhost:5173",)
     """Browser origins allowed to call this API — the Vite dev server by default."""
+    keycloak_issuer: str = "http://localhost:8081/realms/story-game"
+    """The trusted realm; must equal a token's ``iss`` claim exactly."""
+    keycloak_audience: str | None = "story-game-frontend"
+    """Expected ``aud`` claim; ``None`` disables audience checking entirely."""
+    keycloak_jwks_uri: str | None = None
+    """Where to fetch the realm's public signing keys, if not ``<issuer>/protocol/openid-connect/certs``.
+
+    Needed in Docker: the backend and the browser reach Keycloak through
+    different addresses (compose service name vs. published host port), but
+    ``keycloak_issuer`` must match what the browser actually used, since
+    that becomes the token's ``iss`` claim.
+    """
 
     @classmethod
     def from_environment(cls) -> ApiSettings:
@@ -48,6 +61,15 @@ class ApiSettings:
             dev_subject=os.environ.get("STORY_GAME_DEV_SUBJECT", defaults.dev_subject),
             cors_allowed_origins=_origin_list_environment(
                 "STORY_GAME_CORS_ALLOWED_ORIGINS", default=defaults.cors_allowed_origins
+            ),
+            keycloak_issuer=os.environ.get(
+                "STORY_GAME_KEYCLOAK_ISSUER", defaults.keycloak_issuer
+            ),
+            keycloak_audience=os.environ.get(
+                "STORY_GAME_KEYCLOAK_AUDIENCE", defaults.keycloak_audience
+            ),
+            keycloak_jwks_uri=os.environ.get(
+                "STORY_GAME_KEYCLOAK_JWKS_URI", defaults.keycloak_jwks_uri
             ),
         )
 

@@ -45,6 +45,9 @@
       "username": "player-one",
       "enabled": true,
       "emailVerified": true,
+      "requiredActions": [],
+      "firstName": "Player",
+      "lastName": "One",
       "email": "player-one@story-game.local",
       "credentials": [
         {
@@ -58,6 +61,9 @@
       "username": "player-two",
       "enabled": true,
       "emailVerified": true,
+      "requiredActions": [],
+      "firstName": "Player",
+      "lastName": "Two",
       "email": "player-two@story-game.local",
       "credentials": [
         {

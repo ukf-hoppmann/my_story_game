@@ -120,7 +120,11 @@ class PlayStoryTurn:
             run_id=str(request.run_id),
             player_input=request.player_input,
         )
-        loaded = self._load_game.apply(LoadGameRequest(request.run_id))
+        loaded = self._load_game.apply(
+            LoadGameRequest(
+                request.run_id, request.initiator.issuer, request.initiator.subject
+            )
+        )
         if isinstance(loaded, Failure):
             return loaded
         run, state = loaded.data.run, loaded.data.state
@@ -205,7 +209,11 @@ def _controlled_entity_ids(
     """Find which figures the caller steers, if any.
 
     Director control may bind zero, one, or several figures, so an empty
-    tuple is a valid answer and not an error.
+    tuple is a valid answer and not an error. The "caller is not a member"
+    branch below is unreachable in practice — ``LoadGame`` (called just
+    before this) already rejects that identity — but is kept as an explicit
+    invariant rather than an assertion, since it is cheap and guards against
+    the two checks ever drifting apart.
     """
     for member in run.members:
         if member.identity == (initiator.issuer, initiator.subject):

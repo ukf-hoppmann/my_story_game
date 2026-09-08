@@ -10,6 +10,7 @@ from datetime import UTC, datetime
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from story_game.api.auth import KeycloakTokenVerifier
 from story_game.api.dependencies import ApiDependencies
 from story_game.application import (
     ConfirmGameRunProposal,
@@ -144,6 +145,11 @@ def create_app(
             )
         application.state.api_dependencies = resolved
         application.state.api_settings = resolved_settings
+        application.state.token_verifier = KeycloakTokenVerifier(
+            resolved_settings.keycloak_issuer,
+            resolved_settings.keycloak_audience,
+            jwks_uri=resolved_settings.keycloak_jwks_uri,
+        )
         try:
             yield
         finally:

@@ -2,9 +2,9 @@
 
 Die API deckt den vollständigen Lauf-Lebenszyklus ab: eine Vorlage (`DRAFT`)
 erzeugen, sie als unabhängiges aktives Spiel (`ACTIVE`) abzweigen, einen Zug
-spielen und beides laden oder auflisten. Es gibt noch keine Authentifizierung
-— jeder Aufruf agiert als eine feste, konfigurierbare Entwicklungsidentität
-(siehe unten), bis Keycloak angebunden ist.
+spielen und beides laden oder auflisten. Jeder Aufruf verlangt einen gültigen,
+von Keycloak signierten Bearer-Token (siehe unten); ohne einen solchen liefert
+die API HTTP 401.
 
 ## Endpunkte
 
@@ -28,7 +28,9 @@ unverändert und kann beliebig oft erneut abgezweigt werden.
 einen neuen, unabhängigen `GameRun` im Status `ACTIVE` (ebenfalls Revision 1,
 eigene `run_id`). Nur `DRAFT`-Läufe können abgezweigt werden; der Versuch,
 einen bereits aktiven Lauf erneut abzuzweigen, ergibt HTTP 409
-(`error = "playthrough_source_not_draft"`).
+(`error = "playthrough_source_not_draft"`). Die aufrufende Identität muss
+bereits Mitglied der Quell-Vorlage sein, sonst HTTP 403
+(`error = "not_a_run_member"`) — dieselbe Prüfung wie beim Laden.
 
 `POST /api/v1/runs/{run_id}/turns` spielt einen Zug ausschließlich in einem
 `ACTIVE`-Lauf. Gegen eine `DRAFT`-Vorlage ergibt das HTTP 409
@@ -57,7 +59,8 @@ Zusammenfassung lässt den Zug selbst unangetastet (siehe TASK-023).
 `status`, `current_revision`, `game_role`, `updated_at`) ohne vollen
 WorldState, damit eine Liste nicht pro Zeile einen kompletten Weltsnapshot
 lädt. `GET /api/v1/runs/{run_id}` liefert weiterhin das vollständige
-`GameDocument` (siehe unten).
+`GameDocument` (siehe unten) — nur, wenn die aufrufende Identität Mitglied
+dieses Runs ist, sonst HTTP 403 (`error = "not_a_run_member"`).
 
 Das gemeinsame Transportdokument für Init-, Playthrough- und Load-Antworten
 heißt `GameDocument` und enthält sowohl `game_run` als auch `game_state`. Der
@@ -83,16 +86,40 @@ auch für `run_id` im Pfad; eine nicht als UUID parsebare ID führt zu HTTP 422.
 `game_run.name` ist der lesbare Anzeigename und unabhängig von der technischen
 ID. Keycloak-, Prompt-Paket- und Promptprofil-Kennungen bleiben Text.
 
-## Feste Entwicklungsidentität
+## Authentifizierung
 
-Jeder Aufruf agiert als dieselbe feste Identität
-(`ApiSettings.dev_issuer`/`dev_subject`, überschreibbar über
-`STORY_GAME_DEV_ISSUER`/`STORY_GAME_DEV_SUBJECT`), aufgelöst über
-`get_current_initiator` in `api/dependencies.py`. Das ist bewusst eine
-einzige austauschbare Funktion: der Wechsel auf echtes
-Keycloak-Token-Parsing ändert später nur ihren Rumpf, keine Router oder
-Schemas. Bis dahin gehört jeder erzeugte Lauf derselben Identität, und
-`GET /api/v1/runs` zeigt ausschließlich deren Läufe.
+Jeder Aufruf muss einen `Authorization: Bearer <token>`-Header mit einem
+gültigen, von Keycloak signierten Access-Token mitschicken. `get_current_initiator`
+(`api/dependencies.py`) prüft diesen Token über `KeycloakTokenVerifier`
+(`api/auth/token_verifier.py`) gegen die JWKS (öffentliche Signaturschlüssel)
+des konfigurierten Realms und leitet daraus `issuer` (die Realm-URL) und
+`subject` (der Token-`sub`-Claim) als aufrufende Identität ab. Fehlt der
+Header, ist er falsch formatiert, oder ist der Token ungültig/abgelaufen/vom
+falschen Realm, antwortet die API mit HTTP 401 — bevor irgendein
+Anwendungsfall ausgeführt wird.
+
+Relevante Einstellungen (`ApiSettings`, Umgebungsvariablen):
+
+- `STORY_GAME_KEYCLOAK_ISSUER` — die vertraute Realm-URL, z. B.
+  `http://auth.storygame.localhost/realms/story-game`; von dort werden auch
+  standardmäßig die JWKS bezogen
+  (`<issuer>/protocol/openid-connect/certs`).
+- `STORY_GAME_KEYCLOAK_AUDIENCE` — erwarteter `aud`-Claim (Client-ID); leer
+  lassen, um die Audience-Prüfung zu deaktivieren.
+- `STORY_GAME_KEYCLOAK_JWKS_URI` — überschreibt, woher die öffentlichen
+  Schlüssel geholt werden, falls das nicht derselbe Weg wie der Issuer ist
+  (im Docker-Setup der Fall, siehe `compose.yaml` und
+  `docs/human/operations/keycloak.md`).
+
+Details zum lokalen Keycloak-Setup (Docker, Realm-Import, Test-Login) stehen
+in [`../operations/keycloak.md`](../operations/keycloak.md).
+
+Die eigentliche Autorisierung — welche Identität einen konkreten Run sehen,
+bespielen oder abzweigen darf — passiert unabhängig davon in der
+Anwendungslogik: `LoadGame` (genutzt von `GET /api/v1/runs/{run_id}`,
+`POST /.../turns` und `POST /.../playthroughs`) prüft die Mitgliedschaft in
+`GameRun.members` und liefert sonst `not_a_run_member`. `GET /api/v1/runs`
+filtert direkt nach `(issuer, subject)`.
 
 ## Fehlerantworten
 
@@ -103,6 +130,7 @@ Jede Fehlerantwort hat die Form `{"error": <code>, "detail": <Text>, ...}`.
 
 | HTTP | `error` | Bedeutung |
 | --- | --- | --- |
+| 401 | `unauthorized` | Kein, ein falsch formatierter, oder ein ungültiger/abgelaufener Bearer-Token |
 | 403 | `not_a_run_member` | Die aufrufende Identität gehört nicht zum GameRun |
 | 409 | `run_not_active` | Ein Zug wurde gegen eine `DRAFT`-Vorlage versucht |
 | 409 | `playthrough_source_not_draft` | Ein Abzweig wurde von einem bereits aktiven Lauf versucht |

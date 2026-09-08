@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from fastapi import Request
+from fastapi import HTTPException, Request, status
 
 from story_game.application import (
     ConfirmGameRunProposal,
@@ -15,7 +15,7 @@ from story_game.application import (
 )
 from story_game.application.game_state import GameStateOperations
 
-from .config import ApiSettings
+from .auth import KeycloakTokenVerifier, TokenVerificationError
 
 
 @dataclass(frozen=True, slots=True)
@@ -38,13 +38,24 @@ def get_api_dependencies(request: Request) -> ApiDependencies:
 
 
 def get_current_initiator(request: Request) -> RunInitiator:
-    """Fixed development identity until Keycloak token parsing lands.
+    """Resolve the caller's identity from a verified Keycloak Bearer token.
 
-    Every request currently resolves to the same identity. Swapping this for
-    real token parsing later changes only this function's body — no router,
-    schema, or application code needs to change.
+    Every router depends on this one function for identity. Tests that don't
+    want a real token override this dependency via
+    ``app.dependency_overrides`` instead of calling Keycloak.
     """
-    settings = getattr(request.app.state, "api_settings", None)
-    if not isinstance(settings, ApiSettings):
-        raise RuntimeError("Die API-Einstellungen wurden nicht initialisiert")
-    return RunInitiator(settings.dev_issuer, settings.dev_subject)
+    verifier = getattr(request.app.state, "token_verifier", None)
+    if not isinstance(verifier, KeycloakTokenVerifier):
+        raise RuntimeError("Der Token-Verifier wurde nicht initialisiert")
+    scheme, _, token = request.headers.get("Authorization", "").partition(" ")
+    if scheme.lower() != "bearer" or not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Es wurde kein gültiger Bearer-Token übermittelt",
+        )
+    try:
+        return verifier.verify(token)
+    except TokenVerificationError as error:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail=str(error)
+        ) from error

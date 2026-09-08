@@ -71,10 +71,14 @@ Die Application besitzt getrennte Operationen für:
   GameRun im Status `ACTIVE` (eigene `run_id`, wieder Revision 1) atomar
   anlegen — über denselben `CreateGameRun`-Port wie `InitializeGameRun`. Die
   Quell-Vorlage bleibt unverändert und kann beliebig oft erneut abgezweigt
-  werden. Nur `DRAFT`-Läufe können Quelle eines Abzweigs sein.
+  werden. Nur `DRAFT`-Läufe können Quelle eines Abzweigs sein, und nur durch
+  eine Identität, die bereits Mitglied der Quell-Vorlage ist (geprüft von
+  `LoadGame`, siehe unten).
 - `CreateGameRun`: den bereits erzeugten Run-State über den Persistenzport
   validieren und schreiben;
-- GameRun und aktuellen oder historischen GameState laden;
+- GameRun und aktuellen oder historischen GameState laden — nur für eine
+  aufrufende Identität, die Mitglied dieses GameRuns ist (`LoadGame` prüft
+  das zentral, für alle Aufrufer: direktes Laden, Zug spielen, Abzweigen);
 - alle Läufe einer Identität auflisten (`ListPlayableRuns` /
   `PlayableRunLister.list_for_member`) — liest nur `game_runs` und
   `game_run_members`, nicht den vollen WorldState-Snapshot pro Lauf. Ein

@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 
 from story_game.api import create_app
 from story_game.api.config import ApiSettings
-from story_game.api.dependencies import ApiDependencies
+from story_game.api.dependencies import ApiDependencies, get_current_initiator
 from story_game.api.mappers import game_from_api
 from story_game.api.schemas.state import GameDocument
 from story_game.application import (
@@ -21,6 +21,7 @@ from story_game.application import (
     InitializeStory,
     PlayStoryTurn,
     ProposeGameRun,
+    RunInitiator,
     StartPlaythrough,
     SummarizeStory,
     Success,
@@ -198,9 +199,26 @@ def store() -> MemoryGameStore:
     return MemoryGameStore()
 
 
+def dev_identity_app(
+    dependencies: ApiDependencies, settings: ApiSettings | None = None
+) -> object:
+    """A FastAPI app that bypasses real Keycloak token verification.
+
+    Overriding ``get_current_initiator`` — rather than crafting a real,
+    signed token — keeps these tests independent of a running Keycloak; the
+    verifier itself (signature/issuer/expiry handling) has its own dedicated
+    unit tests in ``tests/api/auth/test_token_verifier.py``.
+    """
+    app = create_app(dependencies, settings=settings or ApiSettings())
+    app.dependency_overrides[get_current_initiator] = lambda: RunInitiator(
+        DEV_ISSUER, DEV_SUBJECT
+    )
+    return app
+
+
 @pytest.fixture
 def client(store: MemoryGameStore) -> Iterator[TestClient]:
-    with TestClient(create_app(build_dependencies(store), settings=ApiSettings())) as test_client:
+    with TestClient(dev_identity_app(build_dependencies(store))) as test_client:
         yield test_client
 
 
@@ -249,8 +267,8 @@ def complete_state_document() -> dict[str, object]:
             "current_revision": 1,
             "members": [
                 {
-                    "issuer": "issuer",
-                    "subject": "subject",
+                    "issuer": DEV_ISSUER,
+                    "subject": DEV_SUBJECT,
                     "game_role": "owner",
                     "controlled_entity_ids": [uuid_text("almas")],
                 }
@@ -368,9 +386,7 @@ def test_health_endpoint_is_independent_of_persistence(client: TestClient) -> No
 
 def test_api_proposes_without_persisting_anything() -> None:
     store = MemoryGameStore()
-    with TestClient(
-        create_app(build_dependencies(store), settings=ApiSettings())
-    ) as client:
+    with TestClient(dev_identity_app(build_dependencies(store))) as client:
         response = client.post(
             "/api/v1/runs/proposals",
             json={
@@ -404,10 +420,7 @@ def test_api_confirming_without_a_run_name_uses_the_suggested_title(
             )
 
     with TestClient(
-        create_app(
-            build_dependencies(store, extraction_port=TitledExtractionPort()),
-            settings=ApiSettings(),
-        )
+        dev_identity_app(build_dependencies(store, extraction_port=TitledExtractionPort()))
     ) as client:
         proposal = client.post(
             "/api/v1/runs/proposals",
@@ -446,9 +459,8 @@ def test_api_confirming_lets_the_caller_assign_and_reject_proposed_characters(
             )
 
     with TestClient(
-        create_app(
-            build_dependencies(store, extraction_port=TwoCharacterExtractionPort()),
-            settings=ApiSettings(),
+        dev_identity_app(
+            build_dependencies(store, extraction_port=TwoCharacterExtractionPort())
         )
     ) as client:
         proposal = client.post(
@@ -621,6 +633,38 @@ def test_api_rejects_a_turn_for_an_unknown_member(
         f"/api/v1/runs/{run_id.value}/turns",
         json={"player_input": "Ich öffne die Tür."},
     )
+
+    assert response.status_code == 403
+    assert response.json()["error"] == "not_a_run_member"
+
+
+def test_api_rejects_loading_a_run_for_an_unknown_member(
+    client: TestClient, store: MemoryGameStore
+) -> None:
+    run_id = StableId.new()
+    timestamp = datetime.now(UTC)
+    run = GameRun(
+        id=run_id,
+        name="Fremder Lauf",
+        status=GameRunStatus.ACTIVE,
+        current_revision=StateRevision(1),
+        members=(
+            GameRunMember(
+                issuer="https://someone-else.example/realm",
+                subject="someone-else",
+                game_role=GameRole.OWNER,
+            ),
+        ),
+        created_at=timestamp,
+        updated_at=timestamp,
+    )
+    document = complete_state_document()
+    document["game_state"]["run_id"] = str(run_id.value)  # type: ignore[index]
+    state = game_from_api(GameDocument.model_validate(document)).state
+    state = replace(state, run_id=run_id)
+    store.create(run, state)
+
+    response = client.get(f"/api/v1/runs/{run_id.value}")
 
     assert response.status_code == 403
     assert response.json()["error"] == "not_a_run_member"

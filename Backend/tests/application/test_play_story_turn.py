@@ -9,6 +9,7 @@ from story_game.application.extract_story_turn_changes import ExtractStoryTurnCh
 from story_game.application.game_state import (
     CommitCompletedTurn,
     LoadGame,
+    RunAccessDenied,
 )
 from story_game.application.generate_story import GenerateStory
 from story_game.application.summarize_story import SummarizeStory
@@ -270,6 +271,13 @@ def test_a_rejected_proposal_leaves_the_state_untouched() -> None:
 
 
 def test_an_identity_outside_the_run_cannot_play_a_turn() -> None:
+    """Rejected by ``LoadGame``'s membership check before any turn logic runs.
+
+    Access to a run (whose identities may play, view, or fork it) is enforced
+    once, centrally, in ``LoadGame`` — not re-implemented per use case. See
+    also the equivalent HTTP-level assertion in
+    ``tests/api/test_api.py::test_api_rejects_a_turn_for_an_unknown_member``.
+    """
     operation, store = workflow()
 
     result = operation.apply(
@@ -279,7 +287,7 @@ def test_an_identity_outside_the_run_cannot_play_a_turn() -> None:
     )
 
     assert isinstance(result, Failure)
-    assert result.error.kind is StoryTurnErrorKind.UNKNOWN_MEMBER
+    assert isinstance(result.error, RunAccessDenied)
     assert store.committed is None
 
 

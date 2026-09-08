@@ -9,7 +9,7 @@ import subprocess
 from typing import Sequence
 
 
-KNOWN_SERVICES = ("backend", "postgres", "frontend", "nginx")
+KNOWN_SERVICES = ("backend", "postgres", "frontend", "nginx", "keycloak")
 SERVICE_CHOICES = ("all", *KNOWN_SERVICES)
 
 DEFAULT_ENV_FILE = Path("configs") / "docker" / "docker.env"

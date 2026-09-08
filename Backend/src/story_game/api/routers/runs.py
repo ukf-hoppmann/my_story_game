@@ -88,12 +88,15 @@ def list_runs(
 def load_run(
     run_id: Annotated[UUID, Path()],
     dependencies: Annotated[ApiDependencies, Depends(get_api_dependencies)],
+    initiator: Annotated[RunInitiator, Depends(get_current_initiator)],
     revision: Annotated[int | None, Query(ge=1)] = None,
 ) -> GameDocument:
     loaded = unwrap(
         dependencies.operations.load.apply(
             LoadGameRequest(
                 StableId(run_id),
+                initiator.issuer,
+                initiator.subject,
                 None if revision is None else StateRevision(revision),
             )
         )

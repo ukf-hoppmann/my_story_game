@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { checkHealth } from "./api/client";
+import { currentUsername, logout } from "./api/auth";
 import { RunsListScreen } from "./screens/RunsListScreen";
 import { StartDraftScreen } from "./screens/StartDraftScreen";
 import { PlayScreen } from "./screens/PlayScreen";
@@ -24,11 +25,23 @@ function ApiHealthBanner() {
   );
 }
 
+function CurrentUserBadge() {
+  const username = currentUsername();
+  if (!username) return null;
+  return (
+    <div className="current-user-badge">
+      Angemeldet als <strong>{username}</strong>{" "}
+      <button onClick={() => logout()}>Abmelden</button>
+    </div>
+  );
+}
+
 export default function App() {
   const [view, setView] = useState<View>({ name: "list" });
 
   return (
     <>
+      <CurrentUserBadge />
       <ApiHealthBanner />
       {view.name === "list" && (
         <RunsListScreen

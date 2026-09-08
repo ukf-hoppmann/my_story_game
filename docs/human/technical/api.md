@@ -1,10 +1,10 @@
 # HTTP-API
 
-Die API deckt den vollständigen Lauf-Lebenszyklus ab: eine Vorlage (`DRAFT`)
-erzeugen, sie als unabhängiges aktives Spiel (`ACTIVE`) abzweigen, einen Zug
-spielen und beides laden oder auflisten. Jeder Aufruf verlangt einen gültigen,
-von Keycloak signierten Bearer-Token (siehe unten); ohne einen solchen liefert
-die API HTTP 401.
+Die API deckt den vollständigen Lauf-Lebenszyklus ab: einen Vorschlag
+generieren, ihn zu einer Vorlage (`DRAFT`) bestätigen, sie als unabhängiges
+aktives Spiel (`ACTIVE`) abzweigen, einen Zug spielen und beides laden oder
+auflisten. Jeder Aufruf verlangt einen gültigen, von Keycloak signierten
+Bearer-Token (siehe unten); ohne einen solchen liefert die API HTTP 401.
 
 ## Endpunkte
 
@@ -13,16 +13,36 @@ die API HTTP 401.
 | `GET` | `/health` | Erreichbarkeit prüfen |
 | `GET` | `/api/v1/runs` | Eigene `DRAFT`-Vorlagen und `ACTIVE`-Spiele auflisten |
 | `GET` | `/api/v1/runs/{run_id}` | Aktuellen oder historischen (`?revision=N`) GameRun/GameState laden |
-| `POST` | `/api/v1/runs` | Neue `DRAFT`-Vorlage aus Initialprompt und Modus erzeugen |
+| `POST` | `/api/v1/runs/proposals` | Vorschlag aus Initialprompt und Modus generieren; persistiert nichts |
+| `POST` | `/api/v1/runs` | Einen zuvor generierten Vorschlag zu einer neuen `DRAFT`-Vorlage bestätigen |
 | `POST` | `/api/v1/runs/{run_id}/playthroughs` | Eine `DRAFT`-Vorlage als neues unabhängiges `ACTIVE`-Spiel abzweigen |
 | `POST` | `/api/v1/runs/{run_id}/turns` | Einen Zug in einem `ACTIVE`-Spiel spielen |
 
-## Vorlage und abgespieltes Spiel
+## Vorschlag, Vorlage und abgespieltes Spiel
 
-`POST /api/v1/runs` erzeugt über `InitializeGameRun` eine vollständige
-Eröffnung (Story-Generierung + initiale WorldState-Extraktion) und legt sie
-als `GameRun` im Status `DRAFT` mit Revision 1 an. Diese Vorlage bleibt
-unverändert und kann beliebig oft erneut abgezweigt werden.
+Eine neue Vorlage entsteht zweistufig: Vorschlag generieren, dann bestätigen
+oder verwerfen. Dazwischen ist noch nichts persistiert.
+
+`POST /api/v1/runs/proposals` erzeugt über `ProposeGameRun` eine vollständige
+Eröffnung (Story-Generierung + initiale WorldState-Extraktion) und hält sie
+nur transient vor — im Prozessspeicher, 30 Minuten gültig (`InMemoryProposalStore`,
+`Backend/src/story_game/infrastructure/persistence/in_memory_proposal_store.py`).
+Jede extrahierte Figur ist zunächst eine neutrale Entität; niemand ist
+automatisch spielergesteuert. Die Antwort (`RunProposalModel`) enthält eine
+`proposal_id`, die eröffnende Erzählung, den vollständigen `WorldState` sowie
+einen unverbindlichen `suggested_title` und `suggested_player_entity_ids`
+(reiner Anzeigehinweis, keine Entscheidung).
+
+`POST /api/v1/runs` bestätigt einen Vorschlag über `ConfirmGameRunProposal`:
+der Aufrufer entscheidet je Figur `player`/`npc`/`removed` und je Gegenstand
+`removed`, optional mit eigenem `run_name` (sonst greift `suggested_title`).
+Erst hier entsteht ein persistenter `GameRun` im Status `DRAFT` mit
+Revision 1. Ein Vorschlag kann nur von der Identität bestätigt werden, die
+ihn erzeugt hat — ein fremder, unbekannter oder abgelaufener Vorschlag
+ergibt in allen drei Fällen identisch HTTP 404 (`error = "not_found"`),
+damit die Existenz eines fremden Vorschlags nicht über die Antwort
+unterscheidbar ist. Die bestätigte Vorlage bleibt unverändert und kann
+beliebig oft erneut abgezweigt werden.
 
 `POST /api/v1/runs/{run_id}/playthroughs` kopiert eine `DRAFT`-Vorlage in
 einen neuen, unabhängigen `GameRun` im Status `ACTIVE` (ebenfalls Revision 1,
@@ -38,16 +58,22 @@ bereits Mitglied der Quell-Vorlage sein, sonst HTTP 403
 
 ## Anfrage- und Antwortformen
 
-`POST /api/v1/runs` verlangt `run_name`, `initial_prompt`, `control_mode`
+`POST /api/v1/runs/proposals` verlangt `initial_prompt`, `control_mode`
 (`"player"` oder `"director"`) und eine Liste `controllable_characters`
 steuerbarer Figuren (`name`, optional `description`). Im Player Mode muss die
 Liste genau ein Element enthalten; im Director Mode darf sie null oder
-mehrere Elemente enthalten — jede genannte Figur wird zu einer eigenen, vom
-aufrufenden Mitglied gesteuerten Figur im `WorldState`. Die API verwendet
-dafür eine feste serverseitige `GameConfiguration`
-(`api/default_configuration.py`) — es gibt noch keine
-Konfigurations-Auswahl über die API; nur `control_mode` wird aus der
-Anfrage übernommen.
+mehrere Elemente enthalten. Die API verwendet dafür eine feste
+serverseitige `GameConfiguration` (`api/default_configuration.py`) — es
+gibt noch keine Konfigurations-Auswahl über die API; nur `control_mode`
+wird aus der Anfrage übernommen. Kein `run_name` an dieser Stelle — der
+wird erst beim Bestätigen gebraucht.
+
+`POST /api/v1/runs` verlangt `proposal_id` (aus der vorherigen
+`/proposals`-Antwort), optional `run_name`, sowie `character_decisions`
+(je Eintrag `entity_id`, `role: "player"|"npc"`, optional `removed`) und
+`item_decisions` (je Eintrag `entity_id`, optional `removed`) — damit
+entscheidet der Aufrufer erst hier, welche vorgeschlagene Figur er selbst
+steuert.
 
 `POST /api/v1/runs/{run_id}/turns` verlangt nur `player_input` und liefert
 `TurnResultModel`: den vollständigen aktualisierten `GameStateModel` sowie
@@ -62,8 +88,9 @@ lädt. `GET /api/v1/runs/{run_id}` liefert weiterhin das vollständige
 `GameDocument` (siehe unten) — nur, wenn die aufrufende Identität Mitglied
 dieses Runs ist, sonst HTTP 403 (`error = "not_a_run_member"`).
 
-Das gemeinsame Transportdokument für Init-, Playthrough- und Load-Antworten
-heißt `GameDocument` und enthält sowohl `game_run` als auch `game_state`. Der
+Das gemeinsame Transportdokument für Confirm-, Playthrough- und
+Load-Antworten heißt `GameDocument` und enthält sowohl `game_run` als auch
+`game_state`. Der
 GameState enthält die komplette `GameConfiguration`, den `WorldState`
 einschließlich Goals und den `StoryState`. Fremde Felder und fachlich
 inkonsistente IDs werden abgewiesen.

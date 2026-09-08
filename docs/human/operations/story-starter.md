@@ -20,8 +20,13 @@ Der Aufruf ohne Subcommand bleibt aus Kompatibilitätsgründen ein Alias für
 ```
 
 `start` startet die Services ohne Image-Neubau. `upgrade` baut das API-Image
-neu und startet anschließend die Umgebung. `stop` entfernt die Container und
-das Compose-Netzwerk, lässt das persistente Datenbank-Volume aber bestehen.
+neu und erzeugt alle Container neu (`--force-recreate`), bevor die Umgebung
+startet — wichtig für `frontend`, das kein eigenes Image baut, sondern
+`npm install` bei jedem Container-Start gegen den eingebundenen Quellcode
+ausführt: ohne Neuerzeugung würde eine geänderte `package.json` (z. B. eine
+neue Abhängigkeit) im laufenden Container sonst nicht nachgezogen. `stop`
+entfernt die Container und das Compose-Netzwerk, lässt das persistente
+Datenbank-Volume aber bestehen.
 
 `restart` startet standardmäßig alle Services neu. Einzelne Services können
 explizit angegeben werden:

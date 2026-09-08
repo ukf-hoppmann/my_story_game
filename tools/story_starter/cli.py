@@ -132,7 +132,15 @@ def _start(runner: ComposeRunner, *, build: bool) -> None:
     port = backend_port()
     arguments = ["up"]
     if build:
-        arguments.append("--build")
+        # --build only rebuilds images with a Dockerfile (backend); frontend
+        # has none and just runs "npm install" against the bind-mounted
+        # source at container start. Compose otherwise never recreates a
+        # container whose config (image, command, volumes, ...) is
+        # unchanged — a changed package.json alone would not trigger a
+        # fresh npm install, silently leaving new dependencies missing in
+        # the container's node_modules volume. --force-recreate on upgrade
+        # (not on plain start, which should stay fast) closes that gap.
+        arguments.extend(["--build", "--force-recreate"])
     arguments.extend(["--detach", "--wait", *KNOWN_SERVICES])
     runner.run(arguments)
     print("Story Game läuft.")

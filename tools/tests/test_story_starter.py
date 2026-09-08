@@ -40,13 +40,29 @@ def test_start_runs_the_stack_without_building() -> None:
     assert fake_runner.commands == [["up", "--detach", "--wait", "backend", "postgres", "frontend", "nginx", "keycloak"]]
 
 
-def test_upgrade_adds_build_flag() -> None:
+def test_upgrade_adds_build_and_force_recreate_flags() -> None:
+    """--force-recreate matters for frontend: it has no Dockerfile, so a
+    changed package.json wouldn't otherwise trigger a fresh npm install in
+    its running container (see _start's docstring comment)."""
     fake_runner = _FakeRunner()
 
     with patch("tools.story_starter.cli.ComposeRunner", return_value=fake_runner):
         assert execute(Arguments("upgrade")) == 0
 
-    assert fake_runner.commands == [["up", "--build", "--detach", "--wait", "backend", "postgres", "frontend", "nginx", "keycloak"]]
+    assert fake_runner.commands == [
+        [
+            "up",
+            "--build",
+            "--force-recreate",
+            "--detach",
+            "--wait",
+            "backend",
+            "postgres",
+            "frontend",
+            "nginx",
+            "keycloak",
+        ]
+    ]
 
 
 def test_restart_defaults_to_all_but_accepts_one_service() -> None:

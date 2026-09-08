@@ -189,7 +189,7 @@ Der Root-Launcher unterstützt außerdem:
 | --- | --- |
 | `start` | Services starten, ohne neu zu bauen |
 | `stop` | Container und Compose-Netzwerk entfernen |
-| `upgrade` | API-Image neu bauen und Services starten |
+| `upgrade` | API-Image neu bauen, alle Container neu erzeugen und starten |
 | `restart [service ...]` | alle oder ausgewählte Services neu starten |
 | `status [service ...]` | Service-Status anzeigen |
 | `logs [service ...]` | Logs anzeigen; `-f` verfolgt sie fortlaufend |

@@ -1,0 +1,30 @@
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--surface-raised);
+  border: 1px solid var(--surface-line);
+  color: var(--text-muted);
+  padding: 9px 14px;
+  border-radius: 999px;
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chip svg {
+  width: 14px;
+  height: 14px;
+}
+
+.chip:hover {
+  border-color: var(--gold);
+  color: var(--gold-bright);
+}
+
+.chip--selected {
+  border-color: var(--gold);
+  color: var(--gold-bright);
+  background: rgba(201, 162, 39, 0.1);
+}

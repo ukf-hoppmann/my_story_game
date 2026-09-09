@@ -7,7 +7,7 @@ describe("App", () => {
     render(<App />);
 
     expect(
-      screen.getByText("Story Game — Grundgerüst steht."),
+      screen.getByRole("button", { name: "Handlung ausführen" }),
     ).toBeInTheDocument();
   });
 });

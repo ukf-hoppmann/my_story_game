@@ -1,0 +1,45 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  border-radius: var(--radius-md);
+  padding: 12px 20px;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 0.87rem;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+}
+
+.button svg {
+  width: 15px;
+  height: 15px;
+}
+
+.button--primary {
+  background: linear-gradient(180deg, var(--wine-bright), var(--wine));
+  color: #f6e8cf;
+  border: 1px solid #5c1a24;
+}
+
+.button--primary:hover {
+  filter: brightness(1.08);
+}
+
+.button--ghost {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--surface-line);
+}
+
+.button--ghost:hover {
+  border-color: var(--gold);
+  color: var(--gold-bright);
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  filter: none;
+}

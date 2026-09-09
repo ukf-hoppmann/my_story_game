@@ -1,0 +1,73 @@
+/*
+ * Design tokens for the "dark_fantasy" default theme (Bordeaux/Pergament),
+ * ported from the approved mockups. Colors/fonts are custom properties so a
+ * future genre theme (fantasy/sci-fi/mystery/steampunk) can define its own
+ * token set without restructuring components — only dark_fantasy is
+ * implemented today, see docs discussion in the plan.
+ */
+:root {
+  --void: #120d0a;
+  --surface: #1c140f;
+  --surface-raised: #271c14;
+  --surface-line: #3b2b1e;
+
+  --parchment: #f1e6c9;
+  --parchment-mid: #e8d8ae;
+  --parchment-edge: #cdb480;
+
+  --ink: #2b2013;
+  --gold: #c9a227;
+  --gold-bright: #e6c665;
+  --wine: #7a2331;
+  --wine-bright: #9c3242;
+
+  --text: #ece3d2;
+  --text-muted: #ab9b7f;
+  --text-faint: #7c6d55;
+
+  --font-display: "Cinzel", serif;
+  --font-body: "Crimson Pro", serif;
+  --font-ui: "Manrope", system-ui, -apple-system, sans-serif;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--void);
+  color: var(--text);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+p,
+ul {
+  margin: 0;
+}
+
+::selection {
+  background: var(--gold);
+  color: var(--ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}

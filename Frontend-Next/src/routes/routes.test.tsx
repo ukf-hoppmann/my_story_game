@@ -44,10 +44,16 @@ describe("routes", () => {
     expect(await screen.findByRole("heading", { name: "Deine Geschichten" })).toBeInTheDocument();
   });
 
-  it("renders the Wizard placeholder at /new", () => {
+  it("renders the Wizard at /new", async () => {
+    vi.spyOn(client, "fetchPromptProfileCatalog").mockResolvedValue({
+      package_id: "story.base",
+      package_version: "1",
+      categories: [],
+    });
+
     renderAt("/new");
 
-    expect(screen.getByText("Story-Wizard folgt in Schritt 7/8.")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Welt & Prämisse" })).toBeInTheDocument();
   });
 
   it("renders the Play placeholder at /stories/:runId", () => {

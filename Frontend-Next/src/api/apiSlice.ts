@@ -1,7 +1,7 @@
 import { createApi, fakeBaseQuery } from "@reduxjs/toolkit/query/react";
-import { listRuns } from "./client";
+import { fetchPromptProfileCatalog, listRuns } from "./client";
 import { toQueryError, type QueryError } from "./queryError";
-import type { RunSummary } from "./types";
+import type { PromptProfileCatalog, RunSummary } from "./types";
 
 /**
  * Central RTK Query API slice. `client.ts` stays the actual transport (fetch
@@ -26,7 +26,17 @@ export const apiSlice = createApi({
       },
       providesTags: ["Run"],
     }),
+    promptProfileCatalog: builder.query<PromptProfileCatalog, void>({
+      queryFn: async () => {
+        try {
+          const catalog = await fetchPromptProfileCatalog();
+          return { data: catalog };
+        } catch (error) {
+          return { error: toQueryError(error) };
+        }
+      },
+    }),
   }),
 });
 
-export const { useListRunsQuery } = apiSlice;
+export const { useListRunsQuery, usePromptProfileCatalogQuery } = apiSlice;

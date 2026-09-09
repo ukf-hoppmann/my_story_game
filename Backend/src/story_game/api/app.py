@@ -142,6 +142,10 @@ def create_app(
                 start_playthrough=_compose_start_playthrough(
                     store, resolved_settings, diagnostics
                 ),
+                prompt_catalog=FilePromptPackageCatalog(resolved_settings.prompt_root),
+                prompt_profile_validator=PromptProfileValidator(
+                    FilePromptPackageCatalog(resolved_settings.prompt_root)
+                ),
             )
         application.state.api_dependencies = resolved
         application.state.api_settings = resolved_settings

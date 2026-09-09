@@ -10,24 +10,50 @@ from pydantic import Field
 
 from story_game.domain import GameRole, GameRunStatus
 
-from .common import APIModel, ControllableCharacterSeedModel
+from story_game.api.default_configuration import DEFAULT_GAME_CONFIGURATION
+
+from .common import APIModel, ControllableCharacterSeedModel, EditablePromptProfileModel
 from .state import GameStateModel, WorldStateModel
+
+
+def _default_editable_prompt_profile() -> EditablePromptProfileModel:
+    """Mirror ``DEFAULT_GAME_CONFIGURATION`` so omitting the field is a no-op."""
+    profile = DEFAULT_GAME_CONFIGURATION.prompt_profile
+    return EditablePromptProfileModel(
+        genre=profile.genre,
+        tone=profile.tone,
+        prose_style=profile.prose_style,
+        perspective=profile.perspective,
+        pacing=profile.pacing,
+        length=profile.length,
+        player_agency=profile.player_agency,
+        consequence=profile.consequence,
+        challenge=profile.challenge,
+        content_profile=profile.content_profile,
+    )
 
 
 class ProposeRunRequestModel(APIModel):
     """What a caller supplies to generate one reviewable, unsaved proposal.
 
-    No ``configuration`` field: the API applies one fixed server-side
-    ``GameConfiguration`` (see ``api/app.py``), only overriding
-    ``control_mode`` from this request — there is no configuration UI yet.
-    No ``run_name`` either — that is only needed once the caller confirms
-    the proposal (``ConfirmRunProposalRequestModel``).
+    ``language``/``prompt_profile`` default to the server's previous fixed
+    values (see ``api/default_configuration.py``) so existing callers that
+    omit them keep today's behavior. ``narrative_boundaries`` and the
+    prompt-package reference are not caller-editable and always come from
+    that same default. No ``run_name`` either — that is only needed once
+    the caller confirms the proposal (``ConfirmRunProposalRequestModel``).
     """
 
     initial_prompt: str = Field(min_length=1)
     control_mode: Literal["player", "director"]
     controllable_characters: list[ControllableCharacterSeedModel] = Field(
         default_factory=list
+    )
+    language: str = Field(
+        default_factory=lambda: DEFAULT_GAME_CONFIGURATION.language, min_length=1
+    )
+    prompt_profile: EditablePromptProfileModel = Field(
+        default_factory=_default_editable_prompt_profile
     )
 
 
@@ -74,6 +100,22 @@ class ConfirmRunProposalRequestModel(APIModel):
 
 class PlayTurnRequestModel(APIModel):
     player_input: str = Field(min_length=1)
+
+
+class UpdateConfigurationRequestModel(APIModel):
+    """Replace a run's editable story-profile categories as a new revision.
+
+    Carries the complete editable profile, not a partial patch — matching
+    the underlying ``UpdateGameConfiguration`` operation, which always
+    writes a full ``GameConfiguration``. ``control_mode``,
+    ``narrative_boundaries`` and the prompt-package reference are not part
+    of this request; the server preserves the run's current values for
+    those (see ``routers/runs.py::update_configuration``).
+    """
+
+    base_revision: int = Field(ge=1)
+    language: str = Field(min_length=1)
+    prompt_profile: EditablePromptProfileModel
 
 
 class RunSummaryModel(APIModel):

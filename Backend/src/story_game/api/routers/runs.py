@@ -15,7 +15,7 @@ from story_game.api.dependencies import (
     get_current_initiator,
 )
 from story_game.api.mappers import game_state_to_api, game_to_api, proposal_to_api
-from story_game.api.results import unwrap
+from story_game.api.results import OperationFailed, unwrap
 from story_game.api.schemas.runs import (
     CharacterDecisionModel,
     ConfirmRunProposalRequestModel,
@@ -26,8 +26,9 @@ from story_game.api.schemas.runs import (
     RunSummaryListModel,
     RunSummaryModel,
     TurnResultModel,
+    UpdateConfigurationRequestModel,
 )
-from story_game.api.schemas.state import GameDocument
+from story_game.api.schemas.state import GameDocument, GameStateModel
 from story_game.application import (
     CharacterDecision,
     ConfirmGameRunProposalRequest,
@@ -38,8 +39,12 @@ from story_game.application import (
     RunInitiator,
     StartPlaythroughRequest,
 )
-from story_game.application.game_state import LoadGameRequest, ListPlayableRunsRequest
-from story_game.domain import StableId, StateRevision
+from story_game.application.game_state import (
+    LoadGameRequest,
+    ListPlayableRunsRequest,
+    UpdateGameConfigurationRequest,
+)
+from story_game.domain import GameConfiguration, PromptProfile, StableId, StateRevision
 
 
 router = APIRouter()
@@ -117,11 +122,24 @@ def propose_run(
 ) -> RunProposalModel:
     configuration = replace(
         DEFAULT_GAME_CONFIGURATION,
-        prompt_profile=replace(
-            DEFAULT_GAME_CONFIGURATION.prompt_profile,
+        language=payload.language,
+        prompt_profile=PromptProfile(
+            genre=payload.prompt_profile.genre,
+            tone=payload.prompt_profile.tone,
+            prose_style=payload.prompt_profile.prose_style,
+            perspective=payload.prompt_profile.perspective,
+            pacing=payload.prompt_profile.pacing,
+            length=payload.prompt_profile.length,
             control_mode=payload.control_mode,
+            player_agency=payload.prompt_profile.player_agency,
+            consequence=payload.prompt_profile.consequence,
+            challenge=payload.prompt_profile.challenge,
+            content_profile=payload.prompt_profile.content_profile,
         ),
     )
+    validation_error = dependencies.prompt_profile_validator.validate(configuration)
+    if validation_error is not None:
+        raise OperationFailed(validation_error)
     controllable_characters = tuple(
         ControllableCharacterSeed(item.name, item.description)
         for item in payload.controllable_characters
@@ -193,6 +211,57 @@ def start_playthrough(
         )
     )
     return game_to_api(created)
+
+
+@runs_router.patch(
+    "/{run_id}/configuration",
+    response_model=GameStateModel,
+    summary="Replace a run's editable story-profile categories as a new revision",
+)
+def update_configuration(
+    run_id: Annotated[UUID, Path()],
+    payload: UpdateConfigurationRequestModel,
+    dependencies: Annotated[ApiDependencies, Depends(get_api_dependencies)],
+    initiator: Annotated[RunInitiator, Depends(get_current_initiator)],
+) -> GameStateModel:
+    loaded = unwrap(
+        dependencies.operations.load.apply(
+            LoadGameRequest(StableId(run_id), initiator.issuer, initiator.subject, None)
+        )
+    )
+    current = loaded.state.configuration
+    configuration = GameConfiguration(
+        language=payload.language,
+        prompt_profile=replace(
+            current.prompt_profile,
+            genre=payload.prompt_profile.genre,
+            tone=payload.prompt_profile.tone,
+            prose_style=payload.prompt_profile.prose_style,
+            perspective=payload.prompt_profile.perspective,
+            pacing=payload.prompt_profile.pacing,
+            length=payload.prompt_profile.length,
+            player_agency=payload.prompt_profile.player_agency,
+            consequence=payload.prompt_profile.consequence,
+            challenge=payload.prompt_profile.challenge,
+            content_profile=payload.prompt_profile.content_profile,
+        ),
+        narrative_boundaries=current.narrative_boundaries,
+        prompt_package_id=current.prompt_package_id,
+        prompt_package_version=current.prompt_package_version,
+    )
+    # No pre-check here (unlike propose_run): update_configuration.apply()
+    # already validates via the same PromptProfileValidator before writing,
+    # and there is no expensive downstream call to save by failing earlier.
+    updated = unwrap(
+        dependencies.operations.update_configuration.apply(
+            UpdateGameConfigurationRequest(
+                run_id=StableId(run_id),
+                base_revision=StateRevision(payload.base_revision),
+                configuration=configuration,
+            )
+        )
+    )
+    return game_state_to_api(updated)
 
 
 @runs_router.post(

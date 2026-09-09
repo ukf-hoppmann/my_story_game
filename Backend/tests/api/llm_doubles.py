@@ -41,6 +41,17 @@ class FakeStoryInitializationPort:
         return Success(InitialStoryText("[Test] Eröffnungsprosa."))
 
 
+class UnreachableStoryInitializationPort:
+    """Fails the test if ever called — for asserting an early validation
+    rejection short-circuits before any model call is made."""
+
+    def generate(self, call):
+        raise AssertionError(
+            "Der Modell-Port wurde aufgerufen, obwohl die Konfiguration vorher "
+            "hätte abgelehnt werden müssen"
+        )
+
+
 class FakeInitialWorldExtractionPort:
     def extract(self, call):
         return Success(WorldInitializationCandidate())

@@ -116,7 +116,30 @@ class PromptProfileModel(APIModel):
     prose_style: str = Field(min_length=1)
     perspective: str = Field(min_length=1)
     pacing: str = Field(min_length=1)
+    length: str = Field(min_length=1)
     control_mode: str = Field(min_length=1)
+    player_agency: str = Field(min_length=1)
+    consequence: str = Field(min_length=1)
+    challenge: str = Field(min_length=1)
+    content_profile: str = Field(min_length=1)
+
+
+class EditablePromptProfileModel(APIModel):
+    """The prompt-profile categories a caller may choose.
+
+    Deliberately omits ``control_mode``: it is not a narrative-style choice
+    but structurally coupled to run membership (see
+    ``confirm_game_run_proposal.py``/``_controlled_entity_ids``) — set once
+    via ``ProposeRunRequestModel.control_mode`` at creation and left
+    untouched by later configuration updates.
+    """
+
+    genre: str = Field(min_length=1)
+    tone: str = Field(min_length=1)
+    prose_style: str = Field(min_length=1)
+    perspective: str = Field(min_length=1)
+    pacing: str = Field(min_length=1)
+    length: str = Field(min_length=1)
     player_agency: str = Field(min_length=1)
     consequence: str = Field(min_length=1)
     challenge: str = Field(min_length=1)

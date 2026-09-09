@@ -120,10 +120,12 @@ async def _operation_failed(request: Request, exc: Exception) -> JSONResponse:
 async def _http_exception(request: Request, exc: Exception) -> JSONResponse:
     """Keep the ``{error, detail}`` envelope for framework-raised HTTP errors.
 
-    Currently only ``get_current_initiator`` raises ``HTTPException``
-    (missing/invalid Bearer token, HTTP 401) — everything else goes through
-    the typed ``OperationFailed``/``DomainError`` paths above. Any other
-    status here (e.g. Starlette's own 404/405) falls back to a generic code.
+    Mostly ``get_current_initiator`` (missing/invalid Bearer token, HTTP
+    401) plus the prompt-profile catalog endpoint's fixed-package lookup
+    (HTTP 500, no ``.apply()`` call involved) — everything else goes
+    through the typed ``OperationFailed``/``DomainError`` paths above. Any
+    other status here (e.g. Starlette's own 404/405) falls back to a
+    generic code.
     """
     assert isinstance(exc, HTTPException)
     code = "unauthorized" if exc.status_code == 401 else "http_error"

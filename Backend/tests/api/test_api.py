@@ -72,6 +72,7 @@ from tests.api.llm_doubles import (
     FakeStoryInitializationPort,
     FakeStorySummaryPort,
     FakeTurnExtractionPort,
+    UnreachableStoryInitializationPort,
 )
 
 PROMPT_ROOT = Path(__file__).resolve().parents[2] / "prompts"
@@ -109,7 +110,12 @@ class MemoryGameStore:
             raise GameStateNotFoundError("missing revision") from error
 
     def update_configuration(self, request) -> GameState:
-        raise AssertionError("The test API does not expose configuration updates")
+        run = self.runs[request.run_id]
+        current = self.states[request.run_id][run.current_revision]
+        updated = current.reconfigure(request.configuration, base_revision=request.base_revision)
+        self.states[request.run_id][updated.revision] = updated
+        self.runs[request.run_id] = replace(run, current_revision=updated.revision)
+        return updated
 
     def commit_turn(self, request) -> GameState:
         run = self.runs[request.run_id]
@@ -138,7 +144,7 @@ class MemoryGameStore:
 
 
 def build_dependencies(
-    store: MemoryGameStore, *, extraction_port=None
+    store: MemoryGameStore, *, extraction_port=None, story_init_port=None
 ) -> ApiDependencies:
     catalog = FilePromptPackageCatalog(PROMPT_ROOT)
     validator = PromptProfileValidator(catalog)
@@ -157,7 +163,7 @@ def build_dependencies(
             GenerateInitialStoryState(
                 StoryInitializationPromptResolver(catalog),
                 generation_config,
-                FakeStoryInitializationPort(),
+                story_init_port or FakeStoryInitializationPort(),
                 lambda: datetime.now(UTC),
             ),
             ExtractInitialWorldState(
@@ -191,7 +197,15 @@ def build_dependencies(
         CommitCompletedTurn(store, store),
     )
     start_playthrough = StartPlaythrough(LoadGame(store, store), CreateGameRun(store, validator))
-    return ApiDependencies(operations, propose_run, confirm_proposal, play_turn, start_playthrough)
+    return ApiDependencies(
+        operations,
+        propose_run,
+        confirm_proposal,
+        play_turn,
+        start_playthrough,
+        prompt_catalog=catalog,
+        prompt_profile_validator=validator,
+    )
 
 
 @pytest.fixture
@@ -287,6 +301,7 @@ def complete_state_document() -> dict[str, object]:
                     "prose_style": "balanced",
                     "perspective": "third_person_limited",
                     "pacing": "balanced",
+                    "length": "standard",
                     "control_mode": "player",
                     "player_agency": "strict",
                     "consequence": "balanced",
@@ -668,3 +683,183 @@ def test_api_rejects_loading_a_run_for_an_unknown_member(
 
     assert response.status_code == 403
     assert response.json()["error"] == "not_a_run_member"
+
+
+# --- Prompt profile: catalog, selection at creation, later adaptation ---
+
+
+def test_prompt_profile_catalog_lists_every_category(client: TestClient) -> None:
+    response = client.get("/api/v1/prompt-profile")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["package_id"] == "story.base"
+    categories = {category["id"]: category for category in body["categories"]}
+    assert "genre" in categories
+    assert "control_mode" in categories  # informational, not caller-editable here
+
+    length = categories["length"]
+    assert length["default_option_id"] == "standard"
+    assert {option["id"] for option in length["options"]} == {"short", "standard", "long"}
+    assert all(option["description"] for option in length["options"])
+
+
+def test_api_confirmed_run_reflects_an_explicit_prompt_profile(
+    store: MemoryGameStore,
+) -> None:
+    with TestClient(dev_identity_app(build_dependencies(store))) as client:
+        proposal = client.post(
+            "/api/v1/runs/proposals",
+            json={
+                "initial_prompt": "Ein Licht brennt, wo keines brennen sollte.",
+                "control_mode": "director",
+                "language": "en",
+                "prompt_profile": {
+                    "genre": "science_fiction",
+                    "tone": "hopeful",
+                    "prose_style": "concise",
+                    "perspective": "third_person_omniscient",
+                    "pacing": "fast",
+                    "length": "long",
+                    "player_agency": "cinematic",
+                    "consequence": "harsh",
+                    "challenge": "demanding",
+                    "content_profile": "mature",
+                },
+            },
+        ).json()
+        confirmed = client.post(
+            "/api/v1/runs",
+            json={
+                "proposal_id": proposal["proposal_id"],
+                "run_name": "Ein anderer Ton",
+                "character_decisions": [],
+                "item_decisions": [],
+            },
+        ).json()
+
+        profile = confirmed["game_state"]["configuration"]["prompt_profile"]
+        assert confirmed["game_state"]["configuration"]["language"] == "en"
+        assert profile["genre"] == "science_fiction"
+        assert profile["length"] == "long"
+        assert profile["content_profile"] == "mature"
+        # control_mode still comes from the dedicated field, not the profile:
+        assert profile["control_mode"] == "director"
+
+
+def test_api_rejects_an_invalid_prompt_selection_without_calling_the_model(
+    store: MemoryGameStore,
+) -> None:
+    with TestClient(
+        dev_identity_app(
+            build_dependencies(store, story_init_port=UnreachableStoryInitializationPort())
+        )
+    ) as client:
+        response = client.post(
+            "/api/v1/runs/proposals",
+            json={
+                "initial_prompt": "Ein Licht brennt, wo keines brennen sollte.",
+                "control_mode": "director",
+                "prompt_profile": {
+                    "genre": "not_a_real_genre",
+                    "tone": "balanced",
+                    "prose_style": "balanced",
+                    "perspective": "third_person_limited",
+                    "pacing": "balanced",
+                    "length": "standard",
+                    "player_agency": "strict",
+                    "consequence": "balanced",
+                    "challenge": "balanced",
+                    "content_profile": "teen",
+                },
+            },
+        )
+
+    assert response.status_code == 422
+    assert response.json()["error"] == "invalid_prompt_selection"
+
+
+def test_api_updates_a_runs_configuration_as_a_new_revision(client: TestClient) -> None:
+    run = start_draft_run(client)
+    run_id = run["game_run"]["id"]
+
+    response = client.patch(
+        f"/api/v1/runs/{run_id}/configuration",
+        json={
+            "base_revision": 1,
+            "language": "en",
+            "prompt_profile": {
+                "genre": "mystery",
+                "tone": "serious",
+                "prose_style": "descriptive",
+                "perspective": "third_person_omniscient",
+                "pacing": "slow",
+                "length": "long",
+                "player_agency": "guided",
+                "consequence": "forgiving",
+                "challenge": "narrative",
+                "content_profile": "family",
+            },
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["revision"] == 2
+    profile = body["configuration"]["prompt_profile"]
+    assert profile["genre"] == "mystery"
+    assert profile["length"] == "long"
+    # control_mode/narrative_boundaries/prompt_package are preserved, not
+    # supplied by the request:
+    assert profile["control_mode"] == "director"
+    assert body["configuration"]["narrative_boundaries"] == ["Keine sexualisierte Gewalt"]
+    assert body["configuration"]["prompt_package_id"] == "story.base"
+
+
+def test_api_rejects_a_configuration_update_against_a_stale_revision(
+    client: TestClient,
+) -> None:
+    run = start_draft_run(client)
+    run_id = run["game_run"]["id"]
+    client.patch(
+        f"/api/v1/runs/{run_id}/configuration",
+        json={
+            "base_revision": 1,
+            "language": "de",
+            "prompt_profile": {
+                "genre": "mystery",
+                "tone": "serious",
+                "prose_style": "descriptive",
+                "perspective": "third_person_omniscient",
+                "pacing": "slow",
+                "length": "long",
+                "player_agency": "guided",
+                "consequence": "forgiving",
+                "challenge": "narrative",
+                "content_profile": "family",
+            },
+        },
+    )
+
+    response = client.patch(
+        f"/api/v1/runs/{run_id}/configuration",
+        json={
+            "base_revision": 1,
+            "language": "de",
+            "prompt_profile": {
+                "genre": "fantasy",
+                "tone": "serious",
+                "prose_style": "descriptive",
+                "perspective": "third_person_omniscient",
+                "pacing": "slow",
+                "length": "long",
+                "player_agency": "guided",
+                "consequence": "forgiving",
+                "challenge": "narrative",
+                "content_profile": "family",
+            },
+        },
+    )
+
+    assert response.status_code == 409
+    assert response.json()["error"] == "revision_conflict"

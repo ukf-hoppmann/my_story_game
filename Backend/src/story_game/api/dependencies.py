@@ -13,7 +13,8 @@ from story_game.application import (
     RunInitiator,
     StartPlaythrough,
 )
-from story_game.application.game_state import GameStateOperations
+from story_game.application.game_state import GameStateOperations, PromptProfileValidator
+from story_game.application.llm import PromptPackageCatalog
 
 from .auth import KeycloakTokenVerifier, TokenVerificationError
 
@@ -27,6 +28,8 @@ class ApiDependencies:
     confirm_proposal: ConfirmGameRunProposal
     play_turn: PlayStoryTurn
     start_playthrough: StartPlaythrough
+    prompt_catalog: PromptPackageCatalog
+    prompt_profile_validator: PromptProfileValidator
 
 
 def get_api_dependencies(request: Request) -> ApiDependencies:

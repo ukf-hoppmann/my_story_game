@@ -4,6 +4,7 @@ import { Provider } from "react-redux";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { apiSlice } from "../api/apiSlice";
+import * as auth from "../api/auth";
 import * as client from "../api/client";
 import wizardReducer from "../features/wizard/wizardSlice";
 import { routes } from "./routes";
@@ -29,15 +30,18 @@ describe("routes", () => {
     vi.restoreAllMocks();
   });
 
-  it("renders the Landing page at /", () => {
+  it("renders the Landing page at / without triggering auth", () => {
+    const ensureAuthSpy = vi.spyOn(auth, "ensureAuth");
     renderAt("/");
 
     expect(
       screen.getByRole("heading", { name: "Geschichten, die deinen Entscheidungen folgen." }),
     ).toBeInTheDocument();
+    expect(ensureAuthSpy).not.toHaveBeenCalled();
   });
 
-  it("renders the Bibliothek at /library", async () => {
+  it("renders the Bibliothek at /library once auth resolves", async () => {
+    vi.spyOn(auth, "ensureAuth").mockResolvedValue(undefined);
     vi.spyOn(client, "listRuns").mockResolvedValue({ runs: [] });
 
     renderAt("/library");
@@ -45,7 +49,8 @@ describe("routes", () => {
     expect(await screen.findByRole("heading", { name: "Deine Geschichten" })).toBeInTheDocument();
   });
 
-  it("renders the Wizard at /new", async () => {
+  it("renders the Wizard at /new once auth resolves", async () => {
+    vi.spyOn(auth, "ensureAuth").mockResolvedValue(undefined);
     vi.spyOn(client, "fetchPromptProfileCatalog").mockResolvedValue({
       package_id: "story.base",
       package_version: "1",
@@ -57,7 +62,8 @@ describe("routes", () => {
     expect(await screen.findByRole("heading", { name: "Welt & Prämisse" })).toBeInTheDocument();
   });
 
-  it("renders the Play screen at /stories/:runId", async () => {
+  it("renders the Play screen at /stories/:runId once auth resolves", async () => {
+    vi.spyOn(auth, "ensureAuth").mockResolvedValue(undefined);
     vi.spyOn(client, "loadRun").mockResolvedValue({
       schema_version: 1,
       game_run: {

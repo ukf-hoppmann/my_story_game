@@ -74,4 +74,13 @@ describe("auth", () => {
 
     expect(fakeKeycloak.logout).toHaveBeenCalledOnce();
   });
+
+  it("ensureAuth runs initAuth only once across multiple calls", async () => {
+    const { ensureAuth, resetAuthForTests } = await import("./auth");
+    resetAuthForTests();
+
+    await Promise.all([ensureAuth(), ensureAuth(), ensureAuth()]);
+
+    expect(fakeKeycloak.init).toHaveBeenCalledTimes(1);
+  });
 });

@@ -5,11 +5,12 @@ import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { apiSlice } from "../api/apiSlice";
 import * as client from "../api/client";
+import wizardReducer from "../features/wizard/wizardSlice";
 import { routes } from "./routes";
 
 function buildStore() {
   return configureStore({
-    reducer: { [apiSlice.reducerPath]: apiSlice.reducer },
+    reducer: { [apiSlice.reducerPath]: apiSlice.reducer, wizard: wizardReducer },
     middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(apiSlice.middleware),
   });
 }

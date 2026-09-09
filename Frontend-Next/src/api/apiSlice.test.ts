@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { apiSlice } from "./apiSlice";
 import { ApiError } from "./client";
 import * as client from "./client";
-import type { PromptProfileCatalog, RunSummary } from "./types";
+import type { GameDocument, PromptProfileCatalog, RunProposal, RunSummary } from "./types";
 
 function buildStore() {
   return configureStore({
@@ -93,5 +93,107 @@ describe("apiSlice.promptProfileCatalog", () => {
       code: "story_model_unavailable",
       message: "Story-Modell nicht erreichbar.",
     });
+  });
+});
+
+const sampleProposal: RunProposal = {
+  proposal_id: "33333333-3333-3333-3333-333333333333",
+  opening_narration: "Der Regen hatte die Spuren fast fortgespült.",
+  world: { entities: [], links: [], facts: [], knowledge: [], rules: [], goals: [], scene_location_ids: [] },
+  suggested_player_entity_ids: [],
+  suggested_title: "Die Schatten von Auenfall",
+};
+
+const sampleDocument: GameDocument = {
+  schema_version: 1,
+  game_run: {
+    id: "22222222-2222-2222-2222-222222222222",
+    name: "Die Schatten von Auenfall",
+    status: "draft",
+    current_revision: 1,
+    members: [],
+    created_at: "2026-09-10T00:00:00Z",
+    updated_at: "2026-09-10T00:00:00Z",
+  },
+  game_state: {
+    run_id: "22222222-2222-2222-2222-222222222222",
+    revision: 1,
+    configuration: {},
+    world: { entities: [], links: [], facts: [], knowledge: [], rules: [], goals: [], scene_location_ids: [] },
+    story: { turns: [], summary: null, current_turn_sequence: 0, initialization: null },
+  },
+};
+
+describe("apiSlice submit-flow mutations", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("proposeRun returns the typed proposal on success", async () => {
+    vi.spyOn(client, "proposeRun").mockResolvedValue(sampleProposal);
+    const store = buildStore();
+
+    const result = await store.dispatch(
+      apiSlice.endpoints.proposeRun.initiate({
+        initial_prompt: "Ein Kurier verschwindet spurlos.",
+        control_mode: "player",
+        controllable_characters: [{ name: "Elian" }],
+      }),
+    );
+
+    expect(result.data).toEqual(sampleProposal);
+  });
+
+  it("proposeRun maps a 422 invalid_prompt_selection error", async () => {
+    vi.spyOn(client, "proposeRun").mockRejectedValue(
+      new ApiError(422, {
+        error: "invalid_prompt_selection",
+        detail: "Ungültige Auswahl für Genre.",
+        category: "genre",
+        option_id: "space_opera",
+      }),
+    );
+    const store = buildStore();
+
+    const result = await store.dispatch(
+      apiSlice.endpoints.proposeRun.initiate({
+        initial_prompt: "Ein Kurier verschwindet spurlos.",
+        control_mode: "player",
+        controllable_characters: [{ name: "Elian" }],
+      }),
+    );
+
+    expect(result.error).toEqual({
+      status: 422,
+      code: "invalid_prompt_selection",
+      message: "Ungültige Auswahl für Genre.",
+    });
+  });
+
+  it("confirmRun returns the created draft document", async () => {
+    vi.spyOn(client, "confirmRun").mockResolvedValue(sampleDocument);
+    const store = buildStore();
+
+    const result = await store.dispatch(
+      apiSlice.endpoints.confirmRun.initiate({
+        proposal_id: sampleProposal.proposal_id,
+        character_decisions: [],
+        item_decisions: [],
+      }),
+    );
+
+    expect(result.data).toEqual(sampleDocument);
+  });
+
+  it("startPlaythrough returns the now-active document", async () => {
+    vi.spyOn(client, "startPlaythrough").mockResolvedValue({
+      ...sampleDocument,
+      game_run: { ...sampleDocument.game_run, status: "active" },
+    });
+    const store = buildStore();
+
+    const result = await store.dispatch(apiSlice.endpoints.startPlaythrough.initiate(sampleDocument.game_run.id));
+
+    expect(result.data?.game_run.status).toBe("active");
   });
 });

@@ -1,7 +1,20 @@
 import { createApi, fakeBaseQuery } from "@reduxjs/toolkit/query/react";
-import { fetchPromptProfileCatalog, listRuns } from "./client";
+import {
+  confirmRun,
+  fetchPromptProfileCatalog,
+  listRuns,
+  proposeRun,
+  startPlaythrough,
+} from "./client";
 import { toQueryError, type QueryError } from "./queryError";
-import type { PromptProfileCatalog, RunSummary } from "./types";
+import type {
+  ConfirmRunProposalRequest,
+  GameDocument,
+  ProposeRunRequest,
+  PromptProfileCatalog,
+  RunProposal,
+  RunSummary,
+} from "./types";
 
 /**
  * Central RTK Query API slice. `client.ts` stays the actual transport (fetch
@@ -36,7 +49,45 @@ export const apiSlice = createApi({
         }
       },
     }),
+    proposeRun: builder.mutation<RunProposal, ProposeRunRequest>({
+      queryFn: async (payload) => {
+        try {
+          const proposal = await proposeRun(payload);
+          return { data: proposal };
+        } catch (error) {
+          return { error: toQueryError(error) };
+        }
+      },
+    }),
+    confirmRun: builder.mutation<GameDocument, ConfirmRunProposalRequest>({
+      queryFn: async (payload) => {
+        try {
+          const doc = await confirmRun(payload);
+          return { data: doc };
+        } catch (error) {
+          return { error: toQueryError(error) };
+        }
+      },
+      invalidatesTags: ["Run"],
+    }),
+    startPlaythrough: builder.mutation<GameDocument, string>({
+      queryFn: async (runId) => {
+        try {
+          const doc = await startPlaythrough(runId);
+          return { data: doc };
+        } catch (error) {
+          return { error: toQueryError(error) };
+        }
+      },
+      invalidatesTags: ["Run"],
+    }),
   }),
 });
 
-export const { useListRunsQuery, usePromptProfileCatalogQuery } = apiSlice;
+export const {
+  useListRunsQuery,
+  usePromptProfileCatalogQuery,
+  useProposeRunMutation,
+  useConfirmRunMutation,
+  useStartPlaythroughMutation,
+} = apiSlice;

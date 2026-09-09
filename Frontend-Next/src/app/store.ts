@@ -1,10 +1,12 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { apiSlice } from "../api/apiSlice";
+import wizardReducer from "../features/wizard/wizardSlice";
 import appReducer from "./appSlice";
 
 export const store = configureStore({
   reducer: {
     app: appReducer,
+    wizard: wizardReducer,
     [apiSlice.reducerPath]: apiSlice.reducer,
   },
   middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(apiSlice.middleware),

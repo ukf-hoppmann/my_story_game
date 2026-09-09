@@ -197,3 +197,69 @@ describe("apiSlice submit-flow mutations", () => {
     expect(result.data?.game_run.status).toBe("active");
   });
 });
+
+describe("apiSlice.loadRun / playTurn", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("loadRun returns the typed document", async () => {
+    vi.spyOn(client, "loadRun").mockResolvedValue(sampleDocument);
+    const store = buildStore();
+
+    const result = await store.dispatch(apiSlice.endpoints.loadRun.initiate(sampleDocument.game_run.id));
+
+    expect(result.data).toEqual(sampleDocument);
+  });
+
+  it("loadRun maps a not-found error into the normalized QueryError shape", async () => {
+    vi.spyOn(client, "loadRun").mockRejectedValue(
+      new ApiError(404, { error: "not_found", detail: "Geschichte nicht gefunden." }),
+    );
+    const store = buildStore();
+
+    const result = await store.dispatch(apiSlice.endpoints.loadRun.initiate(sampleDocument.game_run.id));
+
+    expect(result.error).toEqual({ status: 404, code: "not_found", message: "Geschichte nicht gefunden." });
+  });
+
+  it("playTurn returns the resulting turn state", async () => {
+    const turnResult = {
+      state: sampleDocument.game_state,
+      proposed_change_count: 2,
+      summary_failed: false,
+      summary_failure_message: null,
+    };
+    vi.spyOn(client, "playTurn").mockResolvedValue(turnResult);
+    const store = buildStore();
+
+    const result = await store.dispatch(
+      apiSlice.endpoints.playTurn.initiate({
+        runId: sampleDocument.game_run.id,
+        payload: { player_input: "Ich untersuche die Laterne." },
+      }),
+    );
+
+    expect(result.data).toEqual(turnResult);
+  });
+
+  it("playTurn maps a run_not_active error into the normalized QueryError shape", async () => {
+    vi.spyOn(client, "playTurn").mockRejectedValue(
+      new ApiError(409, { error: "run_not_active", detail: "Diese Geschichte läuft nicht mehr." }),
+    );
+    const store = buildStore();
+
+    const result = await store.dispatch(
+      apiSlice.endpoints.playTurn.initiate({
+        runId: sampleDocument.game_run.id,
+        payload: { player_input: "Ich untersuche die Laterne." },
+      }),
+    );
+
+    expect(result.error).toEqual({
+      status: 409,
+      code: "run_not_active",
+      message: "Diese Geschichte läuft nicht mehr.",
+    });
+  });
+});

@@ -49,6 +49,35 @@ export function TrashIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function GlobeIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} {...props}>
+      <circle cx="12" cy="12" r="8.3" />
+      <path d="M4 12h16M12 3.7c2.4 2.2 3.7 5.2 3.7 8.3s-1.3 6.1-3.7 8.3c-2.4-2.2-3.7-5.2-3.7-8.3S9.6 5.9 12 3.7z" />
+    </svg>
+  );
+}
+
+export function TargetIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} {...props}>
+      <circle cx="12" cy="12" r="8.3" />
+      <circle cx="12" cy="12" r="4.4" />
+      <circle cx="12" cy="12" r=".9" fill="currentColor" />
+    </svg>
+  );
+}
+
+export function ScrollIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} {...props}>
+      <path d="M6 3.7h10.5a1.8 1.8 0 0 1 1.8 1.8v13c0 1-.8 1.8-1.8 1.8H8.3A2.3 2.3 0 0 1 6 18z" />
+      <path d="M6 18V5.9A2.2 2.2 0 0 1 8.2 3.7" />
+      <path d="M9 8h6M9 11.2h6" />
+    </svg>
+  );
+}
+
 export function CompassIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.4} {...props}>

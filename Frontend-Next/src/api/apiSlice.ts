@@ -3,6 +3,8 @@ import {
   confirmRun,
   fetchPromptProfileCatalog,
   listRuns,
+  loadRun,
+  playTurn,
   proposeRun,
   startPlaythrough,
 } from "./client";
@@ -10,10 +12,12 @@ import { toQueryError, type QueryError } from "./queryError";
 import type {
   ConfirmRunProposalRequest,
   GameDocument,
+  PlayTurnRequest,
   ProposeRunRequest,
   PromptProfileCatalog,
   RunProposal,
   RunSummary,
+  TurnResult,
 } from "./types";
 
 /**
@@ -49,6 +53,17 @@ export const apiSlice = createApi({
         }
       },
     }),
+    loadRun: builder.query<GameDocument, string>({
+      queryFn: async (runId) => {
+        try {
+          const doc = await loadRun(runId);
+          return { data: doc };
+        } catch (error) {
+          return { error: toQueryError(error) };
+        }
+      },
+      providesTags: (_result, _error, runId) => [{ type: "Run", id: runId }],
+    }),
     proposeRun: builder.mutation<RunProposal, ProposeRunRequest>({
       queryFn: async (payload) => {
         try {
@@ -81,13 +96,26 @@ export const apiSlice = createApi({
       },
       invalidatesTags: ["Run"],
     }),
+    playTurn: builder.mutation<TurnResult, { runId: string; payload: PlayTurnRequest }>({
+      queryFn: async ({ runId, payload }) => {
+        try {
+          const result = await playTurn(runId, payload);
+          return { data: result };
+        } catch (error) {
+          return { error: toQueryError(error) };
+        }
+      },
+      invalidatesTags: (_result, _error, { runId }) => [{ type: "Run", id: runId }],
+    }),
   }),
 });
 
 export const {
   useListRunsQuery,
   usePromptProfileCatalogQuery,
+  useLoadRunQuery,
   useProposeRunMutation,
   useConfirmRunMutation,
   useStartPlaythroughMutation,
+  usePlayTurnMutation,
 } = apiSlice;

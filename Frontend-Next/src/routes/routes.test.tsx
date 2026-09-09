@@ -57,9 +57,31 @@ describe("routes", () => {
     expect(await screen.findByRole("heading", { name: "Welt & Prämisse" })).toBeInTheDocument();
   });
 
-  it("renders the Play placeholder at /stories/:runId", () => {
+  it("renders the Play screen at /stories/:runId", async () => {
+    vi.spyOn(client, "loadRun").mockResolvedValue({
+      schema_version: 1,
+      game_run: {
+        id: "11111111-1111-1111-1111-111111111111",
+        name: "Die Schatten von Auenfall",
+        status: "active",
+        current_revision: 1,
+        members: [],
+        created_at: "2026-09-10T00:00:00Z",
+        updated_at: "2026-09-10T00:00:00Z",
+      },
+      game_state: {
+        run_id: "11111111-1111-1111-1111-111111111111",
+        revision: 1,
+        configuration: {},
+        world: { entities: [], links: [], facts: [], knowledge: [], rules: [], goals: [], scene_location_ids: [] },
+        story: { turns: [], summary: null, current_turn_sequence: 0, initialization: null },
+      },
+    });
+
     renderAt("/stories/11111111-1111-1111-1111-111111111111");
 
-    expect(screen.getByText("Play-Screen folgt in Schritt 9/10.")).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: "Die Schatten von Auenfall" }),
+    ).toBeInTheDocument();
   });
 });

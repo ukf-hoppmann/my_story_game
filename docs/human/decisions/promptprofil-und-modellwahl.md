@@ -40,7 +40,8 @@ PromptProfile
 ├── player_agency
 ├── consequence
 ├── challenge
-└── content_profile
+├── content_profile
+└── length
 ```
 
 Jedes Feld speichert die lokale Options-ID seiner bekannten Kategorie, zum
@@ -57,9 +58,16 @@ Beispiel:
   "player_agency": "strict",
   "consequence": "balanced",
   "challenge": "balanced",
-  "content_profile": "teen"
+  "content_profile": "teen",
+  "length": "standard"
 }
 ```
+
+`length` (`short`/`standard`/`long`) steuert die gewünschte Textlänge der
+Story-Prosa als Instruktion im Systemprompt, analog zu `pacing`. Anders als
+die übrigen Kategorien hat das Feld einen Domain-Default (`"standard"`), damit
+bestehender Code, der `PromptProfile` ohne dieses Feld aufbaut, unverändert
+funktioniert.
 
 Die Kategorie muss im Wert nicht wiederholt werden. `balanced` bleibt trotz
 seiner Verwendung in mehreren Kategorien eindeutig, weil es immer in einem
@@ -107,6 +115,22 @@ seine eigene Struktur, lädt aber kein Promptpaket. Eine ungültige Auswahl wird
 als konkreter Application-Fehler an die API gegeben. Die API übersetzt ihn in
 eine verständliche Antwort, damit die UI eine andere Auswahl anfordern kann.
 Es gibt keinen stillen Ersatz und keinen automatischen Fallback.
+
+### Nachtrag: Auswahl über die Lauf-API
+
+Seit 2026-09-09 stellt `GET /api/v1/prompt-profile` den Katalog
+`story.base`/`1` mit Kategorien, Beschreibungen und Defaults bereit. Der
+Endpunkt ist absichtlich ohne Lauf- oder Benutzerzugriff lesbar; er dient
+allein dazu, einer Oberfläche die zulässigen Werte anzuzeigen.
+
+`POST /api/v1/runs/proposals` akzeptiert zusätzlich optional `language` und
+das vollständige editierbare Promptprofil. Fehlende Werte behalten die
+bisherigen Server-Defaults bei. `PATCH /api/v1/runs/{run_id}/configuration`
+schreibt dieselben editierbaren Werte als neue Konfigurationsrevision, mit
+erwarteter Basisrevision und Mitgliedschaftsprüfung. `control_mode`,
+`narrative_boundaries` sowie Paket-ID und -version bleiben dabei bewusst
+nicht editierbar: Sie werden beim Erstellen festgelegt oder serverseitig
+vorgegeben.
 
 ## Aufgabenspezifische Promptvorbereitung
 

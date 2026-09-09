@@ -43,6 +43,7 @@ def configuration(tone: str = "balanced") -> GameConfiguration:
             consequence="balanced",
             challenge="balanced",
             content_profile="teen",
+            length="standard",
         ),
         narrative_boundaries=(),
         prompt_package_id="story.base",
@@ -63,6 +64,7 @@ class PromptCatalog:
             "consequence": "balanced",
             "challenge": "balanced",
             "content_profile": "teen",
+            "length": "standard",
         }
         self.package = PromptPackage(
             id="story.base",
@@ -174,7 +176,7 @@ def test_load_game_returns_run_metadata_and_requested_state() -> None:
     store = FakeStore()
 
     result = operations.LoadGame(store, store).apply(
-        operations.LoadGameRequest(run.id)
+        operations.LoadGameRequest(run.id, "issuer", "subject")
     )
 
     assert result == Success(operations.LoadedGame(run, state))
@@ -185,10 +187,25 @@ def test_load_game_maps_missing_run_to_typed_failure() -> None:
     store = FakeStore()
 
     result = operations.LoadGame(store, store).apply(
-        operations.LoadGameRequest(sid("missing"))
+        operations.LoadGameRequest(sid("missing"), "issuer", "subject")
     )
 
     assert isinstance(result, Failure)
+
+
+def test_load_game_denies_an_identity_outside_the_run() -> None:
+    run, _ = initial()
+    store = FakeStore()
+
+    result = operations.LoadGame(store, store).apply(
+        operations.LoadGameRequest(run.id, "https://elsewhere.example", "stranger")
+    )
+
+    assert result == Failure(
+        operations.RunAccessDenied(
+            "Die aufrufende Identität gehört nicht zu diesem GameRun."
+        )
+    )
 
 
 def test_configuration_revision_uses_a_dedicated_writer() -> None:

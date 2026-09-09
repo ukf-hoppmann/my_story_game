@@ -11,8 +11,8 @@ Reviews und technische Kommunikation.
 | Ebene / Rolle | Bevorzugter Name | Aufgabe | Beispiel |
 | --- | --- | --- | --- |
 | Verdrahtung außerhalb der Ausführung | `Composition Root` | Erstellt und verbindet den Objektgraphen mit konkreten Implementierungen | Startkonfiguration oder Dependency Wiring |
-| Baustein für diese Verdrahtung | `Composition Builder` | Baut den Objektgraphen aus Operations und ihren Dependencies | Erzeugt `InitializeGameRun` mit seinen Collaborators |
-| Oberste ausführbare Ebene | `Top-Level Composite` | Einstiegspunkt des fachlichen Gesamt-Workflows | `InitializeGameRun` |
+| Baustein für diese Verdrahtung | `Composition Builder` | Baut den Objektgraphen aus Operations und ihren Dependencies | Erzeugt `ProposeGameRun` mit seinen Collaborators |
+| Oberste ausführbare Ebene | `Top-Level Composite` | Einstiegspunkt eines fachlichen Gesamt-Workflows | `ProposeGameRun` |
 | Verschachtelte ausführbare Ebene | `Composite Level X` | Komponiert und delegiert an weitere Operations | `InitializeStory` |
 | Einzelne ausführbare Ebene | `Leaf` | Führt einen konkreten fachlichen oder technischen Schritt aus | `GenerateInitialStoryState` |
 | Gemeinsamer Ausführungsvertrag | `Operation Contract` | Definiert den einheitlichen Einstieg über `apply(request)` | `Operation`-Protocol |
@@ -56,22 +56,27 @@ jeweiligen Hierarchieebene typisiert.
 ```text
 Composition Root
 └── Composition Builder
-    └── Top-Level Composite: InitializeGameRun
+    └── Top-Level Composite: ProposeGameRun
         ├── Composite Level 1: InitializeStory
         │   ├── Leaf: GenerateInitialStoryState
         │   └── Leaf: ExtractInitialWorldState
-        └── Leaf: CreateGameRun
+        └── Leaf: Vorschlag transient speichern
 ```
 
 Der Laufzeitfluss wird dabei so beschrieben:
 
 ```text
-InitializeGameRun.apply(...)
+ProposeGameRun.apply(...)
 └── delegiert an InitializeStory.apply(...)
     ├── delegiert an GenerateInitialStoryState.apply(...)
     └── delegiert an ExtractInitialWorldState.apply(...)
-└── delegiert an CreateGameRun.apply(...)
+└── speichert den owner-gebundenen Vorschlag transient
 ```
+
+`ConfirmGameRunProposal` ist ein eigener Top-Level-Workflow: Er lädt einen
+gültigen Vorschlag, übernimmt die Entscheidungen des Aufrufers und delegiert
+erst dann an `CreateGameRun`. Dadurch bleibt zwischen Vorschlag und
+Bestätigung kein kanonischer Spielstand bestehen.
 
 Die Composite Operations legen die fachlich sichtbare Reihenfolge fest.
 Leaves führen jeweils einen konkreten Schritt aus. Eine `Composition Root`
@@ -88,4 +93,3 @@ Für Architekturgespräche gelten folgende Formulierungen als eindeutig:
 - „Die Abhängigkeit wird per `Constructor Injection` als `Injected Collaborator` übergeben."
 - „Die nächste Ebene wird über den `Operation Contract` mit `apply` delegiert."
 - „Die konkrete Verdrahtung gehört in den `Composition Builder` innerhalb der `Composition Root`."
-

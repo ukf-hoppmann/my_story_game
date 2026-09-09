@@ -7,10 +7,10 @@ from pathlib import Path
 import pytest
 
 from story_game.application import (
+    ControllableCharacterSeed,
     ExtractInitialWorldState,
     InitializeStory,
     InitializeStoryRequest,
-    PlayerCharacterSeed,
     Success,
 )
 from story_game.application.story_initialization import (
@@ -28,14 +28,16 @@ from story_game.infrastructure.configuration import (
 )
 from story_game.infrastructure.llm import FilePromptPackageCatalog
 from story_game.infrastructure.llm.lmstudio import (
-    LmStudioClient,
     LmStudioInitialWorldExtractionAdapter,
-    LmStudioSettings,
     LmStudioStoryInitializationAdapter,
+    lmstudio_settings as LmStudioSettings,
 )
-from story_game.infrastructure.llm.lmstudio.models import (
-    LmStudioChatRequest,
-    LmStudioChatResponse,
+from story_game.infrastructure.llm.openai_compatible import (
+    OpenAiCompatibleClient as LmStudioClient,
+)
+from story_game.infrastructure.llm.openai_compatible.models import (
+    ChatRequest as LmStudioChatRequest,
+    ChatResponse as LmStudioChatResponse,
 )
 
 from .live_settings import live_base_url
@@ -109,8 +111,8 @@ def test_live_initializes_and_prints_story_and_world_state(
                     "Maren und Alma stehen gemeinsam in einer einzigen "
                     "verschlossenen Dungeonkammer. Noch bewegt sich niemand."
                 ),
-                player_character=PlayerCharacterSeed(
-                    "Maren", "Eine vorsichtige Kartografin."
+                controllable_characters=(
+                    ControllableCharacterSeed("Maren", "Eine vorsichtige Kartografin."),
                 ),
             )
         )

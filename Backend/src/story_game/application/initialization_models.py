@@ -8,8 +8,8 @@ from story_game.domain import StoryState, WorldState
 
 
 @dataclass(frozen=True, slots=True)
-class PlayerCharacterSeed:
-    """Caller-owned player identity before a canonical WorldEntity exists."""
+class ControllableCharacterSeed:
+    """Caller-owned controllable-character identity before a WorldEntity exists."""
 
     name: str
     description: str = ""
@@ -17,7 +17,7 @@ class PlayerCharacterSeed:
     def __post_init__(self) -> None:
         name = self.name.strip()
         if not name:
-            raise ValueError("Der Name des Spielercharakters darf nicht leer sein")
+            raise ValueError("Der Name der steuerbaren Figur darf nicht leer sein")
         object.__setattr__(self, "name", name)
         object.__setattr__(self, "description", self.description.strip())
 
@@ -28,3 +28,4 @@ class InitializedStory:
 
     story_state: StoryState
     world_state: WorldState
+    suggested_title: str = ""

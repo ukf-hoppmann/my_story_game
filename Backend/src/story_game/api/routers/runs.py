@@ -14,25 +14,37 @@ from story_game.api.dependencies import (
     get_api_dependencies,
     get_current_initiator,
 )
-from story_game.api.mappers import game_state_to_api, game_to_api
-from story_game.api.results import unwrap
+from story_game.api.mappers import game_state_to_api, game_to_api, proposal_to_api
+from story_game.api.results import OperationFailed, unwrap
 from story_game.api.schemas.runs import (
-    InitializeRunRequestModel,
+    CharacterDecisionModel,
+    ConfirmRunProposalRequestModel,
+    ItemDecisionModel,
     PlayTurnRequestModel,
+    ProposeRunRequestModel,
+    RunProposalModel,
     RunSummaryListModel,
     RunSummaryModel,
     TurnResultModel,
+    UpdateConfigurationRequestModel,
 )
-from story_game.api.schemas.state import GameDocument
+from story_game.api.schemas.state import GameDocument, GameStateModel
 from story_game.application import (
-    InitializeGameRunRequest,
-    PlayerCharacterSeed,
+    CharacterDecision,
+    ConfirmGameRunProposalRequest,
+    ControllableCharacterSeed,
+    ItemDecision,
     PlayStoryTurnRequest,
+    ProposeGameRunRequest,
     RunInitiator,
     StartPlaythroughRequest,
 )
-from story_game.application.game_state import LoadGameRequest, ListPlayableRunsRequest
-from story_game.domain import StableId, StateRevision
+from story_game.application.game_state import (
+    LoadGameRequest,
+    ListPlayableRunsRequest,
+    UpdateGameConfigurationRequest,
+)
+from story_game.domain import GameConfiguration, PromptProfile, StableId, StateRevision
 
 
 router = APIRouter()
@@ -81,12 +93,15 @@ def list_runs(
 def load_run(
     run_id: Annotated[UUID, Path()],
     dependencies: Annotated[ApiDependencies, Depends(get_api_dependencies)],
+    initiator: Annotated[RunInitiator, Depends(get_current_initiator)],
     revision: Annotated[int | None, Query(ge=1)] = None,
 ) -> GameDocument:
     loaded = unwrap(
         dependencies.operations.load.apply(
             LoadGameRequest(
                 StableId(run_id),
+                initiator.issuer,
+                initiator.subject,
                 None if revision is None else StateRevision(revision),
             )
         )
@@ -95,42 +110,88 @@ def load_run(
 
 
 @runs_router.post(
+    "/proposals",
+    response_model=RunProposalModel,
+    status_code=status.HTTP_201_CREATED,
+    summary="Generate a reviewable run proposal; persists nothing",
+)
+def propose_run(
+    payload: ProposeRunRequestModel,
+    dependencies: Annotated[ApiDependencies, Depends(get_api_dependencies)],
+    initiator: Annotated[RunInitiator, Depends(get_current_initiator)],
+) -> RunProposalModel:
+    configuration = replace(
+        DEFAULT_GAME_CONFIGURATION,
+        language=payload.language,
+        prompt_profile=PromptProfile(
+            genre=payload.prompt_profile.genre,
+            tone=payload.prompt_profile.tone,
+            prose_style=payload.prompt_profile.prose_style,
+            perspective=payload.prompt_profile.perspective,
+            pacing=payload.prompt_profile.pacing,
+            length=payload.prompt_profile.length,
+            control_mode=payload.control_mode,
+            player_agency=payload.prompt_profile.player_agency,
+            consequence=payload.prompt_profile.consequence,
+            challenge=payload.prompt_profile.challenge,
+            content_profile=payload.prompt_profile.content_profile,
+        ),
+    )
+    validation_error = dependencies.prompt_profile_validator.validate(configuration)
+    if validation_error is not None:
+        raise OperationFailed(validation_error)
+    controllable_characters = tuple(
+        ControllableCharacterSeed(item.name, item.description)
+        for item in payload.controllable_characters
+    )
+    proposed = unwrap(
+        dependencies.propose_run.apply(
+            ProposeGameRunRequest(
+                configuration=configuration,
+                initial_prompt=payload.initial_prompt,
+                initiator=initiator,
+                controllable_characters=controllable_characters,
+            )
+        )
+    )
+    return proposal_to_api(proposed)
+
+
+@runs_router.post(
     "",
     response_model=GameDocument,
     status_code=status.HTTP_201_CREATED,
-    summary="Start a new DRAFT scenario template",
+    summary="Confirm a proposal into a new DRAFT scenario template",
 )
-def create_run(
-    payload: InitializeRunRequestModel,
+def confirm_run(
+    payload: ConfirmRunProposalRequestModel,
     dependencies: Annotated[ApiDependencies, Depends(get_api_dependencies)],
     initiator: Annotated[RunInitiator, Depends(get_current_initiator)],
 ) -> GameDocument:
-    configuration = replace(
-        DEFAULT_GAME_CONFIGURATION,
-        prompt_profile=replace(
-            DEFAULT_GAME_CONFIGURATION.prompt_profile,
-            control_mode=payload.control_mode,
-        ),
-    )
-    player_character = (
-        None
-        if payload.player_character is None
-        else PlayerCharacterSeed(
-            payload.player_character.name, payload.player_character.description
-        )
-    )
     created = unwrap(
-        dependencies.initialize_run.apply(
-            InitializeGameRunRequest(
-                configuration=configuration,
+        dependencies.confirm_proposal.apply(
+            ConfirmGameRunProposalRequest(
+                proposal_id=StableId(payload.proposal_id),
                 run_name=payload.run_name,
-                initial_prompt=payload.initial_prompt,
                 initiator=initiator,
-                player_character=player_character,
+                character_decisions=tuple(
+                    _character_decision(item) for item in payload.character_decisions
+                ),
+                item_decisions=tuple(
+                    _item_decision(item) for item in payload.item_decisions
+                ),
             )
         )
     )
     return game_to_api(created)
+
+
+def _character_decision(model: CharacterDecisionModel) -> CharacterDecision:
+    return CharacterDecision(StableId(model.entity_id), model.role, model.removed)
+
+
+def _item_decision(model: ItemDecisionModel) -> ItemDecision:
+    return ItemDecision(StableId(model.entity_id), model.removed)
 
 
 @runs_router.post(
@@ -150,6 +211,57 @@ def start_playthrough(
         )
     )
     return game_to_api(created)
+
+
+@runs_router.patch(
+    "/{run_id}/configuration",
+    response_model=GameStateModel,
+    summary="Replace a run's editable story-profile categories as a new revision",
+)
+def update_configuration(
+    run_id: Annotated[UUID, Path()],
+    payload: UpdateConfigurationRequestModel,
+    dependencies: Annotated[ApiDependencies, Depends(get_api_dependencies)],
+    initiator: Annotated[RunInitiator, Depends(get_current_initiator)],
+) -> GameStateModel:
+    loaded = unwrap(
+        dependencies.operations.load.apply(
+            LoadGameRequest(StableId(run_id), initiator.issuer, initiator.subject, None)
+        )
+    )
+    current = loaded.state.configuration
+    configuration = GameConfiguration(
+        language=payload.language,
+        prompt_profile=replace(
+            current.prompt_profile,
+            genre=payload.prompt_profile.genre,
+            tone=payload.prompt_profile.tone,
+            prose_style=payload.prompt_profile.prose_style,
+            perspective=payload.prompt_profile.perspective,
+            pacing=payload.prompt_profile.pacing,
+            length=payload.prompt_profile.length,
+            player_agency=payload.prompt_profile.player_agency,
+            consequence=payload.prompt_profile.consequence,
+            challenge=payload.prompt_profile.challenge,
+            content_profile=payload.prompt_profile.content_profile,
+        ),
+        narrative_boundaries=current.narrative_boundaries,
+        prompt_package_id=current.prompt_package_id,
+        prompt_package_version=current.prompt_package_version,
+    )
+    # No pre-check here (unlike propose_run): update_configuration.apply()
+    # already validates via the same PromptProfileValidator before writing,
+    # and there is no expensive downstream call to save by failing earlier.
+    updated = unwrap(
+        dependencies.operations.update_configuration.apply(
+            UpdateGameConfigurationRequest(
+                run_id=StableId(run_id),
+                base_revision=StateRevision(payload.base_revision),
+                configuration=configuration,
+            )
+        )
+    )
+    return game_state_to_api(updated)
 
 
 @runs_router.post(

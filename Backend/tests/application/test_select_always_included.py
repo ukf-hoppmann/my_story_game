@@ -22,7 +22,7 @@ def apply(request: SelectAlwaysIncludedRequest):
 def test_frame_carries_summary_recent_turns_rules_and_configuration() -> None:
     state = w.game_state((w.TAVERN,), "Erster Zug.", "Zweiter Zug.", "Dritter Zug.")
 
-    data = apply(SelectAlwaysIncludedRequest(state, w.MAREN, SelectionBudget()))
+    data = apply(SelectAlwaysIncludedRequest(state, (w.MAREN,), SelectionBudget()))
 
     assert data.summary is not None
     assert [item.narration for item in data.recent_turns] == [
@@ -41,7 +41,7 @@ def test_recent_turns_follow_the_configured_budget_and_stay_in_order() -> None:
 
     data = apply(
         SelectAlwaysIncludedRequest(
-            state, w.MAREN, SelectionBudget(recent_turn_count=1)
+            state, (w.MAREN,), SelectionBudget(recent_turn_count=1)
         )
     )
 
@@ -51,7 +51,7 @@ def test_recent_turns_follow_the_configured_budget_and_stay_in_order() -> None:
 def test_only_open_main_goals_belong_to_the_frame() -> None:
     state = w.game_state()
 
-    data = apply(SelectAlwaysIncludedRequest(state, w.MAREN, SelectionBudget()))
+    data = apply(SelectAlwaysIncludedRequest(state, (w.MAREN,), SelectionBudget()))
 
     assert [goal.id for goal in data.main_goals] == [sid("g-main")]
 
@@ -59,20 +59,31 @@ def test_only_open_main_goals_belong_to_the_frame() -> None:
 def test_the_controlled_entity_is_always_present_even_when_never_named() -> None:
     state = w.game_state((w.TAVERN,), "Du betrittst den Raum.")
 
-    data = apply(SelectAlwaysIncludedRequest(state, w.MAREN, SelectionBudget()))
+    data = apply(SelectAlwaysIncludedRequest(state, (w.MAREN,), SelectionBudget()))
 
-    assert data.controlled_entity is not None
-    assert data.controlled_entity.id == w.MAREN
+    assert data.controlled_entities != ()
+    assert data.controlled_entities[0].id == w.MAREN
     assert [candidate.entity_id for candidate in data.candidates] == [w.MAREN]
     assert data.candidates[0].priority is SelectionPriority.ALWAYS
+
+
+def test_multiple_controlled_entities_are_all_present() -> None:
+    state = w.game_state((w.TAVERN,), "Ihr betretet den Raum.")
+
+    data = apply(
+        SelectAlwaysIncludedRequest(state, (w.MAREN, w.ALMA), SelectionBudget())
+    )
+
+    assert {entity.id for entity in data.controlled_entities} == {w.MAREN, w.ALMA}
+    assert {candidate.entity_id for candidate in data.candidates} == {w.MAREN, w.ALMA}
 
 
 def test_without_a_controlled_entity_the_frame_stays_valid() -> None:
     state = w.game_state()
 
-    data = apply(SelectAlwaysIncludedRequest(state, None, SelectionBudget()))
+    data = apply(SelectAlwaysIncludedRequest(state, (), SelectionBudget()))
 
-    assert data.controlled_entity is None
+    assert data.controlled_entities == ()
     assert data.candidates == ()
     assert data.rules == w.rules()
 
@@ -84,7 +95,7 @@ def test_an_unknown_controlled_entity_is_a_visible_failure() -> None:
     )
 
     result = SelectAlwaysIncluded().apply(
-        SelectAlwaysIncludedRequest(w.game_state(), sid("ghost"), SelectionBudget())
+        SelectAlwaysIncludedRequest(w.game_state(), (sid("ghost"),), SelectionBudget())
     )
 
     assert isinstance(result, Failure)

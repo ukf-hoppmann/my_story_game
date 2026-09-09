@@ -1,27 +1,42 @@
 # Frontend-Web
 
-React + Vite + TypeScript. Spricht gegen die `Backend`-API unter
-`/api/v1/runs` (siehe [`../docs/human/technical/api.md`](../docs/human/technical/api.md)).
+React + Vite + TypeScript. Die App spricht gegen die `Backend`-API unter
+`/api/v1/runs` und meldet Benutzer vor dem Rendern über Keycloak an (siehe
+[`../docs/human/technical/api.md`](../docs/human/technical/api.md)).
 
 ## Lokal starten
 
-Backend zuerst separat starten (aus dem Repo-Root):
+Den vollständigen lokalen Stack aus dem Repo-Root starten:
 
 ```bash
-./story-starter
+./story-starter start
 ```
 
-Dann in diesem Verzeichnis:
+Die Browser-App läuft dann über nginx unter `http://storygame.localhost/`.
+Frontend, Backend und Keycloak sind dort bereits verbunden.
+
+Für eine separate Vite-Entwicklung in diesem Verzeichnis:
 
 ```bash
 npm install
 npm run dev
 ```
 
-Die App läuft unter `http://localhost:5173` und ruft die API standardmäßig
-unter `http://localhost:8000` auf (`.env.development`,
-`VITE_API_BASE_URL`). Das Backend erlaubt diesen Ursprung per CORS
-(`STORY_GAME_CORS_ALLOWED_ORIGINS`, Default `http://localhost:5173`).
+Vite läuft unter `http://localhost:5173`. Die versionierte
+`.env.development` verweist auf die vom Compose-Proxy bereitgestellten
+Adressen `http://backend.storygame.localhost` und
+`http://auth.storygame.localhost`. Bei abweichenden lokalen Adressen müssen
+`VITE_API_BASE_URL`, `VITE_KEYCLOAK_URL`, Realm und Client-ID passend
+überschrieben werden. Der Backend-CORS-Origin ist über
+`STORY_GAME_CORS_ALLOWED_ORIGINS` konfigurierbar.
+
+## Anmeldung
+
+`src/api/auth.ts` initialisiert `keycloak-js` mit `login-required`, setzt den
+Bearer-Token am gemeinsamen API-Client und erneuert ihn bei Ablauf. Der
+lokale Realm enthält die Testnutzer und den Frontend-Client; Login- und
+Troubleshooting-Hinweise stehen in
+[`../docs/human/operations/keycloak.md`](../docs/human/operations/keycloak.md).
 
 ## Struktur
 
@@ -29,6 +44,7 @@ unter `http://localhost:8000` auf (`.env.development`,
 src/
   api/
     client.ts        Fetch-Wrapper, Fehler-Envelope-Mapping, Auth-Injection-Point
+    auth.ts          Keycloak-Login, Token-Erneuerung und Logout
     types.ts          Handgeschriebene Typen passend zu den Backend-Schemas
     useApiRequest.ts   Kleiner Hook für Lade-/Erfolg-/Fehlerzustände
   screens/
@@ -38,11 +54,15 @@ src/
 ```
 
 Kein Router (nur drei Screens, linearer Fluss), kein OpenAPI-Codegen
-(Typen von Hand gepflegt) — Begründung siehe Projektplan. Noch kein eigenes
-Dockerfile/Compose-Service; produktionsreifer Build folgt später.
+(Typen von Hand gepflegt) — Begründung siehe Projektplan. Das Frontend besitzt
+weiterhin kein eigenes Dockerfile; der Compose-Service nutzt das Node-Image
+und führt `npm install` gegen den eingebundenen Quellcode aus.
 
 ## Bekannte Lücken (MVP)
 
 - Kein visuelles Design (nur funktionale Basis-Styles in `src/index.css`).
 - Kein Turn-Historie-Scroll-/Paginierungsverhalten für lange Läufe.
 - Kein Umgang mit `PAUSED`/`COMPLETED`-Status (Backend setzt diese nie).
+- Die Oberfläche verwendet beim Erstellen noch die serverseitigen
+  Promptprofil-Defaults. Der API-Katalog und die Konfigurationsänderung sind
+  verfügbar, aber noch nicht als Auswahloberfläche umgesetzt.

@@ -17,6 +17,13 @@ class RunConflict:
 
 
 @dataclass(frozen=True, slots=True)
+class RunAccessDenied:
+    """The caller is authenticated but not a member of the requested run."""
+
+    detail: str
+
+
+@dataclass(frozen=True, slots=True)
 class StateRejected:
     detail: str
 
@@ -60,6 +67,7 @@ class StateStoreUnavailable:
 GameStateOperationError: TypeAlias = (
     RunNotFound
     | RunConflict
+    | RunAccessDenied
     | StateRejected
     | InvalidPromptSelection
     | InvalidPromptPackageReference

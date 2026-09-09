@@ -82,9 +82,12 @@ contract remains binding together with this scope.
   narrative configuration, the initial user prompt, and any caller-provided
   player-character seed. Because it executes before canonical WorldState and
   StoryState values exist, it MUST NOT require or fabricate either context.
-- Player identity MUST be selected by the caller, never inferred or created by
-  a model. Player control MUST require exactly one player-character seed;
-  director control MUST reject a player-character seed. First- and
+- Player identity MUST be confirmed by the caller before it takes effect.
+  Initial extraction MAY freely propose any narratively established character
+  without designating a player role; the caller assigns player or non-player
+  roles per character when confirming the resulting proposal (see §6b). Player
+  control MUST result in exactly one confirmed player-character; director
+  control MAY result in zero or more confirmed player-characters. First- and
   second-person narration MUST be invalid with director control.
 - Player agency MUST affect only player control. Director control MUST describe
   user control over a scene or cast and MUST NOT be implemented as permission
@@ -133,9 +136,11 @@ contract remains binding together with this scope.
 
 - Initial extraction MUST be a separate task-specific call after successful
   Story initialization. Its model input MUST distinguish Extraction system
-  prompts, opening narration, response schema, language, perspective, control
-  mode, and the caller-provided player-character seed when player control is
-  active.
+  prompts, opening narration, response schema, language, perspective, and
+  control mode. It carries no player-character seed and no reserved
+  local-reference concept: the model addresses every character the same way,
+  because which character (if any) becomes the player is decided later, at
+  proposal confirmation (see §6b), not by the model.
 - Opening narration MUST be the authoritative description of what happened.
   The original initial user prompt, Story prompt categories such as genre or
   tone, an existing WorldState, and an invented story history MUST NOT enter
@@ -143,7 +148,7 @@ contract remains binding together with this scope.
 - The structured model result MUST be limited to candidate entities, links,
   facts, and scene-location references, all using local entity references. It
   MUST NOT contain stable IDs, visibility, evidence, actor knowledge, world
-  rules, goals, or a model-created player character.
+  rules, or goals.
 - The scene reference names where the opening is set. It is a separate
   statement from where entities are located: location links say where something
   is, the scene says where the narration currently looks. Both are required
@@ -152,14 +157,15 @@ contract remains binding together with this scope.
   The model MUST return the scene as ordered local references to extracted
   locations, most relevant first. The Application MUST map them to stable IDs
   and MUST reject references that are unknown, duplicated, or not locations.
-- A model MAY return zero or more non-player characters in every supported
-  perspective. Extracted characters MUST be assigned the neutral actor role by
-  the Application. The caller-provided player character MUST be created by the
-  Application with the player role and MAY be referenced through a reserved
-  local reference, but it MUST NOT be duplicated or altered by model output.
+- A model MAY return zero or more characters in every supported perspective,
+  including one that narratively matches a caller-provided seed. Every
+  extracted character MUST be assigned the neutral actor role by the
+  Application at this stage; no character is created, altered, or excluded by
+  the Application on the model's behalf here. Promoting a character to the
+  player role is exclusively a §6b confirmation decision.
 - The adapter MUST perform provider JSON mapping and strict structural schema
   validation. The Application MUST resolve local references, create stable IDs,
-  reject duplicate or reserved entities, and construct one complete WorldState
+  reject duplicate local references, and construct one complete WorldState
   under Domain invariants. Any model, schema, reference, or Domain failure MUST
   return a typed error and MUST NOT expose a partial WorldState.
 - Initial extraction MUST produce empty knowledge, rules, and goals. It MUST use
@@ -169,6 +175,31 @@ contract remains binding together with this scope.
 - Initial extraction MUST NOT retry automatically or persist any result. The
   initial orchestration MAY return StoryState and WorldState only after both
   task-specific operations have succeeded.
+
+## 6b. Run-proposal confirmation
+
+- The complete result of Story initialization and initial WorldState
+  extraction MUST be held as a transient, caller-owned proposal before any
+  GameRun is persisted. Generating a proposal MUST NOT create a GameRun,
+  GameRunMember, or canonical GameState.
+- A proposal MUST be addressable only by its own caller (issuer/subject). It
+  MAY expire after a bounded time. An unknown, expired, or not-owned proposal
+  MUST be rejected with the same typed failure a caller cannot distinguish
+  from "never existed", so a proposal's existence is not observable by anyone
+  but its owner.
+- Confirming a proposal is the one point where the caller assigns the player
+  or non-player role per extracted character, and may exclude any extracted
+  character or item from the resulting world. Confirmation MUST NOT accept
+  arbitrary caller-supplied WorldState content: it MAY only select and role-
+  assign among what the cached proposal already contains.
+- Dropping a character or item at confirmation MUST also drop every link and
+  fact that referenced it, so confirmation can never produce the same class of
+  dangling-reference failure Initial extraction guards against. Confirmation
+  MUST still enforce "exactly one confirmed player-character" for player
+  control and "zero or more" for director control before persistence.
+- Only a successful confirmation MAY persist a GameRun; it MUST do so exactly
+  as the existing DRAFT-at-revision-one contract already requires. The
+  proposal MUST be discarded once successfully confirmed.
 
 ## 7. Extensibility without a universal model service
 
@@ -195,10 +226,16 @@ contract remains binding together with this scope.
 - Story-initialization tests MUST cover every supported perspective/control
   combination, required or forbidden player-character seeds, and the absence
   of a model call after configuration rejection.
-- Initial-Extraction tests MUST cover empty candidate collections, optional
-  non-player characters in first person, reserved player references, duplicate
-  player rejection, local-reference failures, Domain rejection, empty
-  knowledge, rules, and goals, and scene references that are unknown,
-  duplicated, or point at a non-location.
+- Initial-Extraction tests MUST cover empty candidate collections, characters
+  in every supported perspective coming back with the neutral actor role,
+  duplicate local-reference rejection, other local-reference failures, Domain
+  rejection, empty knowledge, rules, and goals, and scene references that are
+  unknown, duplicated, or point at a non-location.
+- Run-proposal-confirmation tests MUST cover role assignment per confirmed
+  character, cascading removal of dependent links and facts, the "exactly one
+  confirmed player-character" invariant for player control, rejection of an
+  unknown/expired/not-owned proposal without distinguishing the three, and
+  that only a successful confirmation persists a GameRun and discards the
+  proposal.
 - Architecture tests MUST enforce inward dependency direction for model ports,
   adapters, provider clients, and composition.

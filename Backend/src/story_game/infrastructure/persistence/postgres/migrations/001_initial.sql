@@ -38,6 +38,7 @@ CREATE TABLE game_state_configurations (
     prose_style TEXT NOT NULL CHECK (prose_style <> ''),
     perspective TEXT NOT NULL CHECK (perspective <> ''),
     pacing TEXT NOT NULL CHECK (pacing <> ''),
+    length TEXT NOT NULL CHECK (length <> ''),
     control_mode TEXT NOT NULL CHECK (control_mode <> ''),
     player_agency TEXT NOT NULL CHECK (player_agency <> ''),
     consequence TEXT NOT NULL CHECK (consequence <> ''),

@@ -20,7 +20,7 @@ def select(
     player_input: str,
     *narrations: str,
     scene=(w.TAVERN,),
-    controlled=w.MAREN,
+    controlled=(w.MAREN,),
     budget=SelectionBudget(),
 ):
     state = w.game_state(scene, *narrations)
@@ -46,8 +46,8 @@ def test_a_turn_without_any_named_place_still_knows_its_scene() -> None:
 def test_the_controlled_figure_is_present_although_never_named() -> None:
     context = select("Du wartest.", "Du betrittst den Raum.")
 
-    assert context.controlled_entity is not None
-    assert context.controlled_entity.id == w.MAREN
+    assert context.controlled_entities != ()
+    assert context.controlled_entities[0].id == w.MAREN
     assert w.MAREN in ids(context.entities)
 
 
@@ -92,7 +92,7 @@ def test_the_opening_stands_in_for_prose_before_the_first_turn() -> None:
     )
 
     result = build_story_turn_context_selection().apply(
-        SelectStoryTurnContextRequest(state, w.MAREN, "Ich sehe mich um.")
+        SelectStoryTurnContextRequest(state, (w.MAREN,), "Ich sehe mich um.")
     )
 
     assert isinstance(result, Success)
@@ -110,7 +110,7 @@ def test_the_given_game_state_is_left_untouched() -> None:
     before = replace(state)
 
     build_story_turn_context_selection().apply(
-        SelectStoryTurnContextRequest(state, w.MAREN, "Ich frage Alma.")
+        SelectStoryTurnContextRequest(state, (w.MAREN,), "Ich frage Alma.")
     )
 
     assert state == before
@@ -138,7 +138,7 @@ def test_an_unknown_controlled_figure_fails_visibly() -> None:
     state = w.game_state()
 
     result = build_story_turn_context_selection().apply(
-        SelectStoryTurnContextRequest(state, sid("ghost"), "Ich warte.")
+        SelectStoryTurnContextRequest(state, (sid("ghost"),), "Ich warte.")
     )
 
     assert isinstance(result, Failure)
@@ -178,8 +178,18 @@ def test_every_step_is_delegated_in_a_visible_order() -> None:
     )
 
     result = operation.apply(
-        SelectStoryTurnContextRequest(w.game_state(), w.MAREN, "Ich warte.")
+        SelectStoryTurnContextRequest(w.game_state(), (w.MAREN,), "Ich warte.")
     )
 
     assert isinstance(result, Success)
     assert calls == ["frame", "mentions", "scene", "hop", "referenced", "budget"]
+
+
+def test_multiple_controlled_figures_are_all_present() -> None:
+    context = select(
+        "Ihr wartet.", "Ihr betretet den Raum.", controlled=(w.MAREN, w.ALMA)
+    )
+
+    assert {entity.id for entity in context.controlled_entities} == {w.MAREN, w.ALMA}
+    assert w.MAREN in ids(context.entities)
+    assert w.ALMA in ids(context.entities)

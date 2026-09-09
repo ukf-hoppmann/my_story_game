@@ -4,19 +4,22 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from dataclasses import dataclass
 from datetime import UTC, datetime
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from story_game.api.auth import KeycloakTokenVerifier
 from story_game.api.dependencies import ApiDependencies
 from story_game.application import (
+    ConfirmGameRunProposal,
     ExtractInitialWorldState,
     ExtractStoryTurnChanges,
     GenerateStory,
-    InitializeGameRun,
     InitializeStory,
     PlayStoryTurn,
+    ProposeGameRun,
     StartPlaythrough,
     SummarizeStory,
 )
@@ -45,16 +48,45 @@ from story_game.infrastructure.configuration import (
 )
 from story_game.infrastructure.diagnostics import StructlogDiagnosticsLog
 from story_game.infrastructure.llm import FilePromptPackageCatalog
+from story_game.infrastructure.llm.gemini import (
+    GeminiInitialWorldExtractionAdapter,
+    GeminiStoryGenerationAdapter,
+    GeminiStoryInitializationAdapter,
+    GeminiStorySummaryAdapter,
+    GeminiTurnExtractionAdapter,
+    gemini_settings,
+)
+from story_game.infrastructure.llm.groq import (
+    GroqInitialWorldExtractionAdapter,
+    GroqStoryGenerationAdapter,
+    GroqStoryInitializationAdapter,
+    GroqStorySummaryAdapter,
+    GroqTurnExtractionAdapter,
+    groq_settings,
+)
 from story_game.infrastructure.llm.lmstudio import (
-    LmStudioClient,
     LmStudioInitialWorldExtractionAdapter,
-    LmStudioSettings,
     LmStudioStoryGenerationAdapter,
     LmStudioStoryInitializationAdapter,
     LmStudioStorySummaryAdapter,
     LmStudioTurnExtractionAdapter,
+    lmstudio_settings,
+)
+from story_game.infrastructure.llm.openai_compatible import (
+    OpenAiCompatibleClient,
+    OpenAiCompatibleSettings,
+)
+from story_game.infrastructure.llm.provider_router import (
+    RoutingInitialWorldExtractionAdapter,
+    RoutingStoryGenerationAdapter,
+    RoutingStoryInitializationAdapter,
+    RoutingStorySummaryAdapter,
+    RoutingTurnExtractionAdapter,
 )
 from story_game.infrastructure.logging_config import LoggingSettings, configure_logging
+from story_game.infrastructure.persistence.in_memory_proposal_store import (
+    InMemoryProposalStore,
+)
 from story_game.infrastructure.persistence.postgres import (
     PostgresConnectionFactory,
     PostgresGameStore,
@@ -86,34 +118,49 @@ def create_app(
     @asynccontextmanager
     async def lifespan(application: FastAPI) -> AsyncIterator[None]:
         resolved = dependencies
-        llm_client: LmStudioClient | None = None
+        llm_clients: _LlmClients | None = None
         if resolved is None:
             connections = PostgresConnectionFactory(resolved_settings.postgres_dsn)
             if resolved_settings.auto_migrate:
                 PostgresSchemaMigrator(connections).migrate()
             store = PostgresGameStore(connections)
-            llm_client = _build_llm_client(resolved_settings)
+            proposal_store = InMemoryProposalStore()
+            llm_clients = _build_llm_clients(resolved_settings)
             resolved = ApiDependencies(
                 operations=_compose_game_state_operations(
                     store, resolved_settings.prompt_root, diagnostics
                 ),
-                initialize_run=_compose_initialize_game_run(
-                    store, resolved_settings, llm_client, diagnostics
+                propose_run=_compose_propose_game_run(
+                    proposal_store, resolved_settings, llm_clients, diagnostics
+                ),
+                confirm_proposal=_compose_confirm_game_run_proposal(
+                    store, proposal_store, resolved_settings, diagnostics
                 ),
                 play_turn=_compose_play_story_turn(
-                    store, resolved_settings, llm_client, diagnostics
+                    store, resolved_settings, llm_clients, diagnostics
                 ),
                 start_playthrough=_compose_start_playthrough(
                     store, resolved_settings, diagnostics
                 ),
+                prompt_catalog=FilePromptPackageCatalog(resolved_settings.prompt_root),
+                prompt_profile_validator=PromptProfileValidator(
+                    FilePromptPackageCatalog(resolved_settings.prompt_root)
+                ),
             )
         application.state.api_dependencies = resolved
         application.state.api_settings = resolved_settings
+        application.state.token_verifier = KeycloakTokenVerifier(
+            resolved_settings.keycloak_issuer,
+            resolved_settings.keycloak_audience,
+            jwks_uri=resolved_settings.keycloak_jwks_uri,
+        )
         try:
             yield
         finally:
-            if llm_client is not None:
-                llm_client.close()
+            if llm_clients is not None:
+                llm_clients.lmstudio.close()
+                llm_clients.groq.close()
+                llm_clients.gemini.close()
 
     application = FastAPI(
         title=resolved_settings.title,
@@ -148,41 +195,108 @@ def _compose_game_state_operations(
     )
 
 
-def _build_llm_client(settings: ApiSettings) -> LmStudioClient:
-    runtime_configuration = TomlLlmConfigurationLoader().load(settings.llm_config_path)
-    provider = runtime_configuration.provider("lmstudio")
-    return LmStudioClient(
-        LmStudioSettings(provider.base_url, timeout_seconds=provider.timeout_seconds)
+@dataclass(frozen=True, slots=True)
+class _LlmClients:
+    """Every provider transport, built once and reused across every task.
+
+    Building all of them unconditionally — even when a fresh install only
+    ever routes to one — keeps Composition Root simple and matches how
+    ``RoutingXAdapter`` picks between pre-built adapters per call rather than
+    constructing a client per request. After the shared-core refactor, every
+    provider uses the same ``OpenAiCompatibleClient``, differing only in
+    which settings-resolver closure it was built with. No client resolves
+    its settings (base_url, api_key) until a request actually goes out, so
+    an unconfigured provider (e.g. no Groq key yet) does not prevent
+    startup — see ``OpenAiCompatibleClient.complete``.
+    """
+
+    lmstudio: OpenAiCompatibleClient
+    groq: OpenAiCompatibleClient
+    gemini: OpenAiCompatibleClient
+
+
+def _build_llm_clients(settings: ApiSettings) -> _LlmClients:
+    def resolve_lmstudio_settings() -> OpenAiCompatibleSettings:
+        # Reloaded on every call so that changes to configs/llm.toml (base_url,
+        # timeout) take effect without restarting the server, matching the
+        # per-call reload already used for task/model selection.
+        runtime_configuration = TomlLlmConfigurationLoader().load(settings.llm_config_path)
+        provider = runtime_configuration.provider("lmstudio")
+        return lmstudio_settings(provider.base_url, timeout_seconds=provider.timeout_seconds)
+
+    def resolve_groq_settings() -> OpenAiCompatibleSettings:
+        runtime_configuration = TomlLlmConfigurationLoader().load(settings.llm_config_path)
+        provider = runtime_configuration.provider("groq")
+        return groq_settings(
+            provider.base_url,
+            api_token=provider.api_key,
+            timeout_seconds=provider.timeout_seconds,
+        )
+
+    def resolve_gemini_settings() -> OpenAiCompatibleSettings:
+        runtime_configuration = TomlLlmConfigurationLoader().load(settings.llm_config_path)
+        provider = runtime_configuration.provider("gemini")
+        return gemini_settings(
+            provider.base_url,
+            api_token=provider.api_key,
+            timeout_seconds=provider.timeout_seconds,
+        )
+
+    return _LlmClients(
+        lmstudio=OpenAiCompatibleClient(resolve_lmstudio_settings),
+        groq=OpenAiCompatibleClient(resolve_groq_settings),
+        gemini=OpenAiCompatibleClient(resolve_gemini_settings),
     )
 
 
-def _compose_initialize_game_run(
-    store: PostgresGameStore,
+def _compose_propose_game_run(
+    proposal_store: InMemoryProposalStore,
     settings: ApiSettings,
-    client: LmStudioClient,
+    clients: _LlmClients,
     diagnostics: StructlogDiagnosticsLog,
-) -> InitializeGameRun:
+) -> ProposeGameRun:
     catalog = FilePromptPackageCatalog(settings.prompt_root)
     generation_config = TomlGenerationConfigurationResolver(settings.llm_config_path)
-    validator = PromptProfileValidator(catalog)
     story_initializer = InitializeStory(
         GenerateInitialStoryState(
             StoryInitializationPromptResolver(catalog),
             generation_config,
-            LmStudioStoryInitializationAdapter(client),
+            RoutingStoryInitializationAdapter(
+                {
+                    "lmstudio": LmStudioStoryInitializationAdapter(clients.lmstudio),
+                    "groq": GroqStoryInitializationAdapter(clients.groq),
+                    "gemini": GeminiStoryInitializationAdapter(clients.gemini),
+                }
+            ),
             lambda: datetime.now(UTC),
             diagnostics,
         ),
         ExtractInitialWorldState(
             InitialExtractionPromptSelectionResolver(catalog),
             generation_config,
-            LmStudioInitialWorldExtractionAdapter(client),
+            RoutingInitialWorldExtractionAdapter(
+                {
+                    "lmstudio": LmStudioInitialWorldExtractionAdapter(clients.lmstudio),
+                    "groq": GroqInitialWorldExtractionAdapter(clients.groq),
+                    "gemini": GeminiInitialWorldExtractionAdapter(clients.gemini),
+                }
+            ),
             diagnostics=diagnostics,
         ),
         diagnostics,
     )
-    return InitializeGameRun(
-        story_initializer,
+    return ProposeGameRun(story_initializer, proposal_store, diagnostics=diagnostics)
+
+
+def _compose_confirm_game_run_proposal(
+    store: PostgresGameStore,
+    proposal_store: InMemoryProposalStore,
+    settings: ApiSettings,
+    diagnostics: StructlogDiagnosticsLog,
+) -> ConfirmGameRunProposal:
+    validator = PromptProfileValidator(FilePromptPackageCatalog(settings.prompt_root))
+    return ConfirmGameRunProposal(
+        proposal_store,
         CreateGameRun(store, validator),
         diagnostics=diagnostics,
     )
@@ -191,7 +305,7 @@ def _compose_initialize_game_run(
 def _compose_play_story_turn(
     store: PostgresGameStore,
     settings: ApiSettings,
-    client: LmStudioClient,
+    clients: _LlmClients,
     diagnostics: StructlogDiagnosticsLog,
 ) -> PlayStoryTurn:
     catalog = FilePromptPackageCatalog(settings.prompt_root)
@@ -202,20 +316,38 @@ def _compose_play_story_turn(
         GenerateStory(
             StoryPromptSelectionResolver(catalog),
             generation_config,
-            LmStudioStoryGenerationAdapter(client),
+            RoutingStoryGenerationAdapter(
+                {
+                    "lmstudio": LmStudioStoryGenerationAdapter(clients.lmstudio),
+                    "groq": GroqStoryGenerationAdapter(clients.groq),
+                    "gemini": GeminiStoryGenerationAdapter(clients.gemini),
+                }
+            ),
             diagnostics,
         ),
         ExtractStoryTurnChanges(
             ExtractionPromptSelectionResolver(catalog),
             generation_config,
-            LmStudioTurnExtractionAdapter(client),
+            RoutingTurnExtractionAdapter(
+                {
+                    "lmstudio": LmStudioTurnExtractionAdapter(clients.lmstudio),
+                    "groq": GroqTurnExtractionAdapter(clients.groq),
+                    "gemini": GeminiTurnExtractionAdapter(clients.gemini),
+                }
+            ),
             diagnostics,
         ),
         ApproveStoryTurnChanges(diagnostics=diagnostics),
         SummarizeStory(
             SummaryPromptSelectionResolver(catalog),
             generation_config,
-            LmStudioStorySummaryAdapter(client),
+            RoutingStorySummaryAdapter(
+                {
+                    "lmstudio": LmStudioStorySummaryAdapter(clients.lmstudio),
+                    "groq": GroqStorySummaryAdapter(clients.groq),
+                    "gemini": GeminiStorySummaryAdapter(clients.gemini),
+                }
+            ),
             diagnostics,
         ),
         CommitCompletedTurn(store, store, diagnostics),

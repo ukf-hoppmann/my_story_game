@@ -23,13 +23,13 @@ class PostgresSnapshotWriter:
             """
             INSERT INTO game_state_configurations (
                 run_id, revision, language, genre, tone, prose_style,
-                perspective, pacing, control_mode, player_agency,
+                perspective, pacing, length, control_mode, player_agency,
                 consequence, challenge, content_profile, narrative_boundaries,
                 prompt_package_id, prompt_package_version
             ) VALUES (
                 %(run_id)s, %(revision)s, %(language)s,
                 %(genre)s, %(tone)s, %(prose_style)s, %(perspective)s,
-                %(pacing)s, %(control_mode)s, %(player_agency)s,
+                %(pacing)s, %(length)s, %(control_mode)s, %(player_agency)s,
                 %(consequence)s, %(challenge)s, %(content_profile)s,
                 %(narrative_boundaries)s, %(prompt_package_id)s,
                 %(prompt_package_version)s

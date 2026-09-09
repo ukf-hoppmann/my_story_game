@@ -9,12 +9,12 @@ from .initialization_errors import (
     StoryInitializationErrorKind,
     StoryInitializationStage,
 )
-from .initialization_models import PlayerCharacterSeed
+from .initialization_models import ControllableCharacterSeed
 
 
 def validate_initialization_choices(
     configuration: GameConfiguration,
-    player_character: PlayerCharacterSeed | None,
+    controllable_characters: tuple[ControllableCharacterSeed, ...],
     stage: StoryInitializationStage,
 ) -> StoryInitializationError | None:
     profile = configuration.prompt_profile
@@ -33,16 +33,17 @@ def validate_initialization_choices(
             stage,
             "First und Second Person sind im Director Mode nicht erlaubt.",
         )
-    if control_mode == "player" and player_character is None:
+    if control_mode == "player" and len(controllable_characters) != 1:
         return StoryInitializationError(
             StoryInitializationErrorKind.MISSING_PLAYER_CHARACTER,
             stage,
-            "Der Player Mode benötigt einen vom User angelegten Charakter.",
+            "Der Player Mode benötigt genau einen vom User angelegten Charakter.",
         )
-    if control_mode == "director" and player_character is not None:
+    names = [seed.name.casefold() for seed in controllable_characters]
+    if len(names) != len(set(names)):
         return StoryInitializationError(
-            StoryInitializationErrorKind.UNEXPECTED_PLAYER_CHARACTER,
+            StoryInitializationErrorKind.DUPLICATE_CONTROLLABLE_CHARACTER,
             stage,
-            "Der Director Mode besitzt keinen Spielercharakter.",
+            "Steuerbare Figuren müssen sich im Namen unterscheiden.",
         )
     return None

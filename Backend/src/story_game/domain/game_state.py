@@ -37,20 +37,19 @@ class GameState:
     story: StoryState
 
     def validate_members(self, members: tuple[GameRunMember, ...]) -> None:
-        """Validate optional player bindings against this revision's world."""
+        """Validate every bound controlled entity against this revision's world."""
         for member in members:
-            if member.player_entity_id is None:
-                continue
-            try:
-                player = self.world.entity(member.player_entity_id)
-            except InvalidReferenceError as error:
-                raise InvalidReferenceError(
-                    "Eine Mitgliedschaft verweist auf eine unbekannte Spielfigur"
-                ) from error
-            if player.actor is None or player.actor.role is not ActorRole.PLAYER:
-                raise InvalidReferenceError(
-                    "Eine Mitgliedschaft muss auf einen Spielercharakter zeigen"
-                )
+            for entity_id in member.controlled_entity_ids:
+                try:
+                    player = self.world.entity(entity_id)
+                except InvalidReferenceError as error:
+                    raise InvalidReferenceError(
+                        "Eine Mitgliedschaft verweist auf eine unbekannte Spielfigur"
+                    ) from error
+                if player.actor is None or player.actor.role is not ActorRole.PLAYER:
+                    raise InvalidReferenceError(
+                        "Eine Mitgliedschaft muss auf einen Spielercharakter zeigen"
+                    )
 
     def apply(self, changes: ApprovedChangeSet) -> GameState:
         """Apply approved world operations as one non-story revision."""

@@ -28,6 +28,7 @@ class PromptProfile:
     consequence: str
     challenge: str
     content_profile: str
+    length: str = "standard"
 
     def __post_init__(self) -> None:
         for field_name, label in (
@@ -41,6 +42,7 @@ class PromptProfile:
             ("consequence", "Die Konsequenz"),
             ("challenge", "Die Herausforderung"),
             ("content_profile", "Das Inhaltsprofil"),
+            ("length", "Die Textlänge"),
         ):
             object.__setattr__(self, field_name, _required(getattr(self, field_name), label))
 
@@ -57,6 +59,7 @@ class PromptProfile:
             ("consequence", self.consequence),
             ("challenge", self.challenge),
             ("content_profile", self.content_profile),
+            ("length", self.length),
         )
 
 

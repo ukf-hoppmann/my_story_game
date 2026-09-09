@@ -9,9 +9,10 @@ from story_game.application.initialization_errors import (
     StoryInitializationStage,
 )
 from story_game.application.initialization_models import (
+    ControllableCharacterSeed,
     InitializedStory,
-    PlayerCharacterSeed,
 )
+from story_game.application.initial_world_extraction import WorldExtractionResult
 from story_game.application.initialize_story import InitializeStory, InitializeStoryRequest
 from story_game.domain import (
     GameConfiguration,
@@ -63,20 +64,22 @@ def test_orchestrates_story_then_world_and_returns_both_transient_states() -> No
     )
     world = WorldState()
     story_generation = RecordingOperation(Success(story))
-    world_extraction = RecordingOperation(Success(world))
-    seed = PlayerCharacterSeed("Maren")
+    world_extraction = RecordingOperation(
+        Success(WorldExtractionResult(world, "Der Dungeon"))
+    )
+    seed = ControllableCharacterSeed("Maren")
 
     result = InitializeStory(story_generation, world_extraction).apply(
         InitializeStoryRequest(
-            configuration(), "Maren geht in den Dungeon.", seed
+            configuration(), "Maren geht in den Dungeon.", (seed,)
         )
     )
 
-    assert result == Success(InitializedStory(story, world))
+    assert result == Success(InitializedStory(story, world, "Der Dungeon"))
     assert story_generation.requests[0].initial_prompt == "Maren geht in den Dungeon."
     extraction_request = world_extraction.requests[0]
     assert extraction_request.story_state is story
-    assert extraction_request.player_character is seed
+    assert extraction_request.controllable_characters == (seed,)
     assert not hasattr(extraction_request, "initial_prompt")
 
 
@@ -91,7 +94,7 @@ def test_does_not_extract_when_story_generation_fails() -> None:
 
     result = InitializeStory(story_generation, world_extraction).apply(
         InitializeStoryRequest(
-            configuration(), "Maren geht los.", PlayerCharacterSeed("Maren")
+            configuration(), "Maren geht los.", (ControllableCharacterSeed("Maren"),)
         )
     )
 
@@ -117,7 +120,7 @@ def test_returns_extraction_failure_without_a_partial_initialized_result() -> No
         RecordingOperation(Success(story)), RecordingOperation(Failure(error))
     ).apply(
         InitializeStoryRequest(
-            configuration(), "Maren geht los.", PlayerCharacterSeed("Maren")
+            configuration(), "Maren geht los.", (ControllableCharacterSeed("Maren"),)
         )
     )
 

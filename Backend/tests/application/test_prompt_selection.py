@@ -53,6 +53,7 @@ def test_story_selection_resolves_all_profile_options_before_the_adapter() -> No
         "consequence",
         "challenge",
         "content_profile",
+        "length",
     ]
     assert selection.options[0].description.startswith("Bedrohliche Fantasy")
     assert selection.language == "de"
@@ -115,7 +116,7 @@ def test_initial_extraction_selection_uses_its_own_task() -> None:
     selection = resolver.resolve("story.base", "1")
 
     assert selection.task.id == "worldstate_initialization"
-    assert "Jede Referenz auf ihn" in selection.task.text
+    assert "ohne eine von ihnen als Spielerfigur zu markieren" in selection.task.text
     assert "höchstens einmal" in selection.task.text
     assert selection.option.category_id == "extraction"
     assert selection.option.option_id == "combined"

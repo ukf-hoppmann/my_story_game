@@ -1,14 +1,26 @@
 # The single project-owned LLM configuration.
 # Replace the three concrete model IDs when the local LM Studio model differs.
+#
+# Secrets (e.g. a Groq api_key) never go in this file — they are merged in
+# from the sibling, gitignored configs/llm.secrets.toml at load time (copy
+# configs/llm.secrets.toml.example to get started).
 
 [providers.lmstudio]
 base_url = "http://host.docker.internal:1234/v1"
 timeout_seconds = 600
 
+[providers.groq]
+base_url = "https://api.groq.com/openai/v1"
+timeout_seconds = 60
+
+[providers.gemini]
+base_url = "https://generativelanguage.googleapis.com/v1beta/openai"
+timeout_seconds = 60
+
 [task_models]
-story = "model.story.default"
-extraction = "model.extraction.default"
-summary = "model.summary.default"
+story = "model.story.groq"
+extraction = "model.extraction.gemini"
+summary = "model.summary.gemini"
 
 [generation_options.story]
 temperature = 0.5
@@ -19,20 +31,62 @@ temperature = 0.3
 [generation_options.summary]
 temperature = 0.5
 
+
+#######################
+######## STORY ########
+#######################
+
 [[models]]
 id = "model.story.default"
 task = "story"
 provider_id = "lmstudio"
-model_id = "mistralai/mistral-small-3.2"
+#model_id = "fwvision-qwen3-vl-8b-v3"
+#model_id = "mistralai/mistral-small-3.2"
+model_id = "qwen3.8-27b-turbo-fable-cold-fusion-735-882-heretic-uncensored-neo-coder-max-mtp"
+
+[[models]]
+id = "model.story.groq"
+task = "story"
+provider_id = "groq"
+model_id = "openai/gpt-oss-120b"
+
+############################
+######## EXTRACTION ########
+############################
 
 [[models]]
 id = "model.extraction.default"
 task = "extraction"
 provider_id = "lmstudio"
-model_id = "llama@q4_k_m"
+#model_id = "llama@f32"
+model_id = "qwen3.8-27b-turbo-fable-cold-fusion-735-882-heretic-uncensored-neo-coder-max-mtp"
+
+
+[[models]]
+id = "model.extraction.groq"
+task = "extraction"
+provider_id = "groq"
+model_id = "openai/gpt-oss-120b"
+
+[[models]]
+id = "model.extraction.gemini"
+task = "extraction"
+provider_id = "gemini"
+model_id = "gemini-3.5-flash-lite"
+
+#########################
+######## SUMMARY ########
+#########################
 
 [[models]]
 id = "model.summary.default"
 task = "summary"
 provider_id = "lmstudio"
-model_id = "mistralai/mistral-small-3.2"
+#model_id = "mistralai/mistral-small-3.2"
+model_id = "qwen3.8-27b-turbo-fable-cold-fusion-735-882-heretic-uncensored-neo-coder-max-mtp"
+
+[[models]]
+id = "model.summary.gemini"
+task = "summary"
+provider_id = "gemini"
+model_id = "gemini-3.5-flash-lite"

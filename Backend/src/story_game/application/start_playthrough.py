@@ -25,7 +25,7 @@ from story_game.application.game_state import (
     LoadGameRequest,
 )
 from story_game.application.game_state.errors import GameStateOperationError
-from story_game.application.initialize_game_run import RunInitiator
+from story_game.application.run_initiator import RunInitiator
 from story_game.application.start_playthrough_errors import (
     PlaythroughError,
     PlaythroughErrorKind,
@@ -74,7 +74,13 @@ class StartPlaythrough:
         self._diagnostics.trace(
             "start_playthrough.start", source_run_id=str(request.source_run_id)
         )
-        loaded = self._load_game.apply(LoadGameRequest(request.source_run_id))
+        loaded = self._load_game.apply(
+            LoadGameRequest(
+                request.source_run_id,
+                request.initiator.issuer,
+                request.initiator.subject,
+            )
+        )
         if isinstance(loaded, Failure):
             return loaded
         source_run, source_state = loaded.data.run, loaded.data.state
@@ -88,8 +94,8 @@ class StartPlaythrough:
                 )
             )
 
-        player_entity_id = next(
-            (member.player_entity_id for member in source_run.members), None
+        controlled_entity_ids = next(
+            (member.controlled_entity_ids for member in source_run.members), ()
         )
         run_id = self._new_id()
         timestamp = self._now()
@@ -103,7 +109,7 @@ class StartPlaythrough:
                     issuer=request.initiator.issuer,
                     subject=request.initiator.subject,
                     game_role=GameRole.OWNER,
-                    player_entity_id=player_entity_id,
+                    controlled_entity_ids=controlled_entity_ids,
                 ),
             ),
             created_at=timestamp,

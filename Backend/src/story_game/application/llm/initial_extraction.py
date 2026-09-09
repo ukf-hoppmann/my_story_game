@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from story_game.application.initialization_models import PlayerCharacterSeed
 from story_game.domain import EntityKind, RelationKind
 
 
@@ -104,6 +103,13 @@ class WorldInitializationCandidate:
     where the narration looks. The Application maps them to stable IDs and
     rejects references that are unknown, duplicated, or not locations.
     """
+    suggested_title: str = ""
+    """A short, model-proposed title for the opening scene/story.
+
+    A pure display suggestion, not canonical: the Application normalizes and
+    may replace it (see ``initial_world_extraction.py``) before it is ever
+    shown to a caller. May be blank if the model omitted or emptied it.
+    """
 
     def __post_init__(self) -> None:
         object.__setattr__(
@@ -114,18 +120,26 @@ class WorldInitializationCandidate:
                 for reference in self.scene_refs
             ),
         )
+        object.__setattr__(self, "suggested_title", self.suggested_title.strip())
 
 
 @dataclass(frozen=True, slots=True)
 class InitialWorldExtractionRequest:
-    """Prepared initial extraction context without prompt or canonical state."""
+    """Prepared initial extraction context without prompt or canonical state.
+
+    Deliberately carries no player-character seed: the model extracts every
+    narratively established character the same way, without any reserved
+    reference for "the" player. Which extracted character (if any) becomes
+    player-controlled is an Application decision made after extraction, at
+    proposal-confirmation time — see ``propose_game_run.py`` and
+    ``confirm_game_run_proposal.py``.
+    """
 
     system_prompts: tuple[str, ...]
     opening_narration: str
     language: str
     perspective: str
     control_mode: str
-    player_character: PlayerCharacterSeed | None = None
 
     def __post_init__(self) -> None:
         prompts = tuple(prompt.strip() for prompt in self.system_prompts if prompt.strip())

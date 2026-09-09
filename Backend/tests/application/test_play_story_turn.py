@@ -9,10 +9,11 @@ from story_game.application.extract_story_turn_changes import ExtractStoryTurnCh
 from story_game.application.game_state import (
     CommitCompletedTurn,
     LoadGame,
+    RunAccessDenied,
 )
 from story_game.application.generate_story import GenerateStory
 from story_game.application.summarize_story import SummarizeStory
-from story_game.application.initialize_game_run import RunInitiator
+from story_game.application.run_initiator import RunInitiator
 from story_game.application.llm import (
     CandidateEntity,
     CandidateLink,
@@ -120,7 +121,7 @@ class FakeExtractionPort:
         return self.result
 
 
-def run_with(player_entity_id=w.MAREN) -> GameRun:
+def run_with(controlled_entity_ids=(w.MAREN,)) -> GameRun:
     timestamp = datetime(2026, 8, 17, tzinfo=UTC)
     return GameRun(
         RUN_ID,
@@ -129,7 +130,10 @@ def run_with(player_entity_id=w.MAREN) -> GameRun:
         StateRevision(1),
         (
             GameRunMember(
-                INITIATOR.issuer, INITIATOR.subject, GameRole.OWNER, player_entity_id
+                INITIATOR.issuer,
+                INITIATOR.subject,
+                GameRole.OWNER,
+                controlled_entity_ids,
             ),
         ),
         timestamp,
@@ -267,6 +271,13 @@ def test_a_rejected_proposal_leaves_the_state_untouched() -> None:
 
 
 def test_an_identity_outside_the_run_cannot_play_a_turn() -> None:
+    """Rejected by ``LoadGame``'s membership check before any turn logic runs.
+
+    Access to a run (whose identities may play, view, or fork it) is enforced
+    once, centrally, in ``LoadGame`` — not re-implemented per use case. See
+    also the equivalent HTTP-level assertion in
+    ``tests/api/test_api.py::test_api_rejects_a_turn_for_an_unknown_member``.
+    """
     operation, store = workflow()
 
     result = operation.apply(
@@ -276,12 +287,12 @@ def test_an_identity_outside_the_run_cannot_play_a_turn() -> None:
     )
 
     assert isinstance(result, Failure)
-    assert result.error.kind is StoryTurnErrorKind.UNKNOWN_MEMBER
+    assert isinstance(result.error, RunAccessDenied)
     assert store.committed is None
 
 
 def test_director_control_without_a_bound_figure_can_still_play() -> None:
-    operation, _ = workflow(run=run_with(player_entity_id=None))
+    operation, _ = workflow(run=run_with(controlled_entity_ids=()))
 
     result = operation.apply(request())
 

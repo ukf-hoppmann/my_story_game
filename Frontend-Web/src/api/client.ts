@@ -2,11 +2,14 @@ import type {
   ApiErrorBody,
   ConfirmRunProposalRequest,
   GameDocument,
+  GameState,
   PlayTurnRequest,
   ProposeRunRequest,
+  PromptProfileCatalog,
   RunProposal,
   RunSummaryList,
   TurnResult,
+  UpdateConfigurationRequest,
 } from "./types";
 
 const API_BASE_URL: string =
@@ -26,8 +29,9 @@ export class ApiError extends Error {
   }
 }
 
-// Single injection point for a future auth header (Keycloak). Nothing
-// populates this yet — the backend uses one fixed dev identity today.
+// Single injection point for the auth header (Keycloak), wired up by
+// `api/auth.ts`. Kept as a plain module-level seam so the request layer
+// itself has no dependency on any particular auth library.
 let authHeaderProvider: (() => Record<string, string>) | null = null;
 
 export function setAuthHeaderProvider(
@@ -66,6 +70,12 @@ export async function checkHealth(): Promise<{ status: string }> {
   return request("/health");
 }
 
+/** Public catalog of selectable story-creation options (genre, tone, ...).
+ *  Requires no auth — used to render the wizard before/without a run. */
+export async function fetchPromptProfileCatalog(): Promise<PromptProfileCatalog> {
+  return request("/api/v1/prompt-profile");
+}
+
 export async function listRuns(): Promise<RunSummaryList> {
   return request("/api/v1/runs");
 }
@@ -98,6 +108,16 @@ export async function confirmRun(
 
 export async function startPlaythrough(runId: string): Promise<GameDocument> {
   return request(`/api/v1/runs/${runId}/playthroughs`, { method: "POST" });
+}
+
+export async function updateConfiguration(
+  runId: string,
+  payload: UpdateConfigurationRequest,
+): Promise<GameState> {
+  return request(`/api/v1/runs/${runId}/configuration`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
 }
 
 export async function playTurn(

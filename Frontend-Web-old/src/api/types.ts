@@ -1,7 +1,6 @@
 // Hand-written types mirroring the backend's Pydantic schemas
-// (Backend/src/story_game/api/schemas/). Deliberately maintained without
-// OpenAPI code generation while the frontend remains a small MVP — see
-// Frontend-Web/README.md for the original rationale, carried over here.
+// (Backend/src/story_game/api/schemas/). They are deliberately maintained
+// without OpenAPI code generation while the frontend remains a small MVP.
 
 export type GameRunStatus = "draft" | "active" | "paused" | "completed";
 export type GameRole = "owner" | "player";
@@ -10,16 +9,6 @@ export type ActorRole = "player" | "npc" | "neutral";
 export type GoalKind = "main" | "side";
 export type GoalStatus = "open" | "completed" | "failed";
 export type EntityKind = "character" | "location" | "item" | "creature" | "faction";
-export type RelationKind =
-  | "located_in"
-  | "possesses"
-  | "contains"
-  | "member_of"
-  | "knows"
-  | "allied_with"
-  | "hostile_to"
-  | "related_to";
-export type VisibilityScope = "public" | "player_known" | "actor_known" | "director_only";
 
 export interface ControllableCharacterSeed {
   name: string;
@@ -56,11 +45,6 @@ export interface GameRun {
   updated_at: string;
 }
 
-export interface Visibility {
-  scope: VisibilityScope;
-  actor_id: string | null;
-}
-
 export interface WorldEntity {
   id: string;
   kind: EntityKind;
@@ -71,39 +55,11 @@ export interface WorldEntity {
   aliases: string[];
 }
 
-export interface EntityLink {
-  id: string;
-  source_id: string;
-  target_id: string;
-  kind: RelationKind;
-  visibility: Visibility;
-  quantity: number | null;
-  description: string | null;
-}
-
 export interface Fact {
   id: string;
   statement: string;
-  visibility: Visibility;
+  visibility: { scope: string; actor_id: string | null };
   subject_id: string | null;
-}
-
-/** A fact an actor (the player, an NPC, ...) has learned — and possibly
- *  since forgotten. `learned_at`/`forgotten_at` are story-turn sequence
- *  numbers, not timestamps. */
-export interface KnowledgeEntry {
-  actor_id: string;
-  fact_id: string;
-  learned_at: number;
-  forgotten_at: number | null;
-}
-
-/** A world "law"/boundary, shaped like a Fact but conceptually distinct.
- *  Not surfaced in any screen yet. */
-export interface WorldRule {
-  id: string;
-  statement: string;
-  visibility: Visibility;
 }
 
 export interface Goal {
@@ -117,10 +73,10 @@ export interface Goal {
 
 export interface WorldState {
   entities: WorldEntity[];
-  links: EntityLink[];
+  links: unknown[];
   facts: Fact[];
-  knowledge: KnowledgeEntry[];
-  rules: WorldRule[];
+  knowledge: unknown[];
+  rules: unknown[];
   goals: Goal[];
   scene_location_ids: string[];
 }
@@ -157,9 +113,6 @@ export interface StoryState {
 export interface GameState {
   run_id: string;
   revision: number;
-  // Not typed further yet — no screen consumes configuration fields until
-  // Schritt 7/8 (Wizard); type it precisely then, against the live
-  // /api/v1/prompt-profile contract rather than guessing the shape now.
   configuration: unknown;
   world: WorldState;
   story: StoryState;
@@ -171,48 +124,10 @@ export interface GameDocument {
   game_state: GameState;
 }
 
-/** The story-creation config fields a user can choose (genre, tone, ...).
- *  Deliberately typed as `string`, not literal unions: the allowed values
- *  are served live by `GET /api/v1/prompt-profile` and must be sourced from
- *  there (see PromptProfileCatalog below), not hardcoded on the frontend. */
-export interface EditablePromptProfile {
-  genre: string;
-  tone: string;
-  prose_style: string;
-  perspective: string;
-  pacing: string;
-  length: string;
-  player_agency: string;
-  consequence: string;
-  challenge: string;
-  content_profile: string;
-}
-
-export interface PromptProfileOption {
-  id: string;
-  description: string;
-}
-
-export interface PromptProfileCategory {
-  id: string;
-  default_option_id: string;
-  options: PromptProfileOption[];
-}
-
-/** Response of `GET /api/v1/prompt-profile` — the live source of truth for
- *  every selectable option in the story-creation wizard. */
-export interface PromptProfileCatalog {
-  package_id: string;
-  package_version: string;
-  categories: PromptProfileCategory[];
-}
-
 export interface ProposeRunRequest {
   initial_prompt: string;
   control_mode: ControlMode;
   controllable_characters: ControllableCharacterSeed[];
-  language?: string;
-  prompt_profile?: EditablePromptProfile;
 }
 
 export interface RunProposal {
@@ -239,12 +154,6 @@ export interface ConfirmRunProposalRequest {
   run_name?: string;
   character_decisions: CharacterDecision[];
   item_decisions: ItemDecision[];
-}
-
-export interface UpdateConfigurationRequest {
-  base_revision: number;
-  language: string;
-  prompt_profile: EditablePromptProfile;
 }
 
 export interface PlayTurnRequest {

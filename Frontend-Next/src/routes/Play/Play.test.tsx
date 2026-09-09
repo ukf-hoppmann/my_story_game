@@ -119,6 +119,14 @@ describe("Play", () => {
     expect(screen.getByText("Zug 1")).toBeInTheDocument();
   });
 
+  it("shows a scene-art placeholder above the story feed for an active run", async () => {
+    vi.spyOn(client, "loadRun").mockResolvedValue(buildDocument());
+    renderPlay();
+
+    expect(await screen.findByText("Platzhalter · Szenenbild folgt")).toBeInTheDocument();
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+  });
+
   it("shows the sidebar panels once the run has loaded", async () => {
     vi.spyOn(client, "loadRun").mockResolvedValue(
       buildDocument(

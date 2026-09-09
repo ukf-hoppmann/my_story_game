@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useLoadRunQuery, usePlayTurnMutation, useStartPlaythroughMutation } from "../../api/apiSlice";
 import { Paragraphs } from "../../components/Paragraphs";
 import { Button } from "../../components/Button/Button";
+import { ImageSlot } from "../../components/ImageSlot/ImageSlot";
 import {
   ArrowRightIcon,
   BookIcon,
@@ -122,6 +123,12 @@ export function Play() {
               <h1>{doc.game_run.name}</h1>
               <span className="play-turn-badge">Zug {doc.game_state.story.current_turn_sequence}</span>
             </div>
+
+            <ImageSlot
+              className="play-scene-art"
+              label="Platzhalter · Szenenbild folgt"
+              alt={doc.game_run.name}
+            />
 
             <div className="play-story-feed">
               {doc.game_state.story.initialization && (

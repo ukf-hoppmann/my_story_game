@@ -111,6 +111,10 @@
   white-space: nowrap;
 }
 
+.play-scene-art {
+  height: 260px;
+}
+
 .play-story-feed {
   position: relative;
   background: linear-gradient(180deg, var(--parchment), var(--parchment-mid) 55%, #e2cf9c);

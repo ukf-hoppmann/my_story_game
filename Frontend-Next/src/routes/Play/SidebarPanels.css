@@ -1,0 +1,147 @@
+.sidebar-panel + .sidebar-panel {
+  margin-top: 20px;
+}
+
+.sidebar-empty {
+  font-size: 0.82rem;
+  color: var(--text-faint);
+  font-style: italic;
+  font-family: var(--font-body);
+}
+
+.goal-block + .goal-block {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--surface-line);
+}
+
+.goal-title {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 1.02rem;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.goal-desc {
+  font-size: 0.83rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--surface-line);
+  color: var(--text-muted);
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.status-pill::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-faint);
+}
+
+.status-pill--open {
+  border-color: var(--gold);
+  color: var(--gold-bright);
+}
+
+.status-pill--open::before {
+  background: var(--gold-bright);
+}
+
+.status-pill--failed {
+  border-color: var(--wine);
+  color: var(--wine-bright);
+}
+
+.status-pill--failed::before {
+  background: var(--wine-bright);
+}
+
+.fact-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fact-list li {
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+  padding-left: 15px;
+  position: relative;
+}
+
+.fact-list li::before {
+  content: "◇";
+  position: absolute;
+  left: 0;
+  top: 1px;
+  color: var(--gold);
+  font-size: 0.68rem;
+}
+
+.char-row {
+  display: flex;
+  gap: 12px;
+  padding: 11px 0;
+}
+
+.char-row + .char-row {
+  border-top: 1px solid var(--surface-line);
+}
+
+.char-avatar {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+}
+
+.char-body {
+  min-width: 0;
+}
+
+.char-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.char-name {
+  font-weight: 700;
+  font-size: 0.87rem;
+  color: var(--text);
+}
+
+.char-role {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--gold-bright);
+  border: 1px solid var(--surface-line);
+  padding: 2px 7px;
+  border-radius: 999px;
+}
+
+.char-desc {
+  font-size: 0.79rem;
+  color: var(--text-muted);
+  margin-top: 3px;
+  line-height: 1.42;
+}

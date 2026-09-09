@@ -11,6 +11,7 @@ import {
   ScrollIcon,
   TargetIcon,
 } from "../../icons";
+import { CharactersPanel, FactsPanel, GoalsPanel } from "./SidebarPanels";
 import "./Play.css";
 
 /** Recovery copy for the error codes the old PlayScreen specifically
@@ -177,7 +178,15 @@ export function Play() {
       </main>
 
       <aside className="play-sidebar">
-        <p className="play-sidebar-note">Ziele, Weltwissen und Figuren folgen in Schritt 10.</p>
+        {doc ? (
+          <>
+            <GoalsPanel goals={doc.game_state.world.goals} />
+            <FactsPanel facts={doc.game_state.world.facts} />
+            <CharactersPanel entities={doc.game_state.world.entities} />
+          </>
+        ) : (
+          <p className="play-sidebar-note">Ziele, Weltwissen und Figuren erscheinen, sobald die Geschichte geladen ist.</p>
+        )}
       </aside>
     </div>
   );

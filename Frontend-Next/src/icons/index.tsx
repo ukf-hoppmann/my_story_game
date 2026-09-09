@@ -78,6 +78,17 @@ export function ScrollIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function UsersIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} {...props}>
+      <circle cx="8.5" cy="8" r="3.1" />
+      <path d="M2.8 19c.6-3.6 3-5.6 5.7-5.6S13.9 15.4 14.5 19" />
+      <circle cx="17" cy="9" r="2.5" />
+      <path d="M15 19c.4-2.8 2-4.4 3.9-4.4" />
+    </svg>
+  );
+}
+
 export function CompassIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.4} {...props}>

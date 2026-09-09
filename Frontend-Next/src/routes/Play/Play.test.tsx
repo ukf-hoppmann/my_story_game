@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { apiSlice } from "../../api/apiSlice";
 import { ApiError } from "../../api/client";
 import * as client from "../../api/client";
-import type { GameDocument } from "../../api/types";
+import type { GameDocument, WorldState } from "../../api/types";
 import { Play } from "./Play";
 
 function buildStore() {
@@ -34,7 +34,10 @@ function renderPlay(runId = "11111111-1111-1111-1111-111111111111") {
 
 const RUN_ID = "11111111-1111-1111-1111-111111111111";
 
-function buildDocument(overrides: Partial<GameDocument["game_run"]> = {}): GameDocument {
+function buildDocument(
+  overrides: Partial<GameDocument["game_run"]> = {},
+  world: Partial<WorldState> = {},
+): GameDocument {
   return {
     schema_version: 1,
     game_run: {
@@ -51,7 +54,16 @@ function buildDocument(overrides: Partial<GameDocument["game_run"]> = {}): GameD
       run_id: RUN_ID,
       revision: 3,
       configuration: {},
-      world: { entities: [], links: [], facts: [], knowledge: [], rules: [], goals: [], scene_location_ids: [] },
+      world: {
+        entities: [],
+        links: [],
+        facts: [],
+        knowledge: [],
+        rules: [],
+        goals: [],
+        scene_location_ids: [],
+        ...world,
+      },
       story: {
         turns: [
           {
@@ -105,6 +117,50 @@ describe("Play", () => {
     expect(screen.getByText("Du: Ich untersuche die Laterne.")).toBeInTheDocument();
     expect(screen.getByText("Unter der Laterne glitzert ein silberner Faden.")).toBeInTheDocument();
     expect(screen.getByText("Zug 1")).toBeInTheDocument();
+  });
+
+  it("shows the sidebar panels once the run has loaded", async () => {
+    vi.spyOn(client, "loadRun").mockResolvedValue(
+      buildDocument(
+        {},
+        {
+          goals: [
+            {
+              id: "goal-1",
+              kind: "main",
+              title: "Finde den verschwundenen Kurier",
+              description: "Die Spur beginnt am Marktplatz.",
+              status: "open",
+              related_entity_ids: [],
+            },
+          ],
+          facts: [
+            {
+              id: "fact-1",
+              statement: "Das Nordtor wird bei Einbruch der Nacht verriegelt.",
+              visibility: { scope: "public", actor_id: null },
+              subject_id: null,
+            },
+          ],
+          entities: [
+            {
+              id: "char-1",
+              kind: "character",
+              label: "Bran",
+              description: "Wirkt besorgt, sagt aber wenig.",
+              actor: { role: "npc" },
+              conditions: [],
+              aliases: [],
+            },
+          ],
+        },
+      ),
+    );
+    renderPlay();
+
+    expect(await screen.findByText("Finde den verschwundenen Kurier")).toBeInTheDocument();
+    expect(screen.getByText("Das Nordtor wird bei Einbruch der Nacht verriegelt.")).toBeInTheDocument();
+    expect(screen.getByText("Bran")).toBeInTheDocument();
   });
 
   it("shows a draft banner with a start-playthrough CTA for a non-active run, navigating on success", async () => {

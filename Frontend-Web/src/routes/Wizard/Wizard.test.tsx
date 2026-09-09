@@ -170,6 +170,25 @@ describe("Wizard", () => {
     await user.click(screen.getByRole("button", { name: "Vorschlag erstellen" }));
 
     expect(await screen.findByRole("heading", { name: "Geschichte bestätigen" })).toBeInTheDocument();
+    // Regression: submitting without clicking any Stil badges must still
+    // send the catalog's defaults, not empty strings (the backend rejects
+    // those with a 422 string_too_short per field).
+    expect(client.proposeRun).toHaveBeenCalledWith(
+      expect.objectContaining({
+        prompt_profile: {
+          genre: "dark_fantasy",
+          tone: "balanced",
+          prose_style: "balanced",
+          perspective: "third_person_limited",
+          pacing: "balanced",
+          length: "standard",
+          player_agency: "strict",
+          consequence: "balanced",
+          challenge: "balanced",
+          content_profile: "teen",
+        },
+      }),
+    );
     expect(screen.getByText("Der Regen hatte die Spuren fast fortgespült.")).toBeInTheDocument();
     expect(screen.getByDisplayValue("Die Schatten von Auenfall")).toBeInTheDocument();
     expect(screen.getByText("Elian")).toBeInTheDocument();

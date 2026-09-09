@@ -1,4 +1,4 @@
-import { Fragment } from "react";
+import { Fragment, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import {
@@ -52,6 +52,23 @@ function findCategory(
 ): PromptProfileCategory | undefined {
   return categories?.find((category) => category.id === id);
 }
+
+/** Maps each prompt-profile catalog category to its wizard-state field.
+ *  `CategoryField` below only *displays* the catalog default until the user
+ *  clicks a badge — without this, an unedited field is submitted as an
+ *  empty string (the backend rejects that with 422 string_too_short). */
+const CATEGORY_FIELD_MAP: { categoryId: string; field: WizardTextField }[] = [
+  { categoryId: "genre", field: "genre" },
+  { categoryId: "tone", field: "tone" },
+  { categoryId: "prose_style", field: "proseStyle" },
+  { categoryId: "perspective", field: "perspective" },
+  { categoryId: "pacing", field: "pacing" },
+  { categoryId: "length", field: "length" },
+  { categoryId: "player_agency", field: "playerAgency" },
+  { categoryId: "consequence", field: "consequence" },
+  { categoryId: "challenge", field: "challenge" },
+  { categoryId: "content_profile", field: "contentProfile" },
+];
 
 interface CategoryFieldProps {
   category: PromptProfileCategory | undefined;
@@ -108,6 +125,28 @@ export function Wizard() {
   const [startPlaythrough, startState] = useStartPlaythroughMutation();
 
   const setField = (field: WizardTextField) => (value: string) => dispatch(fieldChanged({ field, value }));
+
+  // Seed the wizard state with the catalog's defaults once it loads, for
+  // every field the user hasn't touched yet — synchronizing with the
+  // external catalog data, not deriving a purely local default, so an
+  // effect (not "compute during render") is the right tool here.
+  useEffect(() => {
+    if (!catalog) {
+      return;
+    }
+    for (const { categoryId, field } of CATEGORY_FIELD_MAP) {
+      if (wizard[field]) {
+        continue;
+      }
+      const category = findCategory(catalog.categories, categoryId);
+      if (category) {
+        dispatch(fieldChanged({ field, value: category.default_option_id }));
+      }
+    }
+    // Only re-run when the catalog itself changes — re-checking on every
+    // wizard-field change would fight the user's own edits.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [catalog, dispatch]);
 
   async function handleCreateProposal() {
     try {

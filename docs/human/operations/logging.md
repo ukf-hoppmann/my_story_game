@@ -2,7 +2,7 @@
 
 Die Anwendung schreibt Logs nach stdout und — sofern konfiguriert — in eine
 rotierende Datei. Die zentrale Konfiguration liegt in
-[`Backend/configs/app.toml`](../../Backend/configs/app.toml) unter `[logging]`.
+[`Backend/configs/app.toml`](../../../Backend/configs/app.toml) unter `[logging]`.
 
 ## Profile
 
@@ -32,7 +32,7 @@ Hardcoded-Default.
 Standardmäßig wird nach `logs/story-game.log` geschrieben. Die Datei rotiert
 bei 10 MiB und behält fünf Backups. Der Pfad, die Größe und die Anzahl der
 Backups können in `[logging]` angepasst werden. Im Docker-Compose-Betrieb wird
-`Backend/logs` in den API-Container gemountet, damit die Datei Container-
+`Backend/logs` in den Backend-Container gemountet, damit die Datei Container-
 Neustarts übersteht.
 
 Das Logging ergänzt typisierte Fehler und ersetzt sie nicht. Wiederkehrende

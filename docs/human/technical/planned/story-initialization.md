@@ -2,9 +2,11 @@
 
 Status: `STORY-008`, `STORY-009` und `STORY-010` sind umgesetzt und
 verifiziert. `InitializeStory` liefert StoryState und WorldState transient als
-gemeinsames Ergebnis; `InitializeGameRun` führt beide Ergebnisse zusammen und
-persistiert den initialen GameRun atomar. Der öffentliche Startendpunkt bleibt
-Teil von `STORY-003`.
+gemeinsames Ergebnis. Die Lauf-API verwendet darüber den zweistufigen
+Workflow `ProposeGameRun` und `ConfirmGameRunProposal`: Erstere Operation
+hält die Eröffnung als owner-gebundenen, ablaufenden Vorschlag vor; erst die
+Bestätigung persistiert den initialen `GameRun` atomar. Der öffentliche
+Startendpunkt gehört zu `STORY-003`.
 
 Nachtrag: Director Mode ist kein Modus ohne steuerbare Figur mehr, sondern
 erlaubt 0..N explizit benannte steuerbare Figuren (siehe TASK-016). Player
@@ -34,13 +36,14 @@ InitializeStory
     └── transienter, validierter WorldState
 ```
 
-`InitializeGameRun` persistiert beide Ergebnisse gemeinsam als GameRun und
-GameState in Revision 1. Der Run startet im Status `DRAFT`; der aufrufende
-Benutzer erhält die `OWNER`-Mitgliedschaft. `GameRunMember.controlled_entity_ids`
-verweist auf alle `ActorRole.PLAYER`-Entitäten des WorldState, die aus den
-übergebenen Seeds entstanden sind — im Player Mode genau eine, im Director
-Mode 0..N. Alle internen IDs sind native UUIDs. Der erste reguläre
-Spielerzug bleibt StoryTurn 1 und erzeugt Revision 2.
+`ProposeGameRun` persistiert dabei noch nichts. `ConfirmGameRunProposal`
+persistiert die bestätigten Ergebnisse gemeinsam als GameRun und GameState in
+Revision 1. Der Run startet im Status `DRAFT`; der aufrufende Benutzer erhält
+die `OWNER`-Mitgliedschaft. `GameRunMember.controlled_entity_ids` verweist auf
+alle `ActorRole.PLAYER`-Entitäten des WorldState, die aus den übergebenen
+Seeds entstanden sind — im Player Mode genau eine, im Director Mode 0..N.
+Alle internen IDs sind native UUIDs. Der erste reguläre Spielerzug bleibt
+StoryTurn 1 und erzeugt Revision 2.
 
 ## Perspektive und Control Mode
 

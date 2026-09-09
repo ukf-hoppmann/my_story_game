@@ -22,8 +22,9 @@ Turn-Commit-Grenze. Die zentrale Laufzeitkonfiguration unter
 Die LM-Studio-Infrastruktur kann die definierte Story-Grenze live aufrufen und
 normalisierte Prosa oder einen `LLMError` liefern. Das versionierte
 Ein-Datei-Promptpaket und der validierende dateibasierte Catalog sind umgesetzt.
-`PlayStoryTurn`, `InitializeGameRun`, die Turn-Extraction, die Summary und die
-HTTP-API sind in der Composition Root verdrahtet.
+`PlayStoryTurn`, `ProposeGameRun`, `ConfirmGameRunProposal`, die
+Turn-Extraction, die Summary und die HTTP-API sind in der Composition Root
+verdrahtet.
 
 `GameConfiguration` speichert ein vollständiges explizites Promptprofil,
 erzählerische Grenzen sowie Paket-ID und -version. Die drei Modellreferenzen

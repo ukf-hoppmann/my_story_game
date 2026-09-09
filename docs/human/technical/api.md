@@ -3,19 +3,24 @@
 Die API deckt den vollständigen Lauf-Lebenszyklus ab: einen Vorschlag
 generieren, ihn zu einer Vorlage (`DRAFT`) bestätigen, sie als unabhängiges
 aktives Spiel (`ACTIVE`) abzweigen, einen Zug spielen und beides laden oder
-auflisten. Jeder Aufruf verlangt einen gültigen, von Keycloak signierten
-Bearer-Token (siehe unten); ohne einen solchen liefert die API HTTP 401.
+auflisten. Die Lauf-Endpunkte verlangen einen gültigen, von Keycloak
+signierten Bearer-Token (siehe unten); ohne einen solchen liefern sie HTTP
+401. Der reine Promptprofil-Katalog ist dagegen bewusst ohne Token lesbar:
+er enthält nur die vom Server auswählbaren Optionen und keine Spiel- oder
+Benutzerdaten.
 
 ## Endpunkte
 
 | Methode | Pfad | Zweck |
 | --- | --- | --- |
 | `GET` | `/health` | Erreichbarkeit prüfen |
+| `GET` | `/api/v1/prompt-profile` | Paket, Kategorien, Defaults und auswählbare Promptprofil-Optionen lesen (öffentlich) |
 | `GET` | `/api/v1/runs` | Eigene `DRAFT`-Vorlagen und `ACTIVE`-Spiele auflisten |
 | `GET` | `/api/v1/runs/{run_id}` | Aktuellen oder historischen (`?revision=N`) GameRun/GameState laden |
 | `POST` | `/api/v1/runs/proposals` | Vorschlag aus Initialprompt und Modus generieren; persistiert nichts |
 | `POST` | `/api/v1/runs` | Einen zuvor generierten Vorschlag zu einer neuen `DRAFT`-Vorlage bestätigen |
 | `POST` | `/api/v1/runs/{run_id}/playthroughs` | Eine `DRAFT`-Vorlage als neues unabhängiges `ACTIVE`-Spiel abzweigen |
+| `PATCH` | `/api/v1/runs/{run_id}/configuration` | Sprache und editierbare Erzähloptionen als neue Konfigurationsrevision speichern |
 | `POST` | `/api/v1/runs/{run_id}/turns` | Einen Zug in einem `ACTIVE`-Spiel spielen |
 
 ## Vorschlag, Vorlage und abgespieltes Spiel
@@ -62,11 +67,12 @@ bereits Mitglied der Quell-Vorlage sein, sonst HTTP 403
 (`"player"` oder `"director"`) und eine Liste `controllable_characters`
 steuerbarer Figuren (`name`, optional `description`). Im Player Mode muss die
 Liste genau ein Element enthalten; im Director Mode darf sie null oder
-mehrere Elemente enthalten. Die API verwendet dafür eine feste
-serverseitige `GameConfiguration` (`api/default_configuration.py`) — es
-gibt noch keine Konfigurations-Auswahl über die API; nur `control_mode`
-wird aus der Anfrage übernommen. Kein `run_name` an dieser Stelle — der
-wird erst beim Bestätigen gebraucht.
+mehrere Elemente enthalten. Zusätzlich kann der Client `language` sowie ein
+vollständiges `prompt_profile` übergeben. Lässt er eines dieser Felder weg,
+verwendet die API die bisherigen serverseitigen Defaults aus
+`api/default_configuration.py`, damit bestehende Clients unverändert
+funktionieren. Kein `run_name` an dieser Stelle — der wird erst beim
+Bestätigen gebraucht.
 
 `POST /api/v1/runs` verlangt `proposal_id` (aus der vorherigen
 `/proposals`-Antwort), optional `run_name`, sowie `character_decisions`
@@ -80,6 +86,35 @@ steuert.
 `proposed_change_count`, `summary_failed` und optional
 `summary_failure_message` als transiente Diagnose — ein Fehlschlag der
 Zusammenfassung lässt den Zug selbst unangetastet (siehe TASK-023).
+
+## Promptprofil auswählen und nachträglich ändern
+
+`GET /api/v1/prompt-profile` liefert den vom Server verwendeten Promptkatalog
+`story.base`/`1`: Paket-ID und -version sowie alle Kategorien mit Options-ID,
+Beschreibung und Default. Der Katalog enthält auch `control_mode` und
+`extraction`, damit ein Client seine Auswahloberfläche vollständig aufbauen
+kann. Sie sind aber keine editierbaren Felder des Promptprofils:
+`control_mode` wird beim Erstellen eines Vorschlags separat übergeben,
+`extraction` gehört nicht in die gespeicherte Spielkonfiguration. Der
+Endpunkt ist aktuell öffentlich und liefert keine nutzerbezogenen Daten.
+
+Das beim Vorschlag optional übergebene `prompt_profile` enthält genau die
+editierbaren Story-Kategorien `genre`, `tone`, `prose_style`, `perspective`,
+`pacing`, `length`, `player_agency`, `consequence`, `challenge` und
+`content_profile`. Die API validiert alle Options-IDs gegen das referenzierte
+Promptpaket, bevor sie den Modellworkflow startet. Erzählerische Grenzen,
+Paket-ID und -version bleiben serverbestimmt; `control_mode` wird nur beim
+Erstellen festgelegt, weil er die Mitgliedschafts- und Figurenregeln prägt.
+
+`PATCH /api/v1/runs/{run_id}/configuration` ersetzt die vollständige
+editierbare Auswahl eines bestehenden Runs. Der Request enthält
+`base_revision`, `language` und das vollständige editierbare `prompt_profile`
+(kein partieller Patch). Die API prüft Mitgliedschaft und erwartete Revision,
+validiert die Auswahl erneut und liefert den neuen `GameState` mit seiner
+Konfigurationsrevision zurück. Sie übernimmt dabei die vorhandenen
+`control_mode`, `narrative_boundaries`, `prompt_package_id` und
+`prompt_package_version` unverändert; diese Werte können über diesen
+Endpunkt nicht verändert werden.
 
 `GET /api/v1/runs` liefert `RunSummaryModel`-Einträge (`id`, `name`,
 `status`, `current_revision`, `game_role`, `updated_at`) ohne vollen
@@ -115,8 +150,9 @@ ID. Keycloak-, Prompt-Paket- und Promptprofil-Kennungen bleiben Text.
 
 ## Authentifizierung
 
-Jeder Aufruf muss einen `Authorization: Bearer <token>`-Header mit einem
-gültigen, von Keycloak signierten Access-Token mitschicken. `get_current_initiator`
+Alle Lauf-Endpunkte unter `/api/v1/runs` müssen einen
+`Authorization: Bearer <token>`-Header mit einem gültigen, von Keycloak
+signierten Access-Token mitschicken. `get_current_initiator`
 (`api/dependencies.py`) prüft diesen Token über `KeycloakTokenVerifier`
 (`api/auth/token_verifier.py`) gegen die JWKS (öffentliche Signaturschlüssel)
 des konfigurierten Realms und leitet daraus `issuer` (die Realm-URL) und
@@ -162,12 +198,14 @@ Jede Fehlerantwort hat die Form `{"error": <code>, "detail": <Text>, ...}`.
 | 409 | `run_not_active` | Ein Zug wurde gegen eine `DRAFT`-Vorlage versucht |
 | 409 | `playthrough_source_not_draft` | Ein Abzweig wurde von einem bereits aktiven Lauf versucht |
 | 502 | `story_model_unavailable` | Das Modell hat nicht geantwortet oder unbrauchbare Ausgabe geliefert |
-| 500 | `story_configuration_invalid` | Die feste Server-Konfiguration ist ungültig (kein Aufruferfehler) |
+| 500 | `story_configuration_invalid` | Die serverseitig validierte Spielkonfiguration ist ungültig (kein Aufruferfehler) |
 | 500 | `story_initialization_inconsistent` / `story_turn_inconsistent` | Die eigene Extraktions-/Validierungskette hat eine intern inkonsistente Antwort erzeugt |
 
 ## Swagger UI und OpenAPI
 
-Mit gestarteter API sind die Verträge verfügbar unter:
+Mit gestarteter API sind die Verträge direkt unter folgenden Adressen
+verfügbar; über den lokalen Compose-Proxy sind sie außerdem unter
+`http://backend.storygame.localhost/…` erreichbar:
 
 - Swagger UI: `http://localhost:8000/docs`
 - OpenAPI JSON: `http://localhost:8000/openapi.json`
@@ -175,7 +213,8 @@ Mit gestarteter API sind die Verträge verfügbar unter:
 
 ## Lokal starten
 
-PostgreSQL und API können gemeinsam gestartet werden:
+Der vollständige lokale Stack — PostgreSQL, Backend, Frontend, nginx und
+Keycloak — kann gemeinsam gestartet werden:
 
 ```bash
 ./story-starter start
@@ -189,6 +228,7 @@ Der Root-Launcher unterstützt außerdem:
 | --- | --- |
 | `start` | Services starten, ohne neu zu bauen |
 | `stop` | Container und Compose-Netzwerk entfernen |
+| `down` | Container, Compose-Netzwerk, Volumes und verwaiste Container entfernen (destruktiv) |
 | `upgrade` | API-Image neu bauen, alle Container neu erzeugen und starten |
 | `restart [service ...]` | alle oder ausgewählte Services neu starten |
 | `status [service ...]` | Service-Status anzeigen |
@@ -223,6 +263,7 @@ Platz für weitere Subprojekte (z.B. Mobile, Keycloak). `compose.yaml`,
 Backend-Entwicklung (`cd Backend && pytest`, `pip install -e .`) sind davon
 nicht betroffen.
 
-Für lokale Frontend-Entwicklung gegen eine im Browser laufende App erlaubt
-das Backend per CORS standardmäßig `http://localhost:5173` (Vite-Dev-Server);
-konfigurierbar über `STORY_GAME_CORS_ALLOWED_ORIGINS` (kommasepariert).
+Für die Compose-App erlaubt das Backend per CORS
+`http://storygame.localhost`; für einen separat gestarteten Vite-Dev-Server
+kann `STORY_GAME_CORS_ALLOWED_ORIGINS` entsprechend gesetzt werden
+(kommasepariert).

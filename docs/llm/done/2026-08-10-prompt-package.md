@@ -5,7 +5,7 @@ Status: Umgesetzt am 2026-08-10.
 ## Vertrag
 
 Das Paket `story.base` in Version `1` liegt vollständig in
-[`prompts/story.base/1.toml`](../../../prompts/story.base/1.toml). Es gibt keine
+[`Backend/prompts/story.base/1.toml`](../../../Backend/prompts/story.base/1.toml). Es gibt keine
 separaten Prompt-Textdateien. Der TOML-Aufbau enthält:
 
 - die Tasks `story_initialization`, `story_generation`,

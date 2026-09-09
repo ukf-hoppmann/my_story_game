@@ -272,6 +272,14 @@ After explicit rejection:
   - Goal: Die vorhandenen `InitializeGameRun`- und `PlayStoryTurn`-Workflows über echte HTTP-Endpunkte erreichbar machen, damit eine UI eine Geschichte auflisten, laden, starten und einen Zug spielen kann — ohne Keycloak, über eine fest verdrahtete, austauschbare Entwicklungsidentität. Ergänzt eine neue `StartPlaythrough`-Operation: `InitializeGameRun` legt eine unveränderliche `DRAFT`-Vorlage an; erst ein expliziter Abzweig kopiert sie in einen unabhängigen `ACTIVE`-Lauf, sodass dasselbe Szenario mehrfach gespielt werden kann.
   - Completion criteria: `GET /api/v1/runs` (Liste), `GET /api/v1/runs/{run_id}` (laden), `POST /api/v1/runs` (Vorlage erzeugen), `POST /api/v1/runs/{run_id}/playthroughs` (Abzweig) und `POST /api/v1/runs/{run_id}/turns` (Zug) sind implementiert; die alten provisorischen Endpunkte (`POST /api/v1/runs` mit rohem GameDocument, `GET .../state`) sind ersetzt. Ein Zug gegen eine `DRAFT`-Vorlage wird mit `run_not_active` abgewiesen; ein Abzweig von einem bereits aktiven Lauf mit `playthrough_source_not_draft`. Eine feste, über `STORY_GAME_DEV_ISSUER`/`STORY_GAME_DEV_SUBJECT` konfigurierbare Identität wird über eine einzige austauschbare Dependency aufgelöst. `StoryInitializationError`, `StoryTurnError` und `ContextSelectionError` sind vollständig auf HTTP-Fehlercodes abgebildet. Ein neuer `PlayableRunLister`-Port mit PostgreSQL-Adapter und zusätzlichem `(issuer, subject)`-Index liefert die Liste ohne vollen WorldState pro Zeile. Alle betroffenen Tests (`tests/api`) sind angepasst und bestehen; der volle End-to-End-Ablauf (Vorlage → Abzweig → Zug) wurde manuell gegen echtes PostgreSQL und LM Studio geprüft. Ein öffentlicher Konfigurations- oder Auth-Endpunkt ist weiterhin nicht Teil dieser Arbeit.
   - Resolution: Confirmed by the project owner on 2026-08-19.
+  - Subsequent state: The completed item records the then-current fixed
+    development identity and direct initialization flow. Since 2026-09-08,
+    run endpoints authenticate Keycloak bearer tokens and authorize access by
+    membership. Since 2026-09-09, the public prompt-profile catalog plus
+    proposal-time and revisioned configuration selection extend the API.
+    The current public contract is maintained in
+    `docs/human/technical/api.md`; this historical completion record remains
+    unchanged.
 
 - `EPIC-002` **LLM-Anbindung und Storyzug-Workflow**
   - Type: Epic.

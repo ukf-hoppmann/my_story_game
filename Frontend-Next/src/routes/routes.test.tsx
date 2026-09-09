@@ -1,14 +1,33 @@
+import { configureStore } from "@reduxjs/toolkit";
 import { render, screen } from "@testing-library/react";
+import { Provider } from "react-redux";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { apiSlice } from "../api/apiSlice";
+import * as client from "../api/client";
 import { routes } from "./routes";
+
+function buildStore() {
+  return configureStore({
+    reducer: { [apiSlice.reducerPath]: apiSlice.reducer },
+    middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(apiSlice.middleware),
+  });
+}
 
 function renderAt(path: string) {
   const router = createMemoryRouter(routes, { initialEntries: [path] });
-  render(<RouterProvider router={router} />);
+  render(
+    <Provider store={buildStore()}>
+      <RouterProvider router={router} />
+    </Provider>,
+  );
 }
 
 describe("routes", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("renders the Landing page at /", () => {
     renderAt("/");
 
@@ -17,10 +36,12 @@ describe("routes", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders the Bibliothek placeholder at /library", () => {
+  it("renders the Bibliothek at /library", async () => {
+    vi.spyOn(client, "listRuns").mockResolvedValue({ runs: [] });
+
     renderAt("/library");
 
-    expect(screen.getByText("Bibliothek folgt in Schritt 6.")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Deine Geschichten" })).toBeInTheDocument();
   });
 
   it("renders the Wizard placeholder at /new", () => {

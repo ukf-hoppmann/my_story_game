@@ -1,8 +1,10 @@
 # Lokaler Story-Starter
 
 [`story-starter`](../../../story-starter) ist ein Python-CLI für die lokale
-Docker-Compose-Umgebung. Es startet und verwaltet PostgreSQL und die API. Das
-Frontend wird weiterhin separat mit Vite gestartet.
+Docker-Compose-Umgebung. Es startet und verwaltet den vollständigen lokalen
+Stack: PostgreSQL, Backend, Frontend, nginx und Keycloak. Die Browser-App ist
+über `http://storygame.localhost/` erreichbar; das Backend steht hinter dem
+Proxy unter `http://backend.storygame.localhost/`.
 
 Der Aufruf ohne Subcommand bleibt aus Kompatibilitätsgründen ein Alias für
 `start`.
@@ -12,6 +14,7 @@ Der Aufruf ohne Subcommand bleibt aus Kompatibilitätsgründen ein Alias für
 ```bash
 ./story-starter start
 ./story-starter stop
+./story-starter down
 ./story-starter upgrade
 ./story-starter restart
 ./story-starter status
@@ -19,25 +22,28 @@ Der Aufruf ohne Subcommand bleibt aus Kompatibilitätsgründen ein Alias für
 ./story-starter check
 ```
 
-`start` startet die Services ohne Image-Neubau. `upgrade` baut das API-Image
-neu und erzeugt alle Container neu (`--force-recreate`), bevor die Umgebung
+`start` startet alle Services ohne Image-Neubau. `upgrade` baut das Backend-
+Image neu und erzeugt alle Container neu (`--force-recreate`), bevor die Umgebung
 startet — wichtig für `frontend`, das kein eigenes Image baut, sondern
 `npm install` bei jedem Container-Start gegen den eingebundenen Quellcode
 ausführt: ohne Neuerzeugung würde eine geänderte `package.json` (z. B. eine
 neue Abhängigkeit) im laufenden Container sonst nicht nachgezogen. `stop`
 entfernt die Container und das Compose-Netzwerk, lässt das persistente
-Datenbank-Volume aber bestehen.
+Datenbank-Volume aber bestehen. `down` ist das vollständige Cleanup: Es
+entfernt zusätzlich Volumes und verwaiste Container und löscht damit die
+lokalen Daten ohne interaktive Rückfrage.
 
-`restart` startet standardmäßig alle Services neu. Einzelne Services können
-explizit angegeben werden:
+`restart`, `status` und `logs` verwenden ohne Serviceangabe den ganzen Stack.
+Einzelne Services können explizit angegeben werden: `backend`, `postgres`,
+`frontend`, `nginx` oder `keycloak`.
 
 ```bash
-./story-starter restart api
+./story-starter restart backend
 ./story-starter restart postgres
 ```
 
-Für `restart`, `status` und `logs` sind `all`, `api` und `postgres` gültige
-Servicewerte. Die vollständige, jeweils passende Hilfe ist direkt verfügbar:
+`all` steht ebenfalls für den vollständigen Stack. Die vollständige, jeweils
+passende Hilfe ist direkt verfügbar:
 
 ```bash
 ./story-starter logs -h
@@ -47,12 +53,14 @@ Servicewerte. Die vollständige, jeweils passende Hilfe ist direkt verfügbar:
 Logs können fortlaufend verfolgt werden:
 
 ```bash
-./story-starter logs api --follow
+./story-starter logs backend --follow
 ./story-starter logs postgres --tail 100
 ```
 
 `check` validiert die Compose-Datei, zeigt laufende Services und prüft den
-HTTP-Endpunkt `http://localhost:${API_HOST_PORT:-8000}/health`.
+direkt veröffentlichten Backend-Endpunkt
+`http://localhost:${BACKEND_HOST_PORT:-8000}/health`. Der Browser sollte
+stattdessen die Proxy-Adressen unter `*.storygame.localhost` verwenden.
 
 ## Datenbank zurücksetzen
 
@@ -79,4 +87,6 @@ Globale Optionen werden vor dem Subcommand angegeben:
 ```
 
 Die Host-Ports bleiben über die Compose-Umgebungsvariablen konfigurierbar,
-insbesondere `API_HOST_PORT` und `POSTGRES_HOST_PORT`.
+insbesondere `BACKEND_HOST_PORT`, `POSTGRES_HOST_PORT`, `FRONTEND_HOST_PORT`,
+`KEYCLOAK_HOST_PORT` und `PROXY_HOST_PORT`. Ohne `--env-file` verwendet der
+Launcher die projektweite Standarddatei `configs/docker/docker.env`.

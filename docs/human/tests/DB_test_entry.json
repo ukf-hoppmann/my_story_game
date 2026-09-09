@@ -10,7 +10,9 @@
         "issuer": "https://keycloak.example/realms/story-game",
         "subject": "test-player-almas",
         "game_role": "owner",
-        "player_entity_id": "10000000-0000-4000-8000-000000000001"
+        "controlled_entity_ids": [
+          "10000000-0000-4000-8000-000000000001"
+        ]
       }
     ],
     "created_at": "2026-08-06T10:00:00Z",
@@ -27,6 +29,7 @@
         "prose_style": "balanced",
         "perspective": "third_person_limited",
         "pacing": "balanced",
+        "length": "standard",
         "control_mode": "player",
         "player_agency": "strict",
         "consequence": "balanced",

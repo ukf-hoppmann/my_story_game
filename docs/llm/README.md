@@ -7,7 +7,11 @@ getrennt sein.
 
 ## Status und Verbindlichkeit
 
-- Aktive Regeln und Verträge liegen direkt unter `docs/llm/`.
+- Derzeit liegen keine aktiven Verträge direkt unter `docs/llm/`. Die
+  verbindlichen LLM-Architekturregeln liegen in
+  [`.harness/architecture/llm-integration.md`](../../.harness/architecture/llm-integration.md);
+  die aktuelle menschenlesbare Ergänzung ist
+  [`../human/technical/planned/story-generation.md`](../human/technical/planned/story-generation.md).
 - [`planned/`](planned/) enthält nur geplante oder noch nicht freigegebene
   Inhalte. Diese Dokumente dürfen nicht als aktive Regeln behandelt werden.
 - [`done/`](done/) bewahrt vollständige Abschlussarchive mit dem Datum ihrer
@@ -15,12 +19,9 @@ getrennt sein.
 - Verbindliche Agenten- und Architekturregeln liegen weiterhin in
   [`.harness/`](../../.harness/), nicht ausschließlich hier.
 
-Für das eigentliche Storygame-LLM sollten hier später insbesondere Prompt-
-Verträge, strukturierte Ausgabeformate, Zustandsgrenzen und Beispiele liegen.
-
-Aktive Verträge:
-
-- [`spielzustand-und-persistenz.md`](spielzustand-und-persistenz.md)
+Eine zukünftige aktive LLM-Dokumentation muss hier wieder einen eindeutigen
+Verweis auf ihre autoritative Quelle tragen. Sie darf nicht aus einem
+Planungs- oder Abschlussarchiv abgeleitet werden.
 
 Abschlussarchive:
 

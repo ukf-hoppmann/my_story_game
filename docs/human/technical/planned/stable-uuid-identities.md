@@ -3,6 +3,13 @@
 Status: Umgesetzt und am 11.08.2026 verifiziert. Dieses Dokument hält die
 Entscheidungen und den ausgeführten Umstellungsumfang fest.
 
+Nachtrag (`TASK-016` und 2026-09-09): Die untenstehende
+`player_entity_id`-Terminologie dokumentiert den damaligen Umstellungsumfang.
+Die aktuelle Mitgliedschaft verwendet `controlled_entity_ids` als geordnete
+Liste von UUIDs; `length` gehört außerdem inzwischen zu den textuellen
+Promptprofil-Optionen. Die aktuellen Verträge stehen in `domain-model.md`,
+`persistence.md` und `api.md`; dieses Dokument bleibt historische Planung.
+
 ## Ausgangslage
 
 Vor der Umstellung erzeugte `StableId.new()` UUIDv4-Werte, der Konstruktor

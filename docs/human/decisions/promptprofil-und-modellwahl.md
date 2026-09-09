@@ -67,8 +67,7 @@ Beispiel:
 Story-Prosa als Instruktion im Systemprompt, analog zu `pacing`. Anders als
 die übrigen Kategorien hat das Feld einen Domain-Default (`"standard"`), damit
 bestehender Code, der `PromptProfile` ohne dieses Feld aufbaut, unverändert
-funktioniert; umgeschaltet wird bislang ausschließlich über den festen Wert in
-`api/default_configuration.py`, es gibt noch keinen Endpoint dafür.
+funktioniert.
 
 Die Kategorie muss im Wert nicht wiederholt werden. `balanced` bleibt trotz
 seiner Verwendung in mehreren Kategorien eindeutig, weil es immer in einem
@@ -116,6 +115,22 @@ seine eigene Struktur, lädt aber kein Promptpaket. Eine ungültige Auswahl wird
 als konkreter Application-Fehler an die API gegeben. Die API übersetzt ihn in
 eine verständliche Antwort, damit die UI eine andere Auswahl anfordern kann.
 Es gibt keinen stillen Ersatz und keinen automatischen Fallback.
+
+### Nachtrag: Auswahl über die Lauf-API
+
+Seit 2026-09-09 stellt `GET /api/v1/prompt-profile` den Katalog
+`story.base`/`1` mit Kategorien, Beschreibungen und Defaults bereit. Der
+Endpunkt ist absichtlich ohne Lauf- oder Benutzerzugriff lesbar; er dient
+allein dazu, einer Oberfläche die zulässigen Werte anzuzeigen.
+
+`POST /api/v1/runs/proposals` akzeptiert zusätzlich optional `language` und
+das vollständige editierbare Promptprofil. Fehlende Werte behalten die
+bisherigen Server-Defaults bei. `PATCH /api/v1/runs/{run_id}/configuration`
+schreibt dieselben editierbaren Werte als neue Konfigurationsrevision, mit
+erwarteter Basisrevision und Mitgliedschaftsprüfung. `control_mode`,
+`narrative_boundaries` sowie Paket-ID und -version bleiben dabei bewusst
+nicht editierbar: Sie werden beim Erstellen festgelegt oder serverseitig
+vorgegeben.
 
 ## Aufgabenspezifische Promptvorbereitung
 

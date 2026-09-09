@@ -25,9 +25,9 @@ GameRun
 einen davon getrennten, nicht eindeutigen Anzeigenamen. Er hält den Status
 `draft`, `active`, `paused` oder `completed`, die Mitglieder und den Verweis auf
 die aktuelle Revision. Ein Mitglied wird durch `issuer` und `subject` aus
-Keycloak erkannt, hat die Spielrolle `owner` oder `player` und kann einer
-Spielfigur im WorldState zugeordnet sein. Passwörter werden nicht im Storygame
-gespeichert.
+Keycloak erkannt, hat die Spielrolle `owner` oder `player` und kann null, einer
+oder mehreren steuerbaren Figuren im WorldState zugeordnet sein. Passwörter
+werden nicht im Storygame gespeichert.
 
 Alle vom Storygame kontrollierten kanonischen Identitäten werden durch
 `StableId` als `uuid.UUID` modelliert. Dazu gehören GameRuns, WorldEntities,
@@ -52,8 +52,8 @@ Die `GameConfiguration` hält die für diese Partie aufgelösten Einstellungen:
 
 - Sprache;
 - ein vollständiges `PromptProfile` mit Genre, Ton, Prosa-Stil, Perspektive,
-  Tempo, Steuerungsmodus, Spielerautonomie, Konsequenz, Herausforderung und
-  Inhaltsprofil;
+  Tempo, Textlänge, Steuerungsmodus, Spielerautonomie, Konsequenz,
+  Herausforderung und Inhaltsprofil;
 - erzählerische Grenzen;
 - ID und Version des verwendeten Prompt-Pakets.
 
@@ -63,8 +63,9 @@ Modelle für Story, Extraction und Summary gehören dagegen zu
 `configs/llm.toml`, nicht zu einer Partie.
 
 Provider-URLs, Zugangsdaten, Rohprompts und laufende Modellaufrufe gehören
-nicht in diesen Zustand. Globale Kataloge werden später über austauschbare
-Infrastructure-Adapter angebunden.
+nicht in diesen Zustand. Das versionierte Promptpaket wird bereits über den
+austauschbaren dateibasierten `FilePromptPackageCatalog` geladen; die aktive
+Modellzuordnung bleibt globale Laufzeitkonfiguration.
 
 ## WorldState
 

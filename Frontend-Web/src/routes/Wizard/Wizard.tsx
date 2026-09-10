@@ -14,6 +14,7 @@ import { ImageSlot } from "../../components/ImageSlot/ImageSlot";
 import { Paragraphs } from "../../components/Paragraphs";
 import { ArrowRightIcon, ChevronDownIcon, CompassIcon, PlusIcon, TrashIcon } from "../../icons";
 import { formatOptionLabel } from "../../utils/formatOptionLabel";
+import { getGenreImageUrl } from "./genreImages";
 import {
   buildConfirmRequest,
   buildProposeRequest,
@@ -184,7 +185,11 @@ export function Wizard() {
     <div className="wizard-page">
       <div className="wizard-frame">
         <div className="wizard-art">
-          <ImageSlot label="Platzhalter · Vorschaubild" style={{ height: "100%" }} />
+          <ImageSlot
+            imageUrl={getGenreImageUrl(wizard.genre)}
+            label="Platzhalter · Vorschaubild"
+            style={{ height: "100%" }}
+          />
           <div className="wizard-art-brand">
             <CompassIcon />
             <span>Eine neue Geschichte beginnt</span>

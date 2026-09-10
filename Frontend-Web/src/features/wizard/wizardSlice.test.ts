@@ -10,6 +10,7 @@ import wizardReducer, {
   characterRoleChanged,
   controlModeChanged,
   fieldChanged,
+  hasPlayableCharacter,
   itemRemovalToggled,
   proposalReceived,
   stepChanged,
@@ -176,5 +177,31 @@ describe("buildConfirmRequest", () => {
       ],
       item_decisions: [{ entity_id: "item-1", removed: false }],
     });
+  });
+});
+
+describe("hasPlayableCharacter", () => {
+  it("is false before a proposal exists", () => {
+    expect(hasPlayableCharacter(initial)).toBe(false);
+  });
+
+  it("is true once a character is marked as player", () => {
+    const state = wizardReducer(initial, proposalReceived(proposal));
+
+    expect(hasPlayableCharacter(state)).toBe(true);
+  });
+
+  it("is false again once the sole player character is removed", () => {
+    let state = wizardReducer(initial, proposalReceived(proposal));
+    state = wizardReducer(state, characterRemovalToggled("char-1"));
+
+    expect(hasPlayableCharacter(state)).toBe(false);
+  });
+
+  it("is false when every character is an NPC", () => {
+    let state = wizardReducer(initial, proposalReceived(proposal));
+    state = wizardReducer(state, characterRoleChanged({ entityId: "char-1", role: "npc" }));
+
+    expect(hasPlayableCharacter(state)).toBe(false);
   });
 });

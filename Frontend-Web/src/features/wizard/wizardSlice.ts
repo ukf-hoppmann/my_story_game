@@ -225,6 +225,15 @@ export function buildProposeRequest(state: WizardState): ProposeRunRequest {
   };
 }
 
+/** Whether at least one character in the proposal is marked as the player
+ *  and not removed — the review step requires this before starting the
+ *  run, since a run with nobody to play is not meaningful. */
+export function hasPlayableCharacter(state: WizardState): boolean {
+  return Object.values(state.characterDecisions).some(
+    (decision) => decision.role === "player" && !decision.removed,
+  );
+}
+
 export function buildConfirmRequest(state: WizardState): ConfirmRunProposalRequest {
   if (!state.proposal) {
     throw new Error("buildConfirmRequest called without a proposal");

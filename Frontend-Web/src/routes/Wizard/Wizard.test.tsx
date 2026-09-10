@@ -42,20 +42,33 @@ const catalog: PromptProfileCatalog = {
   categories: [
     { id: "genre", default_option_id: "dark_fantasy", options: [option("dark_fantasy"), option("science_fiction")] },
     { id: "tone", default_option_id: "balanced", options: [option("balanced"), option("dark")] },
-    { id: "prose_style", default_option_id: "balanced", options: [option("balanced")] },
+    {
+      id: "prose_style",
+      default_option_id: "balanced",
+      options: [option("balanced"), option("concise"), option("descriptive"), option("dialogue_driven")],
+    },
     { id: "perspective", default_option_id: "third_person_limited", options: [option("third_person_limited")] },
-    { id: "pacing", default_option_id: "balanced", options: [option("balanced")] },
-    { id: "length", default_option_id: "standard", options: [option("standard")] },
+    { id: "pacing", default_option_id: "balanced", options: [option("balanced"), option("slow"), option("fast")] },
+    { id: "length", default_option_id: "standard", options: [option("short"), option("standard"), option("long")] },
     { id: "player_agency", default_option_id: "strict", options: [option("strict")] },
-    { id: "consequence", default_option_id: "balanced", options: [option("balanced")] },
-    { id: "challenge", default_option_id: "balanced", options: [option("balanced")] },
+    {
+      id: "consequence",
+      default_option_id: "balanced",
+      options: [option("balanced"), option("forgiving"), option("harsh")],
+    },
+    {
+      id: "challenge",
+      default_option_id: "balanced",
+      options: [option("balanced"), option("narrative"), option("demanding")],
+    },
     { id: "content_profile", default_option_id: "teen", options: [option("teen")] },
   ],
 };
 
 const proposal: RunProposal = {
   proposal_id: "33333333-3333-3333-3333-333333333333",
-  opening_narration: "Der Regen hatte die Spuren fast fortgespült.",
+  opening_narration:
+    "Der Regen hatte die Spuren fast fortgespült.\n\nElian betrat das Gasthaus und sah sich um.",
   suggested_title: "Die Schatten von Auenfall",
   suggested_player_entity_ids: ["char-1"],
   world: {
@@ -70,6 +83,13 @@ const proposal: RunProposal = {
     goals: [],
     scene_location_ids: [],
   },
+};
+
+/** Same shape as `proposal`, but nobody is suggested as the player — used
+ *  to test the "choose a player character" gate on the review step. */
+const proposalWithoutSuggestedPlayer: RunProposal = {
+  ...proposal,
+  suggested_player_entity_ids: [],
 };
 
 const activeDocument: GameDocument = {
@@ -93,12 +113,14 @@ const activeDocument: GameDocument = {
 };
 
 async function fillWeltStep(user: ReturnType<typeof userEvent.setup>) {
-  await user.type(screen.getByLabelText("Prämisse"), "Ein Kurier verschwindet spurlos.");
   await user.click(screen.getByRole("button", { name: /Weiter/ }));
 }
 
-async function fillFigurStep(user: ReturnType<typeof userEvent.setup>) {
-  await user.type(await screen.findByLabelText("Name"), "Elian");
+async function fillFigurStep(user: ReturnType<typeof userEvent.setup>, characterName?: string) {
+  await user.type(await screen.findByLabelText("Prämisse"), "Ein Kurier verschwindet spurlos.");
+  if (characterName) {
+    await user.type(screen.getByLabelText("Name"), characterName);
+  }
   await user.click(screen.getByRole("button", { name: /Weiter/ }));
 }
 
@@ -116,12 +138,14 @@ describe("Wizard", () => {
     ).toBeInTheDocument();
   });
 
-  it("preselects catalog defaults and lets the user change genre/tone", async () => {
+  it("Welt: preselects catalog defaults and lets the user change genre/tone, no title/premise fields", async () => {
     vi.spyOn(client, "fetchPromptProfileCatalog").mockResolvedValue(catalog);
     renderWizard();
 
     const darkFantasy = await screen.findByRole("button", { name: "Dark Fantasy" });
     expect(darkFantasy).toHaveAttribute("aria-pressed", "true");
+    expect(screen.queryByLabelText("Titel")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Prämisse")).not.toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: "Science Fiction" }));
 
@@ -129,26 +153,76 @@ describe("Wizard", () => {
     expect(darkFantasy).toHaveAttribute("aria-pressed", "false");
   });
 
-  it("keeps 'Weiter' disabled on the Welt step until a premise is entered", async () => {
+  it("Welt: shows Inhaltsprofil and Erzählperspektive, and 'Weiter' is always enabled", async () => {
     vi.spyOn(client, "fetchPromptProfileCatalog").mockResolvedValue(catalog);
     renderWizard();
     await screen.findByRole("button", { name: "Dark Fantasy" });
 
-    expect(screen.getByRole("button", { name: /Weiter/ })).toBeDisabled();
-
-    await userEvent.type(screen.getByLabelText("Prämisse"), "Ein Kurier verschwindet.");
-
+    expect(screen.getByText("Inhaltsprofil")).toBeInTheDocument();
+    expect(screen.getByText("Erzählperspektive")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Weiter/ })).toBeEnabled();
   });
 
-  it("updates the premise character counter as the user types", async () => {
+  it("Figur: shows Prämisse and Handlungsfreiheit; 'Weiter' requires only the premise", async () => {
     vi.spyOn(client, "fetchPromptProfileCatalog").mockResolvedValue(catalog);
+    const user = userEvent.setup();
     renderWizard();
     await screen.findByRole("button", { name: "Dark Fantasy" });
+    await fillWeltStep(user);
 
-    await userEvent.type(screen.getByLabelText("Prämisse"), "Ein Kurier verschwindet spurlos.");
+    expect(await screen.findByRole("heading", { name: "Figur & Prämisse" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Weiter/ })).toBeDisabled();
+
+    await user.type(screen.getByLabelText("Prämisse"), "Ein Kurier verschwindet spurlos.");
 
     expect(screen.getByText("32 / 500")).toBeInTheDocument();
+    expect(screen.getByText("Handlungsfreiheit")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Weiter/ })).toBeEnabled();
+  });
+
+  it("Figur: proceeds without a character name (the AI proposes one from context)", async () => {
+    vi.spyOn(client, "fetchPromptProfileCatalog").mockResolvedValue(catalog);
+    const user = userEvent.setup();
+    renderWizard();
+    await screen.findByRole("button", { name: "Dark Fantasy" });
+    await fillWeltStep(user);
+    await fillFigurStep(user);
+
+    expect(await screen.findByRole("heading", { name: "Erzählstil" })).toBeInTheDocument();
+  });
+
+  it("Stil: shows preset cards, 'Ausgewogen' selected by default, custom section starts collapsed", async () => {
+    vi.spyOn(client, "fetchPromptProfileCatalog").mockResolvedValue(catalog);
+    const user = userEvent.setup();
+    renderWizard();
+    await screen.findByRole("button", { name: "Dark Fantasy" });
+    await fillWeltStep(user);
+    await fillFigurStep(user);
+
+    expect(screen.getByRole("button", { name: /Ausgewogen/ })).toHaveClass("wizard-preset-card--selected");
+    expect(screen.queryByText("Prosastil")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Eigene Kombination wählen" }));
+
+    expect(screen.getByText("Prosastil")).toBeInTheDocument();
+  });
+
+  it("Stil: picking a preset sets all five underlying fields", async () => {
+    vi.spyOn(client, "fetchPromptProfileCatalog").mockResolvedValue(catalog);
+    const user = userEvent.setup();
+    renderWizard();
+    await screen.findByRole("button", { name: "Dark Fantasy" });
+    await fillWeltStep(user);
+    await fillFigurStep(user);
+
+    await user.click(screen.getByRole("button", { name: /Schnell & Intensiv/ }));
+    await user.click(screen.getByRole("button", { name: "Eigene Kombination wählen" }));
+
+    expect(screen.getByRole("button", { name: "Concise" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Fast" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Short" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Harsh" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Demanding" })).toHaveAttribute("aria-pressed", "true");
   });
 
   it("walks through Welt -> Figur -> Stil -> Vorschlag -> Geschichte beginnen and navigates to the new run", async () => {
@@ -162,15 +236,15 @@ describe("Wizard", () => {
     await screen.findByRole("button", { name: "Dark Fantasy" });
 
     await fillWeltStep(user);
-    expect(await screen.findByRole("heading", { name: "Deine Figur" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Figur & Prämisse" })).toBeInTheDocument();
 
-    await fillFigurStep(user);
+    await fillFigurStep(user, "Elian");
     expect(await screen.findByRole("heading", { name: "Erzählstil" })).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Vorschlag erstellen" }));
 
     expect(await screen.findByRole("heading", { name: "Geschichte bestätigen" })).toBeInTheDocument();
-    // Regression: submitting without clicking any Stil badges must still
+    // Regression: submitting without touching any Stil options must still
     // send the catalog's defaults, not empty strings (the backend rejects
     // those with a 422 string_too_short per field).
     expect(client.proposeRun).toHaveBeenCalledWith(
@@ -189,14 +263,37 @@ describe("Wizard", () => {
         },
       }),
     );
+    // Opening narration renders as real paragraphs, not one text block.
     expect(screen.getByText("Der Regen hatte die Spuren fast fortgespült.")).toBeInTheDocument();
+    expect(screen.getByText("Elian betrat das Gasthaus und sah sich um.")).toBeInTheDocument();
     expect(screen.getByDisplayValue("Die Schatten von Auenfall")).toBeInTheDocument();
-    expect(screen.getByText("Elian")).toBeInTheDocument();
+    expect(screen.getAllByText("Elian").length).toBeGreaterThan(0);
     expect(screen.getByText("Laterne")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Geschichte beginnen" }));
 
     expect(await screen.findByText("Play-Route")).toBeInTheDocument();
+  });
+
+  it("Bestätigen: disables 'Geschichte beginnen' until a character is marked as player", async () => {
+    vi.spyOn(client, "fetchPromptProfileCatalog").mockResolvedValue(catalog);
+    vi.spyOn(client, "proposeRun").mockResolvedValue(proposalWithoutSuggestedPlayer);
+
+    const user = userEvent.setup();
+    renderWizard();
+    await screen.findByRole("button", { name: "Dark Fantasy" });
+    await fillWeltStep(user);
+    await fillFigurStep(user);
+    await user.click(screen.getByRole("button", { name: "Vorschlag erstellen" }));
+    await screen.findByRole("heading", { name: "Geschichte bestätigen" });
+
+    expect(screen.getByText("Wähle eine Figur als Spieler, bevor du beginnst.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Geschichte beginnen" })).toBeDisabled();
+
+    await user.click(screen.getByRole("button", { name: "Spieler" }));
+
+    expect(screen.queryByText("Wähle eine Figur als Spieler, bevor du beginnst.")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Geschichte beginnen" })).toBeEnabled();
   });
 
   it("shows an error and stays on Stil when creating the proposal fails", async () => {

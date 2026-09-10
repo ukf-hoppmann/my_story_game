@@ -1,4 +1,4 @@
-import { Fragment, useEffect } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import {
@@ -11,7 +11,8 @@ import type { PromptProfileCategory } from "../../api/types";
 import { Button } from "../../components/Button/Button";
 import { Chip } from "../../components/Chip/Chip";
 import { ImageSlot } from "../../components/ImageSlot/ImageSlot";
-import { ArrowRightIcon, CompassIcon, PlusIcon, TrashIcon } from "../../icons";
+import { Paragraphs } from "../../components/Paragraphs";
+import { ArrowRightIcon, ChevronDownIcon, CompassIcon, PlusIcon, TrashIcon } from "../../icons";
 import { formatOptionLabel } from "../../utils/formatOptionLabel";
 import {
   buildConfirmRequest,
@@ -23,19 +24,21 @@ import {
   characterRoleChanged,
   controlModeChanged,
   fieldChanged,
+  hasPlayableCharacter,
   itemRemovalToggled,
   stepChanged,
   proposalReceived,
   type WizardStep,
   type WizardTextField,
 } from "../../features/wizard/wizardSlice";
+import { isPresetAvailable, matchingPresetId, STYLE_PRESETS } from "../../features/wizard/stylePresets";
 import "./Wizard.css";
 
 const PREMISE_MAX_LENGTH = 500;
 
 const STEP_TITLES: Record<WizardStep, string> = {
-  welt: "Welt & Prämisse",
-  figur: "Deine Figur",
+  welt: "Welt",
+  figur: "Figur & Prämisse",
   stil: "Erzählstil",
   review: "Geschichte bestätigen",
 };
@@ -106,7 +109,7 @@ function CategoryField({ category, label, value, onSelect }: CategoryFieldProps)
 }
 
 /**
- * The story-creation wizard: Welt & Prämisse -> Figur -> Stil -> Vorschlag
+ * The story-creation wizard: Welt -> Figur & Prämisse -> Stil -> Vorschlag
  * bestätigen -> Geschichte beginnen. Every selectable option (Genre, Ton,
  * Prosastil, ...) is sourced live from GET /api/v1/prompt-profile, never
  * hardcoded, so the wizard always reflects what the backend's prompt
@@ -119,6 +122,7 @@ export function Wizard() {
   const dispatch = useAppDispatch();
   const wizard = useAppSelector((state) => state.wizard);
   const { data: catalog, isLoading: catalogLoading, error: catalogError } = usePromptProfileCatalogQuery();
+  const [stilAdvancedOpen, setStilAdvancedOpen] = useState(false);
 
   const [proposeRun, proposeState] = useProposeRunMutation();
   const [confirmRun, confirmState] = useConfirmRunMutation();
@@ -167,6 +171,9 @@ export function Wizard() {
     }
   }
 
+  const selectedPresetId = matchingPresetId(wizard);
+  const canStart = hasPlayableCharacter(wizard);
+
   return (
     <div className="wizard-page">
       <div className="wizard-frame">
@@ -197,32 +204,7 @@ export function Wizard() {
 
           {wizard.step === "welt" && (
             <>
-              <div className="wizard-field">
-                <label htmlFor="wizard-title">Titel</label>
-                <input
-                  id="wizard-title"
-                  type="text"
-                  placeholder="Titel deiner Geschichte"
-                  value={wizard.title}
-                  onChange={(event) => setField("title")(event.target.value)}
-                />
-              </div>
-
-              <div className="wizard-field">
-                <label htmlFor="wizard-premise">Prämisse</label>
-                <textarea
-                  id="wizard-premise"
-                  placeholder="Worum geht es in deiner Geschichte?"
-                  maxLength={PREMISE_MAX_LENGTH}
-                  value={wizard.premise}
-                  onChange={(event) => setField("premise")(event.target.value)}
-                />
-                <div className="wizard-field-meta">
-                  {wizard.premise.length} / {PREMISE_MAX_LENGTH}
-                </div>
-              </div>
-
-              {catalogLoading && <p className="wizard-status">Lade Genre- und Ton-Optionen …</p>}
+              {catalogLoading && <p className="wizard-status">Lade Optionen …</p>}
               {catalogError && (
                 <p className="wizard-error">
                   Optionen konnten nicht geladen werden. Bitte versuche es erneut.
@@ -241,14 +223,22 @@ export function Wizard() {
                 value={wizard.tone}
                 onSelect={setField("tone")}
               />
+              <CategoryField
+                category={findCategory(catalog?.categories, "content_profile")}
+                label="Inhaltsprofil"
+                value={wizard.contentProfile}
+                onSelect={setField("contentProfile")}
+              />
+              <CategoryField
+                category={findCategory(catalog?.categories, "perspective")}
+                label="Erzählperspektive"
+                value={wizard.perspective}
+                onSelect={setField("perspective")}
+              />
 
               <div className="wizard-form-foot">
                 <span className="wizard-hint">Du kannst alles später anpassen.</span>
-                <Button
-                  icon={<ArrowRightIcon />}
-                  disabled={wizard.premise.trim().length === 0}
-                  onClick={() => dispatch(stepChanged("figur"))}
-                >
+                <Button icon={<ArrowRightIcon />} onClick={() => dispatch(stepChanged("figur"))}>
                   Weiter
                 </Button>
               </div>
@@ -257,6 +247,20 @@ export function Wizard() {
 
           {wizard.step === "figur" && (
             <>
+              <div className="wizard-field">
+                <label htmlFor="wizard-premise">Prämisse</label>
+                <textarea
+                  id="wizard-premise"
+                  placeholder="Worum geht es in deiner Geschichte?"
+                  maxLength={PREMISE_MAX_LENGTH}
+                  value={wizard.premise}
+                  onChange={(event) => setField("premise")(event.target.value)}
+                />
+                <div className="wizard-field-meta">
+                  {wizard.premise.length} / {PREMISE_MAX_LENGTH}
+                </div>
+              </div>
+
               <div className="wizard-field">
                 <label>Perspektive</label>
                 <div className="wizard-badge-row">
@@ -274,6 +278,11 @@ export function Wizard() {
                   </Chip>
                 </div>
               </div>
+
+              <p className="wizard-hint-block">
+                Kein Name? Kein Problem — die KI schlägt dir passende Figuren aus deiner Prämisse vor,
+                sobald du den Vorschlag erstellst.
+              </p>
 
               {(wizard.controlMode === "player" ? wizard.characters.slice(0, 1) : wizard.characters).map(
                 (character, index) => (
@@ -297,7 +306,7 @@ export function Wizard() {
                       <input
                         id={`wizard-character-name-${index}`}
                         type="text"
-                        placeholder="Name deiner Figur"
+                        placeholder="Name deiner Figur (optional)"
                         value={character.name}
                         onChange={(event) =>
                           dispatch(
@@ -338,11 +347,22 @@ export function Wizard() {
                 </button>
               )}
 
+              <CategoryField
+                category={findCategory(catalog?.categories, "player_agency")}
+                label="Handlungsfreiheit"
+                value={wizard.playerAgency}
+                onSelect={setField("playerAgency")}
+              />
+
               <div className="wizard-form-foot">
                 <Button variant="ghost" onClick={() => dispatch(stepChanged("welt"))}>
                   Zurück
                 </Button>
-                <Button icon={<ArrowRightIcon />} onClick={() => dispatch(stepChanged("stil"))}>
+                <Button
+                  icon={<ArrowRightIcon />}
+                  disabled={wizard.premise.trim().length === 0}
+                  onClick={() => dispatch(stepChanged("stil"))}
+                >
                   Weiter
                 </Button>
               </div>
@@ -351,54 +371,71 @@ export function Wizard() {
 
           {wizard.step === "stil" && (
             <>
-              <CategoryField
-                category={findCategory(catalog?.categories, "prose_style")}
-                label="Prosastil"
-                value={wizard.proseStyle}
-                onSelect={setField("proseStyle")}
-              />
-              <CategoryField
-                category={findCategory(catalog?.categories, "perspective")}
-                label="Erzählperspektive"
-                value={wizard.perspective}
-                onSelect={setField("perspective")}
-              />
-              <CategoryField
-                category={findCategory(catalog?.categories, "pacing")}
-                label="Erzähltempo"
-                value={wizard.pacing}
-                onSelect={setField("pacing")}
-              />
-              <CategoryField
-                category={findCategory(catalog?.categories, "length")}
-                label="Länge"
-                value={wizard.length}
-                onSelect={setField("length")}
-              />
-              <CategoryField
-                category={findCategory(catalog?.categories, "player_agency")}
-                label="Handlungsfreiheit"
-                value={wizard.playerAgency}
-                onSelect={setField("playerAgency")}
-              />
-              <CategoryField
-                category={findCategory(catalog?.categories, "consequence")}
-                label="Konsequenzen"
-                value={wizard.consequence}
-                onSelect={setField("consequence")}
-              />
-              <CategoryField
-                category={findCategory(catalog?.categories, "challenge")}
-                label="Herausforderung"
-                value={wizard.challenge}
-                onSelect={setField("challenge")}
-              />
-              <CategoryField
-                category={findCategory(catalog?.categories, "content_profile")}
-                label="Inhaltsprofil"
-                value={wizard.contentProfile}
-                onSelect={setField("contentProfile")}
-              />
+              <div className="wizard-preset-grid">
+                {STYLE_PRESETS.filter((preset) => isPresetAvailable(preset, catalog)).map((preset) => (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    className={`wizard-preset-card${
+                      selectedPresetId === preset.id ? " wizard-preset-card--selected" : ""
+                    }`}
+                    onClick={() => {
+                      dispatch(fieldChanged({ field: "proseStyle", value: preset.values.proseStyle }));
+                      dispatch(fieldChanged({ field: "pacing", value: preset.values.pacing }));
+                      dispatch(fieldChanged({ field: "length", value: preset.values.length }));
+                      dispatch(fieldChanged({ field: "consequence", value: preset.values.consequence }));
+                      dispatch(fieldChanged({ field: "challenge", value: preset.values.challenge }));
+                    }}
+                  >
+                    <div className="wizard-preset-card-title">{preset.label}</div>
+                    <div className="wizard-preset-card-desc">{preset.description}</div>
+                  </button>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                className={`wizard-advanced-toggle${stilAdvancedOpen ? " wizard-advanced-toggle--open" : ""}`}
+                onClick={() => setStilAdvancedOpen((open) => !open)}
+              >
+                {stilAdvancedOpen ? "Eigene Kombination ausblenden" : "Eigene Kombination wählen"}
+                <ChevronDownIcon />
+              </button>
+
+              {stilAdvancedOpen && (
+                <div className="wizard-advanced">
+                  <CategoryField
+                    category={findCategory(catalog?.categories, "prose_style")}
+                    label="Prosastil"
+                    value={wizard.proseStyle}
+                    onSelect={setField("proseStyle")}
+                  />
+                  <CategoryField
+                    category={findCategory(catalog?.categories, "pacing")}
+                    label="Erzähltempo"
+                    value={wizard.pacing}
+                    onSelect={setField("pacing")}
+                  />
+                  <CategoryField
+                    category={findCategory(catalog?.categories, "length")}
+                    label="Länge"
+                    value={wizard.length}
+                    onSelect={setField("length")}
+                  />
+                  <CategoryField
+                    category={findCategory(catalog?.categories, "consequence")}
+                    label="Konsequenzen"
+                    value={wizard.consequence}
+                    onSelect={setField("consequence")}
+                  />
+                  <CategoryField
+                    category={findCategory(catalog?.categories, "challenge")}
+                    label="Herausforderung"
+                    value={wizard.challenge}
+                    onSelect={setField("challenge")}
+                  />
+                </div>
+              )}
 
               {proposeState.error && (
                 <p className="wizard-error">
@@ -423,7 +460,9 @@ export function Wizard() {
 
           {wizard.step === "review" && wizard.proposal && (
             <>
-              <p className="wizard-narration">{wizard.proposal.openingNarration}</p>
+              <div className="wizard-narration">
+                <Paragraphs text={wizard.proposal.openingNarration} />
+              </div>
 
               <div className="wizard-field">
                 <label htmlFor="wizard-run-name">Name der Geschichte</label>
@@ -503,6 +542,9 @@ export function Wizard() {
                   })}
               </div>
 
+              {!canStart && (
+                <p className="wizard-error">Wähle eine Figur als Spieler, bevor du beginnst.</p>
+              )}
               {(confirmState.error || startState.error) && (
                 <p className="wizard-error">
                   Die Geschichte konnte nicht gestartet werden. Bitte versuche es erneut.
@@ -513,7 +555,7 @@ export function Wizard() {
                 <span className="wizard-hint">Du kannst alles später anpassen.</span>
                 <Button
                   icon={<ArrowRightIcon />}
-                  disabled={confirmState.isLoading || startState.isLoading}
+                  disabled={!canStart || confirmState.isLoading || startState.isLoading}
                   onClick={handleConfirmAndStart}
                 >
                   {confirmState.isLoading || startState.isLoading

@@ -59,7 +59,7 @@ describe("routes", () => {
 
     renderAt("/new");
 
-    expect(await screen.findByRole("heading", { name: "Welt & Prämisse" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Welt" })).toBeInTheDocument();
   });
 
   it("renders the Play screen at /stories/:runId once auth resolves", async () => {

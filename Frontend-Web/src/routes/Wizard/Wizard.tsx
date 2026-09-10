@@ -173,6 +173,12 @@ export function Wizard() {
 
   const selectedPresetId = matchingPresetId(wizard);
   const canStart = hasPlayableCharacter(wizard);
+  // The backend requires exactly one user-named character in player mode
+  // (it does not invent a player character from the premise alone) —
+  // director mode has no such requirement (0..N controllable characters).
+  const canProceedFromFigur =
+    wizard.premise.trim().length > 0 &&
+    (wizard.controlMode === "director" || wizard.characters[0]?.name.trim().length > 0);
 
   return (
     <div className="wizard-page">
@@ -280,8 +286,9 @@ export function Wizard() {
               </div>
 
               <p className="wizard-hint-block">
-                Kein Name? Kein Problem — die KI schlägt dir passende Figuren aus deiner Prämisse vor,
-                sobald du den Vorschlag erstellst.
+                {wizard.controlMode === "player"
+                  ? "Als Ich-Charakter brauchst du einen Namen für deine Figur — den Rest (Aussehen, Hintergrund, ...) darf die KI ergänzen."
+                  : "Kein Name? Kein Problem — die KI schlägt dir passende Figuren aus deiner Prämisse vor, sobald du den Vorschlag erstellst."}
               </p>
 
               {(wizard.controlMode === "player" ? wizard.characters.slice(0, 1) : wizard.characters).map(
@@ -306,7 +313,9 @@ export function Wizard() {
                       <input
                         id={`wizard-character-name-${index}`}
                         type="text"
-                        placeholder="Name deiner Figur (optional)"
+                        placeholder={
+                          wizard.controlMode === "player" ? "Name deiner Figur" : "Name deiner Figur (optional)"
+                        }
                         value={character.name}
                         onChange={(event) =>
                           dispatch(
@@ -360,7 +369,7 @@ export function Wizard() {
                 </Button>
                 <Button
                   icon={<ArrowRightIcon />}
-                  disabled={wizard.premise.trim().length === 0}
+                  disabled={!canProceedFromFigur}
                   onClick={() => dispatch(stepChanged("stil"))}
                 >
                   Weiter

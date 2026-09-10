@@ -113,15 +113,21 @@ const activeDocument: GameDocument = {
 };
 
 async function fillWeltStep(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole("button", { name: /Weiter/ }));
+  await user.click(screen.getByRole("button", { name: "Weiter" }));
 }
 
-async function fillFigurStep(user: ReturnType<typeof userEvent.setup>, characterName?: string) {
+/** Defaults to naming a character, since player mode (the wizard's default)
+ *  requires one to proceed — pass `null` to explicitly leave it blank when
+ *  a test is about that behavior itself. */
+async function fillFigurStep(
+  user: ReturnType<typeof userEvent.setup>,
+  characterName: string | null = "Elian",
+) {
   await user.type(await screen.findByLabelText("Prämisse"), "Ein Kurier verschwindet spurlos.");
   if (characterName) {
     await user.type(screen.getByLabelText("Name"), characterName);
   }
-  await user.click(screen.getByRole("button", { name: /Weiter/ }));
+  await user.click(screen.getByRole("button", { name: "Weiter" }));
 }
 
 describe("Wizard", () => {
@@ -160,10 +166,10 @@ describe("Wizard", () => {
 
     expect(screen.getByText("Inhaltsprofil")).toBeInTheDocument();
     expect(screen.getByText("Erzählperspektive")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Weiter/ })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Weiter" })).toBeEnabled();
   });
 
-  it("Figur: shows Prämisse and Handlungsfreiheit; 'Weiter' requires only the premise", async () => {
+  it("Figur: shows Prämisse and Handlungsfreiheit; in Regie mode 'Weiter' requires only the premise", async () => {
     vi.spyOn(client, "fetchPromptProfileCatalog").mockResolvedValue(catalog);
     const user = userEvent.setup();
     renderWizard();
@@ -171,22 +177,42 @@ describe("Wizard", () => {
     await fillWeltStep(user);
 
     expect(await screen.findByRole("heading", { name: "Figur & Prämisse" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Weiter/ })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Weiter" })).toBeDisabled();
 
+    await user.click(screen.getByRole("button", { name: "Regie" }));
     await user.type(screen.getByLabelText("Prämisse"), "Ein Kurier verschwindet spurlos.");
 
     expect(screen.getByText("32 / 500")).toBeInTheDocument();
     expect(screen.getByText("Handlungsfreiheit")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Weiter/ })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Weiter" })).toBeEnabled();
   });
 
-  it("Figur: proceeds without a character name (the AI proposes one from context)", async () => {
+  it("Figur: Ich-Charakter (player mode) requires a character name to proceed", async () => {
+    // The backend requires exactly one user-named character for player
+    // mode — it does not invent one from the premise alone (confirmed via
+    // live testing: propose fails with invalid_player_character_seed).
     vi.spyOn(client, "fetchPromptProfileCatalog").mockResolvedValue(catalog);
     const user = userEvent.setup();
     renderWizard();
     await screen.findByRole("button", { name: "Dark Fantasy" });
     await fillWeltStep(user);
-    await fillFigurStep(user);
+    await user.type(await screen.findByLabelText("Prämisse"), "Ein Kurier verschwindet spurlos.");
+
+    expect(screen.getByRole("button", { name: "Weiter" })).toBeDisabled();
+
+    await user.type(screen.getByLabelText("Name"), "Elian");
+
+    expect(screen.getByRole("button", { name: "Weiter" })).toBeEnabled();
+  });
+
+  it("Figur: Regie (director mode) proceeds without a character name", async () => {
+    vi.spyOn(client, "fetchPromptProfileCatalog").mockResolvedValue(catalog);
+    const user = userEvent.setup();
+    renderWizard();
+    await screen.findByRole("button", { name: "Dark Fantasy" });
+    await fillWeltStep(user);
+    await user.click(screen.getByRole("button", { name: "Regie" }));
+    await fillFigurStep(user, null);
 
     expect(await screen.findByRole("heading", { name: "Erzählstil" })).toBeInTheDocument();
   });

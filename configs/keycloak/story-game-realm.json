@@ -3,6 +3,9 @@
   "enabled": true,
   "sslRequired": "none",
   "registrationAllowed": false,
+  "accessTokenLifespan": 3600,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
   "clients": [
     {
       "clientId": "story-game-frontend",

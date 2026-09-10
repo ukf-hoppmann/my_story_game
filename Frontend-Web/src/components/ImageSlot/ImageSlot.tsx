@@ -1,4 +1,5 @@
 import type { HTMLAttributes, ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { ImagePlaceholderIcon } from "../../icons";
 import "./ImageSlot.css";
 
@@ -29,10 +30,12 @@ export function ImageSlot({
   alt = "",
   shape = "rect",
   placeholderIcon,
-  label = "Platzhalter · Bild folgt",
+  label,
   className,
   ...rest
 }: ImageSlotProps) {
+  const { t } = useTranslation();
+  const resolvedLabel = label ?? t("imageSlot.defaultPlaceholder");
   const classes = ["image-slot", `image-slot--${shape}`, className]
     .filter(Boolean)
     .join(" ");
@@ -49,7 +52,7 @@ export function ImageSlot({
     <div className={classes} {...rest}>
       <span className="image-slot__note">
         {placeholderIcon ?? <ImagePlaceholderIcon />}
-        <span>{label}</span>
+        <span>{resolvedLabel}</span>
       </span>
     </div>
   );

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { ensureAuth } from "../api/auth";
 
 type AuthGateStatus = "loading" | "ready" | "error";
@@ -11,6 +12,7 @@ type AuthGateStatus = "loading" | "ready" | "error";
  * ever calling `ensureAuth()`.
  */
 export function RequireAuth() {
+  const { t } = useTranslation();
   const [status, setStatus] = useState<AuthGateStatus>("loading");
 
   useEffect(() => {
@@ -34,7 +36,7 @@ export function RequireAuth() {
   if (status === "loading") {
     return (
       <div style={{ padding: 40, color: "var(--text-muted)", fontFamily: "var(--font-ui)" }}>
-        Anmeldung wird geprüft …
+        {t("requireAuth.checking")}
       </div>
     );
   }
@@ -42,7 +44,7 @@ export function RequireAuth() {
   if (status === "error") {
     return (
       <div style={{ padding: 40, color: "var(--wine-bright)", fontFamily: "var(--font-ui)" }}>
-        Anmeldung fehlgeschlagen. Bitte lade die Seite neu.
+        {t("requireAuth.failed")}
       </div>
     );
   }

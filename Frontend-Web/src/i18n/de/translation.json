@@ -1,0 +1,193 @@
+{
+  "common": {
+    "next": "Weiter",
+    "back": "Zurück",
+    "remove": "Entfernen",
+    "retry": "Erneut versuchen",
+    "yourStories": "Deine Geschichten"
+  },
+  "imageSlot": {
+    "defaultPlaceholder": "Platzhalter · Bild folgt"
+  },
+  "requireAuth": {
+    "checking": "Anmeldung wird geprüft …",
+    "failed": "Anmeldung fehlgeschlagen. Bitte lade die Seite neu."
+  },
+  "landing": {
+    "brand": "Story Engine",
+    "signIn": "Anmelden",
+    "eyebrow": "Interaktives Erzählen",
+    "heroTitle": "Geschichten, die deinen Entscheidungen folgen.",
+    "heroSub": "Lege eine Welt, eine Figur und einen Ton fest — den Rest schreibt die Geschichte gemeinsam mit dir, Zug für Zug.",
+    "startStory": "Neue Geschichte beginnen",
+    "heroArtPlaceholder": "Platzhalter · Titelbild folgt",
+    "genresLabel": "Fünf Welten, ein Werkzeug",
+    "genres": {
+      "dark_fantasy": "Dark Fantasy",
+      "fantasy": "Fantasy",
+      "science_fiction": "Science Fiction",
+      "mystery": "Mystery",
+      "steam_punk": "Steampunk"
+    },
+    "howItWorksLabel": "So funktioniert's",
+    "steps": {
+      "world": {
+        "title": "Welt & Figur festlegen",
+        "text": "Titel, Prämisse, Genre, Ton und deine Figur — in drei kurzen Schritten."
+      },
+      "act": {
+        "title": "Handeln",
+        "text": "Beschreibe, was du tust. Die Geschichte reagiert auf jede Entscheidung."
+      },
+      "memory": {
+        "title": "Die Welt merkt sich alles",
+        "text": "Figuren, Wissen und Ziele bleiben über den ganzen Verlauf erhalten."
+      }
+    },
+    "footQuote": "„Manche Geschichten warten nur darauf, begonnen zu werden.“"
+  },
+  "library": {
+    "heading": "$t(common.yourStories)",
+    "newStory": "Neue Geschichte",
+    "loading": "Lade deine Geschichten …",
+    "loadError": "Deine Geschichten konnten nicht geladen werden. Bitte versuche es erneut.",
+    "activeGroupLabel": "Aktive Geschichten",
+    "noActiveStories": "Noch keine aktive Geschichte — leg los!",
+    "draftsGroupLabel": "Entwürfe",
+    "noDrafts": "Keine offenen Entwürfe.",
+    "status": {
+      "draft": "Entwurf",
+      "active": "Aktiv",
+      "paused": "Pausiert",
+      "completed": "Abgeschlossen"
+    }
+  },
+  "play": {
+    "brandFallback": "Story Game",
+    "nav": {
+      "story": "Geschichte",
+      "world": "Welt",
+      "goals": "Ziele",
+      "chronicle": "Chronik"
+    },
+    "railQuote": "„Jede Entscheidung hinterlässt Spuren.“",
+    "loading": "Lade Geschichte …",
+    "loadError": "Die Geschichte konnte nicht geladen werden.",
+    "draftBanner": "Diese Geschichte ist noch ein Entwurf. Starte sie, um loszulegen.",
+    "startError": "Das Starten hat nicht geklappt. Versuch's noch mal.",
+    "starting": "Wird gestartet …",
+    "startGame": "Spiel starten",
+    "turnBadge": "Zug {{turn}}",
+    "sceneArtPlaceholder": "Platzhalter · Szenenbild folgt",
+    "turnInputPrefix": "Du: {{input}}",
+    "errors": {
+      "runNotActive": "Diese Geschichte läuft nicht mehr. Lade sie neu, um den aktuellen Stand zu sehen.",
+      "revisionConflict": "Es gab zwischenzeitlich eine neue Aktualisierung. Lade die Geschichte neu.",
+      "generic": "Deine Handlung konnte nicht verarbeitet werden."
+    },
+    "reload": "Neu laden",
+    "actionPlaceholder": "Was tust du?",
+    "submitting": "Wird ausgeführt …",
+    "submitTurn": "Handlung ausführen",
+    "sidebarNote": "Ziele, Weltwissen und Figuren erscheinen, sobald die Geschichte geladen ist.",
+    "goalStatus": {
+      "open": "Offen",
+      "completed": "Erledigt",
+      "failed": "Gescheitert"
+    },
+    "role": {
+      "player": "Spieler",
+      "npc": "NPC",
+      "neutral": "Neutral"
+    },
+    "panels": {
+      "goalsTitle": "Ziele",
+      "noGoals": "Noch keine Ziele bekannt.",
+      "factsTitle": "Weltwissen",
+      "noFacts": "Noch nichts über die Welt bekannt.",
+      "charactersTitle": "Figuren",
+      "noCharacters": "Noch keine Figuren bekannt."
+    }
+  },
+  "wizard": {
+    "eyebrow": "Neue Geschichte",
+    "artBrand": "Eine neue Geschichte beginnt",
+    "previewPlaceholder": "Platzhalter · Vorschaubild",
+    "stepTitles": {
+      "welt": "Welt",
+      "figur": "Figur & Prämisse",
+      "stil": "Erzählstil",
+      "review": "Geschichte bestätigen"
+    },
+    "stepShortLabels": {
+      "welt": "Welt",
+      "figur": "Figur",
+      "stil": "Stil"
+    },
+    "labels": {
+      "genre": "Genre",
+      "tone": "Ton",
+      "contentProfile": "Inhaltsprofil",
+      "perspective": "Erzählperspektive",
+      "playerAgency": "Handlungsfreiheit",
+      "proseStyle": "Prosastil",
+      "pacing": "Erzähltempo",
+      "length": "Länge",
+      "consequence": "Konsequenzen",
+      "challenge": "Herausforderung",
+      "premise": "Prämisse",
+      "viewpoint": "Perspektive",
+      "name": "Name",
+      "whoAreYou": "Wer bist du?",
+      "runName": "Name der Geschichte",
+      "characters": "Figuren",
+      "items": "Gegenstände"
+    },
+    "loadingOptions": "Lade Optionen …",
+    "catalogError": "Optionen konnten nicht geladen werden. Bitte versuche es erneut.",
+    "laterHint": "Du kannst alles später anpassen.",
+    "premisePlaceholder": "Worum geht es in deiner Geschichte?",
+    "controlModePlayer": "Ich-Charakter",
+    "controlModeDirector": "Regie",
+    "playerModeHint": "Als Ich-Charakter brauchst du einen Namen für deine Figur — den Rest (Aussehen, Hintergrund, ...) darf die KI ergänzen.",
+    "directorModeHint": "Kein Name? Kein Problem — die KI schlägt dir passende Figuren aus deiner Prämisse vor, sobald du den Vorschlag erstellst.",
+    "characterHeading": "Figur {{number}}",
+    "namePlaceholderRequired": "Name deiner Figur",
+    "namePlaceholderOptional": "Name deiner Figur (optional)",
+    "descriptionPlaceholder": "Beschreibe deine Figur in wenigen Sätzen …",
+    "addCharacter": "Weitere Figur hinzufügen",
+    "hideCustomCombo": "Eigene Kombination ausblenden",
+    "showCustomCombo": "Eigene Kombination wählen",
+    "proposeError": "Der Vorschlag konnte nicht erstellt werden. Bitte versuche es erneut.",
+    "creatingProposal": "Erstelle Vorschlag …",
+    "createProposal": "Vorschlag erstellen",
+    "rolePlayer": "Spieler",
+    "roleNpc": "NPC",
+    "noPlayerSelected": "Wähle eine Figur als Spieler, bevor du beginnst.",
+    "startError": "Die Geschichte konnte nicht gestartet werden. Bitte versuche es erneut.",
+    "creatingStory": "Geschichte wird erstellt …",
+    "startStory": "Geschichte beginnen",
+    "presets": {
+      "ausgewogen": {
+        "label": "Ausgewogen",
+        "description": "Sicherer Standard, keine starke Prägung."
+      },
+      "episch": {
+        "label": "Episch & Atmosphärisch",
+        "description": "Ausführlich erzählt, langsamer, verzeihlicher."
+      },
+      "schnell": {
+        "label": "Schnell & Intensiv",
+        "description": "Knapp, zügig, mit echten Einsätzen."
+      },
+      "dialoglastig": {
+        "label": "Dialoglastig & Persönlich",
+        "description": "Charakter- und Beziehungsfokus statt Action."
+      },
+      "duester": {
+        "label": "Düster & Gnadenlos",
+        "description": "Langsamer Sog, aber kompromisslos in den Folgen."
+      }
+    }
+  }
+}

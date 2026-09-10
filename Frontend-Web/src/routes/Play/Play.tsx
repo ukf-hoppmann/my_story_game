@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useLoadRunQuery, usePlayTurnMutation, useStartPlaythroughMutation } from "../../api/apiSlice";
 import { Paragraphs } from "../../components/Paragraphs";
 import { Button } from "../../components/Button/Button";
@@ -18,9 +19,9 @@ import "./Play.css";
 /** Recovery copy for the error codes the old PlayScreen specifically
  *  handled — a stale run or a concurrent-edit conflict both need a reload,
  *  not just "something went wrong". */
-const TURN_ERROR_MESSAGES: Record<string, string> = {
-  run_not_active: "Diese Geschichte läuft nicht mehr. Lade sie neu, um den aktuellen Stand zu sehen.",
-  revision_conflict: "Es gab zwischenzeitlich eine neue Aktualisierung. Lade die Geschichte neu.",
+const TURN_ERROR_KEYS: Record<string, string> = {
+  run_not_active: "play.errors.runNotActive",
+  revision_conflict: "play.errors.revisionConflict",
 };
 
 /** RTK Query's error union also includes plain `SerializedError` (thrown JS
@@ -34,6 +35,7 @@ function errorCode(error: unknown): string | undefined {
 }
 
 export function Play() {
+  const { t } = useTranslation();
   const { runId = "" } = useParams<{ runId: string }>();
   const navigate = useNavigate();
   const [input, setInput] = useState("");
@@ -66,53 +68,53 @@ export function Play() {
       <aside className="play-rail">
         <div className="play-brand">
           <CompassIcon />
-          <span className="play-brand-name">{doc?.game_run.name ?? "Story Game"}</span>
+          <span className="play-brand-name">{doc?.game_run.name ?? t("play.brandFallback")}</span>
         </div>
 
         <nav className="play-nav">
           <div className="play-nav-item play-nav-item--active">
             <BookIcon />
-            Geschichte
+            {t("play.nav.story")}
           </div>
           <div className="play-nav-item">
             <GlobeIcon />
-            Welt
+            {t("play.nav.world")}
           </div>
           <div className="play-nav-item">
             <TargetIcon />
-            Ziele
+            {t("play.nav.goals")}
           </div>
           <div className="play-nav-item">
             <ScrollIcon />
-            Chronik
+            {t("play.nav.chronicle")}
           </div>
         </nav>
 
-        <div className="play-rail-foot">„Jede Entscheidung hinterlässt Spuren.“</div>
+        <div className="play-rail-foot">{t("play.railQuote")}</div>
       </aside>
 
       <main className="play-stage">
-        {isLoading && <p className="play-status">Lade Geschichte …</p>}
+        {isLoading && <p className="play-status">{t("play.loading")}</p>}
 
         {error && (
           <div className="play-error-banner">
-            <span>Die Geschichte konnte nicht geladen werden.</span>
+            <span>{t("play.loadError")}</span>
             <Button variant="ghost" onClick={() => refetch()}>
-              Erneut versuchen
+              {t("common.retry")}
             </Button>
           </div>
         )}
 
         {doc && doc.game_run.status !== "active" && (
           <div className="play-draft-banner">
-            <p>Diese Geschichte ist noch ein Entwurf. Starte sie, um loszulegen.</p>
-            {startState.error && <p className="play-status">Das Starten hat nicht geklappt. Versuch's noch mal.</p>}
+            <p>{t("play.draftBanner")}</p>
+            {startState.error && <p className="play-status">{t("play.startError")}</p>}
             <Button
               icon={<ArrowRightIcon />}
               disabled={startState.isLoading}
               onClick={handleStartPlaythrough}
             >
-              {startState.isLoading ? "Wird gestartet …" : "Spiel starten"}
+              {startState.isLoading ? t("play.starting") : t("play.startGame")}
             </Button>
           </div>
         )}
@@ -121,12 +123,14 @@ export function Play() {
           <>
             <div className="play-scene-header">
               <h1>{doc.game_run.name}</h1>
-              <span className="play-turn-badge">Zug {doc.game_state.story.current_turn_sequence}</span>
+              <span className="play-turn-badge">
+                {t("play.turnBadge", { turn: doc.game_state.story.current_turn_sequence })}
+              </span>
             </div>
 
             <ImageSlot
               className="play-scene-art"
-              label="Platzhalter · Szenenbild folgt"
+              label={t("play.sceneArtPlaceholder")}
               alt={doc.game_run.name}
             />
 
@@ -138,7 +142,7 @@ export function Play() {
               )}
               {doc.game_state.story.turns.map((turn) => (
                 <div className="play-turn" key={turn.id}>
-                  <p className="play-turn-input">Du: {turn.player_input}</p>
+                  <p className="play-turn-input">{t("play.turnInputPrefix", { input: turn.player_input })}</p>
                   <Paragraphs text={turn.narration} />
                 </div>
               ))}
@@ -149,11 +153,11 @@ export function Play() {
                 <span>
                   {(() => {
                     const code = errorCode(playTurnState.error);
-                    return (code && TURN_ERROR_MESSAGES[code]) ?? "Deine Handlung konnte nicht verarbeitet werden.";
+                    return t((code && TURN_ERROR_KEYS[code]) ?? "play.errors.generic");
                   })()}
                 </span>
                 <Button variant="ghost" onClick={() => refetch()}>
-                  Neu laden
+                  {t("play.reload")}
                 </Button>
               </div>
             )}
@@ -162,7 +166,7 @@ export function Play() {
               <label className="play-action-input">
                 <input
                   type="text"
-                  placeholder="Was tust du?"
+                  placeholder={t("play.actionPlaceholder")}
                   value={input}
                   onChange={(event) => setInput(event.target.value)}
                   onKeyDown={(event) => {
@@ -177,7 +181,7 @@ export function Play() {
                 disabled={playTurnState.isLoading || input.trim().length === 0}
                 onClick={handleSubmitTurn}
               >
-                {playTurnState.isLoading ? "Wird ausgeführt …" : "Handlung ausführen"}
+                {playTurnState.isLoading ? t("play.submitting") : t("play.submitTurn")}
               </Button>
             </div>
           </>
@@ -192,7 +196,7 @@ export function Play() {
             <CharactersPanel entities={doc.game_state.world.entities} />
           </>
         ) : (
-          <p className="play-sidebar-note">Ziele, Weltwissen und Figuren erscheinen, sobald die Geschichte geladen ist.</p>
+          <p className="play-sidebar-note">{t("play.sidebarNote")}</p>
         )}
       </aside>
     </div>

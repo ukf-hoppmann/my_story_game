@@ -14,8 +14,6 @@ export interface StylePresetValues {
 
 export interface StylePreset {
   id: string;
-  label: string;
-  description: string;
   values: StylePresetValues;
 }
 
@@ -27,12 +25,14 @@ export interface StylePreset {
  * the backend; a preset is a product/UX curation of specific values from
  * it, similar to a copy decision. `isPresetAvailable` guards against a
  * preset referencing an id the live catalog no longer has.
+ *
+ * `label`/`description` are not stored here — they're display copy, looked
+ * up by `id` from the translation catalog (`wizard.presets.<id>.*`) at the
+ * call site instead.
  */
 export const STYLE_PRESETS: StylePreset[] = [
   {
     id: "ausgewogen",
-    label: "Ausgewogen",
-    description: "Sicherer Standard, keine starke Prägung.",
     values: {
       proseStyle: "balanced",
       pacing: "balanced",
@@ -43,8 +43,6 @@ export const STYLE_PRESETS: StylePreset[] = [
   },
   {
     id: "episch",
-    label: "Episch & Atmosphärisch",
-    description: "Ausführlich erzählt, langsamer, verzeihlicher.",
     values: {
       proseStyle: "descriptive",
       pacing: "slow",
@@ -55,8 +53,6 @@ export const STYLE_PRESETS: StylePreset[] = [
   },
   {
     id: "schnell",
-    label: "Schnell & Intensiv",
-    description: "Knapp, zügig, mit echten Einsätzen.",
     values: {
       proseStyle: "concise",
       pacing: "fast",
@@ -67,8 +63,6 @@ export const STYLE_PRESETS: StylePreset[] = [
   },
   {
     id: "dialoglastig",
-    label: "Dialoglastig & Persönlich",
-    description: "Charakter- und Beziehungsfokus statt Action.",
     values: {
       proseStyle: "dialogue_driven",
       pacing: "balanced",
@@ -79,8 +73,6 @@ export const STYLE_PRESETS: StylePreset[] = [
   },
   {
     id: "duester",
-    label: "Düster & Gnadenlos",
-    description: "Langsamer Sog, aber kompromisslos in den Folgen.",
     values: {
       proseStyle: "descriptive",
       pacing: "slow",

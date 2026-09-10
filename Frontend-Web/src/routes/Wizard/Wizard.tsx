@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import {
   useConfirmRunMutation,
@@ -37,17 +38,17 @@ import "./Wizard.css";
 
 const PREMISE_MAX_LENGTH = 500;
 
-const STEP_TITLES: Record<WizardStep, string> = {
-  welt: "Welt",
-  figur: "Figur & Prämisse",
-  stil: "Erzählstil",
-  review: "Geschichte bestätigen",
+const STEP_TITLE_KEYS: Record<WizardStep, string> = {
+  welt: "wizard.stepTitles.welt",
+  figur: "wizard.stepTitles.figur",
+  stil: "wizard.stepTitles.stil",
+  review: "wizard.stepTitles.review",
 };
 
-const STEP_SHORT_LABELS: Record<Exclude<WizardStep, "review">, string> = {
-  welt: "Welt",
-  figur: "Figur",
-  stil: "Stil",
+const STEP_SHORT_LABEL_KEYS: Record<Exclude<WizardStep, "review">, string> = {
+  welt: "wizard.stepShortLabels.welt",
+  figur: "wizard.stepShortLabels.figur",
+  stil: "wizard.stepShortLabels.stil",
 };
 
 function findCategory(
@@ -119,6 +120,7 @@ function CategoryField({ category, label, value, onSelect }: CategoryFieldProps)
  * mutations.
  */
 export function Wizard() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const wizard = useAppSelector((state) => state.wizard);
@@ -187,18 +189,18 @@ export function Wizard() {
         <div className="wizard-art">
           <ImageSlot
             imageUrl={getGenreImageUrl(wizard.genre)}
-            label="Platzhalter · Vorschaubild"
+            label={t("wizard.previewPlaceholder")}
             style={{ height: "100%" }}
           />
           <div className="wizard-art-brand">
             <CompassIcon />
-            <span>Eine neue Geschichte beginnt</span>
+            <span>{t("wizard.artBrand")}</span>
           </div>
         </div>
 
         <div className="wizard-form">
-          <div className="wizard-eyebrow">Neue Geschichte</div>
-          <h2>{STEP_TITLES[wizard.step]}</h2>
+          <div className="wizard-eyebrow">{t("wizard.eyebrow")}</div>
+          <h2>{t(STEP_TITLE_KEYS[wizard.step])}</h2>
 
           <div className="wizard-stepper">
             {(["welt", "figur", "stil"] as const).map((step, index) => {
@@ -207,7 +209,7 @@ export function Wizard() {
                 <Fragment key={step}>
                   {index > 0 && <span className="line" />}
                   <div className={`dot ${active ? "dot--active" : "dot--todo"}`}>{index + 1}</div>
-                  <span className={`lbl ${active ? "lbl--active" : ""}`}>{STEP_SHORT_LABELS[step]}</span>
+                  <span className={`lbl ${active ? "lbl--active" : ""}`}>{t(STEP_SHORT_LABEL_KEYS[step])}</span>
                 </Fragment>
               );
             })}
@@ -215,42 +217,38 @@ export function Wizard() {
 
           {wizard.step === "welt" && (
             <>
-              {catalogLoading && <p className="wizard-status">Lade Optionen …</p>}
-              {catalogError && (
-                <p className="wizard-error">
-                  Optionen konnten nicht geladen werden. Bitte versuche es erneut.
-                </p>
-              )}
+              {catalogLoading && <p className="wizard-status">{t("wizard.loadingOptions")}</p>}
+              {catalogError && <p className="wizard-error">{t("wizard.catalogError")}</p>}
 
               <CategoryField
                 category={findCategory(catalog?.categories, "genre")}
-                label="Genre"
+                label={t("wizard.labels.genre")}
                 value={wizard.genre}
                 onSelect={setField("genre")}
               />
               <CategoryField
                 category={findCategory(catalog?.categories, "tone")}
-                label="Ton"
+                label={t("wizard.labels.tone")}
                 value={wizard.tone}
                 onSelect={setField("tone")}
               />
               <CategoryField
                 category={findCategory(catalog?.categories, "content_profile")}
-                label="Inhaltsprofil"
+                label={t("wizard.labels.contentProfile")}
                 value={wizard.contentProfile}
                 onSelect={setField("contentProfile")}
               />
               <CategoryField
                 category={findCategory(catalog?.categories, "perspective")}
-                label="Erzählperspektive"
+                label={t("wizard.labels.perspective")}
                 value={wizard.perspective}
                 onSelect={setField("perspective")}
               />
 
               <div className="wizard-form-foot">
-                <span className="wizard-hint">Du kannst alles später anpassen.</span>
+                <span className="wizard-hint">{t("wizard.laterHint")}</span>
                 <Button icon={<ArrowRightIcon />} onClick={() => dispatch(stepChanged("figur"))}>
-                  Weiter
+                  {t("common.next")}
                 </Button>
               </div>
             </>
@@ -259,10 +257,10 @@ export function Wizard() {
           {wizard.step === "figur" && (
             <>
               <div className="wizard-field">
-                <label htmlFor="wizard-premise">Prämisse</label>
+                <label htmlFor="wizard-premise">{t("wizard.labels.premise")}</label>
                 <textarea
                   id="wizard-premise"
-                  placeholder="Worum geht es in deiner Geschichte?"
+                  placeholder={t("wizard.premisePlaceholder")}
                   maxLength={PREMISE_MAX_LENGTH}
                   value={wizard.premise}
                   onChange={(event) => setField("premise")(event.target.value)}
@@ -273,27 +271,27 @@ export function Wizard() {
               </div>
 
               <div className="wizard-field">
-                <label>Perspektive</label>
+                <label>{t("wizard.labels.viewpoint")}</label>
                 <div className="wizard-badge-row">
                   <Chip
                     selected={wizard.controlMode === "player"}
                     onClick={() => dispatch(controlModeChanged("player"))}
                   >
-                    Ich-Charakter
+                    {t("wizard.controlModePlayer")}
                   </Chip>
                   <Chip
                     selected={wizard.controlMode === "director"}
                     onClick={() => dispatch(controlModeChanged("director"))}
                   >
-                    Regie
+                    {t("wizard.controlModeDirector")}
                   </Chip>
                 </div>
               </div>
 
               <p className="wizard-hint-block">
                 {wizard.controlMode === "player"
-                  ? "Als Ich-Charakter brauchst du einen Namen für deine Figur — den Rest (Aussehen, Hintergrund, ...) darf die KI ergänzen."
-                  : "Kein Name? Kein Problem — die KI schlägt dir passende Figuren aus deiner Prämisse vor, sobald du den Vorschlag erstellst."}
+                  ? t("wizard.playerModeHint")
+                  : t("wizard.directorModeHint")}
               </p>
 
               {(wizard.controlMode === "player" ? wizard.characters.slice(0, 1) : wizard.characters).map(
@@ -301,25 +299,27 @@ export function Wizard() {
                   <div className="wizard-character-draft" key={index}>
                     {wizard.controlMode === "director" && (
                       <div className="wizard-character-draft-head">
-                        <span>Figur {index + 1}</span>
+                        <span>{t("wizard.characterHeading", { number: index + 1 })}</span>
                         {wizard.characters.length > 1 && (
                           <button
                             type="button"
                             className="wizard-link-button"
                             onClick={() => dispatch(characterRemoved(index))}
                           >
-                            Entfernen
+                            {t("common.remove")}
                           </button>
                         )}
                       </div>
                     )}
                     <div className="wizard-field" style={{ marginBottom: 0 }}>
-                      <label htmlFor={`wizard-character-name-${index}`}>Name</label>
+                      <label htmlFor={`wizard-character-name-${index}`}>{t("wizard.labels.name")}</label>
                       <input
                         id={`wizard-character-name-${index}`}
                         type="text"
                         placeholder={
-                          wizard.controlMode === "player" ? "Name deiner Figur" : "Name deiner Figur (optional)"
+                          wizard.controlMode === "player"
+                            ? t("wizard.namePlaceholderRequired")
+                            : t("wizard.namePlaceholderOptional")
                         }
                         value={character.name}
                         onChange={(event) =>
@@ -330,10 +330,10 @@ export function Wizard() {
                       />
                     </div>
                     <div className="wizard-field" style={{ marginBottom: 0 }}>
-                      <label htmlFor={`wizard-character-desc-${index}`}>Wer bist du?</label>
+                      <label htmlFor={`wizard-character-desc-${index}`}>{t("wizard.labels.whoAreYou")}</label>
                       <textarea
                         id={`wizard-character-desc-${index}`}
-                        placeholder="Beschreibe deine Figur in wenigen Sätzen …"
+                        placeholder={t("wizard.descriptionPlaceholder")}
                         value={character.description}
                         onChange={(event) =>
                           dispatch(
@@ -357,27 +357,27 @@ export function Wizard() {
                   onClick={() => dispatch(characterAdded())}
                 >
                   <PlusIcon style={{ width: 14, height: 14 }} />
-                  Weitere Figur hinzufügen
+                  {t("wizard.addCharacter")}
                 </button>
               )}
 
               <CategoryField
                 category={findCategory(catalog?.categories, "player_agency")}
-                label="Handlungsfreiheit"
+                label={t("wizard.labels.playerAgency")}
                 value={wizard.playerAgency}
                 onSelect={setField("playerAgency")}
               />
 
               <div className="wizard-form-foot">
                 <Button variant="ghost" onClick={() => dispatch(stepChanged("welt"))}>
-                  Zurück
+                  {t("common.back")}
                 </Button>
                 <Button
                   icon={<ArrowRightIcon />}
                   disabled={!canProceedFromFigur}
                   onClick={() => dispatch(stepChanged("stil"))}
                 >
-                  Weiter
+                  {t("common.next")}
                 </Button>
               </div>
             </>
@@ -401,8 +401,10 @@ export function Wizard() {
                       dispatch(fieldChanged({ field: "challenge", value: preset.values.challenge }));
                     }}
                   >
-                    <div className="wizard-preset-card-title">{preset.label}</div>
-                    <div className="wizard-preset-card-desc">{preset.description}</div>
+                    <div className="wizard-preset-card-title">{t(`wizard.presets.${preset.id}.label`)}</div>
+                    <div className="wizard-preset-card-desc">
+                      {t(`wizard.presets.${preset.id}.description`)}
+                    </div>
                   </button>
                 ))}
               </div>
@@ -412,7 +414,7 @@ export function Wizard() {
                 className={`wizard-advanced-toggle${stilAdvancedOpen ? " wizard-advanced-toggle--open" : ""}`}
                 onClick={() => setStilAdvancedOpen((open) => !open)}
               >
-                {stilAdvancedOpen ? "Eigene Kombination ausblenden" : "Eigene Kombination wählen"}
+                {stilAdvancedOpen ? t("wizard.hideCustomCombo") : t("wizard.showCustomCombo")}
                 <ChevronDownIcon />
               </button>
 
@@ -420,53 +422,49 @@ export function Wizard() {
                 <div className="wizard-advanced">
                   <CategoryField
                     category={findCategory(catalog?.categories, "prose_style")}
-                    label="Prosastil"
+                    label={t("wizard.labels.proseStyle")}
                     value={wizard.proseStyle}
                     onSelect={setField("proseStyle")}
                   />
                   <CategoryField
                     category={findCategory(catalog?.categories, "pacing")}
-                    label="Erzähltempo"
+                    label={t("wizard.labels.pacing")}
                     value={wizard.pacing}
                     onSelect={setField("pacing")}
                   />
                   <CategoryField
                     category={findCategory(catalog?.categories, "length")}
-                    label="Länge"
+                    label={t("wizard.labels.length")}
                     value={wizard.length}
                     onSelect={setField("length")}
                   />
                   <CategoryField
                     category={findCategory(catalog?.categories, "consequence")}
-                    label="Konsequenzen"
+                    label={t("wizard.labels.consequence")}
                     value={wizard.consequence}
                     onSelect={setField("consequence")}
                   />
                   <CategoryField
                     category={findCategory(catalog?.categories, "challenge")}
-                    label="Herausforderung"
+                    label={t("wizard.labels.challenge")}
                     value={wizard.challenge}
                     onSelect={setField("challenge")}
                   />
                 </div>
               )}
 
-              {proposeState.error && (
-                <p className="wizard-error">
-                  Der Vorschlag konnte nicht erstellt werden. Bitte versuche es erneut.
-                </p>
-              )}
+              {proposeState.error && <p className="wizard-error">{t("wizard.proposeError")}</p>}
 
               <div className="wizard-form-foot">
                 <Button variant="ghost" onClick={() => dispatch(stepChanged("figur"))}>
-                  Zurück
+                  {t("common.back")}
                 </Button>
                 <Button
                   icon={<ArrowRightIcon />}
                   disabled={proposeState.isLoading}
                   onClick={handleCreateProposal}
                 >
-                  {proposeState.isLoading ? "Erstelle Vorschlag …" : "Vorschlag erstellen"}
+                  {proposeState.isLoading ? t("wizard.creatingProposal") : t("wizard.createProposal")}
                 </Button>
               </div>
             </>
@@ -479,7 +477,7 @@ export function Wizard() {
               </div>
 
               <div className="wizard-field">
-                <label htmlFor="wizard-run-name">Name der Geschichte</label>
+                <label htmlFor="wizard-run-name">{t("wizard.labels.runName")}</label>
                 <input
                   id="wizard-run-name"
                   type="text"
@@ -489,7 +487,7 @@ export function Wizard() {
               </div>
 
               <div className="wizard-field">
-                <label>Figuren</label>
+                <label>{t("wizard.labels.characters")}</label>
                 {wizard.proposal.world.entities
                   .filter((entity) => entity.kind === "character")
                   .map((entity) => {
@@ -507,7 +505,7 @@ export function Wizard() {
                               dispatch(characterRoleChanged({ entityId: entity.id, role: "player" }))
                             }
                           >
-                            Spieler
+                            {t("wizard.rolePlayer")}
                           </Chip>
                           <Chip
                             selected={decision.role === "npc"}
@@ -515,14 +513,14 @@ export function Wizard() {
                               dispatch(characterRoleChanged({ entityId: entity.id, role: "npc" }))
                             }
                           >
-                            NPC
+                            {t("wizard.roleNpc")}
                           </Chip>
                           <Chip
                             selected={decision.removed}
                             icon={<TrashIcon style={{ width: 13, height: 13 }} />}
                             onClick={() => dispatch(characterRemovalToggled(entity.id))}
                           >
-                            Entfernen
+                            {t("common.remove")}
                           </Chip>
                         </div>
                       </div>
@@ -531,7 +529,7 @@ export function Wizard() {
               </div>
 
               <div className="wizard-field">
-                <label>Gegenstände</label>
+                <label>{t("wizard.labels.items")}</label>
                 {wizard.proposal.world.entities
                   .filter((entity) => entity.kind === "item")
                   .map((entity) => {
@@ -548,7 +546,7 @@ export function Wizard() {
                             icon={<TrashIcon style={{ width: 13, height: 13 }} />}
                             onClick={() => dispatch(itemRemovalToggled(entity.id))}
                           >
-                            Entfernen
+                            {t("common.remove")}
                           </Chip>
                         </div>
                       </div>
@@ -556,25 +554,21 @@ export function Wizard() {
                   })}
               </div>
 
-              {!canStart && (
-                <p className="wizard-error">Wähle eine Figur als Spieler, bevor du beginnst.</p>
-              )}
+              {!canStart && <p className="wizard-error">{t("wizard.noPlayerSelected")}</p>}
               {(confirmState.error || startState.error) && (
-                <p className="wizard-error">
-                  Die Geschichte konnte nicht gestartet werden. Bitte versuche es erneut.
-                </p>
+                <p className="wizard-error">{t("wizard.startError")}</p>
               )}
 
               <div className="wizard-form-foot">
-                <span className="wizard-hint">Du kannst alles später anpassen.</span>
+                <span className="wizard-hint">{t("wizard.laterHint")}</span>
                 <Button
                   icon={<ArrowRightIcon />}
                   disabled={!canStart || confirmState.isLoading || startState.isLoading}
                   onClick={handleConfirmAndStart}
                 >
                   {confirmState.isLoading || startState.isLoading
-                    ? "Geschichte wird erstellt …"
-                    : "Geschichte beginnen"}
+                    ? t("wizard.creatingStory")
+                    : t("wizard.startStory")}
                 </Button>
               </div>
             </>

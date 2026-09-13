@@ -1,4 +1,7 @@
 {
+  "appHeader": {
+    "brand": "Story Engine"
+  },
   "common": {
     "next": "Weiter",
     "back": "Zurück",
@@ -14,7 +17,6 @@
     "failed": "Anmeldung fehlgeschlagen. Bitte lade die Seite neu."
   },
   "landing": {
-    "brand": "Story Engine",
     "signIn": "Anmelden",
     "eyebrow": "Interaktives Erzählen",
     "heroTitle": "Geschichten, die deinen Entscheidungen folgen.",

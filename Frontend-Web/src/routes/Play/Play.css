@@ -1,7 +1,7 @@
 .play-shell {
   display: grid;
   grid-template-columns: 236px minmax(0, 1fr) 312px;
-  min-height: 100%;
+  height: 100%;
 }
 
 /* ---------- Left rail ---------- */
@@ -12,6 +12,7 @@
   display: flex;
   flex-direction: column;
   gap: 30px;
+  overflow-y: auto;
 }
 
 .play-brand {
@@ -82,6 +83,7 @@
   flex-direction: column;
   gap: 22px;
   min-width: 0;
+  min-height: 0;
 }
 
 .play-scene-header {
@@ -126,6 +128,9 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .play-turn + .play-turn {
@@ -223,6 +228,7 @@
   background: var(--surface);
   border-left: 1px solid var(--surface-line);
   padding: 32px 22px;
+  overflow-y: auto;
 }
 
 .play-sidebar-note {

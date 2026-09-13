@@ -129,3 +129,23 @@ export async function playTurn(
     body: JSON.stringify(payload),
   });
 }
+
+/** A frontend-side failure that never reached the backend as a typed
+ *  `ApiError` (network failure, JSON-parse failure, a synchronous JS
+ *  exception before a request was dispatched) — see `queryError.ts`
+ *  (TASK-030). Uses the same authenticated `request()` as every other call;
+ *  deliberately excludes `401`s, which the frontend handles as a forced
+ *  re-login instead (see `ErrorBanner`). */
+export interface FrontendErrorReport {
+  source: string;
+  message: string;
+  url?: string;
+  user_agent?: string;
+}
+
+export async function reportFrontendError(payload: FrontendErrorReport): Promise<void> {
+  return request("/api/v1/diagnostics/frontend-errors", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}

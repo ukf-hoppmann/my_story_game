@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useLoadRunQuery, usePlayTurnMutation, useStartPlaythroughMutation } from "../../api/apiSlice";
+import { toQueryError } from "../../api/queryError";
 import { Paragraphs } from "../../components/Paragraphs";
 import { Button } from "../../components/Button/Button";
 import { ImageSlot } from "../../components/ImageSlot/ImageSlot";
@@ -13,26 +14,18 @@ import {
   ScrollIcon,
   TargetIcon,
 } from "../../icons";
+import { ErrorBanner } from "../../components/ErrorBanner/ErrorBanner";
 import { CharactersPanel, FactsPanel, GoalsPanel } from "./SidebarPanels";
 import "./Play.css";
 
 /** Recovery copy for the error codes the old PlayScreen specifically
  *  handled — a stale run or a concurrent-edit conflict both need a reload,
- *  not just "something went wrong". */
+ *  not just "something went wrong". Consumed by `ErrorBanner`'s
+ *  `knownCodes` prop. */
 const TURN_ERROR_KEYS: Record<string, string> = {
   run_not_active: "play.errors.runNotActive",
   revision_conflict: "play.errors.revisionConflict",
 };
-
-/** RTK Query's error union also includes plain `SerializedError` (thrown JS
- *  errors), which has no guaranteed `code` — narrow defensively instead of
- *  assuming our own QueryError shape. */
-function errorCode(error: unknown): string | undefined {
-  if (error && typeof error === "object" && "code" in error && typeof error.code === "string") {
-    return error.code;
-  }
-  return undefined;
-}
 
 export function Play() {
   const { t } = useTranslation();
@@ -58,8 +51,13 @@ export function Play() {
     try {
       const active = await startPlaythrough(runId).unwrap();
       navigate(`/stories/${active.game_run.id}`);
-    } catch {
-      // Surfaced via startState.error below.
+    } catch (error) {
+      // startState.error below already covers the mutation's own rejection;
+      // this only still matters for a synchronous exception thrown before
+      // the request was dispatched, which unwrap() never produces itself.
+      if (!(error instanceof Object && "status" in error)) {
+        toQueryError(error, "play.handleStartPlaythrough");
+      }
     }
   }
 
@@ -98,7 +96,9 @@ export function Play() {
 
         {error && (
           <div className="play-error-banner">
-            <span>{t("play.loadError")}</span>
+            <span>
+              <ErrorBanner error={error} fallbackKey="play.loadError" bare />
+            </span>
             <Button variant="ghost" onClick={() => refetch()}>
               {t("common.retry")}
             </Button>
@@ -108,7 +108,7 @@ export function Play() {
         {doc && doc.game_run.status !== "active" && (
           <div className="play-draft-banner">
             <p>{t("play.draftBanner")}</p>
-            {startState.error && <p className="play-status">{t("play.startError")}</p>}
+            <ErrorBanner error={startState.error} fallbackKey="play.startError" className="play-status" />
             <Button
               icon={<ArrowRightIcon />}
               disabled={startState.isLoading}
@@ -151,10 +151,12 @@ export function Play() {
             {playTurnState.error && (
               <div className="play-error-banner">
                 <span>
-                  {(() => {
-                    const code = errorCode(playTurnState.error);
-                    return t((code && TURN_ERROR_KEYS[code]) ?? "play.errors.generic");
-                  })()}
+                  <ErrorBanner
+                    error={playTurnState.error}
+                    knownCodes={TURN_ERROR_KEYS}
+                    fallbackKey="play.errors.generic"
+                    bare
+                  />
                 </span>
                 <Button variant="ghost" onClick={() => refetch()}>
                   {t("play.reload")}

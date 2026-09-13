@@ -8,9 +8,11 @@ import {
   useProposeRunMutation,
   useStartPlaythroughMutation,
 } from "../../api/apiSlice";
+import { toQueryError } from "../../api/queryError";
 import type { PromptProfileCategory } from "../../api/types";
 import { Button } from "../../components/Button/Button";
 import { Chip } from "../../components/Chip/Chip";
+import { ErrorBanner } from "../../components/ErrorBanner/ErrorBanner";
 import { ImageSlot } from "../../components/ImageSlot/ImageSlot";
 import { Paragraphs } from "../../components/Paragraphs";
 import { ArrowRightIcon, ChevronDownIcon, CompassIcon, PlusIcon, TrashIcon } from "../../icons";
@@ -159,8 +161,15 @@ export function Wizard() {
     try {
       const proposal = await proposeRun(buildProposeRequest(wizard)).unwrap();
       dispatch(proposalReceived(proposal));
-    } catch {
-      // Surfaced via proposeState.error below — nothing else to do here.
+    } catch (error) {
+      // A rejection from the mutation itself is already surfaced via
+      // proposeState.error below; this only still matters for a synchronous
+      // exception thrown before the request was dispatched (e.g. a bug in
+      // buildProposeRequest), which `unwrap()` never produces — without this,
+      // TASK-030's incident showed such a failure would vanish silently.
+      if (!(error instanceof Object && "status" in error)) {
+        toQueryError(error, "wizard.handleCreateProposal");
+      }
     }
   }
 
@@ -169,8 +178,12 @@ export function Wizard() {
       const draft = await confirmRun(buildConfirmRequest(wizard)).unwrap();
       const active = await startPlaythrough(draft.game_run.id).unwrap();
       navigate(`/stories/${active.game_run.id}`);
-    } catch {
-      // Surfaced via confirmState.error / startState.error below.
+    } catch (error) {
+      // Same reasoning as handleCreateProposal: confirmState.error/
+      // startState.error already cover the mutations' own rejections.
+      if (!(error instanceof Object && "status" in error)) {
+        toQueryError(error, "wizard.handleConfirmAndStart");
+      }
     }
   }
 
@@ -218,7 +231,7 @@ export function Wizard() {
           {wizard.step === "welt" && (
             <>
               {catalogLoading && <p className="wizard-status">{t("wizard.loadingOptions")}</p>}
-              {catalogError && <p className="wizard-error">{t("wizard.catalogError")}</p>}
+              <ErrorBanner error={catalogError} fallbackKey="wizard.catalogError" className="wizard-error" />
 
               <CategoryField
                 category={findCategory(catalog?.categories, "genre")}
@@ -453,7 +466,7 @@ export function Wizard() {
                 </div>
               )}
 
-              {proposeState.error && <p className="wizard-error">{t("wizard.proposeError")}</p>}
+              <ErrorBanner error={proposeState.error} fallbackKey="wizard.proposeError" className="wizard-error" />
 
               <div className="wizard-form-foot">
                 <Button variant="ghost" onClick={() => dispatch(stepChanged("figur"))}>
@@ -555,9 +568,11 @@ export function Wizard() {
               </div>
 
               {!canStart && <p className="wizard-error">{t("wizard.noPlayerSelected")}</p>}
-              {(confirmState.error || startState.error) && (
-                <p className="wizard-error">{t("wizard.startError")}</p>
-              )}
+              <ErrorBanner
+                error={confirmState.error ?? startState.error}
+                fallbackKey="wizard.startError"
+                className="wizard-error"
+              />
 
               <div className="wizard-form-foot">
                 <span className="wizard-hint">{t("wizard.laterHint")}</span>

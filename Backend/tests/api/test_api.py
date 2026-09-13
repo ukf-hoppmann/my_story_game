@@ -27,6 +27,8 @@ from story_game.application import (
     Success,
 )
 from story_game.application.approve_story_turn_changes import ApproveStoryTurnChanges
+from story_game.application.diagnostics import NullDiagnosticsLog
+from story_game.application.diagnostics_reporting import ReportFrontendError
 from story_game.application.game_models import RunSummary
 from story_game.application.game_state import (
     CommitCompletedTurn,
@@ -205,6 +207,7 @@ def build_dependencies(
         start_playthrough,
         prompt_catalog=catalog,
         prompt_profile_validator=validator,
+        report_frontend_error=ReportFrontendError(NullDiagnosticsLog()),
     )
 
 

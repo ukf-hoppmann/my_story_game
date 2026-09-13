@@ -60,3 +60,10 @@ export function currentUsername(): string | undefined {
 export function logout(): void {
   keycloak.logout();
 }
+
+/** Redirects to Keycloak's login page. Used by `ErrorBanner`'s re-login
+ *  action after a `session_expired` (`401`) error (TASK-030) — a plain
+ *  redirect back into the login flow, distinct from `logout()`. */
+export function login(): void {
+  keycloak.login();
+}

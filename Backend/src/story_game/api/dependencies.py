@@ -13,6 +13,7 @@ from story_game.application import (
     RunInitiator,
     StartPlaythrough,
 )
+from story_game.application.diagnostics_reporting import ReportFrontendError
 from story_game.application.game_state import GameStateOperations, PromptProfileValidator
 from story_game.application.llm import PromptPackageCatalog
 
@@ -30,6 +31,7 @@ class ApiDependencies:
     start_playthrough: StartPlaythrough
     prompt_catalog: PromptPackageCatalog
     prompt_profile_validator: PromptProfileValidator
+    report_frontend_error: ReportFrontendError
 
 
 def get_api_dependencies(request: Request) -> ApiDependencies:

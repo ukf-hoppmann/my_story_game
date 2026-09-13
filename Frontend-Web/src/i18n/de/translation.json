@@ -7,7 +7,13 @@
     "back": "Zurück",
     "remove": "Entfernen",
     "retry": "Erneut versuchen",
-    "yourStories": "Deine Geschichten"
+    "yourStories": "Deine Geschichten",
+    "reLogin": "Neu anmelden"
+  },
+  "errors": {
+    "sessionExpired": "Du wurdest ausgeloggt, bitte melde dich erneut an.",
+    "toolingGeneric": "Ein technischer Fehler ist aufgetreten und wurde protokolliert. Bitte versuche es erneut.",
+    "backendError": "Fehler: {{message}}"
   },
   "imageSlot": {
     "defaultPlaceholder": "Platzhalter · Bild folgt"

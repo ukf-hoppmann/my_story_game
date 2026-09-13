@@ -38,7 +38,7 @@ export const apiSlice = createApi({
           const { runs } = await listRuns();
           return { data: runs };
         } catch (error) {
-          return { error: toQueryError(error) };
+          return { error: toQueryError(error, "apiSlice.listRuns") };
         }
       },
       providesTags: ["Run"],
@@ -49,7 +49,7 @@ export const apiSlice = createApi({
           const catalog = await fetchPromptProfileCatalog();
           return { data: catalog };
         } catch (error) {
-          return { error: toQueryError(error) };
+          return { error: toQueryError(error, "apiSlice.promptProfileCatalog") };
         }
       },
     }),
@@ -59,7 +59,7 @@ export const apiSlice = createApi({
           const doc = await loadRun(runId);
           return { data: doc };
         } catch (error) {
-          return { error: toQueryError(error) };
+          return { error: toQueryError(error, "apiSlice.loadRun") };
         }
       },
       providesTags: (_result, _error, runId) => [{ type: "Run", id: runId }],
@@ -70,7 +70,7 @@ export const apiSlice = createApi({
           const proposal = await proposeRun(payload);
           return { data: proposal };
         } catch (error) {
-          return { error: toQueryError(error) };
+          return { error: toQueryError(error, "apiSlice.proposeRun") };
         }
       },
     }),
@@ -80,7 +80,7 @@ export const apiSlice = createApi({
           const doc = await confirmRun(payload);
           return { data: doc };
         } catch (error) {
-          return { error: toQueryError(error) };
+          return { error: toQueryError(error, "apiSlice.confirmRun") };
         }
       },
       invalidatesTags: ["Run"],
@@ -91,7 +91,7 @@ export const apiSlice = createApi({
           const doc = await startPlaythrough(runId);
           return { data: doc };
         } catch (error) {
-          return { error: toQueryError(error) };
+          return { error: toQueryError(error, "apiSlice.startPlaythrough") };
         }
       },
       invalidatesTags: ["Run"],
@@ -102,7 +102,7 @@ export const apiSlice = createApi({
           const result = await playTurn(runId, payload);
           return { data: result };
         } catch (error) {
-          return { error: toQueryError(error) };
+          return { error: toQueryError(error, "apiSlice.playTurn") };
         }
       },
       invalidatesTags: (_result, _error, { runId }) => [{ type: "Run", id: runId }],

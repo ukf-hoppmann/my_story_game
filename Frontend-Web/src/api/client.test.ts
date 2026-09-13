@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ApiError, checkHealth, listRuns, setAuthHeaderProvider } from "./client";
+import { ApiError, checkHealth, listRuns, reportFrontendError, setAuthHeaderProvider } from "./client";
 
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -64,5 +64,28 @@ describe("client", () => {
 
     const [, init] = vi.mocked(fetch).mock.calls[0];
     expect(new Headers(init?.headers).get("Authorization")).toBe("Bearer test-token");
+  });
+
+  it("posts a frontend-tooling-error report to the diagnostics endpoint", async () => {
+    setAuthHeaderProvider(() => ({ Authorization: "Bearer test-token" }));
+    vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 204 }));
+
+    await reportFrontendError({
+      source: "wizard.handleCreateProposal",
+      message: "Failed to fetch",
+      url: "https://story-game.example/wizard",
+      user_agent: "test-agent/1.0",
+    });
+
+    const [url, init] = vi.mocked(fetch).mock.calls[0];
+    expect(url).toContain("/api/v1/diagnostics/frontend-errors");
+    expect(init?.method).toBe("POST");
+    expect(new Headers(init?.headers).get("Authorization")).toBe("Bearer test-token");
+    expect(JSON.parse(init?.body as string)).toEqual({
+      source: "wizard.handleCreateProposal",
+      message: "Failed to fetch",
+      url: "https://story-game.example/wizard",
+      user_agent: "test-agent/1.0",
+    });
   });
 });

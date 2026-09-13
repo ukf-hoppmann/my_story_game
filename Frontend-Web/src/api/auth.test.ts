@@ -75,6 +75,14 @@ describe("auth", () => {
     expect(fakeKeycloak.logout).toHaveBeenCalledOnce();
   });
 
+  it("delegates login() to the underlying Keycloak client (TASK-030 re-login action)", async () => {
+    const { login } = await import("./auth");
+
+    login();
+
+    expect(fakeKeycloak.login).toHaveBeenCalledOnce();
+  });
+
   it("ensureAuth runs initAuth only once across multiple calls", async () => {
     const { ensureAuth, resetAuthForTests } = await import("./auth");
     resetAuthForTests();

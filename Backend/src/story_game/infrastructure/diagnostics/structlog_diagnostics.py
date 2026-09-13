@@ -6,6 +6,7 @@ import structlog
 
 from story_game.application.diagnostics import (
     DiagnosticEvent,
+    FrontendToolingError,
     ModelCallFailed,
     ProposalRejected,
     RevisionConflict,
@@ -71,6 +72,17 @@ def _render(event: DiagnosticEvent) -> tuple[str, str, dict[str, object]]:
             "revision_conflict",
             "warning",
             {"detail": event.detail, "run_id": event.run_id},
+        )
+    if isinstance(event, FrontendToolingError):
+        return (
+            "frontend_tooling_error",
+            "warning",
+            {
+                "source": event.source,
+                "message": event.message,
+                "url": event.url,
+                "user_agent": event.user_agent,
+            },
         )
     raise TypeError(f"Unbekanntes DiagnosticEvent: {type(event).__name__}")
 

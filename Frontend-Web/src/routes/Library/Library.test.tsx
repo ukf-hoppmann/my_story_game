@@ -74,15 +74,13 @@ describe("Library", () => {
     expect(screen.getByText("Keine offenen Entwürfe.")).toBeInTheDocument();
   });
 
-  it("shows an error message when the runs fail to load", async () => {
+  it("shows the backend's own message when the runs fail to load", async () => {
     vi.spyOn(client, "listRuns").mockRejectedValue(
       new ApiError(500, { error: "persistence_unavailable", detail: "Datenbank nicht erreichbar." }),
     );
     renderLibrary();
 
-    expect(
-      await screen.findByText("Deine Geschichten konnten nicht geladen werden. Bitte versuche es erneut."),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("Fehler: Datenbank nicht erreichbar.")).toBeInTheDocument();
   });
 
   it("navigates to the run when a card is clicked", async () => {

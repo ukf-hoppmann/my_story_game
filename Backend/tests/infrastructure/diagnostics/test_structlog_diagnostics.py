@@ -10,6 +10,7 @@ from structlog.testing import LogCapture
 
 from story_game.application.diagnostics import (
     DiagnosticEvent,
+    FrontendToolingError,
     ModelCallFailed,
     ProposalRejected,
     RevisionConflict,
@@ -45,6 +46,7 @@ def test_no_diagnostic_event_schema_carries_a_free_text_field() -> None:
         SummaryGenerationFailed,
         ProposalRejected,
         RevisionConflict,
+        FrontendToolingError,
     ):
         for field in dataclasses.fields(event_type):
             assert field.name in allowed_free_text_fields or field.type in (
@@ -101,3 +103,25 @@ def test_revision_conflict_and_proposal_rejected_render_distinctly() -> None:
 
     events = [entry["event"] for entry in capture.entries]
     assert events == ["revision_conflict", "proposal_rejected"]
+
+
+def test_frontend_tooling_error_renders_as_warning_with_its_fields() -> None:
+    capture = _capture()
+    adapter = StructlogDiagnosticsLog(debug_enabled=False)
+
+    adapter.record(
+        FrontendToolingError(
+            source="wizard.handleCreateProposal",
+            message="Failed to fetch",
+            url="https://story-game.example/wizard",
+            user_agent="test-agent/1.0",
+        )
+    )
+
+    assert len(capture.entries) == 1
+    entry = capture.entries[0]
+    assert entry["event"] == "frontend_tooling_error"
+    assert entry["source"] == "wizard.handleCreateProposal"
+    assert entry["message"] == "Failed to fetch"
+    assert entry["url"] == "https://story-game.example/wizard"
+    assert entry["user_agent"] == "test-agent/1.0"

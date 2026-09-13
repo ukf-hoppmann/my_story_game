@@ -4,6 +4,7 @@ import { useListRunsQuery } from "../../api/apiSlice";
 import type { GameRunStatus, RunSummary } from "../../api/types";
 import { ArrowRightIcon } from "../../icons";
 import { Button } from "../../components/Button/Button";
+import { ErrorBanner } from "../../components/ErrorBanner/ErrorBanner";
 import "./Library.css";
 
 const STATUS_LABEL_KEYS: Record<GameRunStatus, string> = {
@@ -57,7 +58,7 @@ export function Library() {
 
       {isLoading && <p className="library-empty">{t("library.loading")}</p>}
 
-      {error && <p className="library-error">{t("library.loadError")}</p>}
+      <ErrorBanner error={error} fallbackKey="library.loadError" className="library-error" />
 
       {runs && (
         <>

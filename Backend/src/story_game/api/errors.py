@@ -6,6 +6,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 
 from story_game.api.results import OperationFailed
+from story_game.application.diagnostics_reporting import ReportFrontendErrorRejected
 from story_game.application.game_state import (
     RunAccessDenied,
     RunConflict,
@@ -114,6 +115,8 @@ async def _operation_failed(request: Request, exc: Exception) -> JSONResponse:
     if isinstance(error, PlaythroughError):
         status_code, code = _PLAYTHROUGH_STATUS[error.kind]
         return _error_response(status_code, code, error.message)
+    if isinstance(error, ReportFrontendErrorRejected):
+        return _error_response(400, "invalid_frontend_error_report", error.detail)
     raise exc
 
 

@@ -35,7 +35,7 @@ describe("apiSlice.listRuns", () => {
     expect(result.data).toEqual([sampleRun]);
   });
 
-  it("maps an ApiError into the normalized QueryError shape", async () => {
+  it("maps a 401 ApiError to the session_expired code (TASK-030)", async () => {
     vi.spyOn(client, "listRuns").mockRejectedValue(
       new ApiError(401, { error: "unauthorized", detail: "Nicht angemeldet." }),
     );
@@ -45,7 +45,7 @@ describe("apiSlice.listRuns", () => {
 
     expect(result.error).toEqual({
       status: 401,
-      code: "unauthorized",
+      code: "session_expired",
       message: "Nicht angemeldet.",
     });
   });

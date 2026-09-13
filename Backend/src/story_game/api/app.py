@@ -40,6 +40,7 @@ from story_game.application.llm import (
     StoryPromptSelectionResolver,
     SummaryPromptSelectionResolver,
 )
+from story_game.application.diagnostics_reporting import ReportFrontendError
 from story_game.application.story_initialization import GenerateInitialStoryState
 from story_game.application.story_turn_context import build_story_turn_context_selection
 from story_game.infrastructure.configuration import (
@@ -146,6 +147,7 @@ def create_app(
                 prompt_profile_validator=PromptProfileValidator(
                     FilePromptPackageCatalog(resolved_settings.prompt_root)
                 ),
+                report_frontend_error=_compose_report_frontend_error(diagnostics),
             )
         application.state.api_dependencies = resolved
         application.state.api_settings = resolved_settings
@@ -193,6 +195,12 @@ def _compose_game_state_operations(
         commit_turn=CommitCompletedTurn(store, store, diagnostics),
         list_playable_runs=ListPlayableRuns(store),
     )
+
+
+def _compose_report_frontend_error(
+    diagnostics: StructlogDiagnosticsLog,
+) -> ReportFrontendError:
+    return ReportFrontendError(diagnostics)
 
 
 @dataclass(frozen=True, slots=True)

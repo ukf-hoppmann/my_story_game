@@ -6,6 +6,7 @@ import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { apiSlice } from "../../api/apiSlice";
 import * as client from "../../api/client";
+import { ApiError } from "../../api/client";
 import type { GameDocument, PromptProfileCatalog, RunProposal } from "../../api/types";
 import wizardReducer from "../../features/wizard/wizardSlice";
 import { Wizard } from "./Wizard";
@@ -135,13 +136,26 @@ describe("Wizard", () => {
     vi.restoreAllMocks();
   });
 
-  it("shows an error when the catalog fails to load", async () => {
+  it("shows the generic tooling-error message when the catalog fails to load for a non-backend reason", async () => {
     vi.spyOn(client, "fetchPromptProfileCatalog").mockRejectedValue(new Error("network down"));
+    vi.spyOn(client, "reportFrontendError").mockResolvedValue(undefined);
     renderWizard();
 
     expect(
-      await screen.findByText("Optionen konnten nicht geladen werden. Bitte versuche es erneut."),
+      await screen.findByText(
+        "Ein technischer Fehler ist aufgetreten und wurde protokolliert. Bitte versuche es erneut.",
+      ),
     ).toBeInTheDocument();
+    expect(client.reportFrontendError).toHaveBeenCalled();
+  });
+
+  it("shows the backend's own message when the catalog fails to load with a typed API error", async () => {
+    vi.spyOn(client, "fetchPromptProfileCatalog").mockRejectedValue(
+      new ApiError(500, { error: "prompt_package_configuration_invalid", detail: "Katalog defekt." }),
+    );
+    renderWizard();
+
+    expect(await screen.findByText("Fehler: Katalog defekt.")).toBeInTheDocument();
   });
 
   it("Welt: preselects catalog defaults and lets the user change genre/tone, no title/premise fields", async () => {
@@ -322,9 +336,10 @@ describe("Wizard", () => {
     expect(screen.getByRole("button", { name: "Geschichte beginnen" })).toBeEnabled();
   });
 
-  it("shows an error and stays on Stil when creating the proposal fails", async () => {
+  it("shows the tooling-error message and stays on Stil when creating the proposal fails for a non-backend reason", async () => {
     vi.spyOn(client, "fetchPromptProfileCatalog").mockResolvedValue(catalog);
     vi.spyOn(client, "proposeRun").mockRejectedValue(new Error("boom"));
+    vi.spyOn(client, "reportFrontendError").mockResolvedValue(undefined);
 
     const user = userEvent.setup();
     renderWizard();
@@ -335,15 +350,39 @@ describe("Wizard", () => {
     await user.click(screen.getByRole("button", { name: "Vorschlag erstellen" }));
 
     expect(
-      await screen.findByText("Der Vorschlag konnte nicht erstellt werden. Bitte versuche es erneut."),
+      await screen.findByText(
+        "Ein technischer Fehler ist aufgetreten und wurde protokolliert. Bitte versuche es erneut.",
+      ),
     ).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Erzählstil" })).toBeInTheDocument();
   });
 
-  it("shows an error when confirming/starting the run fails", async () => {
+  it("shows the backend's own message when confirming/starting the run fails with a typed API error", async () => {
     vi.spyOn(client, "fetchPromptProfileCatalog").mockResolvedValue(catalog);
     vi.spyOn(client, "proposeRun").mockResolvedValue(proposal);
-    vi.spyOn(client, "confirmRun").mockRejectedValue(new Error("boom"));
+    vi.spyOn(client, "confirmRun").mockRejectedValue(
+      new ApiError(422, { error: "domain_validation_failed", detail: "Ungültige Auswahl." }),
+    );
+
+    const user = userEvent.setup();
+    renderWizard();
+    await screen.findByRole("button", { name: "Dark Fantasy" });
+    await fillWeltStep(user);
+    await fillFigurStep(user);
+    await user.click(screen.getByRole("button", { name: "Vorschlag erstellen" }));
+    await screen.findByRole("heading", { name: "Geschichte bestätigen" });
+
+    await user.click(screen.getByRole("button", { name: "Geschichte beginnen" }));
+
+    expect(await screen.findByText("Fehler: Ungültige Auswahl.")).toBeInTheDocument();
+  });
+
+  it("shows the session-expired message with a re-login action on a 401", async () => {
+    vi.spyOn(client, "fetchPromptProfileCatalog").mockResolvedValue(catalog);
+    vi.spyOn(client, "proposeRun").mockResolvedValue(proposal);
+    vi.spyOn(client, "confirmRun").mockRejectedValue(
+      new ApiError(401, { error: "unauthorized", detail: "Token abgelaufen." }),
+    );
 
     const user = userEvent.setup();
     renderWizard();
@@ -356,7 +395,8 @@ describe("Wizard", () => {
     await user.click(screen.getByRole("button", { name: "Geschichte beginnen" }));
 
     expect(
-      await screen.findByText("Die Geschichte konnte nicht gestartet werden. Bitte versuche es erneut."),
+      await screen.findByText("Du wurdest ausgeloggt, bitte melde dich erneut an."),
     ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Neu anmelden" })).toBeInTheDocument();
   });
 });

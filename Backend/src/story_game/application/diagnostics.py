@@ -72,8 +72,33 @@ class RevisionConflict:
     run_id: str | None = None
 
 
+@dataclass(frozen=True, slots=True)
+class FrontendToolingError:
+    """A frontend-side failure that never reached the backend as a typed API
+    error (TASK-030): a network failure, a JSON-parse failure, or a
+    synchronous JS exception thrown before a request was even dispatched.
+
+    Reported by the frontend itself via a dedicated, authenticated endpoint
+    (``POST /api/v1/diagnostics/frontend-errors``) — deliberately excluding
+    ``401``s, which the frontend handles as a forced re-login instead, since
+    at that point no valid token remains to authenticate the report with.
+    ``source`` is a short, developer-authored label identifying the call
+    site (e.g. ``"wizard.handleCreateProposal"``), never free text; ``message``
+    is the underlying JS/browser error text, bounded by the API schema.
+    """
+
+    source: str
+    message: str
+    url: str | None = None
+    user_agent: str | None = None
+
+
 DiagnosticEvent = (
-    ModelCallFailed | SummaryGenerationFailed | ProposalRejected | RevisionConflict
+    ModelCallFailed
+    | SummaryGenerationFailed
+    | ProposalRejected
+    | RevisionConflict
+    | FrontendToolingError
 )
 
 
@@ -106,6 +131,7 @@ class NullDiagnosticsLog:
 __all__ = [
     "DiagnosticEvent",
     "DiagnosticsLog",
+    "FrontendToolingError",
     "ModelCallFailed",
     "NullDiagnosticsLog",
     "ProposalRejected",

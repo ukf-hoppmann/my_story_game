@@ -100,13 +100,13 @@ describe("Play", () => {
     expect(screen.getByText("Lade Geschichte …")).toBeInTheDocument();
   });
 
-  it("shows an error banner when the run fails to load", async () => {
+  it("shows the backend's own message in the error banner when the run fails to load", async () => {
     vi.spyOn(client, "loadRun").mockRejectedValue(
       new ApiError(404, { error: "not_found", detail: "Nicht gefunden." }),
     );
     renderPlay();
 
-    expect(await screen.findByText("Die Geschichte konnte nicht geladen werden.")).toBeInTheDocument();
+    expect(await screen.findByText("Fehler: Nicht gefunden.")).toBeInTheDocument();
   });
 
   it("shows the initialization narration and turn history for an active run", async () => {

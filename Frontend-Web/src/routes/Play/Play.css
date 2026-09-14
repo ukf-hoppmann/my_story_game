@@ -1,7 +1,14 @@
 .play-shell {
   display: grid;
   grid-template-columns: 236px minmax(0, 1fr) 312px;
-  height: 100%;
+  /* `.app-shell`/`.app-content` deliberately use `min-height: 100%` (not
+     `height`) so other routes can grow past the viewport and let the
+     document scroll under the sticky AppHeader. That leaves every
+     ancestor height "auto", so a percentage height here would resolve
+     against an indefinite containing block and be ignored. Size against
+     the viewport directly instead, so the grid row itself is bounded and
+     `.play-story-feed` below can scroll internally. */
+  height: calc(100dvh - var(--header-height));
 }
 
 /* ---------- Left rail ---------- */
@@ -241,10 +248,26 @@
 @media (max-width: 980px) {
   .play-shell {
     grid-template-columns: 1fr;
+    /* Below 980px, rail/stage/sidebar stack into separate rows instead
+       of sitting side by side, so the viewport-bound height that makes
+       the story feed scroll internally on desktop would squeeze all
+       three into one screen's height instead. Let the shell grow with
+       its content again and scroll the page normally, like the other
+       routes. */
+    height: auto;
   }
   .play-rail,
   .play-sidebar {
     border: 0;
     border-bottom: 1px solid var(--surface-line);
+    overflow-y: visible;
+  }
+  .play-stage {
+    min-height: auto;
+  }
+  .play-story-feed {
+    flex: 0 1 auto;
+    min-height: auto;
+    overflow-y: visible;
   }
 }

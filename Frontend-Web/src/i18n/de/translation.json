@@ -115,6 +115,9 @@
       "noFacts": "Noch nichts über die Welt bekannt.",
       "charactersTitle": "Figuren",
       "noCharacters": "Noch keine Figuren bekannt."
+    },
+    "chronicle": {
+      "empty": "Noch keine Zusammenfassung verfügbar."
     }
   },
   "wizard": {

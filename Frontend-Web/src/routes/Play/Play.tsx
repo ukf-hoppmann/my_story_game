@@ -27,11 +27,14 @@ const TURN_ERROR_KEYS: Record<string, string> = {
   revision_conflict: "play.errors.revisionConflict",
 };
 
+type PlayTab = "story" | "chronicle";
+
 export function Play() {
   const { t } = useTranslation();
   const { runId = "" } = useParams<{ runId: string }>();
   const navigate = useNavigate();
   const [input, setInput] = useState("");
+  const [activeTab, setActiveTab] = useState<PlayTab>("story");
 
   const { data: doc, isLoading, error, refetch } = useLoadRunQuery(runId, { skip: runId === "" });
   const [playTurn, playTurnState] = usePlayTurnMutation();
@@ -70,7 +73,17 @@ export function Play() {
         </div>
 
         <nav className="play-nav">
-          <div className="play-nav-item play-nav-item--active">
+          <div
+            className={`play-nav-item${activeTab === "story" ? " play-nav-item--active" : ""}`}
+            onClick={() => setActiveTab("story")}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                setActiveTab("story");
+              }
+            }}
+          >
             <BookIcon />
             {t("play.nav.story")}
           </div>
@@ -82,7 +95,17 @@ export function Play() {
             <TargetIcon />
             {t("play.nav.goals")}
           </div>
-          <div className="play-nav-item">
+          <div
+            className={`play-nav-item${activeTab === "chronicle" ? " play-nav-item--active" : ""}`}
+            onClick={() => setActiveTab("chronicle")}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                setActiveTab("chronicle");
+              }
+            }}
+          >
             <ScrollIcon />
             {t("play.nav.chronicle")}
           </div>
@@ -134,19 +157,31 @@ export function Play() {
               alt={doc.game_run.name}
             />
 
-            <div className="play-story-feed">
-              {doc.game_state.story.initialization && (
-                <div className="play-turn">
-                  <Paragraphs text={doc.game_state.story.initialization.narration} />
-                </div>
-              )}
-              {doc.game_state.story.turns.map((turn) => (
-                <div className="play-turn" key={turn.id}>
-                  <p className="play-turn-input">{t("play.turnInputPrefix", { input: turn.player_input })}</p>
-                  <Paragraphs text={turn.narration} />
-                </div>
-              ))}
-            </div>
+            {activeTab === "story" && (
+              <div className="play-story-feed">
+                {doc.game_state.story.initialization && (
+                  <div className="play-turn">
+                    <Paragraphs text={doc.game_state.story.initialization.narration} />
+                  </div>
+                )}
+                {doc.game_state.story.turns.map((turn) => (
+                  <div className="play-turn" key={turn.id}>
+                    <p className="play-turn-input">{t("play.turnInputPrefix", { input: turn.player_input })}</p>
+                    <Paragraphs text={turn.narration} />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {activeTab === "chronicle" && (
+              <div className="play-story-feed play-chronicle">
+                {doc.game_state.story.summary === null ? (
+                  <p className="play-status">{t("play.chronicle.empty")}</p>
+                ) : (
+                  <Paragraphs text={doc.game_state.story.summary.text} />
+                )}
+              </div>
+            )}
 
             {playTurnState.error && (
               <div className="play-error-banner">

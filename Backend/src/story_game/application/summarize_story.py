@@ -1,4 +1,4 @@
-"""Roll the running story summary forward by one completed turn."""
+"""Condense one completed window of turns into a new summary segment."""
 
 from __future__ import annotations
 
@@ -17,6 +17,7 @@ from story_game.application.llm import (
     StorySummaryPort,
     StorySummaryRequest,
     StorySummaryText,
+    SummarizedTurn,
     SummaryPromptSelectionResolver,
 )
 from story_game.application.story_turn_errors import (
@@ -24,35 +25,28 @@ from story_game.application.story_turn_errors import (
     StoryTurnErrorKind,
     story_model_failure,
 )
-from story_game.domain import GameConfiguration, StoryState
+from story_game.domain import GameConfiguration
 
 
 @dataclass(frozen=True, slots=True)
 class SummarizeStoryRequest:
-    """The summary so far plus the turn that has just been narrated."""
+    """The exact window of turns to condense into one new segment."""
 
-    story: StoryState
+    turns: tuple[SummarizedTurn, ...]
     configuration: GameConfiguration
-    player_input: str
-    narration: str
 
     def __post_init__(self) -> None:
-        for name, label in (
-            ("player_input", "Die Spielereingabe"),
-            ("narration", "Die Erzählung"),
-        ):
-            value = getattr(self, name).strip()
-            if not value:
-                raise ValueError(f"{label} darf nicht leer sein")
-            object.__setattr__(self, name, value)
+        if not self.turns:
+            raise ValueError("Ein Zusammenfassungsfenster benötigt mindestens einen Zug")
 
 
 class SummarizeStory:
-    """Produce the summary that replaces the current one.
+    """Produce one new, self-contained summary segment for a turn window.
 
-    Only the previous summary and the new turn are sent: the summary already
-    stands for everything before it, which keeps the call from growing with the
-    game.
+    Only the window's own turns are sent — never earlier segments or turns —
+    so the call stays bounded by the configured summary interval regardless
+    of how long the game has run. The result is appended to the chain of
+    segments by the caller; this class never rewrites an existing segment.
     """
 
     def __init__(
@@ -80,16 +74,13 @@ class SummarizeStory:
             )
             if isinstance(generation, Failure):
                 return Failure(story_model_failure(generation.error))
-            previous = request.story.summary
             call = LLMGenerationCall(
                 model_selection=generation.data.model_selection,
                 generation_options=generation.data.generation_options,
                 request=StorySummaryRequest(
                     system_prompts=(task.text,),
-                    player_input=request.player_input,
-                    narration=request.narration,
+                    turns=request.turns,
                     language=request.configuration.language,
-                    previous_summary=None if previous is None else previous.text,
                 ),
             )
         except (KeyError, ValueError) as error:
@@ -99,8 +90,7 @@ class SummarizeStory:
 
         self._diagnostics.trace(
             "summarize_story.call",
-            narration=call.request.narration,
-            previous_summary=call.request.previous_summary,
+            turn_count=len(call.request.turns),
         )
         summarized = self._summarizer.summarize(call)
         if isinstance(summarized, Failure):

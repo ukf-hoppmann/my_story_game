@@ -16,7 +16,7 @@ from .common import (
     GoalModel,
     KnowledgeEntryModel,
     StoryInitializationModel,
-    StorySummaryModel,
+    StorySummarySegmentModel,
     StoryTurnModel,
     WorldEntityModel,
     WorldRuleModel,
@@ -35,7 +35,7 @@ class WorldStateModel(APIModel):
 
 class StoryStateModel(APIModel):
     turns: list[StoryTurnModel] = Field(default_factory=list)
-    summary: StorySummaryModel | None = None
+    summaries: list[StorySummarySegmentModel] = Field(default_factory=list)
     current_turn_sequence: int = Field(ge=0)
     initialization: StoryInitializationModel | None = None
 

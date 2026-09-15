@@ -237,7 +237,7 @@ class PostgresGameStore:
                         connection, request.run_id, current_revision
                     )
                     updated = current.complete_turn(
-                        request.changes, request.turn, request.summary
+                        request.changes, request.turn, request.new_summary_segment
                     )
                     self._insert_revision(
                         connection,
@@ -249,6 +249,10 @@ class PostgresGameStore:
                     self.story_writer.append_turn(
                         connection, request.run_id, request.turn
                     )
+                    if request.new_summary_segment is not None:
+                        self.story_writer.append_summary_segment(
+                            connection, request.run_id, request.new_summary_segment
+                        )
                     self._update_head(connection, request.run_id, updated.revision)
                     return updated
         except (PersistenceConflictError, PersistenceNotFoundError):

@@ -14,7 +14,7 @@ from story_game.domain import (
     GameState,
     StableId,
     StateRevision,
-    StorySummary,
+    StorySummarySegment,
     StoryState,
     StoryTurn,
     WorldState,
@@ -84,4 +84,4 @@ class CompletedTurnPersistenceRequest:
     run_id: StableId
     changes: ApprovedChangeSet
     turn: StoryTurn
-    summary: StorySummary | None
+    new_summary_segment: StorySummarySegment | None

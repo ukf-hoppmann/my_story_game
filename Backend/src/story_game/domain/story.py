@@ -1,4 +1,4 @@
-"""Completed prose turns and the current rolling story summary."""
+"""Completed prose turns and the chain of story summary segments."""
 
 from __future__ import annotations
 
@@ -40,15 +40,25 @@ class StoryTurn:
 
 
 @dataclass(frozen=True, slots=True)
-class StorySummary:
-    """Current rolling prose summary through one completed turn."""
+class StorySummarySegment:
+    """One immutable summary paragraph condensing a fixed window of turns.
 
+    Segments are never rewritten or replaced: a new one is appended whenever
+    the configured summary interval completes, and the chain of segments in
+    order stands for the story so far.
+    """
+
+    from_sequence: StorySequence
     through_sequence: StorySequence
     text: str
     based_on_revision: StateRevision
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "text", _required(self.text, "Die Zusammenfassung"))
+        if self.from_sequence.value > self.through_sequence.value:
+            raise ValidationError(
+                "Ein Zusammenfassungs-Absatz darf nicht vor seinem eigenen Fenster beginnen"
+            )
 
 
 @dataclass(frozen=True, slots=True)
@@ -71,7 +81,7 @@ class StoryState:
     """Concrete completed story history without structured world facts."""
 
     turns: tuple[StoryTurn, ...] = ()
-    summary: StorySummary | None = None
+    summaries: tuple[StorySummarySegment, ...] = ()
     current_turn_sequence: int = 0
     initialization: StoryInitialization | None = None
 
@@ -86,14 +96,20 @@ class StoryState:
             raise ValidationError("StoryTurns müssen lückenlos bei Zug 1 beginnen")
         if self.current_turn_sequence != len(self.turns):
             raise ValidationError("Die aktuelle Zugnummer muss dem letzten StoryTurn entsprechen")
-        if self.summary is not None:
-            if not self.turns:
-                raise ValidationError("Eine Zusammenfassung benötigt mindestens einen StoryTurn")
-            if self.summary.through_sequence.value > self.current_turn_sequence:
-                raise ValidationError("Eine Zusammenfassung darf keine zukünftigen Züge abdecken")
+        previous_through = 0
+        for segment in self.summaries:
+            if segment.from_sequence.value != previous_through + 1:
+                raise ValidationError(
+                    "Zusammenfassungs-Absätze müssen lückenlos aneinander anschließen"
+                )
+            if segment.through_sequence.value > self.current_turn_sequence:
+                raise ValidationError(
+                    "Ein Zusammenfassungs-Absatz darf keine zukünftigen Züge abdecken"
+                )
+            previous_through = segment.through_sequence.value
 
     def add_turn(
-        self, turn: StoryTurn, summary: StorySummary | None
+        self, turn: StoryTurn, new_summary_segment: StorySummarySegment | None
     ) -> StoryState:
         expected_sequence = self.current_turn_sequence + 1
         if turn.sequence.value != expected_sequence:
@@ -101,6 +117,10 @@ class StoryState:
         return replace(
             self,
             turns=(*self.turns, turn),
-            summary=self.summary if summary is None else summary,
+            summaries=(
+                self.summaries
+                if new_summary_segment is None
+                else (*self.summaries, new_summary_segment)
+            ),
             current_turn_sequence=expected_sequence,
         )

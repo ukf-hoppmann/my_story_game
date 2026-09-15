@@ -67,9 +67,11 @@ class SelectAlwaysIncluded:
             else ()
         )
         profile = state.configuration.prompt_profile
+        k = request.budget.summary_segment_count
+        summaries = state.story.summaries[-k:] if k else ()
         return Success(
             AlwaysIncludedContext(
-                summary=state.story.summary,
+                summaries=summaries,
                 recent_turns=tuple(recent),
                 rules=state.world.rules,
                 main_goals=tuple(

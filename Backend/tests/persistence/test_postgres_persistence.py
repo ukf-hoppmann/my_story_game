@@ -55,7 +55,7 @@ from story_game.domain import (  # noqa: E402
     StoryInitialization,
     StorySequence,
     StoryState,
-    StorySummary,
+    StorySummarySegment,
     StoryTurn,
     WorldEntity,
     WorldRule,
@@ -359,8 +359,8 @@ def test_completed_turn_and_resulting_state_are_committed_atomically(
         StateRevision(2),
         datetime(2026, 8, 6, 10, tzinfo=UTC),
     )
-    summary = StorySummary(
-        StorySequence(1), "Almas hat den Dungeon betreten.", StateRevision(2)
+    summary_segment = StorySummarySegment(
+        StorySequence(1), StorySequence(1), "Almas hat den Dungeon betreten.", StateRevision(2)
     )
 
     try:
@@ -372,7 +372,7 @@ def test_completed_turn_and_resulting_state_are_committed_atomically(
                     sid("proposal-1"), StateRevision(1), (AddGoal(goal),)
                 ),
                 turn,
-                summary,
+                summary_segment,
             )
         )
 

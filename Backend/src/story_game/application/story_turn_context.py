@@ -140,7 +140,7 @@ class SelectStoryTurnContext:
 
         kept = {entity.id for entity in budgeted.data.entities}
         selected_context = SelectedStoryTurnContext(
-            summary=frame.data.summary,
+            summaries=frame.data.summaries,
             recent_turns=frame.data.recent_turns,
             controlled_entities=frame.data.controlled_entities,
             scene_locations=tuple(

@@ -135,7 +135,9 @@ export interface StoryTurn {
   completed_at: string;
 }
 
-export interface StorySummary {
+/** One immutable segment of the summary chain (TASK-032): appended, never replaced. */
+export interface StorySummarySegment {
+  from_sequence: number;
   through_sequence: number;
   text: string;
   based_on_revision: number;
@@ -149,7 +151,7 @@ export interface StoryInitialization {
 
 export interface StoryState {
   turns: StoryTurn[];
-  summary: StorySummary | null;
+  summaries: StorySummarySegment[];
   current_turn_sequence: number;
   initialization: StoryInitialization | null;
 }

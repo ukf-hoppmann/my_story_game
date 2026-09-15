@@ -23,7 +23,7 @@ from story_game.domain import (
     GameState,
     StableId,
     StorySequence,
-    StorySummary,
+    StorySummarySegment,
     StoryTurn,
 )
 
@@ -38,7 +38,7 @@ class CommitCompletedTurnRequest:
     turn_id: StableId
     player_input: str
     narration: str
-    summary_text: str | None
+    new_summary_segment: StorySummarySegment | None
     completed_at: datetime
 
 
@@ -69,14 +69,9 @@ class CommitCompletedTurn:
                 resulting_revision,
                 request.completed_at,
             )
-            summary = (
-                None
-                if request.summary_text is None
-                else StorySummary(sequence, request.summary_text, resulting_revision)
-            )
             state = self.writer.commit_turn(
                 CompletedTurnPersistenceRequest(
-                    request.run_id, request.changes, turn, summary
+                    request.run_id, request.changes, turn, request.new_summary_segment
                 )
             )
         except (GameStateStoreError, DomainError) as error:

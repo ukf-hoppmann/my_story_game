@@ -21,7 +21,7 @@ from .changes import (
 from .configuration import GameConfiguration
 from .errors import ChangeRejectedError, InvalidReferenceError, RevisionConflictError
 from .game_run import GameRunMember
-from .story import StoryState, StorySummary, StoryTurn
+from .story import StorySummarySegment, StoryState, StoryTurn
 from .value_objects import ActorRole, StableId, StateRevision
 from .world import WorldState
 
@@ -74,7 +74,7 @@ class GameState:
         self,
         changes: ApprovedChangeSet,
         turn: StoryTurn,
-        summary: StorySummary | None,
+        new_summary_segment: StorySummarySegment | None,
     ) -> GameState:
         """Apply approved world changes and the completed prose turn together."""
         if turn.based_on_revision != self.revision:
@@ -90,7 +90,7 @@ class GameState:
                 "Der Änderungssatz basiert nicht auf der aktuellen State-Revision"
             )
         updated = self._apply_operations(changes.changes)
-        story = updated.story.add_turn(turn, summary)
+        story = updated.story.add_turn(turn, new_summary_segment)
         return replace(updated, revision=self.revision.next(), story=story)
 
     def _apply_approved(self, changes: ApprovedChangeSet) -> GameState:

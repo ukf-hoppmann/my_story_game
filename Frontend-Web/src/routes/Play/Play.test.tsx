@@ -76,7 +76,7 @@ function buildDocument(
             completed_at: "2026-09-10T00:00:00Z",
           },
         ],
-        summary: null,
+        summaries: [],
         current_turn_sequence: 1,
         initialization: {
           prompt: "Ein Kurier verschwindet spurlos.",
@@ -125,6 +125,22 @@ describe("Play", () => {
 
     expect(await screen.findByText("Platzhalter · Szenenbild folgt")).toBeInTheDocument();
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
+  });
+
+  it("renders every summary segment in order under the Chronik tab, not just the last one", async () => {
+    const document = buildDocument();
+    document.game_state.story.summaries = [
+      { from_sequence: 1, through_sequence: 1, text: "Erster Absatz der Chronik.", based_on_revision: 2 },
+      { from_sequence: 2, through_sequence: 2, text: "Zweiter Absatz der Chronik.", based_on_revision: 3 },
+    ];
+    vi.spyOn(client, "loadRun").mockResolvedValue(document);
+    renderPlay();
+    await screen.findByText("Der Regen hatte die Spuren fast fortgespült.");
+
+    await userEvent.click(screen.getByText("Chronik"));
+
+    expect(screen.getByText("Erster Absatz der Chronik.")).toBeInTheDocument();
+    expect(screen.getByText("Zweiter Absatz der Chronik.")).toBeInTheDocument();
   });
 
   it("shows the sidebar panels once the run has loaded", async () => {

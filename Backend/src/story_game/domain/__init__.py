@@ -24,7 +24,7 @@ from .errors import (
 )
 from .game_run import GameRun, GameRunMember
 from .game_state import GameState
-from .story import StoryInitialization, StoryState, StorySummary, StoryTurn
+from .story import StoryInitialization, StorySummarySegment, StoryState, StoryTurn
 from .value_objects import (
     ActorRole,
     EntityKind,
@@ -89,7 +89,7 @@ __all__ = [
     "StorySequence",
     "StoryInitialization",
     "StoryState",
-    "StorySummary",
+    "StorySummarySegment",
     "StoryTurn",
     "UpdateEntity",
     "UpdateGoal",

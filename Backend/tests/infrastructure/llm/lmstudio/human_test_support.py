@@ -490,7 +490,7 @@ class InMemoryTurnStore:
 
     def commit_turn(self, request):
         self.state = self.state.complete_turn(
-            request.changes, request.turn, request.summary
+            request.changes, request.turn, request.new_summary_segment
         )
         return self.state
 

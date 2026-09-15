@@ -11,7 +11,7 @@ from story_game.domain import (
     Goal,
     KnowledgeEntry,
     StableId,
-    StorySummary,
+    StorySummarySegment,
     StoryTurn,
     WorldEntity,
     WorldRule,
@@ -64,6 +64,13 @@ class SelectionBudget:
     max_facts: int = 20
     max_goals: int = 10
     recent_turn_count: int = 2
+    summary_segment_count: int = 3
+    """How many of the most recent summary segments to include.
+
+    Deliberately independent of the summary interval (how often a new segment
+    is produced) — otherwise a larger interval would silently grow every
+    single turn's prompt instead of only the occasional summarization call.
+    """
 
     def __post_init__(self) -> None:
         for name in ("max_entities", "max_facts", "max_goals"):
@@ -71,13 +78,15 @@ class SelectionBudget:
                 raise ValueError(f"{name} muss positiv sein")
         if self.recent_turn_count < 0:
             raise ValueError("recent_turn_count darf nicht negativ sein")
+        if self.summary_segment_count < 0:
+            raise ValueError("summary_segment_count darf nicht negativ sein")
 
 
 @dataclass(frozen=True, slots=True)
 class AlwaysIncludedContext:
     """The frame every turn carries regardless of what the text mentions."""
 
-    summary: StorySummary | None
+    summaries: tuple[StorySummarySegment, ...]
     recent_turns: tuple[StoryTurn, ...]
     rules: tuple[WorldRule, ...]
     main_goals: tuple[Goal, ...]
@@ -128,7 +137,7 @@ class SelectedStoryTurnContext:
     itself.
     """
 
-    summary: StorySummary | None
+    summaries: tuple[StorySummarySegment, ...]
     recent_turns: tuple[StoryTurn, ...]
     controlled_entities: tuple[WorldEntity, ...]
     scene_locations: tuple[WorldEntity, ...]

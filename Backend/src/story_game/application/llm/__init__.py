@@ -31,7 +31,7 @@ from .ports import (
     StorySummaryPort,
     TurnExtractionPort,
 )
-from .summary import StorySummaryRequest, StorySummaryText
+from .summary import StorySummaryRequest, StorySummaryText, SummarizedTurn
 from .turn_extraction import (
     CandidateEntityUpdate,
     CandidateRemoval,
@@ -112,6 +112,7 @@ __all__ = [
     "StorySummaryPort",
     "StorySummaryRequest",
     "StorySummaryText",
+    "SummarizedTurn",
     "SummaryPromptSelectionResolver",
     "TurnChangeCandidate",
     "TurnExtractionPort",

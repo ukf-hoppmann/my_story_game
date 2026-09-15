@@ -156,7 +156,7 @@ def _story_document(state: StoryState) -> dict[str, object]:
         },
         "turn_count": len(state.turns),
         "current_turn_sequence": state.current_turn_sequence,
-        "summary": None if state.summary is None else state.summary.text,
+        "summaries": [segment.text for segment in state.summaries],
     }
 
 

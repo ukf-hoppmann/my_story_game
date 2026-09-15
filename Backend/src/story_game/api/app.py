@@ -43,7 +43,9 @@ from story_game.application.llm import (
 from story_game.application.diagnostics_reporting import ReportFrontendError
 from story_game.application.story_initialization import GenerateInitialStoryState
 from story_game.application.story_turn_context import build_story_turn_context_selection
+from story_game.application.story_turn_context_models import SelectionBudget
 from story_game.infrastructure.configuration import (
+    TomlAppConfigurationLoader,
     TomlGenerationConfigurationResolver,
     TomlLlmConfigurationLoader,
 )
@@ -318,9 +320,17 @@ def _compose_play_story_turn(
 ) -> PlayStoryTurn:
     catalog = FilePromptPackageCatalog(settings.prompt_root)
     generation_config = TomlGenerationConfigurationResolver(settings.llm_config_path)
+    summary_settings = TomlAppConfigurationLoader().load_story_summary(
+        settings.config_path
+    )
     return PlayStoryTurn(
         LoadGame(store, store),
-        build_story_turn_context_selection(diagnostics=diagnostics),
+        build_story_turn_context_selection(
+            budget=SelectionBudget(
+                summary_segment_count=summary_settings.context_segment_count
+            ),
+            diagnostics=diagnostics,
+        ),
         GenerateStory(
             StoryPromptSelectionResolver(catalog),
             generation_config,
@@ -359,6 +369,7 @@ def _compose_play_story_turn(
             diagnostics,
         ),
         CommitCompletedTurn(store, store, diagnostics),
+        summary_interval=summary_settings.interval,
         diagnostics=diagnostics,
     )
 

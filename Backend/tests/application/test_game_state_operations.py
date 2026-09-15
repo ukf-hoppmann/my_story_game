@@ -22,6 +22,8 @@ from story_game.domain import (
     PromptProfile,
     StableId,
     StateRevision,
+    StorySequence,
+    StorySummarySegment,
     StoryState,
     WorldState,
 )
@@ -153,7 +155,7 @@ class FakeStore:
         return self.state.complete_turn(
             request.changes,  # type: ignore[attr-defined]
             request.turn,  # type: ignore[attr-defined]
-            request.summary,  # type: ignore[attr-defined]
+            request.new_summary_segment,  # type: ignore[attr-defined]
         )
 
 
@@ -267,7 +269,12 @@ def test_completed_turn_is_sent_as_one_atomic_persistence_request() -> None:
         turn_id=sid("turn-1"),
         player_input="Ich öffne die Tür.",
         narration="Die Tür schwingt auf.",
-        summary_text="Almas hat die Tür geöffnet.",
+        new_summary_segment=StorySummarySegment(
+            StorySequence(1),
+            StorySequence(1),
+            "Almas hat die Tür geöffnet.",
+            StateRevision(2),
+        ),
         completed_at=datetime(2026, 8, 6, tzinfo=UTC),
     )
 
@@ -291,7 +298,7 @@ def test_completed_turn_maps_a_stale_revision_to_conflict() -> None:
         turn_id=sid("turn-1"),
         player_input="Weiter.",
         narration="Die Geschichte geht weiter.",
-        summary_text=None,
+        new_summary_segment=None,
         completed_at=datetime(2026, 8, 6, tzinfo=UTC),
     )
 

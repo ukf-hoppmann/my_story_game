@@ -22,7 +22,7 @@ from story_game.domain import (
     StateRevision,
     StorySequence,
     StoryState,
-    StorySummary,
+    StorySummarySegment,
     StoryTurn,
     Visibility,
     VisibilityScope,
@@ -201,10 +201,13 @@ def story(*narrations: str) -> StoryState:
         return StoryState()
     return StoryState(
         turns=turns,
-        summary=StorySummary(
-            turns[-1].sequence,
-            "Maren hat das Wirtshaus erreicht.",
-            turns[-1].resulting_revision,
+        summaries=(
+            StorySummarySegment(
+                turns[0].sequence,
+                turns[-1].sequence,
+                "Maren hat das Wirtshaus erreicht.",
+                turns[-1].resulting_revision,
+            ),
         ),
         current_turn_sequence=len(turns),
     )

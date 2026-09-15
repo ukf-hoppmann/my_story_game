@@ -24,7 +24,7 @@ def test_frame_carries_summary_recent_turns_rules_and_configuration() -> None:
 
     data = apply(SelectAlwaysIncludedRequest(state, (w.MAREN,), SelectionBudget()))
 
-    assert data.summary is not None
+    assert data.summaries != ()
     assert [item.narration for item in data.recent_turns] == [
         "Zweiter Zug.",
         "Dritter Zug.",
@@ -46,6 +46,37 @@ def test_recent_turns_follow_the_configured_budget_and_stay_in_order() -> None:
     )
 
     assert [item.narration for item in data.recent_turns] == ["Drei."]
+
+
+def test_only_the_last_k_summary_segments_reach_the_frame() -> None:
+    from story_game.domain import StorySequence, StorySummarySegment
+
+    state = w.game_state((w.TAVERN,), "Eins.", "Zwei.", "Drei.")
+    extra_segments = (
+        StorySummarySegment(
+            StorySequence(1), StorySequence(1), "Segment eins.", state.revision
+        ),
+        StorySummarySegment(
+            StorySequence(2), StorySequence(2), "Segment zwei.", state.revision
+        ),
+        StorySummarySegment(
+            StorySequence(3), StorySequence(3), "Segment drei.", state.revision
+        ),
+    )
+    from dataclasses import replace
+
+    state = replace(state, story=replace(state.story, summaries=extra_segments))
+
+    data = apply(
+        SelectAlwaysIncludedRequest(
+            state, (w.MAREN,), SelectionBudget(summary_segment_count=2)
+        )
+    )
+
+    assert [segment.text for segment in data.summaries] == [
+        "Segment zwei.",
+        "Segment drei.",
+    ]
 
 
 def test_only_open_main_goals_belong_to_the_frame() -> None:

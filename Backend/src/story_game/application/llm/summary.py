@@ -1,4 +1,4 @@
-"""Provider-independent contracts for rolling the story summary forward."""
+"""Provider-independent contracts for producing one summary segment."""
 
 from __future__ import annotations
 
@@ -13,39 +13,46 @@ def _required(value: str, label: str) -> str:
 
 
 @dataclass(frozen=True, slots=True)
-class StorySummaryRequest:
-    """Carry the summary so far plus the turn that has just been completed.
+class SummarizedTurn:
+    """One raw turn inside the window a summary segment condenses."""
 
-    Only the new turn is passed, not the whole history: the previous summary
-    already stands for everything before it, which is what keeps the call cheap
-    as a game grows.
+    player_input: str
+    narration: str
+
+    def __post_init__(self) -> None:
+        for name, label in (
+            ("player_input", "Die Spielereingabe"),
+            ("narration", "Die Erzählung"),
+        ):
+            object.__setattr__(self, name, _required(getattr(self, name), label))
+
+
+@dataclass(frozen=True, slots=True)
+class StorySummaryRequest:
+    """The exact window of turns one new, self-contained segment condenses.
+
+    Carries only this window — never the previous segments — so each segment
+    is produced independently of the others and the call stays bounded by the
+    configured interval, not by how long the game has run.
     """
 
     system_prompts: tuple[str, ...]
-    player_input: str
-    narration: str
+    turns: tuple[SummarizedTurn, ...]
     language: str
-    previous_summary: str | None = None
 
     def __post_init__(self) -> None:
         prompts = tuple(prompt.strip() for prompt in self.system_prompts if prompt.strip())
         if not prompts:
             raise ValueError("Mindestens ein Summary-Systemprompt ist erforderlich")
         object.__setattr__(self, "system_prompts", prompts)
-        for name, label in (
-            ("player_input", "Die Spielereingabe"),
-            ("narration", "Die Erzählung"),
-            ("language", "Die Sprache"),
-        ):
-            object.__setattr__(self, name, _required(getattr(self, name), label))
-        if self.previous_summary is not None:
-            summary = self.previous_summary.strip()
-            object.__setattr__(self, "previous_summary", summary or None)
+        if not self.turns:
+            raise ValueError("Ein Zusammenfassungsfenster benötigt mindestens einen Zug")
+        object.__setattr__(self, "language", _required(self.language, "Die Sprache"))
 
 
 @dataclass(frozen=True, slots=True)
 class StorySummaryText:
-    """Normalized rolling summary returned by a successful summary call."""
+    """Normalized text of one newly produced summary segment."""
 
     text: str
 
@@ -56,4 +63,4 @@ class StorySummaryText:
         object.__setattr__(self, "text", text)
 
 
-__all__ = ["StorySummaryRequest", "StorySummaryText"]
+__all__ = ["StorySummaryRequest", "StorySummaryText", "SummarizedTurn"]

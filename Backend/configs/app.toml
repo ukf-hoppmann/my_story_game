@@ -1,5 +1,4 @@
 # The single project-owned central application configuration.
-# Currently only logging; more sections may join here later (TASK-024).
 
 [logging]
 # "prod" or "debug". debug additionally logs raw prompts/provider responses
@@ -12,3 +11,17 @@ level = "INFO"
 file_path = "logs/story-game.log"
 file_max_bytes = 10485760
 file_backup_count = 5
+
+[story_summary]
+# TASK-032: the summary is an append-only chain of immutable segments, never
+# a rewritten single text. These two knobs are deliberately independent —
+# changing one must not silently change the per-turn cost of the other.
+
+# How many turns one new summary segment condenses. A new segment is
+# produced only every `interval`-th turn (the rare, batched call); other
+# turns produce no segment at all.
+interval = 4
+# How many of the most recent segments go into the cheap, per-turn narration
+# context — independent of `interval`, so a larger interval never grows
+# every single turn's prompt.
+context_segment_count = 3

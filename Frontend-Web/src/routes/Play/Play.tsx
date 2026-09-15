@@ -175,10 +175,14 @@ export function Play() {
 
             {activeTab === "chronicle" && (
               <div className="play-story-feed play-chronicle">
-                {doc.game_state.story.summary === null ? (
+                {doc.game_state.story.summaries.length === 0 ? (
                   <p className="play-status">{t("play.chronicle.empty")}</p>
                 ) : (
-                  <Paragraphs text={doc.game_state.story.summary.text} />
+                  doc.game_state.story.summaries.map((segment) => (
+                    <div className="play-turn" key={segment.through_sequence}>
+                      <Paragraphs text={segment.text} />
+                    </div>
+                  ))
                 )}
               </div>
             )}

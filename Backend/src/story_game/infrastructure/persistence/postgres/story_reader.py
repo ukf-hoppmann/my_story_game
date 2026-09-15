@@ -12,7 +12,7 @@ from story_game.domain import (
     StoryInitialization,
     StorySequence,
     StoryState,
-    StorySummary,
+    StorySummarySegment,
     StoryTurn,
 )
 
@@ -55,14 +55,22 @@ class StorySnapshotReader:
             )
             for row in rows
         )
-        summary = (
-            None
-            if metadata["summary_text"] is None
-            else StorySummary(
-                StorySequence(int(metadata["summary_through_sequence"])),
-                str(metadata["summary_text"]),
-                StateRevision(int(metadata["summary_based_on_revision"])),
+        segment_rows = connection.execute(
+            """
+            SELECT * FROM story_summary_segments
+            WHERE run_id = %s AND based_on_revision <= %s
+            ORDER BY through_sequence
+            """,
+            (run_id, revision),
+        ).fetchall()
+        summaries = tuple(
+            StorySummarySegment(
+                StorySequence(int(row["from_sequence"])),
+                StorySequence(int(row["through_sequence"])),
+                str(row["text"]),
+                StateRevision(int(row["based_on_revision"])),
             )
+            for row in segment_rows
         )
         initialization = (
             None
@@ -75,7 +83,7 @@ class StorySnapshotReader:
         )
         return StoryState(
             turns=turns,
-            summary=summary,
+            summaries=summaries,
             current_turn_sequence=int(metadata["current_turn_sequence"]),
             initialization=initialization,
         )

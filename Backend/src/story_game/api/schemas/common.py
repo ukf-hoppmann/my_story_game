@@ -96,7 +96,10 @@ class StoryTurnModel(APIModel):
     completed_at: datetime
 
 
-class StorySummaryModel(APIModel):
+class StorySummarySegmentModel(APIModel):
+    """One immutable segment of the summary chain (TASK-032)."""
+
+    from_sequence: int = Field(ge=1)
     through_sequence: int = Field(ge=1)
     text: str = Field(min_length=1)
     based_on_revision: int = Field(ge=1)

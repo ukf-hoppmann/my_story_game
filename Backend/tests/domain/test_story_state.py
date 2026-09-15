@@ -25,7 +25,8 @@ def test_story_state_contains_completed_turns_summary_and_sequence_only() -> Non
         resulting_revision=domain.StateRevision(2),
         completed_at=datetime(2026, 8, 6, tzinfo=UTC),
     )
-    summary = domain.StorySummary(
+    segment = domain.StorySummarySegment(
+        from_sequence=domain.StorySequence(1),
         through_sequence=domain.StorySequence(1),
         text="Almas hat die Tür geöffnet.",
         based_on_revision=domain.StateRevision(2),
@@ -33,12 +34,12 @@ def test_story_state_contains_completed_turns_summary_and_sequence_only() -> Non
 
     state = domain.StoryState(
         turns=(turn,),
-        summary=summary,
+        summaries=(segment,),
         current_turn_sequence=1,
     )
 
     assert state.turns == (turn,)
-    assert state.summary == summary
+    assert state.summaries == (segment,)
 
 
 def test_story_initialization_preserves_the_premise_before_the_first_turn() -> None:
@@ -86,7 +87,30 @@ def test_story_state_rejects_non_contiguous_turns() -> None:
         domain.StoryState(turns=(turn,), current_turn_sequence=2)
 
 
-def test_story_state_keeps_the_current_summary_when_a_turn_has_no_replacement() -> None:
+def test_story_state_rejects_non_contiguous_summary_segments() -> None:
+    turn = domain.StoryTurn(
+        id=sid("turn-1"),
+        sequence=domain.StorySequence(1),
+        player_input="Ich öffne die Tür.",
+        narration="Die Tür schwingt auf.",
+        based_on_revision=domain.StateRevision(1),
+        resulting_revision=domain.StateRevision(2),
+        completed_at=datetime(2026, 8, 6, tzinfo=UTC),
+    )
+    gapped_segment = domain.StorySummarySegment(
+        from_sequence=domain.StorySequence(2),
+        through_sequence=domain.StorySequence(2),
+        text="Ein Absatz, der nicht bei Zug 1 beginnt.",
+        based_on_revision=domain.StateRevision(2),
+    )
+
+    with pytest.raises(domain.ValidationError):
+        domain.StoryState(
+            turns=(turn,), summaries=(gapped_segment,), current_turn_sequence=1
+        )
+
+
+def test_story_state_leaves_the_summary_chain_unchanged_without_a_new_segment() -> None:
     first_turn = domain.StoryTurn(
         id=sid("turn-1"),
         sequence=domain.StorySequence(1),
@@ -96,12 +120,13 @@ def test_story_state_keeps_the_current_summary_when_a_turn_has_no_replacement() 
         resulting_revision=domain.StateRevision(2),
         completed_at=datetime(2026, 8, 6, tzinfo=UTC),
     )
-    summary = domain.StorySummary(
+    segment = domain.StorySummarySegment(
+        from_sequence=domain.StorySequence(1),
         through_sequence=domain.StorySequence(1),
         text="Almas ist im Dungeon.",
         based_on_revision=domain.StateRevision(2),
     )
-    story = domain.StoryState((first_turn,), summary, 1)
+    story = domain.StoryState((first_turn,), (segment,), 1)
     second_turn = domain.StoryTurn(
         id=sid("turn-2"),
         sequence=domain.StorySequence(2),
@@ -112,6 +137,44 @@ def test_story_state_keeps_the_current_summary_when_a_turn_has_no_replacement() 
         completed_at=datetime(2026, 8, 6, 1, tzinfo=UTC),
     )
 
-    updated = story.add_turn(second_turn, summary=None)
+    updated = story.add_turn(second_turn, new_summary_segment=None)
 
-    assert updated.summary == summary
+    assert updated.summaries == (segment,)
+
+
+def test_story_state_appends_a_new_segment_without_touching_earlier_ones() -> None:
+    first_turn = domain.StoryTurn(
+        id=sid("turn-1"),
+        sequence=domain.StorySequence(1),
+        player_input="Ich betrete den Dungeon.",
+        narration="Almas betritt den Dungeon.",
+        based_on_revision=domain.StateRevision(1),
+        resulting_revision=domain.StateRevision(2),
+        completed_at=datetime(2026, 8, 6, tzinfo=UTC),
+    )
+    first_segment = domain.StorySummarySegment(
+        from_sequence=domain.StorySequence(1),
+        through_sequence=domain.StorySequence(1),
+        text="Almas ist im Dungeon.",
+        based_on_revision=domain.StateRevision(2),
+    )
+    story = domain.StoryState((first_turn,), (first_segment,), 1)
+    second_turn = domain.StoryTurn(
+        id=sid("turn-2"),
+        sequence=domain.StorySequence(2),
+        player_input="Ich gehe weiter.",
+        narration="Almas folgt dem dunklen Gang.",
+        based_on_revision=domain.StateRevision(2),
+        resulting_revision=domain.StateRevision(3),
+        completed_at=datetime(2026, 8, 6, 1, tzinfo=UTC),
+    )
+    second_segment = domain.StorySummarySegment(
+        from_sequence=domain.StorySequence(2),
+        through_sequence=domain.StorySequence(2),
+        text="Almas folgt dem Gang.",
+        based_on_revision=domain.StateRevision(3),
+    )
+
+    updated = story.add_turn(second_turn, new_summary_segment=second_segment)
+
+    assert updated.summaries == (first_segment, second_segment)

@@ -109,7 +109,7 @@ const activeDocument: GameDocument = {
     revision: 1,
     configuration: {},
     world: { entities: [], links: [], facts: [], knowledge: [], rules: [], goals: [], scene_location_ids: [] },
-    story: { turns: [], summary: null, current_turn_sequence: 0, initialization: null },
+    story: { turns: [], summaries: [], current_turn_sequence: 0, initialization: null },
   },
 };
 

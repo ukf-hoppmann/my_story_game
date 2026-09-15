@@ -68,7 +68,7 @@ def test_hidden_facts_reach_the_model_like_any_other() -> None:
 def test_the_frame_travels_with_every_turn() -> None:
     context = select("Ich warte.", "Eins.", "Zwei.")
 
-    assert context.summary is not None
+    assert context.summaries != ()
     assert [item.narration for item in context.recent_turns] == ["Eins.", "Zwei."]
     assert context.rules == w.rules()
     assert context.narrative_boundaries == ("Keine sexualisierte Gewalt",)

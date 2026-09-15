@@ -13,7 +13,7 @@ from story_game.api.schemas.common import (
     GoalModel,
     KnowledgeEntryModel,
     StoryInitializationModel,
-    StorySummaryModel,
+    StorySummarySegmentModel,
     StoryTurnModel,
     VisibilityModel,
     WorldEntityModel,
@@ -44,7 +44,7 @@ from story_game.domain import (
     StoryInitialization,
     StorySequence,
     StoryState,
-    StorySummary,
+    StorySummarySegment,
     StoryTurn,
     Visibility,
     WorldEntity,
@@ -357,14 +357,14 @@ def _story_from_api(model: StoryStateModel) -> StoryState:
             )
             for item in model.turns
         ),
-        summary=(
-            None
-            if model.summary is None
-            else StorySummary(
-                StorySequence(model.summary.through_sequence),
-                model.summary.text,
-                StateRevision(model.summary.based_on_revision),
+        summaries=tuple(
+            StorySummarySegment(
+                StorySequence(item.from_sequence),
+                StorySequence(item.through_sequence),
+                item.text,
+                StateRevision(item.based_on_revision),
             )
+            for item in model.summaries
         ),
         current_turn_sequence=model.current_turn_sequence,
         initialization=(
@@ -393,15 +393,15 @@ def _story_to_api(story: StoryState) -> StoryStateModel:
             )
             for item in story.turns
         ],
-        summary=(
-            None
-            if story.summary is None
-            else StorySummaryModel(
-                through_sequence=story.summary.through_sequence.value,
-                text=story.summary.text,
-                based_on_revision=story.summary.based_on_revision.value,
+        summaries=[
+            StorySummarySegmentModel(
+                from_sequence=item.from_sequence.value,
+                through_sequence=item.through_sequence.value,
+                text=item.text,
+                based_on_revision=item.based_on_revision.value,
             )
-        ),
+            for item in story.summaries
+        ],
         current_turn_sequence=story.current_turn_sequence,
         initialization=(
             None

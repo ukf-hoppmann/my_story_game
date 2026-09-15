@@ -1,4 +1,4 @@
-"""Provider-agnostic request/response mapping for the rolling summary call."""
+"""Provider-agnostic request/response mapping for one summary-segment call."""
 
 from __future__ import annotations
 
@@ -25,12 +25,15 @@ def parse_response(response: ChatResponse) -> StorySummaryText:
 
 
 def _messages_for(request: StorySummaryRequest) -> tuple[ChatMessage, ...]:
+    turns = "\n\n".join(
+        f"[turn {index}]\n"
+        f"Spieler: {turn.player_input}\n"
+        f"Erzählung: {turn.narration}"
+        for index, turn in enumerate(request.turns, start=1)
+    )
     sections = [
         "[language]\n" + request.language,
-        "[previous_summary]\n"
-        + (request.previous_summary or "Es gibt noch keine Zusammenfassung."),
-        "[player_input]\n" + request.player_input,
-        "[narration]\n" + request.narration,
+        "[turns]\n" + turns,
     ]
     return (
         ChatMessage(role="system", content="\n\n".join(request.system_prompts)),

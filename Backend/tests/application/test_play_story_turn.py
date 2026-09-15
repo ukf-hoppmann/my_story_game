@@ -77,7 +77,7 @@ class FakeStore:
     def commit_turn(self, request):
         self.committed = request
         return self.state.complete_turn(
-            request.changes, request.turn, request.summary
+            request.changes, request.turn, request.new_summary_segment
         )
 
 
@@ -147,6 +147,7 @@ def workflow(
     summary_port=None,
     store=None,
     run=None,
+    summary_interval=1,
 ) -> tuple[PlayStoryTurn, FakeStore]:
     state = w.game_state((w.TAVERN,), "Maren sitzt am Feuer.")
     resolved_store = store or FakeStore(state, run or run_with())
@@ -172,6 +173,7 @@ def workflow(
             summary_port or FakeSummaryPort(),
         ),
         CommitCompletedTurn(resolved_store, resolved_store),
+        summary_interval=summary_interval,
         new_id=lambda: sid(next(ids)),
         now=lambda: datetime(2026, 8, 17, 12, tzinfo=UTC),
     )
@@ -299,29 +301,60 @@ def test_director_control_without_a_bound_figure_can_still_play() -> None:
     assert isinstance(result, Success), result
 
 
-def test_the_rolling_summary_is_written_with_the_turn() -> None:
-    operation, store = workflow()
+def test_a_new_summary_segment_is_appended_at_an_interval_boundary() -> None:
+    """With interval=1, every turn is itself a boundary (matches the old per-turn cadence)."""
+    operation, store = workflow(summary_interval=1)
 
     result = operation.apply(request())
 
     assert isinstance(result, Success), result
     assert result.data.summary_failure is None
-    assert store.committed.summary is not None
-    assert store.committed.summary.text == "Maren hat das Wirtshaus verlassen."
-    assert store.committed.summary.through_sequence == StorySequence(2)
+    assert store.committed.new_summary_segment is not None
+    assert store.committed.new_summary_segment.text == "Maren hat das Wirtshaus verlassen."
+    assert store.committed.new_summary_segment.from_sequence == StorySequence(2)
+    assert store.committed.new_summary_segment.through_sequence == StorySequence(2)
 
 
-def test_the_summary_call_sees_the_previous_summary_and_the_new_turn() -> None:
+def test_no_summary_segment_is_attempted_off_the_interval_boundary() -> None:
     summary_port = FakeSummaryPort()
-    operation, _ = workflow(summary_port=summary_port)
+    operation, store = workflow(summary_port=summary_port, summary_interval=4)
+
+    result = operation.apply(request())
+
+    assert isinstance(result, Success), result
+    assert result.data.summary_failure is None
+    assert store.committed.new_summary_segment is None
+    assert summary_port.call is None
+
+
+def test_the_summary_call_sees_only_its_own_window() -> None:
+    """A summary call carries exactly its own window, never earlier segments."""
+    summary_port = FakeSummaryPort()
+    operation, _ = workflow(summary_port=summary_port, summary_interval=1)
 
     operation.apply(request())
 
     prepared = summary_port.call.request
-    assert prepared.narration == NARRATION
-    assert prepared.player_input == "Ich gehe hinaus."
-    assert prepared.previous_summary == "Maren hat das Wirtshaus erreicht."
+    assert len(prepared.turns) == 1
+    assert prepared.turns[0].player_input == "Ich gehe hinaus."
+    assert prepared.turns[0].narration == NARRATION
     assert prepared.language == "de"
+
+
+def test_the_summary_window_includes_prior_committed_turns_up_to_the_interval() -> None:
+    """At interval=3 with two prior turns already committed, the window covers turns 1-3."""
+    state = w.game_state((w.TAVERN,), "Erste Zeile.", "Zweite Zeile.")
+    store = FakeStore(state, run_with())
+    summary_port = FakeSummaryPort()
+    operation, _ = workflow(summary_port=summary_port, store=store, summary_interval=3)
+
+    operation.apply(request())
+
+    prepared = summary_port.call.request
+    assert len(prepared.turns) == 3
+    assert prepared.turns[0].narration == "Erste Zeile."
+    assert prepared.turns[1].narration == "Zweite Zeile."
+    assert prepared.turns[2].player_input == "Ich gehe hinaus."
 
 
 def test_a_failed_summary_still_persists_the_turn_and_stays_visible() -> None:
@@ -329,7 +362,8 @@ def test_a_failed_summary_still_persists_the_turn_and_stays_visible() -> None:
     operation, store = workflow(
         summary_port=FakeSummaryPort(
             Failure(LLMError(LLMErrorKind.TIMEOUT, "Zeitüberschreitung."))
-        )
+        ),
+        summary_interval=1,
     )
 
     result = operation.apply(request())
@@ -337,6 +371,6 @@ def test_a_failed_summary_still_persists_the_turn_and_stays_visible() -> None:
     assert isinstance(result, Success), result
     assert result.data.state.revision == StateRevision(2)
     assert store.committed is not None
-    assert store.committed.summary is None
+    assert store.committed.new_summary_segment is None
     assert result.data.summary_failure is not None
     assert result.data.summary_failure.kind is StoryTurnErrorKind.MODEL_FAILURE

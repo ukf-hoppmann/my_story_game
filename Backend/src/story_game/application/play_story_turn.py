@@ -17,6 +17,7 @@ from story_game.application.extract_story_turn_changes import (
     ExtractStoryTurnChanges,
     ExtractStoryTurnChangesRequest,
 )
+from story_game.application.llm import SummarizedTurn
 from story_game.application.game_state import (
     CommitCompletedTurn,
     CommitCompletedTurnRequest,
@@ -34,7 +35,14 @@ from story_game.application.story_turn_context import (
 from story_game.application.story_turn_context_errors import ContextSelectionError
 from story_game.application.story_turn_errors import StoryTurnError, StoryTurnErrorKind
 from story_game.application.summarize_story import SummarizeStory, SummarizeStoryRequest
-from story_game.domain import GameRun, GameRunStatus, GameState, StableId
+from story_game.domain import (
+    GameRun,
+    GameRunStatus,
+    GameState,
+    StableId,
+    StorySequence,
+    StorySummarySegment,
+)
 
 
 StoryTurnWorkflowError: TypeAlias = (
@@ -55,12 +63,14 @@ class PlayedStoryTurn:
     """
 
     summary_failure: StoryTurnError | None = None
-    """Set when the turn was committed but its summary could not be produced.
+    """Set when this turn reached a summary interval boundary but the new
+    segment could not be produced.
 
     Prose and world changes are already paid for by then, so losing the whole
-    turn over its summary would be the worse trade. The turn stands; the
-    failure stays visible so a caller can show it instead of silently drifting
-    without a summary.
+    turn over its summary segment would be the worse trade. The turn stands;
+    the failure stays visible so a caller can show it instead of silently
+    drifting without that segment. ``None`` on turns that are not themselves
+    an interval boundary, since no segment is even attempted then.
     """
 
 
@@ -97,10 +107,13 @@ class PlayStoryTurn:
         summarize_story: SummarizeStory,
         commit_turn: CommitCompletedTurn,
         *,
+        summary_interval: int = 4,
         new_id: Callable[[], StableId] = StableId.new,
         now: Callable[[], datetime] = lambda: datetime.now(UTC),
         diagnostics: DiagnosticsLog = NullDiagnosticsLog(),
     ) -> None:
+        if summary_interval < 1:
+            raise ValueError("summary_interval muss mindestens 1 sein")
         self._load_game = load_game
         self._select_context = select_context
         self._generate_story = generate_story
@@ -108,6 +121,7 @@ class PlayStoryTurn:
         self._approve_changes = approve_changes
         self._summarize_story = summarize_story
         self._commit_turn = commit_turn
+        self._summary_interval = summary_interval
         self._new_id = new_id
         self._now = now
         self._diagnostics = diagnostics
@@ -170,15 +184,30 @@ class PlayStoryTurn:
         if isinstance(approved, Failure):
             return approved
 
-        summarized = self._summarize_story.apply(
-            SummarizeStoryRequest(
-                state.story,
-                state.configuration,
-                request.player_input,
-                narrated.data.text,
+        next_sequence = state.story.current_turn_sequence + 1
+        new_summary_segment: StorySummarySegment | None = None
+        summary_failure: StoryTurnError | None = None
+        if next_sequence % self._summary_interval == 0:
+            window_start = next_sequence - self._summary_interval + 1
+            already_committed = state.story.turns[
+                max(0, len(state.story.turns) - self._summary_interval + 1) :
+            ]
+            window_turns = tuple(
+                SummarizedTurn(turn.player_input, turn.narration)
+                for turn in already_committed
+            ) + (SummarizedTurn(request.player_input, narrated.data.text),)
+            summarized = self._summarize_story.apply(
+                SummarizeStoryRequest(window_turns, state.configuration)
             )
-        )
-        summary_failure = summarized.error if isinstance(summarized, Failure) else None
+            if isinstance(summarized, Failure):
+                summary_failure = summarized.error
+            else:
+                new_summary_segment = StorySummarySegment(
+                    StorySequence(window_start),
+                    StorySequence(next_sequence),
+                    summarized.data.text,
+                    state.revision.next(),
+                )
 
         committed = self._commit_turn.apply(
             CommitCompletedTurnRequest(
@@ -187,7 +216,7 @@ class PlayStoryTurn:
                 turn_id=self._new_id(),
                 player_input=request.player_input,
                 narration=narrated.data.text,
-                summary_text=None if summary_failure else summarized.data.text,
+                new_summary_segment=new_summary_segment,
                 completed_at=self._now(),
             )
         )

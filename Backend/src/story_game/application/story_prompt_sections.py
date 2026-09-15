@@ -71,10 +71,12 @@ def world_state_text(context: SelectedStoryTurnContext) -> str:
 
 
 def story_state_text(context: SelectedStoryTurnContext) -> str:
-    """Render the running summary and the most recent turns in their order."""
+    """Render the summary segment chain and the most recent turns, in order."""
     parts: list[str] = []
-    if context.summary is not None:
-        parts.append(_section("summary", (context.summary.text,)))
+    if context.summaries:
+        parts.append(
+            _section("summary", tuple(segment.text for segment in context.summaries))
+        )
     turns = tuple(
         f"Zug {turn.sequence.value}\n"
         f"Spieler: {turn.player_input}\n"

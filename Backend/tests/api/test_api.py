@@ -122,7 +122,9 @@ class MemoryGameStore:
     def commit_turn(self, request) -> GameState:
         run = self.runs[request.run_id]
         current = self.states[request.run_id][run.current_revision]
-        updated = current.complete_turn(request.changes, request.turn, request.summary)
+        updated = current.complete_turn(
+            request.changes, request.turn, request.new_summary_segment
+        )
         self.states[request.run_id][updated.revision] = updated
         self.runs[request.run_id] = replace(
             run, current_revision=updated.revision, updated_at=request.turn.completed_at
@@ -367,7 +369,7 @@ def complete_state_document() -> dict[str, object]:
             },
             "story": {
                 "turns": [],
-                "summary": None,
+                "summaries": [],
                 "current_turn_sequence": 0,
                 "initialization": None,
             },

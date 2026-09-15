@@ -29,7 +29,7 @@ project_rules = ".harness/project-rules.md"
 
 [changes]
 enabled = true
-target_branch = "main"
+target_branch = "development"
 branch_prefix = "changes/"
 worktree_directory = ".agent-harness-worktrees"
 worktree_location = "project"

@@ -18,10 +18,42 @@ oder gezielt nur dieser Service:
 docker compose up keycloak
 ```
 
-Der Realm-Import läuft bei jedem Start erneut (`start-dev --import-realm`);
-lokale Änderungen über die Admin-Konsole, die nicht in der Realm-Datei
-stehen, gehen beim nächsten Neustart verloren — für dauerhafte Anpassungen
-die Realm-Datei bearbeiten.
+Keycloaks Datenbestand (Realm, Nutzer, Sessions) liegt in einer eigenen,
+persistenten Postgres-Instanz (Service `keycloak-postgres`, Volume
+`story-game-keycloak-db-data`) — analog zur `postgres`-DB der Story-Engine.
+Der Realm-Import (`start-dev --import-realm`) läuft zwar bei jedem Start,
+überspringt einen bereits existierenden Realm aber und überschreibt ihn
+nicht. Das Volume bleibt über `docker compose down` hinweg erhalten und wird
+nur bei Bedarf gelöscht (siehe "Zurücksetzen" unten).
+
+Die beiden Test-User (`player-one`/`player-two`, siehe unten) haben in der
+Realm-Datei eine fest eingetragene `id` — damit bleibt ihr Keycloak-Nutzer,
+und damit der `sub`-Claim in ihren Tokens, über Neustarts und Re-Importe
+hinweg stabil. Ohne feste `id` vergibt Keycloak bei jedem Neu-Import eine
+neue zufällige UUID, wodurch alle unter der alten Identität gespeicherten
+GameRuns für den Nutzer unzugreifbar würden ("Die aufrufende Identität
+gehört nicht zu diesem GameRun").
+
+Lokale Änderungen über die Admin-Konsole, die nicht in der Realm-Datei
+stehen, werden von einem erneuten Import ohnehin nicht berührt (da der
+Import einen existierenden Realm überspringt) — für dauerhafte Anpassungen
+trotzdem die Realm-Datei bearbeiten, damit sie auch nach einem
+"Zurücksetzen" (siehe unten) wieder vorhanden sind.
+
+### Zurücksetzen
+
+Um Keycloak wirklich wieder aus der Realm-Datei neu aufsetzen zu lassen
+(z. B. um eine Änderung an bereits importierten Nutzern zu erzwingen, oder
+um einen kaputten lokalen Zustand loszuwerden):
+
+```bash
+docker compose down keycloak keycloak-postgres
+docker volume rm story-game-keycloak-db-data
+docker compose up keycloak
+```
+
+Das löscht den kompletten Keycloak-Datenbestand unwiederbringlich (Realm,
+Nutzer, Sessions) — nicht die Story-Engine-Datenbank.
 
 - Admin-Konsole: `http://localhost:${KEYCLOAK_HOST_PORT:-8081}` (Login
   `admin`/`admin`, siehe `KEYCLOAK_ADMIN`/`KEYCLOAK_ADMIN_PASSWORD` in

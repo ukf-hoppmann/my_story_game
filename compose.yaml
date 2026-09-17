@@ -16,6 +16,20 @@ services:
       timeout: 3s
       retries: 15
 
+  keycloak-postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${KEYCLOAK_DB:-keycloak}
+      POSTGRES_USER: ${KEYCLOAK_DB_USER:-keycloak}
+      POSTGRES_PASSWORD: ${KEYCLOAK_DB_PASSWORD:-keycloak_dev}
+    volumes:
+      - story-game-keycloak-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
   keycloak:
     image: quay.io/keycloak/keycloak:26.0
     command: ["start-dev", "--import-realm"]
@@ -23,10 +37,24 @@ services:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
       KC_HEALTH_ENABLED: "true"
+      # Backed by a real, persistent Postgres instead of the dev-mode
+      # in-memory H2 DB, so the imported realm (including the fixed test
+      # user IDs in story-game-realm.json) survives container restarts —
+      # otherwise every restart re-imported the realm from scratch and
+      # handed player-one/player-two a new random user id, invalidating
+      # every previously created GameRun's membership. See
+      # docs/human/operations/keycloak.md.
+      KC_DB: postgres
+      KC_DB_URL: "jdbc:postgresql://keycloak-postgres:5432/${KEYCLOAK_DB:-keycloak}"
+      KC_DB_USERNAME: ${KEYCLOAK_DB_USER:-keycloak}
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:-keycloak_dev}
     ports:
       - "${KEYCLOAK_HOST_PORT:-8081}:8080"
     volumes:
       - ./configs/keycloak:/opt/keycloak/data/import:ro
+    depends_on:
+      keycloak-postgres:
+        condition: service_healthy
     healthcheck:
       # The image ships neither curl nor wget; bash's /dev/tcp is the
       # dependency-free way to hit the management health endpoint (see
@@ -109,3 +137,4 @@ services:
 
 volumes:
   story-game-postgres-data:
+  story-game-keycloak-db-data:

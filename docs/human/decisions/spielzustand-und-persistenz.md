@@ -36,7 +36,7 @@ GameRun
     │   └── Goals
     └── StoryState
         ├── StoryTurns
-        ├── aktuelle Zusammenfassung
+        ├── Summary-Segmentkette
         └── aktuelle Zugnummer
 ```
 
@@ -147,8 +147,14 @@ Der `StoryState` enthält ausschließlich die konkrete fortlaufende Geschichte.
 Er besteht zunächst aus:
 
 - den vollständig abgeschlossenen StoryTurns;
-- einer aktuellen zusammenhängenden Textzusammenfassung;
+- einer geordneten Folge unveränderlicher Summary-Segmente;
+- optional der persistierten Eröffnungsprosa mit Initialprompt und Zeitpunkt;
 - der Nummer des zuletzt abgeschlossenen Zuges.
+
+Die Summary-Segmente decken feste Zugfenster ab und werden append-only an die
+Kette angehängt. Die ursprünglich beschlossene rollierende Zusammenfassung
+wurde mit TASK-032 durch dieses Segmentmodell ersetzt; die ältere Planung
+bleibt im Backlog als historische Vorgeschichte sichtbar.
 
 Nicht enthalten sind:
 

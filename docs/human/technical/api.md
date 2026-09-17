@@ -22,6 +22,7 @@ Benutzerdaten.
 | `POST` | `/api/v1/runs/{run_id}/playthroughs` | Eine `DRAFT`-Vorlage als neues unabhängiges `ACTIVE`-Spiel abzweigen |
 | `PATCH` | `/api/v1/runs/{run_id}/configuration` | Sprache und editierbare Erzähloptionen als neue Konfigurationsrevision speichern |
 | `POST` | `/api/v1/runs/{run_id}/turns` | Einen Zug in einem `ACTIVE`-Spiel spielen |
+| `POST` | `/api/v1/diagnostics/frontend-errors` | Einen authentifizierten Frontend-Tooling-Fehler für Diagnosezwecke melden |
 
 ## Vorschlag, Vorlage und abgespieltes Spiel
 
@@ -129,10 +130,15 @@ dieses Runs ist, sonst HTTP 403 (`error = "not_a_run_member"`).
 
 Das gemeinsame Transportdokument für Confirm-, Playthrough- und
 Load-Antworten heißt `GameDocument` und enthält sowohl `game_run` als auch
-`game_state`. Der
-GameState enthält die komplette `GameConfiguration`, den `WorldState`
+`game_state`. Der `GameState` enthält die komplette `GameConfiguration`, den
+`WorldState`
 einschließlich Goals und den `StoryState`. Fremde Felder und fachlich
 inkonsistente IDs werden abgewiesen.
+
+Der `StoryState` enthält die abgeschlossenen `turns`, die geordnete `summaries`-
+Kette aus unveränderlichen Summary-Segmenten, die aktuelle Zugnummer und
+optional die Eröffnung. Ein Segment trägt sein Zugfenster (`from_sequence` bis
+`through_sequence`) und wird nie durch ein späteres Segment ersetzt.
 
 `world.scene_location_ids` ist eine geordnete Liste von Orts-UUIDs und benennt,
 wo die Erzählung spielt; der erste Eintrag ist der Hauptschauplatz. Die Liste
@@ -187,6 +193,19 @@ Anwendungslogik: `LoadGame` (genutzt von `GET /api/v1/runs/{run_id}`,
 `POST /.../turns` und `POST /.../playthroughs`) prüft die Mitgliedschaft in
 `GameRun.members` und liefert sonst `not_a_run_member`. `GET /api/v1/runs`
 filtert direkt nach `(issuer, subject)`.
+
+## Frontend-Diagnose
+
+`POST /api/v1/diagnostics/frontend-errors` benötigt ebenfalls einen gültigen
+Keycloak-Bearer-Token. Der Endpoint nimmt nicht-401-Frontend-Fehler wie
+Netzwerk-, JSON-Parse- oder synchrone Tooling-Fehler entgegen und schreibt sie
+als begrenztes `FrontendToolingError`-Diagnoseereignis. Ein Fehler beim Melden
+darf keinen zweiten sichtbaren Frontend-Fehler erzeugen.
+
+401-Antworten werden im Frontend als abgelaufene Sitzung behandelt und lösen
+einen Re-Login aus; sie werden nicht über diesen Endpoint gemeldet, weil der
+Token zu diesem Zeitpunkt gerade ungültig ist. Typisierte Backend-Fehler
+werden dem Nutzer mit ihrem fachlichen Fehlertext angezeigt.
 
 ## Fehlerantworten
 

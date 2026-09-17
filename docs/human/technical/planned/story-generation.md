@@ -1,7 +1,7 @@
 # Geplante Story-Erzeugung über austauschbare Modelle
 
 Status: Der vollständige Storyzug ist implementiert — Kontextauswahl,
-Story-Erzeugung, Turn-Extraction, Freigabe, rollierende Zusammenfassung und
+Story-Erzeugung, Turn-Extraction, Freigabe, append-only Summary-Segmente und
 atomarer Commit. Die Provider-Verdrahtung im Composition Root und die
 Laufzeit-API sind ebenfalls umgesetzt. Ein vollständiger Ablauf ist über das
 opt-in Human-Inspection-Bündel gegen echtes LM Studio und PostgreSQL prüfbar.
@@ -42,6 +42,13 @@ Perspective, Control Mode und Length (Textlänge; `short`/`standard`/`long`,
 mit Domain-Default `"standard"`). Die Application validiert und löst diese Auswahl
 vor dem Adapter gegen das referenzierte Paket auf; der Loader trifft keine
 fachliche Auswahl.
+
+Story- und Initialisierungsaufrufe liefern zusätzlich strukturierte, transiente
+Fortsetzungsoptionen. Sie werden über ein gemeinsames striktes JSON-Schema aus
+demselben LLM-Aufruf wie die Erzählung gewonnen, in `RunProposalModel` und
+`TurnResultModel` als `continuation` gebündelt und niemals in `GameState` oder
+`StoryTurn` persistiert. Nur der vom Spieler übernommene oder editierte Text
+wird als `player_input` gespeichert.
 
 Die zentrale LLM-Laufzeitkonfiguration bleibt maßgeblich für das aktive Story-,
 Extraction- und Summary-Modell. Sie löst die zum Auftrag gehörende logische
@@ -361,21 +368,19 @@ Die Zitate landen in der `ProposalEvidence` der jeweiligen Änderung. Der
 transiente Vorschlag ist im Zugergebnis lesbar, damit die Begründungen
 überhaupt sichtbar werden können; persistiert wird er nicht.
 
-## Rollierende Zusammenfassung
+## Append-only Summary-Segmente
 
-`SummarizeStory` schreibt nach dem Zug die laufende Zusammenfassung fort. Der
-Aufruf erhält nur die bisherige Zusammenfassung und den neuen Zug, nicht die
-ganze Historie — die Zusammenfassung steht bereits für alles davor, was den
-Aufruf mit wachsendem Spiel klein hält.
+`SummarizeStory` erzeugt an einer konfigurierten Intervallgrenze ein neues,
+unveränderliches Segment für ein festes Zugfenster. Der Aufruf erhält nur die
+Züge dieses Fensters, nicht frühere Summary-Segmente oder die ganze Historie.
+Dadurch bleibt die Größe des Aufrufs unabhängig von der Spieldauer. Die
+Segmentkette wird in `StoryState.summaries` und in der Tabelle
+`story_summary_segments` ausschließlich erweitert.
 
-Scheitert sie, **bricht der Zug nicht ab**. Prosa und Änderungen sind zu diesem
-Zeitpunkt längst berechnet; sie wegen des Nebenprodukts zu verwerfen wäre der
-schlechtere Tausch. Der Zug wird regulär persistiert, und der Fehler bleibt im
-Ergebnis sichtbar, damit eine UI ihn anzeigen kann, statt still ohne
-Zusammenfassung weiterzulaufen. Die projektweite Logging-Grundlage macht
-wiederkehrende Modell-, Vorschlags-, Konflikt- und Summaryfehler inzwischen
-als typisierte Diagnoseereignisse sichtbar; ausführliche Rohdaten bleiben auf
-das ausdrücklich aktivierte Debug-Profil begrenzt.
+Scheitert die optionale Segmenterzeugung, **bricht der Zug nicht ab**. Prosa
+und Änderungen sind zu diesem Zeitpunkt längst berechnet; der Zug wird
+regulär persistiert, und der Fehler bleibt als `summary_failure` im
+transienten Ergebnis sowie als Diagnose sichtbar.
 
 ## Vollständiger Zug
 
@@ -395,7 +400,7 @@ und nicht auf diesem Prompt-Ausschnitt.
 Ergebnis ist `PlayedStoryTurn`, nicht roh der `GameState`: neben dem
 persistierten Zustand trägt es `proposed_changes` — den transienten, nie
 persistierten Vorschlag samt Modellbegründungen, siehe „Belege" — und
-`summary_failure` für den in „Rollierende Zusammenfassung" beschriebenen
+`summary_failure` für den in „Append-only Summary-Segmente" beschriebenen
 Sonderfall. Beide Felder sind optional und `None`, wenn nichts zu berichten
 ist.
 

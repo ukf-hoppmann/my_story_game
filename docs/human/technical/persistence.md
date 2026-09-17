@@ -19,14 +19,15 @@ Die wichtigsten Tabellen sind:
 | `world_goals` | Haupt- und Nebenziele je Revision |
 | `world_goal_related_entities` | geordnete Goal-Verweise auf Entities derselben Revision |
 | `world_scene_locations` | geordnete Schauplätze der Erzählung je Revision |
-| `story_state_metadata` | aktuelle Zusammenfassung und Zugnummer je Revision |
+| `story_state_metadata` | Eröffnungsdaten und Zugnummer je Revision |
+| `story_summary_segments` | unveränderliche Summary-Segmente mit Zugfenster und Revision |
 | `story_turns` | jeder abgeschlossene Zug genau einmal |
 
 Die WorldState-Daten werden je Revision als verständlicher relationaler
-Snapshot abgelegt. Die vollständigen Turntexte werden dagegen nicht in jeder
-Revision kopiert. Beim Laden setzt der Adapter den StoryState aus den bis zur
-gewählten Revision sichtbaren StoryTurns und den Metadaten dieser Revision
-zusammen.
+Snapshot abgelegt. Die vollständigen Turntexte und Summary-Segmente werden
+dagegen nicht in jeder Revision kopiert. Beim Laden setzt der Adapter den
+StoryState aus den bis zur gewählten Revision sichtbaren StoryTurns,
+`story_summary_segments` und den Metadaten dieser Revision zusammen.
 
 `game_state_configurations` speichert `language`, die zehn expliziten
 `PromptProfile`-Options-IDs, `narrative_boundaries` sowie Paket-ID und
@@ -106,6 +107,8 @@ Konflikt oder Fehler rollt alles zurück. Ein LLM-Aufruf findet immer vorher und
 außerhalb dieser Transaktion statt.
 
 Revision 1 und reine Konfigurationsrevisionen benötigen keinen StoryTurn.
+Ein Summary-Segment entsteht nur an einer konfigurierten Summary-Grenze und
+wird einmalig eingefügt; bereits vorhandene Segmente werden nicht aktualisiert.
 
 ## Neues Basisschema statt Datenmigration
 

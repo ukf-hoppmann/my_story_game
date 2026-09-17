@@ -12,8 +12,9 @@ Spielerprosa oder Provider-Rohantworten.
 
 `debug` ist ausdrücklich für lokale Untersuchung gedacht. Zusätzlich zu den
 Diagnoseereignissen werden detaillierte Transformationsschritte sowie in den
-LM-Studio-Adaptern rohe Prompts und Providerantworten ausgegeben. Dieses Profil
-darf nicht gegen eine reale spielerbezogene Umgebung verwendet werden.
+OpenAI-kompatiblen Provider-Clients (LM Studio, Groq und Gemini) rohe Prompts
+und Providerantworten ausgegeben. Dieses Profil darf nicht gegen eine reale
+spielerbezogene Umgebung verwendet werden.
 
 Die aktuelle Repository-Konfiguration steht bewusst auf `mode = "debug"`.
 Für einen sicheren normalen Lauf muss sie auf `prod` gesetzt oder per
@@ -37,4 +38,8 @@ Neustarts übersteht.
 
 Das Logging ergänzt typisierte Fehler und ersetzt sie nicht. Wiederkehrende
 Modellfehler, verworfene Änderungsvorschläge, Revisionskonflikte und
-Zusammenfassungsfehler werden als Diagnoseereignisse sichtbar.
+Zusammenfassungsfehler werden als Diagnoseereignisse sichtbar. Das Frontend
+meldet nicht-401-Tooling-Fehler über
+`POST /api/v1/diagnostics/frontend-errors`; der Endpoint benötigt den
+bestehenden Keycloak-Bearer-Token und erzeugt `FrontendToolingError`. 401-
+Fehler werden nicht gemeldet, sondern führen im Frontend zu einem Re-Login.

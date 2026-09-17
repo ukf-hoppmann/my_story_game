@@ -5,8 +5,7 @@ React Router + TypeScript, gebaut mit Vite.
 
 Dies ist der Neuaufbau, der das ursprüngliche MVP-Frontend abgelöst hat (das
 alte Frontend liegt zur Referenz unter `../Frontend-Web-old`, siehe dessen
-README). Entstanden Stück für Stück nach Plan
-`die-app-war-ein-glistening-steele.md`.
+README).
 
 ## Stack
 
@@ -48,11 +47,26 @@ nginx unter `storygame.localhost`.
   Routentabelle.
 - `src/styles/tokens.css` — Design-Tokens (Bordeaux/Pergament-Theme).
 
+Zusätzliche gemeinsam genutzte Bausteine sind `AppHeader` und `ErrorBanner`.
+
 ## Auth
 
 `/` (Landing) ist ohne Login erreichbar. Alle anderen Routen sind über die
 `RequireAuth`-Layout-Route geschützt, die den Keycloak-Login-Redirect erst
 beim Betreten einer geschützten Route auslöst (nicht beim App-Start).
+
+Der Wizard arbeitet mit einem Review-Schritt und bestätigt einen transienten
+Vorschlag erst nach der Rollenentscheidung für Figuren. Die Play-Ansicht
+zeigt nach regulären Zügen die vom Backend gelieferten
+Fortsetzungsoptionen als zweistufige Chips: erster Klick übernimmt den Text,
+zweiter Klick sendet ihn ab; die freie Eingabe bleibt erhalten. Optionen aus
+der Eröffnung werden aktuell noch nicht im Play-Screen angezeigt, weil sie
+`GameDocument` nicht enthält. Geschichte und Chronik zeigen den Story-Feed
+beziehungsweise die geordnete Summary-Segmentkette.
+
+Frontend-Fehler werden zentral klassifiziert: 401 führt zum Re-Login, echte
+Backend-Fehler zeigen den Backend-Text, und sonstige Tooling-Fehler werden
+fire-and-forget für Diagnosezwecke gemeldet.
 
 ## Design
 

@@ -17,7 +17,7 @@ GameRun
     │   └── Goals
     └── StoryState
         ├── StoryTurns
-        ├── aktuelle Zusammenfassung
+        ├── Summary-Segmentkette
         └── aktuelle Zugnummer
 ```
 
@@ -109,8 +109,16 @@ damit Schauplätze fortschreiben und nicht mehr geltende Fakten entfernen.
 Der `StoryState` ist die konkrete Prosa-Chronologie. Er enthält nur:
 
 - vollständig abgeschlossene `StoryTurn`-Werte;
-- eine aktuelle rollierende Textzusammenfassung;
+- eine geordnete Folge unveränderlicher `StorySummarySegment`-Werte;
+- optional die persistierte Eröffnungsprosa mit Initialprompt und Zeitpunkt;
 - die Nummer des letzten abgeschlossenen Zugs.
+
+Ein Summary-Segment beschreibt ein festes, lückenlos an die vorherigen
+Segmente anschließendes Zugfenster (`from_sequence` bis `through_sequence`).
+Neue Segmente werden ausschließlich angehängt; bestehende Segmente werden
+nicht umgeschrieben. Die Kette bleibt kanonischer StoryState, während
+Fortsetzungsoptionen aus Story- und Initialisierungsaufrufen rein transiente
+UI-Daten bleiben.
 
 Ein `StoryTurn` verbindet `player_input` und Erzählung mit seiner fortlaufenden
 Sequenz, der Basisrevision, der resultierenden Revision und dem
@@ -129,8 +137,8 @@ Anwendung prüft den Vorschlag und erzeugt daraus einen `ApprovedChangeSet` mit
 typisierten Domain-Operationen.
 
 Die Domain akzeptiert nur diesen freigegebenen Änderungssatz auf der erwarteten
-Revision. Beim Abschluss eines Zugs werden World-Änderungen, StoryTurn,
-Zusammenfassung und neue Revision gemeinsam gebildet. Persistiert werden sie
+Revision. Beim Abschluss eines Zugs werden World-Änderungen, StoryTurn, ein
+mögliches neues Summary-Segment und die neue Revision gemeinsam gebildet. Persistiert werden sie
 anschließend in einer Datenbanktransaktion.
 
 Prompt-Auflösung, Modellaufruf, Rohantwort, Extraktion, Vorschlag und

@@ -217,9 +217,15 @@ export interface ProposeRunRequest {
   prompt_profile?: EditablePromptProfile;
 }
 
+/** Narration prose plus the player's suggested next moves (TASK-033/034). */
+export interface Continuation {
+  narration: string;
+  options: string[];
+}
+
 export interface RunProposal {
   proposal_id: string;
-  opening_narration: string;
+  continuation: Continuation;
   world: WorldState;
   suggested_player_entity_ids: string[];
   suggested_title: string;
@@ -255,6 +261,7 @@ export interface PlayTurnRequest {
 
 export interface TurnResult {
   state: GameState;
+  continuation: Continuation;
   proposed_change_count: number;
   summary_failed: boolean;
   summary_failure_message: string | null;

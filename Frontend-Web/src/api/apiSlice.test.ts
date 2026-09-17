@@ -98,7 +98,7 @@ describe("apiSlice.promptProfileCatalog", () => {
 
 const sampleProposal: RunProposal = {
   proposal_id: "33333333-3333-3333-3333-333333333333",
-  opening_narration: "Der Regen hatte die Spuren fast fortgespült.",
+  continuation: { narration: "Der Regen hatte die Spuren fast fortgespült.", options: [] },
   world: { entities: [], links: [], facts: [], knowledge: [], rules: [], goals: [], scene_location_ids: [] },
   suggested_player_entity_ids: [],
   suggested_title: "Die Schatten von Auenfall",
@@ -226,6 +226,7 @@ describe("apiSlice.loadRun / playTurn", () => {
   it("playTurn returns the resulting turn state", async () => {
     const turnResult = {
       state: sampleDocument.game_state,
+      continuation: { narration: "Ein silberner Faden glitzert.", options: [] },
       proposed_change_count: 2,
       summary_failed: false,
       summary_failure_message: null,

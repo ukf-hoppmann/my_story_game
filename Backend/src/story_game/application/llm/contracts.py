@@ -112,15 +112,26 @@ class StoryGenerationRequest:
 
 @dataclass(frozen=True, slots=True)
 class StoryGenerationData:
-    """Normalized prose returned by a successful story-generation call."""
+    """Normalized prose plus transient continuation suggestions.
+
+    ``continuation_options`` are pure UI presentation data (see
+    ``.harness/architecture/llm-integration.md`` §5): never canonical
+    narrative content, never persisted as part of ``GameState`` or a
+    ``StoryTurn``.
+    """
 
     text: str
+    continuation_options: tuple[str, ...]
 
     def __post_init__(self) -> None:
         text = self.text.strip()
         if not text:
             raise ValueError("Story-Ergebnisse dürfen nicht leer sein")
         object.__setattr__(self, "text", text)
+        options = tuple(option.strip() for option in self.continuation_options if option.strip())
+        if not options:
+            raise ValueError("Mindestens eine Fortsetzungsoption ist erforderlich")
+        object.__setattr__(self, "continuation_options", options)
 
 
 @dataclass(frozen=True, slots=True)
@@ -146,15 +157,26 @@ class StoryInitializationRequest:
 
 @dataclass(frozen=True, slots=True)
 class InitialStoryText:
-    """Normalized prose returned by a successful opening-generation call."""
+    """Normalized opening prose plus transient continuation suggestions.
+
+    ``continuation_options`` are pure UI presentation data (see
+    ``.harness/architecture/llm-integration.md`` §5a): never canonical
+    narrative content, never persisted as part of ``GameState`` or a
+    ``StoryTurn``.
+    """
 
     text: str
+    continuation_options: tuple[str, ...]
 
     def __post_init__(self) -> None:
         text = self.text.strip()
         if not text:
             raise ValueError("Eröffnungsprosa darf nicht leer sein")
         object.__setattr__(self, "text", text)
+        options = tuple(option.strip() for option in self.continuation_options if option.strip())
+        if not options:
+            raise ValueError("Mindestens eine Fortsetzungsoption ist erforderlich")
+        object.__setattr__(self, "continuation_options", options)
 
 
 @dataclass(frozen=True, slots=True)

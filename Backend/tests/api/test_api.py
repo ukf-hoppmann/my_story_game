@@ -418,7 +418,8 @@ def test_api_proposes_without_persisting_anything() -> None:
         assert response.status_code == 201
         body = response.json()
         assert "proposal_id" in body
-        assert body["opening_narration"]
+        assert body["continuation"]["narration"]
+        assert body["continuation"]["options"]
         assert body["suggested_title"]
         assert store.runs == {}
 
@@ -568,7 +569,7 @@ def test_api_persists_the_opening_narration_through_confirm_reload_and_fork(
 
     expected = {
         "prompt": "Ein Licht brennt, wo keines brennen sollte.",
-        "narration": proposal["opening_narration"],
+        "narration": proposal["continuation"]["narration"],
         "completed_at": draft["game_state"]["story"]["initialization"]["completed_at"],
     }
     assert draft["game_state"]["story"]["initialization"] == expected
@@ -609,6 +610,8 @@ def test_api_plays_a_turn_in_an_active_run(client: TestClient) -> None:
     body = response.json()
     assert body["state"]["revision"] == 2
     assert body["summary_failed"] is False
+    assert body["continuation"]["narration"] == body["state"]["story"]["turns"][-1]["narration"]
+    assert body["continuation"]["options"]
 
 
 def test_api_rejects_a_turn_against_a_draft_run(client: TestClient) -> None:

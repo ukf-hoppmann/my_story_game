@@ -121,6 +121,26 @@ def test_proposes_without_persisting_a_game_run() -> None:
     )
 
 
+def test_carries_continuation_options_from_the_initializer_into_the_proposal() -> None:
+    initializer = RecordingStoryInitializer(
+        Success(
+            InitializedStory(
+                StoryState(),
+                WorldState(),
+                "Der Dungeon",
+                ("Weitergehen", "Umkehren"),
+            )
+        )
+    )
+    store = RecordingProposalStore()
+    operation = ProposeGameRun(initializer, store, new_id=lambda: sid("proposal"))
+
+    result = operation.apply(request())
+
+    assert isinstance(result, Success)
+    assert result.data.continuation_options == ("Weitergehen", "Umkehren")
+
+
 def test_suggests_the_player_role_by_name_match_against_seeds() -> None:
     maren = WorldEntity(
         id=sid("maren"), kind=EntityKind.CHARACTER, label="Maren",

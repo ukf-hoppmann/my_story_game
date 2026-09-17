@@ -75,6 +75,10 @@ contract remains binding together with this scope.
 - A successful Story-generation result MUST contain normalized story prose.
   Empty, incomplete, or technically invalid output MUST NOT be represented as a
   successful story.
+- A successful Story-generation result MAY also contain a set of transient
+  suggested next-action choices for the player. Such choices MUST NOT be
+  treated as canonical narrative content, MUST NOT be persisted as part of
+  `GameState` or a `StoryTurn`, and remain pure UI presentation data.
 
 ## 5a. Story-initialization boundary
 
@@ -98,6 +102,10 @@ contract remains binding together with this scope.
 - The Application layer MUST assemble the request and create a complete
   transient StoryState from successful normalized opening prose. The provider
   adapter MUST only render and transport the prepared request.
+- A successful Story-initialization result MAY also contain a set of
+  transient suggested next-action choices for the player, under the same
+  transience rule as §5: never canonical narrative content, never persisted
+  as part of `GameState` or a `StoryTurn`, pure UI presentation data.
 - Story initialization alone MUST NOT persist a GameState. Canonical
   persistence remains unavailable until the separate initial WorldState
   extraction and validation workflow has completed successfully.

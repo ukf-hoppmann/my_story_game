@@ -19,6 +19,7 @@ from story_game.api.results import OperationFailed, unwrap
 from story_game.api.schemas.runs import (
     CharacterDecisionModel,
     ConfirmRunProposalRequestModel,
+    ContinuationModel,
     ItemDecisionModel,
     PlayTurnRequestModel,
     ProposeRunRequestModel,
@@ -283,6 +284,10 @@ def play_turn(
     )
     return TurnResultModel(
         state=game_state_to_api(played.state),
+        continuation=ContinuationModel(
+            narration=played.state.story.turns[-1].narration,
+            options=list(played.continuation_options),
+        ),
         proposed_change_count=(
             0 if played.proposed_changes is None else len(played.proposed_changes.changes)
         ),

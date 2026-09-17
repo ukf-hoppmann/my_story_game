@@ -57,6 +57,21 @@ class ProposeRunRequestModel(APIModel):
     )
 
 
+class ContinuationModel(APIModel):
+    """One piece of narration plus the player's suggested next moves.
+
+    Bundles narration prose with its ``options`` so a client always finds
+    them together, regardless of where the prose is otherwise nested
+    (``TurnResultModel.state``) or would have lived on its own
+    (``RunProposalModel``). ``options`` is transient, non-canonical
+    presentation data — never persisted as part of ``GameState`` or a
+    ``StoryTurn`` (see ``.harness/architecture/llm-integration.md`` §5/§5a).
+    """
+
+    narration: str = Field(min_length=1)
+    options: list[str] = Field(default_factory=list)
+
+
 class RunProposalModel(APIModel):
     """A not-yet-persisted proposal for the caller to review and edit.
 
@@ -68,7 +83,7 @@ class RunProposalModel(APIModel):
     """
 
     proposal_id: UUID
-    opening_narration: str = Field(min_length=1)
+    continuation: ContinuationModel
     world: WorldStateModel
     suggested_player_entity_ids: list[UUID] = Field(default_factory=list)
     suggested_title: str = Field(min_length=1)
@@ -143,6 +158,7 @@ class TurnResultModel(APIModel):
     """
 
     state: GameStateModel
+    continuation: ContinuationModel
     proposed_change_count: int = Field(ge=0)
     summary_failed: bool
     summary_failure_message: str | None = None

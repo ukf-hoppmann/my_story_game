@@ -38,7 +38,11 @@ class FakeGenerationConfigurationResolver:
 
 class FakeStoryInitializationPort:
     def generate(self, call):
-        return Success(InitialStoryText("[Test] Eröffnungsprosa."))
+        return Success(
+            InitialStoryText(
+                "[Test] Eröffnungsprosa.", ("[Test] Option A", "[Test] Option B")
+            )
+        )
 
 
 class UnreachableStoryInitializationPort:
@@ -59,7 +63,11 @@ class FakeInitialWorldExtractionPort:
 
 class FakeStoryGenerationPort:
     def generate(self, call):
-        return Success(StoryGenerationData("[Test] Zugprosa."))
+        return Success(
+            StoryGenerationData(
+                "[Test] Zugprosa.", ("[Test] Option A", "[Test] Option B")
+            )
+        )
 
 
 class FakeTurnExtractionPort:

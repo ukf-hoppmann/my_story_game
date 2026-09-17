@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 from story_game.application import LLMGenerationCall, ModelSelection, Success
 from story_game.application.llm import (
     GenerationOptions,
@@ -17,7 +19,15 @@ class RecordingClient:
 
     def complete(self, request: ChatRequest) -> ChatResponse:
         self.request = request
-        return ChatResponse("Maren hebt die Fackel.", "stop")
+        return ChatResponse(
+            json.dumps(
+                {
+                    "narration": "Maren hebt die Fackel.",
+                    "continuation_options": ["Weitergehen", "Lauschen"],
+                }
+            ),
+            "stop",
+        )
 
 
 def test_adapter_maps_opening_without_world_or_story_context() -> None:
@@ -38,7 +48,9 @@ def test_adapter_maps_opening_without_world_or_story_context() -> None:
     )
 
     assert isinstance(result, Success)
-    assert result.data == InitialStoryText("Maren hebt die Fackel.")
+    assert result.data == InitialStoryText(
+        "Maren hebt die Fackel.", ("Weitergehen", "Lauschen")
+    )
     assert client.request is not None
     assert client.request.temperature == 0.5
     assert client.request.max_tokens is None

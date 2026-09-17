@@ -87,7 +87,7 @@ def operation(generator: RecordingGenerator) -> GenerateInitialStoryState:
 
 
 def test_generates_an_initialized_story_state_with_the_caller_character() -> None:
-    generator = RecordingGenerator(Success(InitialStoryText("Maren hebt die Fackel.")))
+    generator = RecordingGenerator(Success(InitialStoryText("Maren hebt die Fackel.", ("Weiter",))))
 
     result = operation(generator).apply(
         GenerateInitialStoryStateRequest(
@@ -98,13 +98,33 @@ def test_generates_an_initialized_story_state_with_the_caller_character() -> Non
     )
 
     assert isinstance(result, Success)
-    assert result.data.initialization is not None
-    assert result.data.initialization.prompt == "Maren und Alma gehen in den Dungeon."
-    assert result.data.turns == ()
+    assert result.data.story_state.initialization is not None
+    assert (
+        result.data.story_state.initialization.prompt
+        == "Maren und Alma gehen in den Dungeon."
+    )
+    assert result.data.story_state.turns == ()
     assert generator.call.request.initial_prompt == "Maren und Alma gehen in den Dungeon."
     assert generator.call.request.controllable_characters == (player_character(),)
     assert not hasattr(generator.call.request, "world_state")
     assert not hasattr(generator.call.request, "story_state")
+
+
+def test_generates_continuation_options_alongside_the_opening() -> None:
+    generator = RecordingGenerator(
+        Success(InitialStoryText("Maren hebt die Fackel.", ("Weitergehen", "Lauschen")))
+    )
+
+    result = operation(generator).apply(
+        GenerateInitialStoryStateRequest(
+            configuration(),
+            "Maren und Alma gehen in den Dungeon.",
+            (player_character(),),
+        )
+    )
+
+    assert isinstance(result, Success)
+    assert result.data.continuation_options == ("Weitergehen", "Lauschen")
 
 
 @pytest.mark.parametrize(
@@ -119,7 +139,7 @@ def test_generates_an_initialized_story_state_with_the_caller_character() -> Non
 def test_player_mode_supports_every_character_bound_perspective(
     perspective: str,
 ) -> None:
-    generator = RecordingGenerator(Success(InitialStoryText("Maren wartet.")))
+    generator = RecordingGenerator(Success(InitialStoryText("Maren wartet.", ("Weiter",))))
 
     result = operation(generator).apply(
         GenerateInitialStoryStateRequest(
@@ -145,7 +165,7 @@ def test_player_mode_supports_every_character_bound_perspective(
 def test_player_mode_requires_a_character_before_calling_the_model(
     perspective: str,
 ) -> None:
-    generator = RecordingGenerator(Success(InitialStoryText("Nicht erreichbar.")))
+    generator = RecordingGenerator(Success(InitialStoryText("Nicht erreichbar.", ("Weiter",))))
 
     result = operation(generator).apply(
         GenerateInitialStoryStateRequest(
@@ -163,7 +183,7 @@ def test_player_mode_requires_a_character_before_calling_the_model(
 def test_director_mode_rejects_character_bound_perspectives(
     perspective: str,
 ) -> None:
-    generator = RecordingGenerator(Success(InitialStoryText("Nicht erreichbar.")))
+    generator = RecordingGenerator(Success(InitialStoryText("Nicht erreichbar.", ("Weiter",))))
 
     result = operation(generator).apply(
         GenerateInitialStoryStateRequest(
@@ -183,7 +203,7 @@ def test_director_mode_rejects_character_bound_perspectives(
 def test_director_mode_accepts_one_or_more_controllable_characters(
     perspective: str,
 ) -> None:
-    generator = RecordingGenerator(Success(InitialStoryText("Die Szene beginnt.")))
+    generator = RecordingGenerator(Success(InitialStoryText("Die Szene beginnt.", ("Weiter",))))
     maren = ControllableCharacterSeed("Maren")
     jonas = ControllableCharacterSeed("Jonas")
 
@@ -205,7 +225,7 @@ def test_director_mode_accepts_one_or_more_controllable_characters(
 def test_director_mode_rejects_duplicate_controllable_character_names(
     perspective: str,
 ) -> None:
-    generator = RecordingGenerator(Success(InitialStoryText("Nicht erreichbar.")))
+    generator = RecordingGenerator(Success(InitialStoryText("Nicht erreichbar.", ("Weiter",))))
 
     result = operation(generator).apply(
         GenerateInitialStoryStateRequest(
@@ -229,7 +249,7 @@ def test_director_mode_rejects_duplicate_controllable_character_names(
 def test_director_mode_omits_player_agency_and_allows_no_character(
     perspective: str,
 ) -> None:
-    generator = RecordingGenerator(Success(InitialStoryText("Die Szene beginnt.")))
+    generator = RecordingGenerator(Success(InitialStoryText("Die Szene beginnt.", ("Weiter",))))
 
     result = operation(generator).apply(
         GenerateInitialStoryStateRequest(

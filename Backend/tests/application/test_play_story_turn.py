@@ -91,9 +91,12 @@ class FixedConfigurationResolver:
         )
 
 
+CONTINUATION_OPTIONS = ("Weitergehen", "Umkehren")
+
+
 class FakeStoryPort:
     def __init__(self, result=None) -> None:
-        self.result = result or Success(StoryGenerationData(NARRATION))
+        self.result = result or Success(StoryGenerationData(NARRATION, CONTINUATION_OPTIONS))
         self.call = None
 
     def generate(self, call):
@@ -196,6 +199,15 @@ def test_a_complete_turn_persists_narration_and_the_next_revision() -> None:
     assert store.committed.turn.player_input == "Ich gehe hinaus."
     # The fixture already holds one narrated turn, so this is the second.
     assert store.committed.turn.sequence == StorySequence(2)
+
+
+def test_a_complete_turn_carries_transient_continuation_options() -> None:
+    operation, _ = workflow()
+
+    result = operation.apply(request())
+
+    assert isinstance(result, Success), result
+    assert result.data.continuation_options == CONTINUATION_OPTIONS
 
 
 def test_the_extraction_sees_the_freshly_generated_prose() -> None:

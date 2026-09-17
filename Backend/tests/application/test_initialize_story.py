@@ -14,6 +14,7 @@ from story_game.application.initialization_models import (
 )
 from story_game.application.initial_world_extraction import WorldExtractionResult
 from story_game.application.initialize_story import InitializeStory, InitializeStoryRequest
+from story_game.application.story_initialization import GeneratedStoryOpening
 from story_game.domain import (
     GameConfiguration,
     PromptProfile,
@@ -63,7 +64,9 @@ def test_orchestrates_story_then_world_and_returns_both_transient_states() -> No
         )
     )
     world = WorldState()
-    story_generation = RecordingOperation(Success(story))
+    story_generation = RecordingOperation(
+        Success(GeneratedStoryOpening(story, ("Weitergehen", "Umkehren")))
+    )
     world_extraction = RecordingOperation(
         Success(WorldExtractionResult(world, "Der Dungeon"))
     )
@@ -75,7 +78,9 @@ def test_orchestrates_story_then_world_and_returns_both_transient_states() -> No
         )
     )
 
-    assert result == Success(InitializedStory(story, world, "Der Dungeon"))
+    assert result == Success(
+        InitializedStory(story, world, "Der Dungeon", ("Weitergehen", "Umkehren"))
+    )
     assert story_generation.requests[0].initial_prompt == "Maren geht in den Dungeon."
     extraction_request = world_extraction.requests[0]
     assert extraction_request.story_state is story
@@ -117,7 +122,8 @@ def test_returns_extraction_failure_without_a_partial_initialized_result() -> No
     )
 
     result = InitializeStory(
-        RecordingOperation(Success(story)), RecordingOperation(Failure(error))
+        RecordingOperation(Success(GeneratedStoryOpening(story))),
+        RecordingOperation(Failure(error)),
     ).apply(
         InitializeStoryRequest(
             configuration(), "Maren geht los.", (ControllableCharacterSeed("Maren"),)

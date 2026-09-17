@@ -73,6 +73,14 @@ class PlayedStoryTurn:
     an interval boundary, since no segment is even attempted then.
     """
 
+    continuation_options: tuple[str, ...] = ()
+    """Suggested next-action choices for the player, from this turn's narration.
+
+    Transient UI presentation data (see
+    ``.harness/architecture/llm-integration.md`` §5): never part of
+    ``GameState`` or a persisted ``StoryTurn``.
+    """
+
 
 @dataclass(frozen=True, slots=True)
 class PlayStoryTurnRequest:
@@ -228,7 +236,12 @@ class PlayStoryTurn:
             revision=committed.data.revision.value,
         )
         return Success(
-            PlayedStoryTurn(committed.data, approved.data.proposed, summary_failure)
+            PlayedStoryTurn(
+                committed.data,
+                approved.data.proposed,
+                summary_failure,
+                narrated.data.continuation_options,
+            )
         )
 
 

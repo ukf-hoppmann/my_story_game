@@ -19,7 +19,7 @@ from story_game.api.schemas.common import (
     WorldEntityModel,
     WorldRuleModel,
 )
-from story_game.api.schemas.runs import RunProposalModel
+from story_game.api.schemas.runs import ContinuationModel, RunProposalModel
 from story_game.api.schemas.state import (
     GameDocument,
     GameStateModel,
@@ -117,7 +117,10 @@ def proposal_to_api(proposal: GameRunProposal) -> RunProposalModel:
     )
     return RunProposalModel(
         proposal_id=proposal.proposal_id.value,
-        opening_narration=initialization.narration,
+        continuation=ContinuationModel(
+            narration=initialization.narration,
+            options=list(proposal.continuation_options),
+        ),
         world=_world_to_api(proposal.world_state),
         suggested_player_entity_ids=[
             entity_id.value for entity_id in proposal.suggested_player_entity_ids

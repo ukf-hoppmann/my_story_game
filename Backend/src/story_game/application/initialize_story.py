@@ -67,7 +67,7 @@ class InitializeStory:
         extracted = self._world_extraction.apply(
             ExtractInitialWorldStateRequest(
                 request.configuration,
-                generated.data,
+                generated.data.story_state,
                 request.controllable_characters,
             )
         )
@@ -76,8 +76,9 @@ class InitializeStory:
         self._diagnostics.trace("initialize_story.done")
         return Success(
             InitializedStory(
-                generated.data,
+                generated.data.story_state,
                 extracted.data.world_state,
                 extracted.data.suggested_title,
+                generated.data.continuation_options,
             )
         )

@@ -8,7 +8,11 @@ from story_game.application.llm import (
     StoryInitializationRequest,
 )
 
-from .models import ChatMessage, ChatRequest, ChatResponse
+from ..json_schema import strict_json_schema
+from .models import ChatMessage, ChatRequest, ChatResponse, JsonSchema
+from .narration_wire import WireNarrationWithOptions
+
+_SCHEMA = strict_json_schema(WireNarrationWithOptions)
 
 
 def build_request(call: LLMGenerationCall[StoryInitializationRequest]) -> ChatRequest:
@@ -17,11 +21,17 @@ def build_request(call: LLMGenerationCall[StoryInitializationRequest]) -> ChatRe
         messages=_messages_for(call.request),
         temperature=call.generation_options.temperature,
         max_tokens=call.generation_options.max_output_tokens,
+        response_format=JsonSchema(
+            name="story_initialization",
+            strict=True,
+            schema=_SCHEMA,
+        ),
     )
 
 
 def parse_response(response: ChatResponse) -> InitialStoryText:
-    return InitialStoryText(response.text)
+    wire = WireNarrationWithOptions.model_validate_json(response.text)
+    return InitialStoryText(wire.narration, tuple(wire.continuation_options))
 
 
 def _messages_for(request: StoryInitializationRequest) -> tuple[ChatMessage, ...]:

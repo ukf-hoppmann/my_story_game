@@ -30,7 +30,7 @@ class RecordingAdapter:
 
     def generate(self, request: LLMGenerationCall[StoryGenerationRequest]):
         self.calls.append(request)
-        return Success(StoryGenerationData(self.text))
+        return Success(StoryGenerationData(self.text, ("Weiter",)))
 
 
 def test_router_dispatches_to_the_adapter_matching_the_calls_provider_id() -> None:
@@ -41,7 +41,7 @@ def test_router_dispatches_to_the_adapter_matching_the_calls_provider_id() -> No
     result = router.generate(call("groq"))
 
     assert isinstance(result, Success)
-    assert result.data == StoryGenerationData("groq-antwort")
+    assert result.data == StoryGenerationData("groq-antwort", ("Weiter",))
     assert len(groq.calls) == 1
     assert lmstudio.calls == []
 
@@ -61,8 +61,8 @@ def test_router_re_evaluates_provider_id_on_every_call_without_reconstruction() 
     first = router.generate(call("lmstudio"))
     second = router.generate(call("groq"))
 
-    assert first.data == StoryGenerationData("lmstudio-antwort")
-    assert second.data == StoryGenerationData("groq-antwort")
+    assert first.data == StoryGenerationData("lmstudio-antwort", ("Weiter",))
+    assert second.data == StoryGenerationData("groq-antwort", ("Weiter",))
 
 
 def test_router_dispatches_across_three_coexisting_providers() -> None:
@@ -79,7 +79,7 @@ def test_router_dispatches_across_three_coexisting_providers() -> None:
 
     result = router.generate(call("gemini"))
 
-    assert result.data == StoryGenerationData("gemini-antwort")
+    assert result.data == StoryGenerationData("gemini-antwort", ("Weiter",))
     assert len(gemini.calls) == 1
     assert lmstudio.calls == []
     assert groq.calls == []

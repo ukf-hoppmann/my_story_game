@@ -54,6 +54,13 @@ class GameRunProposal:
     world_state: WorldState
     suggested_player_entity_ids: tuple[StableId, ...] = ()
     suggested_title: str = ""
+    continuation_options: tuple[str, ...] = ()
+    """Suggested next-action choices from the opening narration.
+
+    Transient UI presentation data, never part of ``story_state`` or a
+    persisted ``GameState`` (see
+    ``.harness/architecture/llm-integration.md`` §5a).
+    """
 
 
 @dataclass(frozen=True, slots=True)

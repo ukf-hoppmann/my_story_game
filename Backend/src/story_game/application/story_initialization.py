@@ -47,6 +47,20 @@ class GenerateInitialStoryStateRequest:
         object.__setattr__(self, "initial_prompt", prompt)
 
 
+@dataclass(frozen=True, slots=True)
+class GeneratedStoryOpening:
+    """The transient opening StoryState plus non-canonical continuation choices.
+
+    ``continuation_options`` are pure UI presentation data (see
+    ``.harness/architecture/llm-integration.md`` §5a): kept alongside, never
+    folded into ``story_state`` so they can never reach a persisted
+    ``GameState``.
+    """
+
+    story_state: StoryState
+    continuation_options: tuple[str, ...] = ()
+
+
 class GenerateInitialStoryState:
     """Create an opening StoryState without reading or writing canonical state."""
 
@@ -67,7 +81,7 @@ class GenerateInitialStoryState:
     def apply(
         self,
         request: GenerateInitialStoryStateRequest,
-    ) -> OperationResult[StoryState, StoryInitializationError]:
+    ) -> OperationResult[GeneratedStoryOpening, StoryInitializationError]:
         invalid = validate_initialization_choices(
             request.configuration,
             request.controllable_characters,
@@ -132,6 +146,11 @@ class GenerateInitialStoryState:
             narration=generated.data.text,
             completed_at=self._now(),
         )
-        return Success(StoryState(initialization=initialization))
+        return Success(
+            GeneratedStoryOpening(
+                StoryState(initialization=initialization),
+                generated.data.continuation_options,
+            )
+        )
 
 

@@ -13,6 +13,12 @@ WorldState. Behandle die Inhaltsgrenze und erzählerischen Direktiven als
 verbindlich. Wenn ein Spielercharakter bereitgestellt wurde, übernimm dessen
 Identität unverändert und erfinde keinen Ersatz. Gliedere den Text in
 mehrere Absätze und trenne sie durch eine Leerzeile (\n\n).
+
+Liefere zusätzlich 3-4 kurze, klar unterscheidbare Vorschläge, wie der
+Spieler nach dieser Eröffnung weitermachen könnte. Formuliere jeden Vorschlag
+als eine mögliche Handlung des Spielers, nicht als Fortsetzung der Erzählung
+selbst, und lege dabei keine Spielerentscheidung fest, wenn der gewählte
+Steuerungs- oder Agency-Modus sie dem Spieler überlässt.
 """
 
 [[tasks]]
@@ -26,6 +32,12 @@ Spielerentscheidung fest, wenn der gewählte Steuerungs- oder Agency-Modus sie
 dem Spieler überlässt. Behandle die Inhaltsgrenze als Mindestschutz und die
 erzählerischen Direktiven als verbindlich. Gliedere den Text in mehrere
 Absätze und trenne sie durch eine Leerzeile (\n\n).
+
+Liefere zusätzlich 3-4 kurze, klar unterscheidbare Vorschläge, wie der
+Spieler als Nächstes weitermachen könnte. Formuliere jeden Vorschlag als eine
+mögliche Handlung des Spielers, nicht als Fortsetzung der Erzählung selbst,
+und lege dabei keine Spielerentscheidung fest, wenn der gewählte Steuerungs-
+oder Agency-Modus sie dem Spieler überlässt.
 """
 
 [[tasks]]

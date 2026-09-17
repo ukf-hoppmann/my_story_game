@@ -184,7 +184,11 @@ class CapturingStoryInitializationPort:
 
     def generate(self, call: LLMGenerationCall):
         self.call = call
-        return Success(InitialStoryText("[Nur Prompt-Vorschau — kein Modellaufruf]"))
+        return Success(
+            InitialStoryText(
+                "[Nur Prompt-Vorschau — kein Modellaufruf]", ("[Vorschau-Option]",)
+            )
+        )
 
 
 class CapturingStoryGenerationPort:
@@ -195,7 +199,11 @@ class CapturingStoryGenerationPort:
 
     def generate(self, call: LLMGenerationCall):
         self.call = call
-        return Success(StoryGenerationData("[Nur Prompt-Vorschau — kein Modellaufruf]"))
+        return Success(
+            StoryGenerationData(
+                "[Nur Prompt-Vorschau — kein Modellaufruf]", ("[Vorschau-Option]",)
+            )
+        )
 
 
 def _configuration_path() -> Path:
@@ -403,7 +411,7 @@ class HumanInitStorySupport:
                 )
             )
             assert isinstance(result, Success), result
-            return result.data
+            return result.data.story_state
         finally:
             client.close()
 

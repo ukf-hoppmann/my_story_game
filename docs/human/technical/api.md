@@ -34,9 +34,11 @@ nur transient vor — im Prozessspeicher, 30 Minuten gültig (`InMemoryProposalS
 `Backend/src/story_game/infrastructure/persistence/in_memory_proposal_store.py`).
 Jede extrahierte Figur ist zunächst eine neutrale Entität; niemand ist
 automatisch spielergesteuert. Die Antwort (`RunProposalModel`) enthält eine
-`proposal_id`, die eröffnende Erzählung, den vollständigen `WorldState` sowie
-einen unverbindlichen `suggested_title` und `suggested_player_entity_ids`
-(reiner Anzeigehinweis, keine Entscheidung).
+`proposal_id`, ein `continuation`-Objekt (`narration` — die eröffnende
+Erzählung — plus `options`, 3-4 transiente, unverbindliche
+Fortsetzungsvorschläge des Modells, die nirgends persistiert werden), den
+vollständigen `WorldState` sowie einen unverbindlichen `suggested_title` und
+`suggested_player_entity_ids` (reiner Anzeigehinweis, keine Entscheidung).
 
 `POST /api/v1/runs` bestätigt einen Vorschlag über `ConfirmGameRunProposal`:
 der Aufrufer entscheidet je Figur `player`/`npc`/`removed` und je Gegenstand
@@ -82,8 +84,10 @@ entscheidet der Aufrufer erst hier, welche vorgeschlagene Figur er selbst
 steuert.
 
 `POST /api/v1/runs/{run_id}/turns` verlangt nur `player_input` und liefert
-`TurnResultModel`: den vollständigen aktualisierten `GameStateModel` sowie
-`proposed_change_count`, `summary_failed` und optional
+`TurnResultModel`: den vollständigen aktualisierten `GameStateModel`, dasselbe
+`continuation`-Objekt (`narration` — identisch mit der Prosa des zuletzt
+gespielten Zugs — plus `options`, transient und nicht persistiert, siehe
+oben) sowie `proposed_change_count`, `summary_failed` und optional
 `summary_failure_message` als transiente Diagnose — ein Fehlschlag der
 Zusammenfassung lässt den Zug selbst unangetastet (siehe TASK-023).
 

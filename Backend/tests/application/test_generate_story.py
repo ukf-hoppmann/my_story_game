@@ -50,7 +50,11 @@ class FixedConfigurationResolver:
 
 class RecordingGenerator:
     def __init__(self, result=None) -> None:
-        self.result = result or Success(StoryGenerationData("Bertram hebt den Blick."))
+        self.result = result or Success(
+            StoryGenerationData(
+                "Bertram hebt den Blick.", ("Sich umsehen", "Den Wirt ansprechen")
+            )
+        )
         self.call = None
 
     def generate(self, call):
@@ -89,6 +93,13 @@ def test_successful_generation_returns_normalized_prose() -> None:
 
     assert isinstance(result, Success)
     assert result.data.text == "Bertram hebt den Blick."
+
+
+def test_successful_generation_returns_continuation_options() -> None:
+    result = operation().apply(request())
+
+    assert isinstance(result, Success)
+    assert result.data.continuation_options == ("Sich umsehen", "Den Wirt ansprechen")
 
 
 def test_the_prepared_request_carries_the_projected_sections() -> None:

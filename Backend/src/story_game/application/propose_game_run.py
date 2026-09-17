@@ -104,6 +104,7 @@ class ProposeGameRun:
                     request.controllable_characters,
                 ),
                 suggested_title=initialized.data.suggested_title,
+                continuation_options=initialized.data.continuation_options,
             )
         )
 

@@ -20,8 +20,8 @@ file_backup_count = 5
 # How many turns one new summary segment condenses. A new segment is
 # produced only every `interval`-th turn (the rare, batched call); other
 # turns produce no segment at all.
-interval = 4
+interval = 1
 # How many of the most recent segments go into the cheap, per-turn narration
 # context — independent of `interval`, so a larger interval never grows
 # every single turn's prompt.
-context_segment_count = 3
+context_segment_count = 2

@@ -128,7 +128,9 @@ def create_app(
                 PostgresSchemaMigrator(connections).migrate()
             store = PostgresGameStore(connections)
             proposal_store = InMemoryProposalStore()
-            llm_clients = _build_llm_clients(resolved_settings)
+            llm_clients = _build_llm_clients(
+                resolved_settings, debug_enabled=resolved_logging_settings.debug_enabled
+            )
             resolved = ApiDependencies(
                 operations=_compose_game_state_operations(
                     store, resolved_settings.prompt_root, diagnostics
@@ -225,7 +227,7 @@ class _LlmClients:
     gemini: OpenAiCompatibleClient
 
 
-def _build_llm_clients(settings: ApiSettings) -> _LlmClients:
+def _build_llm_clients(settings: ApiSettings, *, debug_enabled: bool) -> _LlmClients:
     def resolve_lmstudio_settings() -> OpenAiCompatibleSettings:
         # Reloaded on every call so that changes to configs/llm.toml (base_url,
         # timeout) take effect without restarting the server, matching the
@@ -253,9 +255,9 @@ def _build_llm_clients(settings: ApiSettings) -> _LlmClients:
         )
 
     return _LlmClients(
-        lmstudio=OpenAiCompatibleClient(resolve_lmstudio_settings),
-        groq=OpenAiCompatibleClient(resolve_groq_settings),
-        gemini=OpenAiCompatibleClient(resolve_gemini_settings),
+        lmstudio=OpenAiCompatibleClient(resolve_lmstudio_settings, debug_enabled=debug_enabled),
+        groq=OpenAiCompatibleClient(resolve_groq_settings, debug_enabled=debug_enabled),
+        gemini=OpenAiCompatibleClient(resolve_gemini_settings, debug_enabled=debug_enabled),
     )
 
 

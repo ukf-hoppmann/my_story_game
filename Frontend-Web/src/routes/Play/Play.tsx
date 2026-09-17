@@ -5,6 +5,7 @@ import { useLoadRunQuery, usePlayTurnMutation, useStartPlaythroughMutation } fro
 import { toQueryError } from "../../api/queryError";
 import { Paragraphs } from "../../components/Paragraphs";
 import { Button } from "../../components/Button/Button";
+import { Chip } from "../../components/Chip/Chip";
 import { ImageSlot } from "../../components/ImageSlot/ImageSlot";
 import {
   ArrowRightIcon,
@@ -35,6 +36,11 @@ export function Play() {
   const navigate = useNavigate();
   const [input, setInput] = useState("");
   const [activeTab, setActiveTab] = useState<PlayTab>("story");
+  // Suggested next moves from the most recent `playTurn` response. Transient
+  // presentation data (TASK-034) — never part of `GameDocument`, so it is
+  // held locally here rather than read back from the reloaded state.
+  const [continuationOptions, setContinuationOptions] = useState<string[]>([]);
+  const [activeOption, setActiveOption] = useState<string | null>(null);
 
   const { data: doc, isLoading, error, refetch } = useLoadRunQuery(runId, { skip: runId === "" });
   const [playTurn, playTurnState] = usePlayTurnMutation();
@@ -47,7 +53,25 @@ export function Play() {
     const result = await playTurn({ runId, payload: { player_input: input } });
     if (!("error" in result)) {
       setInput("");
+      setActiveOption(null);
+      setContinuationOptions(result.data.continuation.options);
     }
+  }
+
+  function handleInputChange(value: string) {
+    setInput(value);
+    if (value !== activeOption) {
+      setActiveOption(null);
+    }
+  }
+
+  function handleOptionClick(option: string) {
+    if (option === activeOption) {
+      handleSubmitTurn();
+      return;
+    }
+    setInput(option);
+    setActiveOption(option);
   }
 
   async function handleStartPlaythrough() {
@@ -203,13 +227,23 @@ export function Play() {
               </div>
             )}
 
+            {continuationOptions.length > 0 && (
+              <div className="play-continuation-chips">
+                {continuationOptions.map((option) => (
+                  <Chip key={option} selected={option === activeOption} onClick={() => handleOptionClick(option)}>
+                    {option}
+                  </Chip>
+                ))}
+              </div>
+            )}
+
             <div className="play-action-row">
               <label className="play-action-input">
                 <input
                   type="text"
                   placeholder={t("play.actionPlaceholder")}
                   value={input}
-                  onChange={(event) => setInput(event.target.value)}
+                  onChange={(event) => handleInputChange(event.target.value)}
                   onKeyDown={(event) => {
                     if (event.key === "Enter") {
                       handleSubmitTurn();

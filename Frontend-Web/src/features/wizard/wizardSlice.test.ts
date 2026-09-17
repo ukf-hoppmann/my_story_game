@@ -22,7 +22,7 @@ const initial = wizardReducer(undefined, { type: "@@INIT" });
 
 const proposal: RunProposal = {
   proposal_id: "33333333-3333-3333-3333-333333333333",
-  opening_narration: "Der Regen hatte die Spuren fast fortgespült.",
+  continuation: { narration: "Der Regen hatte die Spuren fast fortgespült.", options: [] },
   suggested_title: "Die Schatten von Auenfall",
   suggested_player_entity_ids: ["char-1"],
   world: {

@@ -162,6 +162,13 @@
   margin-top: 12px;
 }
 
+.play-continuation-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
 .play-action-row {
   display: flex;
   gap: 12px;

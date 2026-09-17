@@ -203,6 +203,7 @@ describe("Play", () => {
     vi.spyOn(client, "loadRun").mockResolvedValue(buildDocument());
     vi.spyOn(client, "playTurn").mockResolvedValue({
       state: buildDocument().game_state,
+      continuation: { narration: "Bran nickt.", options: [] },
       proposed_change_count: 1,
       summary_failed: false,
       summary_failure_message: null,
@@ -215,6 +216,102 @@ describe("Play", () => {
 
     expect(client.playTurn).toHaveBeenCalledWith(RUN_ID, { player_input: "Ich spreche mit Bran." });
     expect(await screen.findByDisplayValue("")).toBeInTheDocument();
+  });
+
+  it("hides continuation chips until a turn has been played (TASK-034)", async () => {
+    vi.spyOn(client, "loadRun").mockResolvedValue(buildDocument());
+    renderPlay();
+
+    await screen.findByPlaceholderText("Was tust du?");
+    expect(document.querySelector(".play-continuation-chips")).toBeNull();
+  });
+
+  it("shows continuation chips from the playTurn response and submits on the second click", async () => {
+    vi.spyOn(client, "loadRun").mockResolvedValue(buildDocument());
+    vi.spyOn(client, "playTurn")
+      .mockResolvedValueOnce({
+        state: buildDocument().game_state,
+        continuation: {
+          narration: "Die Spur führt weiter.",
+          options: ["Ich folge der Spur.", "Ich rede mit dem Wirt."],
+        },
+        proposed_change_count: 1,
+        summary_failed: false,
+        summary_failure_message: null,
+      })
+      .mockResolvedValueOnce({
+        state: buildDocument().game_state,
+        continuation: { narration: "Die Spur endet abrupt.", options: [] },
+        proposed_change_count: 1,
+        summary_failed: false,
+        summary_failure_message: null,
+      });
+    renderPlay();
+
+    const input = await screen.findByPlaceholderText("Was tust du?");
+    await userEvent.type(input, "Ich schaue mich um.");
+    await userEvent.click(screen.getByRole("button", { name: /Handlung ausführen/ }));
+
+    const chip = await screen.findByRole("button", { name: "Ich folge der Spur." });
+    expect(chip).toHaveAttribute("aria-pressed", "false");
+
+    await userEvent.click(chip);
+    expect(input).toHaveValue("Ich folge der Spur.");
+    expect(chip).toHaveAttribute("aria-pressed", "true");
+
+    await userEvent.click(chip);
+    expect(client.playTurn).toHaveBeenLastCalledWith(RUN_ID, { player_input: "Ich folge der Spur." });
+  });
+
+  it("replaces the active chip instead of submitting when a different chip is clicked", async () => {
+    vi.spyOn(client, "loadRun").mockResolvedValue(buildDocument());
+    vi.spyOn(client, "playTurn").mockResolvedValueOnce({
+      state: buildDocument().game_state,
+      continuation: { narration: "...", options: ["Option A", "Option B"] },
+      proposed_change_count: 1,
+      summary_failed: false,
+      summary_failure_message: null,
+    });
+    renderPlay();
+
+    const input = await screen.findByPlaceholderText("Was tust du?");
+    await userEvent.type(input, "Ich schaue mich um.");
+    await userEvent.click(screen.getByRole("button", { name: /Handlung ausführen/ }));
+
+    const optionA = await screen.findByRole("button", { name: "Option A" });
+    const optionB = screen.getByRole("button", { name: "Option B" });
+
+    await userEvent.click(optionA);
+    expect(optionA).toHaveAttribute("aria-pressed", "true");
+
+    await userEvent.click(optionB);
+    expect(input).toHaveValue("Option B");
+    expect(optionB).toHaveAttribute("aria-pressed", "true");
+    expect(optionA).toHaveAttribute("aria-pressed", "false");
+    expect(client.playTurn).toHaveBeenCalledTimes(1);
+  });
+
+  it("deactivates the active chip once the input is edited manually", async () => {
+    vi.spyOn(client, "loadRun").mockResolvedValue(buildDocument());
+    vi.spyOn(client, "playTurn").mockResolvedValueOnce({
+      state: buildDocument().game_state,
+      continuation: { narration: "...", options: ["Option A"] },
+      proposed_change_count: 1,
+      summary_failed: false,
+      summary_failure_message: null,
+    });
+    renderPlay();
+
+    const input = await screen.findByPlaceholderText("Was tust du?");
+    await userEvent.type(input, "Ich schaue mich um.");
+    await userEvent.click(screen.getByRole("button", { name: /Handlung ausführen/ }));
+
+    const optionA = await screen.findByRole("button", { name: "Option A" });
+    await userEvent.click(optionA);
+    expect(optionA).toHaveAttribute("aria-pressed", "true");
+
+    await userEvent.type(input, "!");
+    expect(optionA).toHaveAttribute("aria-pressed", "false");
   });
 
   it("shows the run_not_active recovery message with a reload action", async () => {

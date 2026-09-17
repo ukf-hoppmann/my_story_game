@@ -136,7 +136,7 @@ const wizardSlice = createSlice({
       const proposal = action.payload;
       state.proposal = {
         proposalId: proposal.proposal_id,
-        openingNarration: proposal.opening_narration,
+        openingNarration: proposal.continuation.narration,
         world: proposal.world,
         suggestedPlayerEntityIds: proposal.suggested_player_entity_ids,
       };

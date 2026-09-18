@@ -62,6 +62,16 @@ def test_loads_all_categories_defaults_and_non_selectable_boundary_directive() -
     assert package.category("extraction").options[0].id == "combined"
     assert package.directive("narrative_boundaries").selectable is False
     assert package.directive("narrative_boundaries").text
+    assert package.directive("narrative_boundaries").tasks == (
+        "story_generation",
+        "story_initialization",
+    )
+    assert {directive.id for directive in package.directives_for("story_generation")} == {
+        "narrative_boundaries",
+        "npc_agency",
+        "genre_plot_variation",
+    }
+    assert {directive.id for directive in package.directives_for("worldstate_extraction")} == set()
     assert all(task.text for task in package.tasks)
     assert all(
         option.description
@@ -105,6 +115,8 @@ def test_missing_or_unsafe_package_reference_is_not_treated_as_a_valid_package(
         "duplicate_category",
         "duplicate_option",
         "duplicate_directive",
+        "unknown_directive_task",
+        "empty_directive_tasks",
     ],
 )
 def test_invalid_package_variants_fail_closed(tmp_path: Path, variant: str) -> None:
@@ -184,11 +196,18 @@ def _synthetic_package(variant: str) -> str:
                     ]
                 )
         lines.append("")
+    if variant == "empty_directive_tasks":
+        directive_tasks = "[]"
+    elif variant == "unknown_directive_task":
+        directive_tasks = '["not_a_task"]'
+    else:
+        directive_tasks = '["story_generation"]'
     lines.extend(
         [
             "[[directives]]",
             f'id = {"narrative_boundaries" if variant != "duplicate_directive" else "same"!r}',
             'selectable = false',
+            f'tasks = {directive_tasks}',
             'text = "boundaries"',
         ]
     )
@@ -199,6 +218,7 @@ def _synthetic_package(variant: str) -> str:
                 "[[directives]]",
                 'id = "same"',
                 "selectable = false",
+                'tasks = ["story_generation"]',
                 'text = "again"',
             ]
         )

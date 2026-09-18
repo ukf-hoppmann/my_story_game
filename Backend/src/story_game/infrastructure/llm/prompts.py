@@ -91,7 +91,7 @@ def _parse_package(
 
     tasks = _tasks(document["tasks"], path)
     categories = _categories(document["categories"], path)
-    directives = _directives(document["directives"], path)
+    directives = _directives(document["directives"], {task.id for task in tasks}, path)
     return PromptPackage(
         id=package_id,
         version=version,
@@ -151,23 +151,35 @@ def _options(raw: Any, parent_label: str, path: Path) -> list[PromptOption]:
     return values
 
 
-def _directives(raw: Any, path: Path) -> list[PromptDirective]:
+def _directives(raw: Any, known_task_ids: set[str], path: Path) -> list[PromptDirective]:
     entries = _array_of_tables(raw, "directives", path)
     values: list[PromptDirective] = []
     seen: set[str] = set()
     for index, entry in enumerate(entries):
         label = f"directives[{index}]"
-        _keys(entry, {"id", "text", "selectable"}, label, path)
+        _keys(entry, {"id", "text", "selectable", "tasks"}, label, path)
         directive_id = _unique_id(_text(entry, "id", label, path), seen, label, path)
         selectable = entry["selectable"]
         if not isinstance(selectable, bool) or selectable:
             raise _invalid(path, f"{label}.selectable muss false sein")
+        directive_tasks = _task_id_array(entry["tasks"], known_task_ids, label, path)
         values.append(
-            PromptDirective(directive_id, _text(entry, "text", label, path), selectable)
+            PromptDirective(
+                directive_id, _text(entry, "text", label, path), selectable, directive_tasks
+            )
         )
-    if "narrative_boundaries" not in seen:
-        raise _invalid(path, "directives müssen narrative_boundaries enthalten")
     return values
+
+
+def _task_id_array(
+    raw: Any, known_task_ids: set[str], label: str, path: Path
+) -> tuple[str, ...]:
+    if not isinstance(raw, list) or not raw or any(not isinstance(item, str) for item in raw):
+        raise _invalid(path, f"{label}.tasks muss ein nichtleeres Array aus Task-IDs sein")
+    unknown = [task_id for task_id in raw if task_id not in known_task_ids]
+    if unknown:
+        raise _invalid(path, f"{label}.tasks verweist auf unbekannte Task-IDs: {unknown}")
+    return tuple(raw)
 
 
 def _package_reference(value: Any, label: str) -> str:

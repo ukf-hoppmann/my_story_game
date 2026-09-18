@@ -113,7 +113,7 @@ def test_the_prepared_request_carries_the_projected_sections() -> None:
     assert "Wirtshaus" in prepared.world_state
     assert "Bertram" in prepared.world_state
     assert prepared.story_state.strip() != ""
-    assert len(prepared.system_prompts) == 3
+    assert len(prepared.system_prompts) == 4
 
 
 def test_every_call_carries_the_npc_agency_directive() -> None:

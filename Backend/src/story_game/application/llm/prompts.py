@@ -68,11 +68,12 @@ class PromptCategory:
 
 @dataclass(frozen=True, slots=True)
 class PromptDirective:
-    """A non-selectable instruction that is always available to the use case."""
+    """A non-selectable instruction scoped to a fixed set of model tasks."""
 
     id: str
     text: str
     selectable: bool = False
+    tasks: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -108,6 +109,9 @@ class PromptPackage:
         raise PromptDirectiveNotFoundError(
             f"Die Prompt-Direktive {directive_id!r} ist im Paket {self.id!r} nicht vorhanden"
         )
+
+    def directives_for(self, task_id: str) -> tuple[PromptDirective, ...]:
+        return tuple(directive for directive in self.directives if task_id in directive.tasks)
 
 
 __all__ = [

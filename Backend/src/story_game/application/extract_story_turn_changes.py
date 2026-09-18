@@ -101,7 +101,11 @@ class ExtractStoryTurnChanges:
                 model_selection=generation.data.model_selection,
                 generation_options=generation.data.generation_options,
                 request=TurnExtractionRequest(
-                    system_prompts=(selection.task.text, selection.option.description),
+                    system_prompts=(
+                        selection.task.text,
+                        selection.option.description,
+                        *(directive.text for directive in selection.directives),
+                    ),
                     narration=request.narration,
                     world_state=projection.text,
                     language=request.configuration.language,

@@ -58,7 +58,11 @@ def test_story_selection_resolves_all_profile_options_before_the_adapter() -> No
     assert selection.options[0].description.startswith("Der Ton ist von Bedrohung")
     assert selection.language == "de"
     assert selection.narrative_boundaries == ("Keine sexualisierte Gewalt",)
-    assert selection.boundary_directive.id == "narrative_boundaries"
+    assert {directive.id for directive in selection.directives} == {
+        "narrative_boundaries",
+        "npc_agency",
+        "genre_plot_variation",
+    }
 
 
 def test_initialization_selection_uses_the_profile_without_story_context() -> None:
@@ -132,6 +136,7 @@ def test_extraction_selection_uses_only_the_combined_extraction_option() -> None
     assert selection.task.id == "worldstate_extraction"
     assert selection.option.category_id == "extraction"
     assert selection.option.option_id == "combined"
+    assert selection.directives == ()
     assert not hasattr(selection, "options")
 
 

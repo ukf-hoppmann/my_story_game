@@ -117,7 +117,10 @@ class ExtractInitialWorldState:
                 model_selection=generation.data.model_selection,
                 generation_options=generation.data.generation_options,
                 request=InitialWorldExtractionRequest(
-                    system_prompts=(selection.task.text,),
+                    system_prompts=(
+                        selection.task.text,
+                        *(directive.text for directive in selection.directives),
+                    ),
                     opening_narration=initialization.narration,
                     language=request.configuration.language,
                     perspective=request.configuration.prompt_profile.perspective,

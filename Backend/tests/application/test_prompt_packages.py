@@ -26,6 +26,7 @@ def test_prompt_package_lookups_are_task_and_selection_specific() -> None:
         package.category("unknown")
     with pytest.raises(PromptDirectiveNotFoundError):
         package.directive("unknown")
+    assert package.directives_for("story_generation") == ()
 
 
 def test_missing_option_is_reported_by_the_category() -> None:

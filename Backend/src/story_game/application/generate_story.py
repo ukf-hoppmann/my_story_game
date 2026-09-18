@@ -32,14 +32,6 @@ from story_game.application.story_turn_errors import (
 )
 from story_game.domain import GameConfiguration
 
-_NPC_AGENCY_DIRECTIVE = (
-    "Nur vom Spieler gesteuerte Figuren dürfen der Anweisung im Spieler-Prompt "
-    "unmittelbar folgen. Alle anderen Figuren (NSCs) handeln ausschließlich aus "
-    "ihrer eigenen, im Weltzustand etablierten Logik, ihren Zielen und "
-    "Charakterzügen — niemals weil der Prompt es für sie vorschreibt."
-)
-
-
 @dataclass(frozen=True, slots=True)
 class GenerateStoryRequest:
     """The already selected slice plus what the player just did.
@@ -98,8 +90,7 @@ class GenerateStory:
                 request=StoryGenerationRequest(
                     system_prompts=(
                         selection.task.text,
-                        selection.boundary_directive.text,
-                        _NPC_AGENCY_DIRECTIVE,
+                        *(directive.text for directive in selection.directives),
                     ),
                     configuration=configuration_text(selection),
                     world_state=world_state_text(request.context),

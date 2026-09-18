@@ -105,7 +105,10 @@ class GenerateInitialStoryState:
                 model_selection=generation_configuration.data.model_selection,
                 generation_options=generation_configuration.data.generation_options,
                 request=StoryInitializationRequest(
-                    system_prompts=(selection.task.text, selection.boundary_directive.text),
+                    system_prompts=(
+                        selection.task.text,
+                        *(directive.text for directive in selection.directives),
+                    ),
                     configuration=configuration_text(selection),
                     initial_prompt=request.initial_prompt,
                     controllable_characters=request.controllable_characters,

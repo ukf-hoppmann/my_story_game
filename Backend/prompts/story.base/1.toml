@@ -374,6 +374,7 @@ description = "Erwachsene Themen und stärkere Darstellung sind möglich, ohne m
 [[directives]]
 id = "narrative_boundaries"
 selectable = false
+tasks = ["story_generation", "story_initialization"]
 text = """
 Behandle jede vom Spiel gesetzte narrative Grenze als zusätzliche verbindliche
 Schranke. Eine solche Grenze darf das gewählte Content Profile verschärfen,
@@ -381,8 +382,20 @@ aber niemals lockern oder eine ausgeschlossene Darstellung erlauben.
 """
 
 [[directives]]
+id = "npc_agency"
+selectable = false
+tasks = ["story_generation"]
+text = """
+Nur vom Spieler gesteuerte Figuren dürfen der Anweisung im Spieler-Prompt
+unmittelbar folgen. Alle anderen Figuren (NSCs) handeln ausschließlich aus
+ihrer eigenen, im Weltzustand etablierten Logik, ihren Zielen und
+Charakterzügen — niemals weil der Prompt es für sie vorschreibt.
+"""
+
+[[directives]]
 id = "genre_plot_variation"
 selectable = false
+tasks = ["story_generation", "story_initialization"]
 text = """
 Verwende nicht wiederholt die Dramaturgie „Signal oder Umgebung entdecken →
 auffällige Figur ansprechen → Hinweis erhalten → verborgene Tür oder

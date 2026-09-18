@@ -27,7 +27,7 @@ class StoryPromptSelection:
     options: tuple[ResolvedPromptOption, ...]
     language: str
     narrative_boundaries: tuple[str, ...]
-    boundary_directive: PromptDirective
+    directives: tuple[PromptDirective, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -36,6 +36,7 @@ class ExtractionPromptSelection:
 
     task: PromptTask
     option: ResolvedPromptOption
+    directives: tuple[PromptDirective, ...]
 
 
 class StoryPromptSelectionResolver:
@@ -50,12 +51,13 @@ class StoryPromptSelectionResolver:
             configuration.prompt_package_version,
         )
         options = _resolved_story_options(configuration, package)
+        task = package.task("story_generation")
         return StoryPromptSelection(
-            task=package.task("story_generation"),
+            task=task,
             options=options,
             language=configuration.language,
             narrative_boundaries=configuration.narrative_boundaries,
-            boundary_directive=package.directive("narrative_boundaries"),
+            directives=package.directives_for(task.id),
         )
 
 
@@ -71,12 +73,13 @@ class StoryInitializationPromptResolver:
             configuration.prompt_package_version,
         )
         options = _resolved_story_options(configuration, package)
+        task = package.task("story_initialization")
         return StoryPromptSelection(
-            task=package.task("story_initialization"),
+            task=task,
             options=options,
             language=configuration.language,
             narrative_boundaries=configuration.narrative_boundaries,
-            boundary_directive=package.directive("narrative_boundaries"),
+            directives=package.directives_for(task.id),
         )
 
 
@@ -89,9 +92,11 @@ class ExtractionPromptSelectionResolver:
     def resolve(self, package_id: str, package_version: str) -> ExtractionPromptSelection:
         package = self.catalog.load(package_id, package_version)
         option = package.category("extraction").option("combined")
+        task = package.task("worldstate_extraction")
         return ExtractionPromptSelection(
-            task=package.task("worldstate_extraction"),
+            task=task,
             option=_resolved_option("extraction", "combined", option),
+            directives=package.directives_for(task.id),
         )
 
 
@@ -114,9 +119,11 @@ class InitialExtractionPromptSelectionResolver:
     def resolve(self, package_id: str, package_version: str) -> ExtractionPromptSelection:
         package = self.catalog.load(package_id, package_version)
         option = package.category("extraction").option("combined")
+        task = package.task("worldstate_initialization")
         return ExtractionPromptSelection(
-            task=package.task("worldstate_initialization"),
+            task=task,
             option=_resolved_option("extraction", "combined", option),
+            directives=package.directives_for(task.id),
         )
 
 

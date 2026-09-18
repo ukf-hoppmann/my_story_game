@@ -138,6 +138,7 @@
     "labels": {
       "genre": "Genre",
       "tone": "Ton",
+      "toneUnset": "Kein zusätzlicher Ton",
       "contentProfile": "Inhaltsprofil",
       "perspective": "Erzählperspektive",
       "playerAgency": "Handlungsfreiheit",

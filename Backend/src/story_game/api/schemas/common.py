@@ -115,7 +115,7 @@ class StoryInitializationModel(APIModel):
 
 class PromptProfileModel(APIModel):
     genre: str = Field(min_length=1)
-    tone: str = Field(min_length=1)
+    tone: str | None = Field(default=None, min_length=1)
     prose_style: str = Field(min_length=1)
     perspective: str = Field(min_length=1)
     pacing: str = Field(min_length=1)
@@ -135,10 +135,13 @@ class EditablePromptProfileModel(APIModel):
     ``confirm_game_run_proposal.py``/``_controlled_entity_ids``) — set once
     via ``ProposeRunRequestModel.control_mode`` at creation and left
     untouched by later configuration updates.
+
+    ``tone`` is optional: when omitted, no tone text is rendered into the
+    prompt and the chosen genre's own implied mood applies undiluted.
     """
 
     genre: str = Field(min_length=1)
-    tone: str = Field(min_length=1)
+    tone: str | None = Field(default=None, min_length=1)
     prose_style: str = Field(min_length=1)
     perspective: str = Field(min_length=1)
     pacing: str = Field(min_length=1)

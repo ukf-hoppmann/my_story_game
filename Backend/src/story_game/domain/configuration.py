@@ -19,7 +19,6 @@ class PromptProfile:
     """The complete explicit story-prompt selection for one game revision."""
 
     genre: str
-    tone: str
     prose_style: str
     perspective: str
     pacing: str
@@ -28,12 +27,12 @@ class PromptProfile:
     consequence: str
     challenge: str
     content_profile: str
+    tone: str | None = None
     length: str = "standard"
 
     def __post_init__(self) -> None:
         for field_name, label in (
             ("genre", "Das Genre"),
-            ("tone", "Der Ton"),
             ("prose_style", "Der Prosa-Stil"),
             ("perspective", "Die Perspektive"),
             ("pacing", "Das Erzähltempo"),
@@ -45,12 +44,17 @@ class PromptProfile:
             ("length", "Die Textlänge"),
         ):
             object.__setattr__(self, field_name, _required(getattr(self, field_name), label))
+        if self.tone is not None:
+            object.__setattr__(self, "tone", _required(self.tone, "Der Ton"))
 
     def selections(self) -> tuple[tuple[str, str], ...]:
-        """Return the explicit categories in their stable prompt-assembly order."""
-        return (
-            ("genre", self.genre),
-            ("tone", self.tone),
+        """Return the explicit categories in their stable prompt-assembly order.
+
+        `tone` is omitted entirely when unset, so an unspecified tone renders
+        no tone text into the prompt and leaves the genre's own implied mood
+        undiluted, rather than forcing a neutral default onto every genre.
+        """
+        tail: tuple[tuple[str, str], ...] = (
             ("prose_style", self.prose_style),
             ("perspective", self.perspective),
             ("pacing", self.pacing),
@@ -61,6 +65,10 @@ class PromptProfile:
             ("content_profile", self.content_profile),
             ("length", self.length),
         )
+        head: tuple[tuple[str, str], ...] = (("genre", self.genre),)
+        if self.tone is not None:
+            head += (("tone", self.tone),)
+        return head + tail
 
 
 @dataclass(frozen=True, slots=True)

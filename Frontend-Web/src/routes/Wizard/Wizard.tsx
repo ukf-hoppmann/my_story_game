@@ -63,10 +63,13 @@ function findCategory(
 /** Maps each prompt-profile catalog category to its wizard-state field.
  *  `CategoryField` below only *displays* the catalog default until the user
  *  clicks a badge — without this, an unedited field is submitted as an
- *  empty string (the backend rejects that with 422 string_too_short). */
-const CATEGORY_FIELD_MAP: { categoryId: string; field: WizardTextField }[] = [
+ *  empty string (the backend rejects that with 422 string_too_short).
+ *  `tone` is `optional: true`: it is never auto-seeded with the catalog
+ *  default, since an unset tone is meaningful (the genre's own implied mood
+ *  applies undiluted) rather than a placeholder waiting for a real value. */
+const CATEGORY_FIELD_MAP: { categoryId: string; field: WizardTextField; optional?: boolean }[] = [
   { categoryId: "genre", field: "genre" },
-  { categoryId: "tone", field: "tone" },
+  { categoryId: "tone", field: "tone", optional: true },
   { categoryId: "prose_style", field: "proseStyle" },
   { categoryId: "perspective", field: "perspective" },
   { categoryId: "pacing", field: "pacing" },
@@ -82,21 +85,32 @@ interface CategoryFieldProps {
   label: string;
   value: string;
   onSelect: (optionId: string) => void;
+  /** When true, this category is optional: no catalog-default fallback for
+   *  display, and an extra always-visible chip lets the user return to an
+   *  explicit "unset" state instead of only reaching it by never choosing. */
+  allowUnset?: boolean;
 }
 
 /** One catalog-backed badge row (Genre, Ton, Prosastil, ...). Renders
  *  nothing until its category has loaded; falls back to the catalog's
- *  default option until the user picks explicitly. */
-function CategoryField({ category, label, value, onSelect }: CategoryFieldProps) {
+ *  default option until the user picks explicitly — unless `allowUnset`,
+ *  where an empty value stays visibly unselected instead of defaulting. */
+function CategoryField({ category, label, value, onSelect, allowUnset }: CategoryFieldProps) {
+  const { t } = useTranslation();
   if (!category) {
     return null;
   }
-  const effective = value || category.default_option_id;
+  const effective = allowUnset ? value : value || category.default_option_id;
 
   return (
     <div className="wizard-field">
       <label>{label}</label>
       <div className="wizard-badge-row">
+        {allowUnset && (
+          <Chip selected={value === ""} onClick={() => onSelect("")}>
+            {t("wizard.labels.toneUnset")}
+          </Chip>
+        )}
         {category.options.map((option) => (
           <Chip
             key={option.id}
@@ -143,8 +157,8 @@ export function Wizard() {
     if (!catalog) {
       return;
     }
-    for (const { categoryId, field } of CATEGORY_FIELD_MAP) {
-      if (wizard[field]) {
+    for (const { categoryId, field, optional } of CATEGORY_FIELD_MAP) {
+      if (optional || wizard[field]) {
         continue;
       }
       const category = findCategory(catalog.categories, categoryId);
@@ -244,6 +258,7 @@ export function Wizard() {
                 label={t("wizard.labels.tone")}
                 value={wizard.tone}
                 onSelect={setField("tone")}
+                allowUnset
               />
               <CategoryField
                 category={findCategory(catalog?.categories, "content_profile")}

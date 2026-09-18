@@ -380,6 +380,7 @@ Schranke. Eine solche Grenze darf das gewählte Content Profile verschärfen,
 aber niemals lockern oder eine ausgeschlossene Darstellung erlauben.
 """
 
+[[directives]]
 id = "genre_plot_variation"
 selectable = false
 text = """

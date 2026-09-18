@@ -158,6 +158,14 @@ describe("buildProposeRequest", () => {
       },
     });
   });
+
+  it("omits tone from the payload when it was never set", () => {
+    const withoutTone: WizardState = { ...filled, tone: "" };
+
+    const request = buildProposeRequest(withoutTone);
+
+    expect(request.prompt_profile?.tone).toBeUndefined();
+  });
 });
 
 describe("buildConfirmRequest", () => {

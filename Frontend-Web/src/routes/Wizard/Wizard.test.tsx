@@ -168,11 +168,36 @@ describe("Wizard", () => {
     expect(darkFantasy).toHaveAttribute("aria-pressed", "true");
     expect(screen.queryByLabelText("Titel")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Prämisse")).not.toBeInTheDocument();
+    // tone is optional and never auto-seeded: it starts on the explicit
+    // "Kein zusätzlicher Ton" chip, not on the catalog default.
+    expect(screen.getByRole("button", { name: "Kein zusätzlicher Ton" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
 
     await userEvent.click(screen.getByRole("button", { name: "Science Fiction" }));
 
     expect(screen.getByRole("button", { name: "Science Fiction" })).toHaveAttribute("aria-pressed", "true");
     expect(darkFantasy).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("Welt: tone can be explicitly picked and then cleared back to unset", async () => {
+    vi.spyOn(client, "fetchPromptProfileCatalog").mockResolvedValue(catalog);
+    renderWizard();
+    await screen.findByRole("button", { name: "Dark Fantasy" });
+
+    const unsetChip = screen.getByRole("button", { name: "Kein zusätzlicher Ton" });
+    expect(unsetChip).toHaveAttribute("aria-pressed", "true");
+
+    await userEvent.click(screen.getByRole("button", { name: "Dark" }));
+
+    expect(screen.getByRole("button", { name: "Dark" })).toHaveAttribute("aria-pressed", "true");
+    expect(unsetChip).toHaveAttribute("aria-pressed", "false");
+
+    await userEvent.click(unsetChip);
+
+    expect(unsetChip).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Dark" })).toHaveAttribute("aria-pressed", "false");
   });
 
   it("Welt: shows Inhaltsprofil and Erzählperspektive, and 'Weiter' is always enabled", async () => {
@@ -288,12 +313,13 @@ describe("Wizard", () => {
     expect(await screen.findByRole("heading", { name: "Geschichte bestätigen" })).toBeInTheDocument();
     // Regression: submitting without touching any Stil options must still
     // send the catalog's defaults, not empty strings (the backend rejects
-    // those with a 422 string_too_short per field).
+    // those with a 422 string_too_short per field). tone is the one
+    // exception: it stays unset unless the user explicitly picks one, so it
+    // must be omitted from the payload rather than defaulted.
     expect(client.proposeRun).toHaveBeenCalledWith(
       expect.objectContaining({
         prompt_profile: {
           genre: "dark_fantasy",
-          tone: "balanced",
           prose_style: "balanced",
           perspective: "third_person_limited",
           pacing: "balanced",

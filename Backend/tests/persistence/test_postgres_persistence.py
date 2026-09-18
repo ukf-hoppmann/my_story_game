@@ -88,7 +88,7 @@ if POSTGRES_DSN is None and os.environ.get("HARNESS_RUN_DIRECTORY"):
 
 
 def configuration(
-    tone: str = "balanced", *, control_mode: str = "player"
+    tone: str | None = "balanced", *, control_mode: str = "player"
 ) -> GameConfiguration:
     return GameConfiguration(
         language="de",
@@ -197,6 +197,30 @@ def test_postgres_roundtrips_the_opening_initialization(
         store.create(run, state)
 
         assert store.load_state(run_id).story.initialization == state.story.initialization
+    finally:
+        _delete_run(connections, run_id)
+
+
+def test_postgres_roundtrips_an_unset_tone(
+    postgres_store: tuple[PostgresGameStore, PostgresConnectionFactory],
+) -> None:
+    store, connections = postgres_store
+    run_id = sid(f"integration-{uuid4()}")
+    run, state = initial(run_id)
+    state = replace(state, configuration=configuration(tone=None))
+
+    try:
+        store.create(run, state)
+
+        loaded = store.load_state(run_id)
+        assert loaded.configuration.prompt_profile.tone is None
+        with connections.connect() as connection:
+            row = connection.execute(
+                "SELECT tone FROM game_state_configurations WHERE run_id = %s"
+                " AND revision = 1",
+                (run_id.value,),
+            ).fetchone()
+            assert row["tone"] is None
     finally:
         _delete_run(connections, run_id)
 

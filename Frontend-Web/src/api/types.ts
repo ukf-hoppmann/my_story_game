@@ -179,7 +179,9 @@ export interface GameDocument {
  *  there (see PromptProfileCatalog below), not hardcoded on the frontend. */
 export interface EditablePromptProfile {
   genre: string;
-  tone: string;
+  /** Optional: when omitted, no tone text is rendered and the genre's own
+   *  implied mood applies undiluted. */
+  tone?: string;
   prose_style: string;
   perspective: string;
   pacing: string;

@@ -137,8 +137,16 @@ def _configuration() -> GameConfiguration:
     return GameConfiguration(
         language="de",
         prompt_profile=PromptProfile(
-            "dark_fantasy", "balanced", "balanced", "third_person_limited",
-            "balanced", "player", "strict", "balanced", "balanced", "teen",
+            genre="dark_fantasy",
+            tone="balanced",
+            prose_style="balanced",
+            perspective="third_person_limited",
+            pacing="balanced",
+            control_mode="player",
+            player_agency="strict",
+            consequence="balanced",
+            challenge="balanced",
+            content_profile="teen",
         ),
         narrative_boundaries=("Keine sexualisierte Gewalt",),
         prompt_package_id="story.base",

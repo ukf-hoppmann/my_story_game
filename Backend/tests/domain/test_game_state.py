@@ -67,6 +67,39 @@ def test_prompt_profile_rejects_an_empty_category_selection() -> None:
         )
 
 
+def test_prompt_profile_allows_an_unset_tone() -> None:
+    profile = domain.PromptProfile(
+        genre="dark_fantasy",
+        tone=None,
+        prose_style="balanced",
+        perspective="third_person_limited",
+        pacing="balanced",
+        control_mode="player",
+        player_agency="strict",
+        consequence="balanced",
+        challenge="balanced",
+        content_profile="teen",
+    )
+
+    assert profile.tone is None
+
+
+def test_prompt_profile_rejects_a_whitespace_only_tone() -> None:
+    with pytest.raises(domain.ValidationError):
+        domain.PromptProfile(
+            genre="dark_fantasy",
+            tone="   ",
+            prose_style="balanced",
+            perspective="third_person_limited",
+            pacing="balanced",
+            control_mode="player",
+            player_agency="strict",
+            consequence="balanced",
+            challenge="balanced",
+            content_profile="teen",
+        )
+
+
 def test_game_state_contains_configuration_world_and_story() -> None:
     state = domain.GameState(
         run_id=sid("run-1"),

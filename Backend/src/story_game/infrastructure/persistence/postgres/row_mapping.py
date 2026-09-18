@@ -61,7 +61,7 @@ def configuration_from_row(row: Mapping[str, Any]) -> GameConfiguration:
         language=_text(row, "language"),
         prompt_profile=PromptProfile(
             genre=_text(row, "genre"),
-            tone=_text(row, "tone"),
+            tone=_optional_text(row, "tone"),
             prose_style=_text(row, "prose_style"),
             perspective=_text(row, "perspective"),
             pacing=_text(row, "pacing"),
@@ -287,6 +287,13 @@ def _text(row: Mapping[str, Any], key: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise PersistenceConsistencyError(f"Die Datenbankspalte {key} ist ungültig")
     return value
+
+
+def _optional_text(row: Mapping[str, Any], key: str) -> str | None:
+    value = row.get(key)
+    if value is None:
+        return None
+    return _text(row, key)
 
 
 def _json_list(value: Any, key: str) -> list[Any]:

@@ -55,7 +55,7 @@ def test_story_selection_resolves_all_profile_options_before_the_adapter() -> No
         "content_profile",
         "length",
     ]
-    assert selection.options[0].description.startswith("Bedrohliche Fantasy")
+    assert selection.options[0].description.startswith("Der Ton ist von Bedrohung")
     assert selection.language == "de"
     assert selection.narrative_boundaries == ("Keine sexualisierte Gewalt",)
     assert selection.boundary_directive.id == "narrative_boundaries"
@@ -76,16 +76,16 @@ def test_director_selection_omits_player_agency() -> None:
     director_configuration = GameConfiguration(
         language=value.language,
         prompt_profile=PromptProfile(
-            value.prompt_profile.genre,
-            value.prompt_profile.tone,
-            value.prompt_profile.prose_style,
-            value.prompt_profile.perspective,
-            value.prompt_profile.pacing,
-            "director",
-            value.prompt_profile.player_agency,
-            value.prompt_profile.consequence,
-            value.prompt_profile.challenge,
-            value.prompt_profile.content_profile,
+            genre=value.prompt_profile.genre,
+            tone=value.prompt_profile.tone,
+            prose_style=value.prompt_profile.prose_style,
+            perspective=value.prompt_profile.perspective,
+            pacing=value.prompt_profile.pacing,
+            control_mode="director",
+            player_agency=value.prompt_profile.player_agency,
+            consequence=value.prompt_profile.consequence,
+            challenge=value.prompt_profile.challenge,
+            content_profile=value.prompt_profile.content_profile,
         ),
         narrative_boundaries=value.narrative_boundaries,
         prompt_package_id=value.prompt_package_id,
@@ -95,6 +95,33 @@ def test_director_selection_omits_player_agency() -> None:
     selection = resolver.resolve(director_configuration)
 
     assert "player_agency" not in {item.category_id for item in selection.options}
+
+
+def test_selection_omits_tone_when_unset() -> None:
+    resolver = StoryPromptSelectionResolver(FilePromptPackageCatalog(PROMPT_ROOT))
+    value = configuration()
+    unset_tone_configuration = GameConfiguration(
+        language=value.language,
+        prompt_profile=PromptProfile(
+            genre=value.prompt_profile.genre,
+            tone=None,
+            prose_style=value.prompt_profile.prose_style,
+            perspective=value.prompt_profile.perspective,
+            pacing=value.prompt_profile.pacing,
+            control_mode=value.prompt_profile.control_mode,
+            player_agency=value.prompt_profile.player_agency,
+            consequence=value.prompt_profile.consequence,
+            challenge=value.prompt_profile.challenge,
+            content_profile=value.prompt_profile.content_profile,
+        ),
+        narrative_boundaries=value.narrative_boundaries,
+        prompt_package_id=value.prompt_package_id,
+        prompt_package_version=value.prompt_package_version,
+    )
+
+    selection = resolver.resolve(unset_tone_configuration)
+
+    assert "tone" not in {item.category_id for item in selection.options}
 
 
 def test_extraction_selection_uses_only_the_combined_extraction_option() -> None:

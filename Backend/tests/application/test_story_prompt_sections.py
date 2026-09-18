@@ -46,7 +46,7 @@ def test_configuration_text_resolves_option_ids_into_readable_instructions() -> 
     # model, because the adapter must not interpret IDs itself.
     assert "dark_fantasy" not in text
     assert "second_person" not in text
-    assert "Bedrohliche Fantasy" in text
+    assert "Der Ton ist von Bedrohung" in text
 
 
 def test_configuration_text_covers_every_resolved_category() -> None:

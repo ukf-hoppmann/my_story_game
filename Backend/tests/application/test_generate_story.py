@@ -109,7 +109,7 @@ def test_the_prepared_request_carries_the_projected_sections() -> None:
 
     prepared = generator.call.request
     assert prepared.user_prompt == "Ich frage den Wirt."
-    assert "Bedrohliche Fantasy" in prepared.configuration
+    assert "Der Ton ist von Bedrohung" in prepared.configuration
     assert "Wirtshaus" in prepared.world_state
     assert "Bertram" in prepared.world_state
     assert prepared.story_state.strip() != ""

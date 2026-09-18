@@ -797,7 +797,7 @@ def test_api_updates_a_runs_configuration_as_a_new_revision(client: TestClient) 
             "base_revision": 1,
             "language": "en",
             "prompt_profile": {
-                "genre": "mystery",
+                "genre": "science_fiction",
                 "tone": "serious",
                 "prose_style": "descriptive",
                 "perspective": "third_person_omniscient",
@@ -815,7 +815,7 @@ def test_api_updates_a_runs_configuration_as_a_new_revision(client: TestClient) 
     body = response.json()
     assert body["revision"] == 2
     profile = body["configuration"]["prompt_profile"]
-    assert profile["genre"] == "mystery"
+    assert profile["genre"] == "science_fiction"
     assert profile["length"] == "long"
     # control_mode/narrative_boundaries/prompt_package are preserved, not
     # supplied by the request:
@@ -835,7 +835,7 @@ def test_api_rejects_a_configuration_update_against_a_stale_revision(
             "base_revision": 1,
             "language": "de",
             "prompt_profile": {
-                "genre": "mystery",
+                "genre": "science_fiction",
                 "tone": "serious",
                 "prose_style": "descriptive",
                 "perspective": "third_person_omniscient",

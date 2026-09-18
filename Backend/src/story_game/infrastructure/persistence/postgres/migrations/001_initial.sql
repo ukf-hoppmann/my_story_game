@@ -34,7 +34,7 @@ CREATE TABLE game_state_configurations (
     revision BIGINT NOT NULL,
     language TEXT NOT NULL CHECK (language <> ''),
     genre TEXT NOT NULL CHECK (genre <> ''),
-    tone TEXT NOT NULL CHECK (tone <> ''),
+    tone TEXT CHECK (tone IS NULL OR tone <> ''),
     prose_style TEXT NOT NULL CHECK (prose_style <> ''),
     perspective TEXT NOT NULL CHECK (perspective <> ''),
     pacing TEXT NOT NULL CHECK (pacing <> ''),

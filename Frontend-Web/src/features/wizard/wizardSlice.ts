@@ -212,7 +212,7 @@ export function buildProposeRequest(state: WizardState): ProposeRunRequest {
     language: "de",
     prompt_profile: {
       genre: state.genre,
-      tone: state.tone,
+      tone: state.tone.trim() || undefined,
       prose_style: state.proseStyle,
       perspective: state.perspective,
       pacing: state.pacing,

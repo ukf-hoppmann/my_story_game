@@ -155,23 +155,41 @@ default = "dark_fantasy"
 
 [[categories.options]]
 id = "dark_fantasy"
-description = "Bedrohliche Fantasy mit moralischen Grauzonen, alten Mächten und spürbaren Risiken."
+description = """
+Der Ton ist von Bedrohung, Verfall und moralischer Ambivalenz geprägt; jede
+Handlung soll spürbare Konsequenzen haben. Konflikte kreisen um Überleben,
+Verderbnis, Schuld und Entscheidungen ohne eindeutig richtige Lösung.
+"""
 
 [[categories.options]]
 id = "fantasy"
-description = "Abenteuerliche Fantasy mit Magie, eigenen Kulturen und nachvollziehbaren Wundern."
+description = """
+Der Ton betont Staunen, Entdeckung und die eigentümliche Lebendigkeit einer
+unverwechselbaren Welt. Konflikte entstehen durch fremdartige Bräuche,
+unerwartete Formen von Magie oder den verantwortungsvollen Umgang mit Wundern
+und Macht. Vermeide austauschbare High-Fantasy-Motive wie Brunnen, Runen oder
+verborgene Bibliotheken oder versieh sie mit einem klar eigenständigen Dreh.
+"""
 
 [[categories.options]]
 id = "science_fiction"
-description = "Zukunftsorientierte Spekulation mit Technik, Raumfahrt oder fremden Welten."
-
-[[categories.options]]
-id = "mystery"
-description = "Rätselhafte Handlung, in der Hinweise aufgebaut und Erkenntnisse schrittweise gewonnen werden."
+description = """
+Der Ton verbindet technologisches Staunen und Erkenntnisdrang mit Isolation,
+Unsicherheit und ethischer Verantwortung. Konflikte werden vor allem durch
+technische Probleme, widersprüchliche Daten, Systemfehler oder die Grenzen
+menschlicher Kontrolle vorangetrieben und verlangen nachvollziehbare
+Problemlösungen.
+"""
 
 [[categories.options]]
 id = "steam_punk"
-description = "Alternativhistorische Welt mit dampfbetriebener Technik, Erfindungen und gesellschaftlichen Spannungen."
+description = """
+Der Ton verbindet Erfindergeist und industrielle Faszination mit sozialer
+Spannung, Ausbeutung und dem Preis des Fortschritts. Konflikte entstehen aus
+Machtgefällen zwischen Fabrikbesitzern, Arbeitern und Aufständischen; im
+Zentrum stehen Kontrolle über Ressourcen, Technik und gesellschaftliche
+Ordnung.
+"""
 
 [[categories]]
 id = "tone"
@@ -360,4 +378,15 @@ text = """
 Behandle jede vom Spiel gesetzte narrative Grenze als zusätzliche verbindliche
 Schranke. Eine solche Grenze darf das gewählte Content Profile verschärfen,
 aber niemals lockern oder eine ausgeschlossene Darstellung erlauben.
+"""
+
+id = "genre_plot_variation"
+selectable = false
+text = """
+Verwende nicht wiederholt die Dramaturgie „Signal oder Umgebung entdecken →
+auffällige Figur ansprechen → Hinweis erhalten → verborgene Tür oder
+Durchgang finden“. Leite stattdessen aus Spielereingabe und Genre-Anker
+unterschiedliche Konflikte und Auflösungen ab, etwa Verhandlung, Verfolgung,
+Konfrontation, moralisches Dilemma, Ressourcenentscheidung, technische
+Reparatur oder gesellschaftliche Eskalation.
 """

@@ -19,8 +19,9 @@ Das Domain- und Persistenzmodell kennt bereits `GameConfiguration`,
 `WorldState`, `StoryState`, abgeschlossene `StoryTurn`-Werte und die atomare
 Turn-Commit-Grenze. Die zentrale Laufzeitkonfiguration unter
 `configs/llm.toml` definiert je ein Modell für Story, Extraction und Summary.
-Die LM-Studio-Infrastruktur kann die definierte Story-Grenze live aufrufen und
-normalisierte Prosa oder einen `LLMError` liefern. Das versionierte
+Die OpenAI-kompatible Provider-Infrastruktur kann die definierte Story-Grenze
+über LM Studio, Groq oder Gemini live aufrufen und normalisierte Prosa oder
+einen `LLMError` liefern. Das versionierte
 Ein-Datei-Promptpaket und der validierende dateibasierte Catalog sind umgesetzt.
 `PlayStoryTurn`, `ProposeGameRun`, `ConfirmGameRunProposal`, die
 Turn-Extraction, die Summary und die HTTP-API sind in der Composition Root
@@ -35,13 +36,19 @@ GameState.
 Das Paket `story.base`/`1` enthält getrennte Tasks für Story- und WorldState-
 Initialisierung sowie reguläre Story Generation und spätere Extraction. Es
 enthält außerdem alle vereinbarten Auswahlkategorien samt Defaults und
-die nicht auswählbare Directive `narrative_boundaries`. Die Auswahlfelder für
-Genre, Tone, Pacing, Player Agency, Consequence, Challenge und Content Profile
-sind Teil von `GameConfiguration`. Das Profil enthält außerdem Prose Style,
-Perspective, Control Mode und Length (Textlänge; `short`/`standard`/`long`,
-mit Domain-Default `"standard"`). Die Application validiert und löst diese Auswahl
-vor dem Adapter gegen das referenzierte Paket auf; der Loader trifft keine
-fachliche Auswahl.
+taskbezogene, nicht auswählbare Direktiven. Aktuell sind das
+`narrative_boundaries` und `genre_plot_variation` für Story-Erzeugung und
+Initialisierung sowie `npc_agency` für reguläre Story-Erzeugung. Die Direktiven
+werden im TOML-Paket den Tasks zugeordnet; die Application übernimmt jeweils
+alle passenden Direktiven automatisch. Die Auswahlfelder für Genre, Tone,
+Pacing, Player Agency, Consequence, Challenge und Content Profile sind Teil
+von `GameConfiguration`. Das Profil enthält außerdem Prose Style, Perspective,
+Control Mode und Length (Textlänge; `short`/`standard`/`long`, mit
+Domain-Default `"standard"`). `tone` ist optional: Wird kein Ton gewählt,
+wird keine zusätzliche Tonanweisung in den Prompt aufgenommen und die eigene
+Stimmung des Genres bleibt unverändert. Die Application validiert und löst
+diese Auswahl vor dem Adapter gegen das referenzierte Paket auf; der Loader
+trifft keine fachliche Auswahl.
 
 Story- und Initialisierungsaufrufe liefern zusätzlich strukturierte, transiente
 Fortsetzungsoptionen. Sie werden über ein gemeinsames striktes JSON-Schema aus
@@ -57,10 +64,10 @@ in der Partie eingefroren.
 
 ## Umgesetztes Zielbild
 
-Die Umsetzung erzeugt über LM Studio Story-Prosa, ohne die Application an LM
-Studio zu binden. Ein späterer Wechsel zu einem API-Provider erfolgt durch
-Konfiguration, Provider-Client und Adapter, nicht durch eine Änderung der
-Story-Operation.
+Die Umsetzung erzeugt Story-Prosa über OpenAI-kompatible Provider, ohne die
+Application an LM Studio, Groq oder Gemini zu binden. Ein Providerwechsel
+erfolgt durch Konfiguration, Provider-Client und Adapter, nicht durch eine
+Änderung der Story-Operation.
 
 Diese Planung behandelt nur die Story-Erzeugungsgrenze und ihre direkte
 Einordnung in den Storyzug. Extraction wird separat konkretisiert, verwendet
@@ -204,7 +211,8 @@ immer ausschließlich normalisierte Story-Prosa.
 
 ### Provider-Client
 
-- technische LM-Studio-Kommunikation kapseln;
+- technische Kommunikation mit dem konfigurierten OpenAI-kompatiblen Provider
+  kapseln;
 - Request- und Responseformate des verwendeten Endpoints besitzen;
 - Transportfehler und Rohantworten ausschließlich an den Adapter geben.
 

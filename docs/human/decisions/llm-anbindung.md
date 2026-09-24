@@ -1,8 +1,8 @@
 # Entscheidung: Anbieterunabhängige Modellanbindung
 
-Status: Grundarchitektur, LM-Studio-Adapter, zweistufige Story-Initialisierung
-und regulärer StoryTurn-Workflow umgesetzt. Weitere Provider sowie eine
-Konfigurations-UI bleiben Folgearbeiten.
+Status: Grundarchitektur, LM-Studio-, Groq- und Gemini-Adapter, zweistufige
+Story-Initialisierung und regulärer StoryTurn-Workflow umgesetzt. Eine
+Konfigurations-UI für die globale Modellwahl bleibt Folgearbeit.
 Datum: 2026-08-07.
 
 Die spätere Entscheidung

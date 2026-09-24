@@ -64,6 +64,10 @@ der Eröffnung werden aktuell noch nicht im Play-Screen angezeigt, weil sie
 `GameDocument` nicht enthält. Geschichte und Chronik zeigen den Story-Feed
 beziehungsweise die geordnete Summary-Segmentkette.
 
+Im Wizard kann der Ton ausdrücklich leer bleiben (`Kein zusätzlicher Ton`). In
+diesem Fall wird keine zusätzliche Tonvorgabe an das Modell gesendet; die
+Stimmung des gewählten Genres bleibt maßgeblich.
+
 Frontend-Fehler werden zentral klassifiziert: 401 führt zum Re-Login, echte
 Backend-Fehler zeigen den Backend-Text, und sonstige Tooling-Fehler werden
 fire-and-forget für Diagnosezwecke gemeldet.

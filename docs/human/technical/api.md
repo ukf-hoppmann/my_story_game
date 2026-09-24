@@ -71,7 +71,10 @@ bereits Mitglied der Quell-Vorlage sein, sonst HTTP 403
 steuerbarer Figuren (`name`, optional `description`). Im Player Mode muss die
 Liste genau ein Element enthalten; im Director Mode darf sie null oder
 mehrere Elemente enthalten. Zusätzlich kann der Client `language` sowie ein
-vollständiges `prompt_profile` übergeben. Lässt er eines dieser Felder weg,
+vollständiges `prompt_profile` übergeben. Das Feld `tone` innerhalb dieses
+Profils ist optional; ohne Angabe wird keine zusätzliche Tonanweisung erzeugt
+und die dem Genre eigene Stimmung bleibt erhalten. Lässt der Client eines
+dieser Felder weg,
 verwendet die API die bisherigen serverseitigen Defaults aus
 `api/default_configuration.py`, damit bestehende Clients unverändert
 funktionieren. Kein `run_name` an dieser Stelle — der wird erst beim
@@ -106,8 +109,9 @@ Endpunkt ist aktuell öffentlich und liefert keine nutzerbezogenen Daten.
 Das beim Vorschlag optional übergebene `prompt_profile` enthält genau die
 editierbaren Story-Kategorien `genre`, `tone`, `prose_style`, `perspective`,
 `pacing`, `length`, `player_agency`, `consequence`, `challenge` und
-`content_profile`. Die API validiert alle Options-IDs gegen das referenzierte
-Promptpaket, bevor sie den Modellworkflow startet. Erzählerische Grenzen,
+`content_profile`; `tone` darf dabei entfallen. Die API validiert alle gesetzten
+Options-IDs gegen das referenzierte Promptpaket, bevor sie den Modellworkflow
+startet. Erzählerische Grenzen,
 Paket-ID und -version bleiben serverbestimmt; `control_mode` wird nur beim
 Erstellen festgelegt, weil er die Mitgliedschafts- und Figurenregeln prägt.
 

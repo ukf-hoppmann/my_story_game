@@ -1,8 +1,8 @@
 # Entscheidung: Promptprofil und aktuelle Modellwahl
 
 Status: Auswahlsemantik und bedingte Control-Mode-Semantik umgesetzt am
-2026-08-10. Story-Initialisierung und regulärer Story-Workflow verwenden diese
-Verträge.
+2026-08-10; optionaler Ton umgesetzt am 2026-09-18. Story-Initialisierung und
+regulärer Story-Workflow verwenden diese Verträge.
 
 Diese Entscheidung konkretisiert die frühere Entscheidung zu Spielzustand und
 Persistenz für `GameConfiguration` und die Entscheidung zur
@@ -44,8 +44,9 @@ PromptProfile
 └── length
 ```
 
-Jedes Feld speichert die lokale Options-ID seiner bekannten Kategorie, zum
-Beispiel:
+Jedes gesetzte Feld speichert die lokale Options-ID seiner bekannten
+Kategorie. `tone` ist die einzige optionale Auswahl und kann entfallen; zum
+Beispiel sieht ein vollständig gesetztes Profil so aus:
 
 ```json
 {
@@ -65,9 +66,17 @@ Beispiel:
 
 `length` (`short`/`standard`/`long`) steuert die gewünschte Textlänge der
 Story-Prosa als Instruktion im Systemprompt, analog zu `pacing`. Anders als
-die übrigen Kategorien hat das Feld einen Domain-Default (`"standard"`), damit
+die übrigen erforderlichen Kategorien hat das Feld einen Domain-Default
+(`"standard"`), damit
 bestehender Code, der `PromptProfile` ohne dieses Feld aufbaut, unverändert
 funktioniert.
+
+Ein nicht gesetzter `tone` ist semantisch etwas anderes als die Katalogoption
+`balanced`: Der API- und Frontend-Default lässt den Ton bewusst offen. Dann
+wird keine zusätzliche Tonbeschreibung in den Story-Prompt aufgenommen und die
+eigene Stimmung des gewählten Genres bleibt unverändert. Der Katalog darf
+`balanced` weiterhin als auswählbaren Default anzeigen, ohne diese Auswahl
+automatisch in den Spielstand zu schreiben.
 
 Die Kategorie muss im Wert nicht wiederholt werden. `balanced` bleibt trotz
 seiner Verwendung in mehreren Kategorien eindeutig, weil es immer in einem
@@ -104,10 +113,11 @@ In-place-Änderung.
 
 ## Defaults und Validierung
 
-Paketdefaults dienen nur dazu, das vollständige Profil einer neuen Partie
-vorzubelegen. Das anschließend gewählte Profil wird vollständig gespeichert,
-auch wenn alle Werte den Defaults entsprechen. Eine spätere Änderung eines
-Defaults verändert daher keine bereits gespeicherte Auswahl.
+Paketdefaults dienen der Auswahloberfläche und der Vorbelegung der
+erforderlichen Profilwerte. Das anschließend gewählte Profil wird vollständig
+gespeichert, auch wenn alle Werte den Defaults entsprechen; ein nicht gesetzter
+`tone` wird als `null` gespeichert. Eine spätere Änderung eines Defaults
+verändert daher keine bereits gespeicherte Auswahl.
 
 Die Application validiert vor dem Speichern, dass jede Options-ID in ihrer
 Kategorie des referenzierten Promptpakets vorhanden ist. Der Domainwert prüft
@@ -161,8 +171,10 @@ diese Anweisung nicht erhalten. Der bestehende Prompttext, der Director bisher
 als zusätzlichen Handlungsspielraum des Erzählmodells beschreibt, muss mit der
 nächsten Story-Init-Erweiterung an diese Bedeutung angepasst werden.
 
-Damit bleiben weiterhin alle zehn Auswahlwerte persistent und validierbar,
-obwohl ein konkreter Director-Aufruf nur die dafür wirksamen Werte projiziert.
+Damit bleiben weiterhin alle zehn erforderlichen Auswahlwerte persistent und
+validierbar, obwohl ein konkreter Director-Aufruf nur die dafür wirksamen
+Werte projiziert. Der optionale `tone` wird zusätzlich persistiert, wenn er
+gesetzt wurde, und andernfalls als `null` geführt.
 
 WorldState-Extraction verwendet dagegen:
 

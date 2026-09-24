@@ -51,15 +51,16 @@ reicht aus, um das Spiel fortzusetzen.
 Die `GameConfiguration` hält die für diese Partie aufgelösten Einstellungen:
 
 - Sprache;
-- ein vollständiges `PromptProfile` mit Genre, Ton, Prosa-Stil, Perspektive,
+- ein vollständiges `PromptProfile` mit Genre, optionalem Ton, Prosa-Stil, Perspektive,
   Tempo, Textlänge, Steuerungsmodus, Spielerautonomie, Konsequenz,
   Herausforderung und Inhaltsprofil;
 - erzählerische Grenzen;
 - ID und Version des verwendeten Prompt-Pakets.
 
-Die zehn lokalen Options-IDs werden vollständig je Revision gespeichert und
-vor dem Schreiben gegen das referenzierte Paket validiert. Globale aktive
-Modelle für Story, Extraction und Summary gehören dagegen zu
+Die zehn erforderlichen lokalen Options-IDs werden vollständig je Revision
+gespeichert und vor dem Schreiben gegen das referenzierte Paket validiert.
+Der optionale Ton wird bei Nichtauswahl als `null` gespeichert und nicht in
+den Prompt projiziert. Globale aktive Modelle für Story, Extraction und Summary gehören dagegen zu
 `configs/llm.toml`, nicht zu einer Partie.
 
 Provider-URLs, Zugangsdaten, Rohprompts und laufende Modellaufrufe gehören

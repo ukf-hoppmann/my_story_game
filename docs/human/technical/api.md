@@ -276,12 +276,13 @@ Jede Fehlerantwort hat die Form `{"error": <code>, "detail": <Text>, ...}`.
 ## Swagger UI und OpenAPI
 
 Mit gestarteter API sind die Verträge direkt unter folgenden Adressen
-verfügbar; über den lokalen Compose-Proxy sind sie außerdem unter
+(veröffentlichter Port `BACKEND_HOST_PORT` aus `configs/docker/docker.env`,
+lokal `8001`) verfügbar; über den lokalen Compose-Proxy sind sie außerdem unter
 `http://backend.storygame.localhost/…` erreichbar:
 
-- Swagger UI: `http://localhost:8000/docs`
-- OpenAPI JSON: `http://localhost:8000/openapi.json`
-- ReDoc: `http://localhost:8000/redoc`
+- Swagger UI: `http://localhost:8001/docs`
+- OpenAPI JSON: `http://localhost:8001/openapi.json`
+- ReDoc: `http://localhost:8001/redoc`
 
 ## Lokal starten
 

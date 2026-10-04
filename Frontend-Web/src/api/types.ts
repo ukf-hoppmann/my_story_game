@@ -269,6 +269,56 @@ export interface TurnResult {
   summary_failure_message: string | null;
 }
 
+export type SceneImageStatus = "pending" | "ready" | "failed";
+
+export interface SceneImage {
+  image_id: string;
+  run_id: string;
+  turn_sequence: number;
+  status: SceneImageStatus;
+  model: string | null;
+  refine: boolean;
+  refine_model: string | null;
+  refine_strength: number;
+  width: number;
+  height: number;
+  seed: number;
+  prompt: string | null;
+  compact_prompt: string | null;
+  error_message: string | null;
+  created_at: string;
+  completed_at: string | null;
+}
+
+export interface SceneImageList {
+  images: SceneImage[];
+}
+
+export interface ImageModel {
+  name: string;
+}
+
+export interface SceneImageCapabilities {
+  enabled: boolean;
+  models: ImageModel[];
+  refine_models: ImageModel[];
+  model_listing_failed: boolean;
+  default_model: string | null;
+  default_refine: boolean;
+  default_refine_model: string | null;
+  default_refine_strength: number | null;
+  min_refine_strength: number | null;
+  max_refine_strength: number | null;
+  turn_window: number | null;
+}
+
+/** Every field is optional: an omitted one uses the server default. */
+export interface CreateSceneImageRequest {
+  model?: string;
+  refine?: boolean;
+  refine_strength?: number;
+}
+
 export interface ApiErrorBody {
   error: string;
   detail: string;

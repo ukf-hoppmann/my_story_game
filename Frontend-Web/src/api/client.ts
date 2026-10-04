@@ -1,6 +1,7 @@
 import type {
   ApiErrorBody,
   ConfirmRunProposalRequest,
+  CreateSceneImageRequest,
   GameDocument,
   GameState,
   PlayTurnRequest,
@@ -8,6 +9,9 @@ import type {
   PromptProfileCatalog,
   RunProposal,
   RunSummaryList,
+  SceneImage,
+  SceneImageCapabilities,
+  SceneImageList,
   TurnResult,
   UpdateConfigurationRequest,
 } from "./types";
@@ -128,6 +132,46 @@ export async function playTurn(
     method: "POST",
     body: JSON.stringify(payload),
   });
+}
+
+/** Whether scene images are enabled on this installation, and which models
+ *  exist. Always answers 200 — a disabled feature is `enabled: false`. */
+export async function fetchSceneImageCapabilities(): Promise<SceneImageCapabilities> {
+  return request("/api/v1/scene-images/capabilities");
+}
+
+export async function listSceneImages(runId: string): Promise<SceneImageList> {
+  return request(`/api/v1/runs/${runId}/scene-images`);
+}
+
+/** Starts a generation; answers 202 at once with the still-pending image. */
+export async function createSceneImage(
+  runId: string,
+  payload: CreateSceneImageRequest,
+): Promise<SceneImage> {
+  return request(`/api/v1/runs/${runId}/scene-images`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+/** The image bytes need the auth header, so an `<img src>` cannot load them
+ *  directly: fetch them here and let the caller make an object URL. */
+export async function fetchSceneImageBlob(runId: string, imageId: string): Promise<Blob> {
+  const response = await fetch(
+    `${API_BASE_URL}/api/v1/runs/${runId}/scene-images/${imageId}/content`,
+    { headers: authHeaderProvider ? authHeaderProvider() : {} },
+  );
+  if (!response.ok) {
+    let body: ApiErrorBody;
+    try {
+      body = (await response.json()) as ApiErrorBody;
+    } catch {
+      body = { error: "unknown_error", detail: response.statusText };
+    }
+    throw new ApiError(response.status, body);
+  }
+  return response.blob();
 }
 
 /** A frontend-side failure that never reached the backend as a typed

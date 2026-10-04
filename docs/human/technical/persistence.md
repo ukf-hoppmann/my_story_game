@@ -64,6 +64,18 @@ Text bleiben insbesondere Keycloak `issuer`/`subject`, Prompt-Paket-ID und
 -Version sowie die gespeicherten Promptprofil-Optionen. PostgreSQL speichert
 diese Werte, besitzt aber nicht ihre Identität.
 
+## Szenenbilder
+
+Die Tabelle `scene_images` (`006_scene_images.sql`) hält je Bild Lauf,
+Zugnummer, Status (`pending`/`ready`/`failed`), die gewählten Optionen
+(Modell, Refine, Seed, Größe), die Prompts, die Fehlermeldung und die
+Bilddaten (`bytea`) samt Content-Type. Sie gehört nicht zum kanonischen
+GameState: kein Revisionsbezug, kein Eintrag im Spielzustand. `ON DELETE
+CASCADE` am Lauf. Check-Constraints erzwingen, dass nur `ready` Bilddaten und
+nur `failed` eine Fehlermeldung hat. Lesen joint immer `game_run_members`, ein
+Nicht-Mitglied sieht dasselbe wie bei einem fehlenden Bild. Der Adapter ist
+`PostgresSceneImageStore`.
+
 ## Schreibgrenzen
 
 Die Application besitzt getrennte Operationen für:

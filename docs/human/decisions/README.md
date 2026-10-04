@@ -18,3 +18,4 @@ Entscheidungen:
 - [`spielzustand-und-persistenz.md`](spielzustand-und-persistenz.md)
 - [`llm-anbindung.md`](llm-anbindung.md)
 - [`promptprofil-und-modellwahl.md`](promptprofil-und-modellwahl.md)
+- [`szenenbilder.md`](szenenbilder.md)

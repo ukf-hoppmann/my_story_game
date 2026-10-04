@@ -2,8 +2,8 @@
 
 LM Studio muss als lokaler Server laufen und ein Textmodell bereitstellen.
 Provider und Modelle werden aus der einzigen Projektkonfiguration
-`configs/llm.toml` gelesen. Für Story, Extraction und Summary ist jeweils ein
-logischer Katalogeintrag definiert. Die drei Einträge dürfen zunächst dieselbe
+`configs/llm.toml` gelesen. Für Story, Extraction, Summary und Szenenbild-Prompts (`scene_image`) ist
+jeweils ein logischer Katalogeintrag definiert. Die Einträge dürfen zunächst dieselbe
 konkrete LM-Studio-Modell-ID verwenden.
 
 Die Task-Zuordnung sieht beispielsweise so aus:
@@ -13,6 +13,7 @@ Die Task-Zuordnung sieht beispielsweise so aus:
 story = "model.story.default"
 extraction = "model.extraction.default"
 summary = "model.summary.default"
+scene_image = "model.scene_image.default"
 ```
 
 Der Live-Test wird ausdrücklich über die Pytest-Option aktiviert:

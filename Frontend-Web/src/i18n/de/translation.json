@@ -131,7 +131,20 @@
       "model": "Bildmodell",
       "refine": "Mit Verfeinerung",
       "refineStrength": "Stärke der Verfeinerung: {{value}}",
-      "modelListingFailed": "Die Modellliste ist gerade nicht erreichbar; es gelten die Standardwerte."
+      "modelListingFailed": "Die Modellliste ist gerade nicht erreichbar; es gelten die Standardwerte.",
+      "enlarge": "Szenenbild vergrößern",
+      "close": "Schließen",
+      "debug": {
+        "summary": "Prompt (Debug)",
+        "prompt": "Prompt",
+        "compactPrompt": "Kompakter Prompt",
+        "model": "Modell",
+        "refine": "Verfeinerung",
+        "refineOn": "{{model}}, Stärke {{strength}}",
+        "refineOff": "aus",
+        "seed": "Seed",
+        "size": "Größe"
+      }
     }
   },
   "wizard": {

@@ -187,4 +187,34 @@ describe("SceneArt", () => {
 
     expect(await screen.findByText(/Stärke ungültig\./)).toBeInTheDocument();
   });
+  it("opens the image enlarged on click, with the collapsed prompt details, and closes it again", async () => {
+    vi.spyOn(client, "fetchSceneImageCapabilities").mockResolvedValue(ENABLED);
+    vi.spyOn(client, "listSceneImages").mockResolvedValue({
+      images: [image({ prompt: "A tavern at dusk.", compact_prompt: "tavern, dusk" })],
+    });
+    vi.spyOn(client, "fetchSceneImageBlob").mockResolvedValue(new Blob(["png"]));
+    renderArt();
+
+    await userEvent.click(await screen.findByRole("button", { name: /Szenenbild vergrößern/ }));
+
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toBeInTheDocument();
+    const details = screen.getByText("Prompt (Debug)").closest("details");
+    expect(details).not.toHaveAttribute("open");
+    expect(dialog).toHaveTextContent("A tavern at dusk.");
+    expect(dialog).toHaveTextContent("tavern, dusk");
+    expect(dialog).toHaveTextContent("z-image-turbo");
+
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("offers no enlarge button while there is no ready image", async () => {
+    vi.spyOn(client, "fetchSceneImageCapabilities").mockResolvedValue(ENABLED);
+    vi.spyOn(client, "listSceneImages").mockResolvedValue({ images: [] });
+    renderArt();
+
+    await screen.findByRole("button", { name: /Szenenbild erzeugen/ });
+    expect(screen.queryByRole("button", { name: /Szenenbild vergrößern/ })).not.toBeInTheDocument();
+  });
 });

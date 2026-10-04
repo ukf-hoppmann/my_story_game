@@ -10,6 +10,7 @@ import type { CreateSceneImageRequest } from "../../api/types";
 import { Button } from "../../components/Button/Button";
 import { ErrorBanner } from "../../components/ErrorBanner/ErrorBanner";
 import { ImageSlot } from "../../components/ImageSlot/ImageSlot";
+import { SceneImageLightbox } from "./SceneImageLightbox";
 import "./SceneArt.css";
 
 const POLL_MS = 2000;
@@ -42,6 +43,10 @@ export function SceneArt({ runId, name }: { runId: string; name: string }) {
   const [strength, setStrength] = useState<number | undefined>(undefined);
 
   const imageUrl = useImageObjectUrl(runId, latestReady?.image_id);
+  const [enlarged, setEnlarged] = useState(false);
+  const imageAlt = latestReady
+    ? t("play.sceneImage.alt", { turn: latestReady.turn_sequence })
+    : name;
   const pending = createState.isLoading || latest?.status === "pending";
 
   const effectiveRefine = refine ?? capabilities?.default_refine ?? false;
@@ -64,12 +69,30 @@ export function SceneArt({ runId, name }: { runId: string; name: string }) {
 
   return (
     <>
-      <ImageSlot
-        className="play-scene-art"
-        label={t("play.sceneArtPlaceholder")}
-        imageUrl={imageUrl}
-        alt={latestReady ? t("play.sceneImage.alt", { turn: latestReady.turn_sequence }) : name}
-      />
+      {latestReady && imageUrl ? (
+        <button
+          type="button"
+          className="scene-art-zoom"
+          aria-label={t("play.sceneImage.enlarge")}
+          onClick={() => setEnlarged(true)}
+        >
+          <ImageSlot className="play-scene-art" imageUrl={imageUrl} alt={imageAlt} />
+        </button>
+      ) : (
+        <ImageSlot
+          className="play-scene-art"
+          label={t("play.sceneArtPlaceholder")}
+          alt={imageAlt}
+        />
+      )}
+      {enlarged && latestReady && imageUrl && (
+        <SceneImageLightbox
+          image={latestReady}
+          imageUrl={imageUrl}
+          alt={imageAlt}
+          onClose={() => setEnlarged(false)}
+        />
+      )}
       {enabled && capabilities && (
         <div className="scene-art-controls">
           <Button variant="ghost" disabled={pending} onClick={handleGenerate}>

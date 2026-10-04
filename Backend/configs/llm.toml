@@ -18,7 +18,6 @@ base_url = "https://generativelanguage.googleapis.com/v1beta/openai"
 timeout_seconds = 60
 
 [task_models]
-[task_models]
 story = "model.story.default"
 extraction = "model.extraction.default"
 summary = "model.summary.default"

@@ -20,6 +20,11 @@ from dataclasses import dataclass
 
 from story_game.application import Failure, LLMGenerationCall, OperationResult
 from story_game.application.llm import (
+    CompactImagePromptPort,
+    CompactImagePromptRequest,
+    SceneImagePromptPort,
+    SceneImagePromptRequest,
+    SceneImagePromptText,
     InitialStoryText,
     InitialWorldExtractionPort,
     InitialWorldExtractionRequest,
@@ -114,7 +119,35 @@ class RoutingStorySummaryAdapter(StorySummaryPort):
         return adapter.summarize(call)
 
 
+@dataclass(frozen=True, slots=True)
+class RoutingSceneImagePromptAdapter(SceneImagePromptPort):
+    adapters: dict[str, SceneImagePromptPort]
+
+    def write(
+        self, call: LLMGenerationCall[SceneImagePromptRequest]
+    ) -> OperationResult[SceneImagePromptText, LLMError]:
+        adapter = self.adapters.get(call.model_selection.provider_id)
+        if adapter is None:
+            return _unknown_provider(call.model_selection.provider_id)
+        return adapter.write(call)
+
+
+@dataclass(frozen=True, slots=True)
+class RoutingCompactImagePromptAdapter(CompactImagePromptPort):
+    adapters: dict[str, CompactImagePromptPort]
+
+    def compact(
+        self, call: LLMGenerationCall[CompactImagePromptRequest]
+    ) -> OperationResult[SceneImagePromptText, LLMError]:
+        adapter = self.adapters.get(call.model_selection.provider_id)
+        if adapter is None:
+            return _unknown_provider(call.model_selection.provider_id)
+        return adapter.compact(call)
+
+
 __all__ = [
+    "RoutingCompactImagePromptAdapter",
+    "RoutingSceneImagePromptAdapter",
     "RoutingInitialWorldExtractionAdapter",
     "RoutingStoryGenerationAdapter",
     "RoutingStoryInitializationAdapter",

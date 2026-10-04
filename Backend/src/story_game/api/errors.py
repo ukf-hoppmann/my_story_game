@@ -22,6 +22,7 @@ from story_game.application.initialization_errors import (
     StoryInitializationError,
     StoryInitializationErrorKind,
 )
+from story_game.application.scene_image import SceneImageError, SceneImageErrorKind
 from story_game.application.start_playthrough_errors import (
     PlaythroughError,
     PlaythroughErrorKind,
@@ -70,6 +71,19 @@ _PLAYTHROUGH_STATUS: dict[PlaythroughErrorKind, tuple[int, str]] = {
 }
 
 
+_SCENE_IMAGE_STATUS: dict[SceneImageErrorKind, tuple[int, str]] = {
+    SceneImageErrorKind.DISABLED: (409, "scene_image_disabled"),
+    SceneImageErrorKind.NO_STORY: (422, "scene_image_no_story"),
+    SceneImageErrorKind.NOT_FOUND: (404, "not_found"),
+    SceneImageErrorKind.INVALID_OPTIONS: (422, "scene_image_invalid_options"),
+    SceneImageErrorKind.ACCESS_DENIED: (403, "not_a_run_member"),
+    SceneImageErrorKind.STORE_UNAVAILABLE: (503, "persistence_unavailable"),
+    SceneImageErrorKind.PROMPT_FAILED: (502, "scene_image_failed"),
+    SceneImageErrorKind.RENDER_FAILED: (502, "scene_image_failed"),
+    SceneImageErrorKind.CONFIGURATION: (500, "scene_image_configuration_invalid"),
+}
+
+
 def register_error_handlers(app: FastAPI) -> None:
     app.add_exception_handler(OperationFailed, _operation_failed)
     app.add_exception_handler(RevisionConflictError, _conflict)
@@ -114,6 +128,9 @@ async def _operation_failed(request: Request, exc: Exception) -> JSONResponse:
         return _error_response(500, "story_turn_inconsistent", error.message)
     if isinstance(error, PlaythroughError):
         status_code, code = _PLAYTHROUGH_STATUS[error.kind]
+        return _error_response(status_code, code, error.message)
+    if isinstance(error, SceneImageError):
+        status_code, code = _SCENE_IMAGE_STATUS[error.kind]
         return _error_response(status_code, code, error.message)
     if isinstance(error, ReportFrontendErrorRejected):
         return _error_response(400, "invalid_frontend_error_report", error.detail)

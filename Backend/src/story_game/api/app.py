@@ -5,7 +5,10 @@ from __future__ import annotations
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
+from uuid import uuid4
+
+import httpx
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -34,18 +37,33 @@ from story_game.application.game_state import (
     PromptProfileValidator,
 )
 from story_game.application.llm import (
+    CompactImagePromptResolver,
     ExtractionPromptSelectionResolver,
+    SceneImagePromptResolver,
     InitialExtractionPromptSelectionResolver,
     StoryInitializationPromptResolver,
     StoryPromptSelectionResolver,
     SummaryPromptSelectionResolver,
 )
 from story_game.application.diagnostics_reporting import ReportFrontendError
+from story_game.application.scene_image import (
+    GenerateSceneImage,
+    ListSceneImages,
+    LoadSceneImage,
+    LoadSceneImageContent,
+    ReadSceneImageCapabilities,
+    RequestSceneImage,
+    SceneImageDefaults,
+    SceneImageOperations,
+)
+from story_game.domain import StableId
 from story_game.application.story_initialization import GenerateInitialStoryState
 from story_game.application.story_turn_context import build_story_turn_context_selection
 from story_game.application.story_turn_context_models import SelectionBudget
 from story_game.infrastructure.configuration import (
+    SceneImageSettings,
     TomlAppConfigurationLoader,
+    load_modal_credentials,
     TomlGenerationConfigurationResolver,
     TomlLlmConfigurationLoader,
 )
@@ -75,12 +93,19 @@ from story_game.infrastructure.llm.lmstudio import (
     LmStudioTurnExtractionAdapter,
     lmstudio_settings,
 )
+from story_game.infrastructure.image import ModalSceneImageRenderer
 from story_game.infrastructure.llm.openai_compatible import (
     OpenAiCompatibleClient,
     OpenAiCompatibleSettings,
 )
+from story_game.infrastructure.llm.openai_compatible.scene_image_adapters import (
+    OpenAiCompatibleCompactImagePromptAdapter,
+    OpenAiCompatibleSceneImagePromptAdapter,
+)
 from story_game.infrastructure.llm.provider_router import (
+    RoutingCompactImagePromptAdapter,
     RoutingInitialWorldExtractionAdapter,
+    RoutingSceneImagePromptAdapter,
     RoutingStoryGenerationAdapter,
     RoutingStoryInitializationAdapter,
     RoutingStorySummaryAdapter,
@@ -93,6 +118,7 @@ from story_game.infrastructure.persistence.in_memory_proposal_store import (
 from story_game.infrastructure.persistence.postgres import (
     PostgresConnectionFactory,
     PostgresGameStore,
+    PostgresSceneImageStore,
     PostgresSchemaMigrator,
 )
 
@@ -122,6 +148,7 @@ def create_app(
     async def lifespan(application: FastAPI) -> AsyncIterator[None]:
         resolved = dependencies
         llm_clients: _LlmClients | None = None
+        modal_renderer: ModalSceneImageRenderer | None = None
         if resolved is None:
             connections = PostgresConnectionFactory(resolved_settings.postgres_dsn)
             if resolved_settings.auto_migrate:
@@ -131,6 +158,23 @@ def create_app(
             llm_clients = _build_llm_clients(
                 resolved_settings, debug_enabled=resolved_logging_settings.debug_enabled
             )
+            scene_image_settings = TomlAppConfigurationLoader().load_scene_image(
+                resolved_settings.config_path
+            )
+            scene_images = None
+            if scene_image_settings.enabled:
+                modal_renderer = _build_modal_renderer(
+                    scene_image_settings, resolved_settings.config_path
+                )
+                scene_images = _compose_scene_images(
+                    store,
+                    PostgresSceneImageStore(connections),
+                    modal_renderer,
+                    scene_image_settings,
+                    resolved_settings,
+                    llm_clients,
+                    diagnostics,
+                )
             resolved = ApiDependencies(
                 operations=_compose_game_state_operations(
                     store, resolved_settings.prompt_root, diagnostics
@@ -152,6 +196,7 @@ def create_app(
                     FilePromptPackageCatalog(resolved_settings.prompt_root)
                 ),
                 report_frontend_error=_compose_report_frontend_error(diagnostics),
+                scene_images=scene_images,
             )
         application.state.api_dependencies = resolved
         application.state.api_settings = resolved_settings
@@ -167,6 +212,8 @@ def create_app(
                 llm_clients.lmstudio.close()
                 llm_clients.groq.close()
                 llm_clients.gemini.close()
+            if modal_renderer is not None:
+                modal_renderer.close()
 
     application = FastAPI(
         title=resolved_settings.title,
@@ -373,6 +420,90 @@ def _compose_play_story_turn(
         CommitCompletedTurn(store, store, diagnostics),
         summary_interval=summary_settings.interval,
         diagnostics=diagnostics,
+    )
+
+
+def _build_modal_renderer(
+    scene_settings: SceneImageSettings, config_path: str
+) -> ModalSceneImageRenderer:
+    modal = scene_settings.modal
+    assert modal is not None  # the loader rejects an enabled feature without it
+    return ModalSceneImageRenderer(
+        lambda: modal,
+        # Reloaded per call so a rotated token takes effect without a restart.
+        lambda: load_modal_credentials(config_path),
+        httpx.Client(),
+    )
+
+
+def _compose_scene_images(
+    game_store: PostgresGameStore,
+    image_store: PostgresSceneImageStore,
+    renderer: ModalSceneImageRenderer,
+    scene_settings: SceneImageSettings,
+    settings: ApiSettings,
+    clients: _LlmClients,
+    diagnostics: StructlogDiagnosticsLog,
+) -> SceneImageOperations:
+    modal = scene_settings.modal
+    assert modal is not None
+    catalog = FilePromptPackageCatalog(settings.prompt_root)
+    generation_config = TomlGenerationConfigurationResolver(settings.llm_config_path)
+    defaults = SceneImageDefaults(
+        turn_window=scene_settings.turn_window,
+        width=scene_settings.width,
+        height=scene_settings.height,
+        model=modal.model,
+        refine=scene_settings.refine,
+        refine_model=scene_settings.refine_model,
+        refine_strength=scene_settings.refine_strength,
+        compact_prompt_max_words=scene_settings.compact_prompt_max_words,
+    )
+    providers = (
+        ("lmstudio", "LM Studio", clients.lmstudio),
+        ("groq", "Groq", clients.groq),
+        ("gemini", "Gemini", clients.gemini),
+    )
+    prompt_writer = RoutingSceneImagePromptAdapter(
+        {
+            provider_id: OpenAiCompatibleSceneImagePromptAdapter(client, provider_id, label)
+            for provider_id, label, client in providers
+        }
+    )
+    compactor = RoutingCompactImagePromptAdapter(
+        {
+            provider_id: OpenAiCompatibleCompactImagePromptAdapter(client, provider_id, label)
+            for provider_id, label, client in providers
+        }
+    )
+    return SceneImageOperations(
+        request=RequestSceneImage(
+            LoadGame(game_store, game_store),
+            image_store,
+            defaults,
+            new_id=lambda: StableId(uuid4()),
+            now=lambda: datetime.now(UTC),
+            # A pending image older than the longest possible generation
+            # (prompt calls plus two Modal stages) is treated as abandoned,
+            # e.g. after a server restart, so it cannot block its turn forever.
+            active_window=timedelta(seconds=2 * modal.timeout_seconds + 120),
+        ),
+        generate=GenerateSceneImage(
+            SceneImagePromptResolver(catalog),
+            CompactImagePromptResolver(catalog),
+            generation_config,
+            prompt_writer,
+            compactor,
+            renderer,
+            image_store,
+            compact_prompt_max_words=scene_settings.compact_prompt_max_words,
+            now=lambda: datetime.now(UTC),
+            diagnostics=diagnostics,
+        ),
+        list=ListSceneImages(image_store),
+        load=LoadSceneImage(image_store),
+        content=LoadSceneImageContent(image_store),
+        capabilities=ReadSceneImageCapabilities(defaults, renderer),
     )
 
 

@@ -1,7 +1,7 @@
 # Binding LLM integration architecture
 
-This file is the authoritative scoped architecture contract delegated by
-`.harness/architecture-rules.md` for model invocation, prompt preparation,
+This file is the authoritative scoped architecture contract listed in the
+`## Scopes` table of `architecture.md` for model invocation, prompt preparation,
 provider and model adapters, and model-derived outputs. The root architecture
 contract remains binding together with this scope.
 

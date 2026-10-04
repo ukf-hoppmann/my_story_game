@@ -1,0 +1,8 @@
+{
+  "extraKnownMarketplaces": {
+    "claude-harness-dev": {
+      "source": { "source": "directory", "path": "/Users/hoppmann/Documents/GitHub/Claude_Harness" }
+    }
+  },
+  "enabledPlugins": { "claude-harness@claude-harness-dev": true }
+}

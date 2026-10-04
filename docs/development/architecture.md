@@ -86,12 +86,16 @@ sense.
   observable contract. New behavior and bug fixes remain subject to the
   project's test-first rule.
 
-## 7. Delegated architecture scopes
+## Scopes
 
-For model invocation, prompt preparation, provider and model adapters, and
-model-derived outputs, `.harness/architecture/llm-integration.md` is the
-authoritative scoped contract. An agent MUST read and apply it before planning
-or implementing work in that scope.
+A scope applies in addition to this file, never instead of it. An agent MUST
+read this file and every scope that applies before planning or implementing
+work in that scope. Scope files live in `architecture/<Scope>.md` next to this
+file.
+
+| Scope | Paths | Covers |
+|---|---|---|
+| llm-integration | `Backend/src/story_game/application/llm/**`, `Backend/src/story_game/infrastructure/llm/**`, `Backend/prompts/**`, `Backend/configs/llm*` | Model invocation, prompt preparation, provider and model adapters, and model-derived outputs |
 
 ## 8. Changing this architecture
 
@@ -111,3 +115,7 @@ contributors SHOULD use `Composition Root`, `Composition Builder`,
 meanings defined there. The naming document is the detailed human-readable
 reference; this section makes its use discoverable from the binding
 architecture contract.
+
+If a requirement or design does not fit these rules, the AI names the conflict
+and proposes solutions, and the project owner decides (skill
+`claude-harness:conflicts`).

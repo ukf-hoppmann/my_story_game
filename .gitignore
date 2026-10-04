@@ -12,3 +12,6 @@ Frontend-Web/dist/
 .env
 .env.local
 Backend/configs/llm.secrets.toml
+
+# Claude_Harness configs
+.claude-harness/

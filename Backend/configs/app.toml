@@ -39,16 +39,15 @@ width = 1024
 height = 1024
 # Optional second stage: refine the first image with an SDXL model, which
 # needs a short prompt (compact_prompt_max_words).
-refine = false
+refine = true
 refine_model = "juggernaut-xl-ragnarok"
 # How much the refine stage may change the image (0.1 - 0.8).
 refine_strength = 0.35
 compact_prompt_max_words = 60
 
 [scene_image.modal]
-# TODO: echte URLs eintragen (im image_refiner: ./run.sh modal urls)
-url = "https://example--image-gpu.modal.run"
-control_url = "https://example--image-control.modal.run"
+url = "https://ukf-hoppmann--image-refiner-gen.modal.run"
+control_url = "https://ukf-hoppmann--image-refiner-control.modal.run"
 model = "z-image-turbo"
 timeout_seconds = 900
 # negative_prompt = ""

@@ -2,8 +2,8 @@
 
 Mirrors ``llm.py``'s ``TomlLlmConfigurationLoader`` style (unknown-key
 rejection, explicit type/range validation, wraps parse errors into one
-project-specific error type). Currently two sections: ``[logging]`` and
-``[story_summary]``. A missing file, or a missing section within it, is not
+project-specific error type). Currently three sections: ``[logging]``,
+``[story_summary]`` and ``[scene_image]``. A missing file, or a missing section within it, is not
 an error — callers get the hardcoded settings defaults, so tests and ad-hoc
 runs work without it.
 """
@@ -15,9 +15,12 @@ import math
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from story_game.infrastructure.logging_config import LoggingMode, LoggingSettings
+
+if TYPE_CHECKING:
+    from .scene_image import SceneImageSettings
 
 
 class AppConfigurationError(ValueError):
@@ -56,6 +59,12 @@ class TomlAppConfigurationLoader:
         table = self._section(path, "story_summary")
         return self._story_summary(table, Path(path))
 
+    def load_scene_image(self, path: str | Path) -> "SceneImageSettings":
+        from .scene_image import parse_scene_image
+
+        table = self._section(path, "scene_image")
+        return parse_scene_image(table, Path(path))
+
     def _section(self, path: str | Path, name: str) -> dict[str, Any]:
         config_path = Path(path)
         if not config_path.exists():
@@ -70,7 +79,7 @@ class TomlAppConfigurationLoader:
             raise AppConfigurationError(
                 f"Die Anwendungskonfiguration ist kein gültiges TOML: {config_path}"
             ) from error
-        _keys(document, {"logging", "story_summary"}, "die Hauptkonfiguration", config_path)
+        _keys(document, {"logging", "story_summary", "scene_image"}, "die Hauptkonfiguration", config_path)
         table = document.get(name, {})
         return _table(table, name, config_path)
 

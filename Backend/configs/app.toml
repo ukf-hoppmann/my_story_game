@@ -25,3 +25,30 @@ interval = 1
 # context — independent of `interval`, so a larger interval never grows
 # every single turn's prompt.
 context_segment_count = 2
+
+[scene_image]
+# Scene images (a picture of the current scene, generated on request).
+# Off by default: switch it on only where the image provider is reachable.
+# Provider credentials never go here — put them in the gitignored
+# configs/scene_image.secrets.toml (copy scene_image.secrets.toml.example).
+enabled = false
+provider = "modal"
+# How many of the latest turns the image prompt is written from.
+turn_window = 3
+width = 1024
+height = 1024
+# Optional second stage: refine the first image with an SDXL model, which
+# needs a short prompt (compact_prompt_max_words).
+refine = false
+refine_model = "juggernaut-xl-ragnarok"
+# How much the refine stage may change the image (0.1 - 0.8).
+refine_strength = 0.35
+compact_prompt_max_words = 60
+
+[scene_image.modal]
+url = "https://example--image-gpu.modal.run"
+control_url = "https://example--image-control.modal.run"
+model = "z-image-turbo"
+timeout_seconds = 900
+# negative_prompt = ""
+# refine_negative_prompt = ""

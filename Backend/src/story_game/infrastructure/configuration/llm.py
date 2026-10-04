@@ -33,6 +33,7 @@ class LlmTask(StrEnum):
     STORY = "story"
     EXTRACTION = "extraction"
     SUMMARY = "summary"
+    SCENE_IMAGE = "scene_image"
 
 
 @dataclass(frozen=True, slots=True)
@@ -68,9 +69,10 @@ class TaskModelReferences:
     story: str
     extraction: str
     summary: str
+    scene_image: str
 
     def __post_init__(self) -> None:
-        for name in ("story", "extraction", "summary"):
+        for name in ("story", "extraction", "summary", "scene_image"):
             value = getattr(self, name).strip()
             if not value:
                 raise LlmConfigurationError(

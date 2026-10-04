@@ -98,10 +98,11 @@ services:
       keycloak:
         condition: service_healthy
     ports:
-      - "${BACKEND_HOST_PORT:-8000}:8000"
+      - "${BACKEND_HOST_PORT:-8001}:8000"
     volumes:
       - ./Backend/logs:/app/logs
       - ./Backend/configs:/app/configs:ro
+      - ./Backend/prompts:/app/prompts:ro
     command:
       [
         "uvicorn",
@@ -116,6 +117,10 @@ services:
     image: node:${FRONTEND_NODE_TAG:-20-alpine}
     working_dir: /app
     command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    environment:
+      # Reach the backend through nginx, not a published host port: 8000 is
+      # taken by the image-refiner, and the published port may change again.
+      VITE_API_BASE_URL: "http://backend.storygame.localhost"
     ports:
       - "127.0.0.1:${FRONTEND_HOST_PORT:-5173}:5173"
     volumes:

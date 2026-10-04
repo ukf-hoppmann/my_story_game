@@ -110,6 +110,28 @@ class SummaryPromptSelectionResolver:
         return self.catalog.load(package_id, package_version).task("story_summary")
 
 
+class SceneImagePromptResolver:
+    """Resolve the instructions for the detailed scene-image prompt."""
+
+    def __init__(self, catalog: PromptPackageCatalog) -> None:
+        self.catalog = catalog
+
+    def resolve(self, package_id: str, package_version: str) -> PromptTask:
+        return self.catalog.load(package_id, package_version).task("scene_image_prompt")
+
+
+class CompactImagePromptResolver:
+    """Resolve the instructions that shorten an image prompt for a compact model."""
+
+    def __init__(self, catalog: PromptPackageCatalog) -> None:
+        self.catalog = catalog
+
+    def resolve(self, package_id: str, package_version: str) -> PromptTask:
+        return self.catalog.load(package_id, package_version).task(
+            "scene_image_prompt_compact"
+        )
+
+
 class InitialExtractionPromptSelectionResolver:
     """Resolve the extraction instructions used only for an opening narration."""
 
@@ -151,6 +173,8 @@ def _resolved_story_options(
 
 
 __all__ = [
+    "CompactImagePromptResolver",
+    "SceneImagePromptResolver",
     "ExtractionPromptSelection",
     "ExtractionPromptSelectionResolver",
     "InitialExtractionPromptSelectionResolver",

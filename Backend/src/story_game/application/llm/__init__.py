@@ -22,14 +22,21 @@ from .initial_extraction import (
     WorldInitializationCandidate,
 )
 from .ports import (
+    CompactImagePromptPort,
     GenerationConfigurationResolver,
     InitialWorldExtractionPort,
     ModelSelectionResolver,
     PromptPackageCatalog,
+    SceneImagePromptPort,
     StoryGenerationPort,
     StoryInitializationPort,
     StorySummaryPort,
     TurnExtractionPort,
+)
+from .scene_image_prompt import (
+    CompactImagePromptRequest,
+    SceneImagePromptRequest,
+    SceneImagePromptText,
 )
 from .summary import StorySummaryRequest, StorySummaryText, SummarizedTurn
 from .turn_extraction import (
@@ -48,6 +55,8 @@ from .prompt_selection import (
     StoryInitializationPromptResolver,
     StoryPromptSelectionResolver,
     SummaryPromptSelectionResolver,
+    SceneImagePromptResolver,
+    CompactImagePromptResolver,
 )
 from .prompts import (
     InvalidPromptPackageError,
@@ -65,6 +74,13 @@ from .prompts import (
 )
 
 __all__ = [
+    "CompactImagePromptPort",
+    "CompactImagePromptRequest",
+    "CompactImagePromptResolver",
+    "SceneImagePromptPort",
+    "SceneImagePromptRequest",
+    "SceneImagePromptResolver",
+    "SceneImagePromptText",
     "GenerationOptions",
     "GenerationConfiguration",
     "GenerationConfigurationResolver",

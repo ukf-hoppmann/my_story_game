@@ -22,6 +22,8 @@ _TASK_IDS = {
     "story_initialization",
     "story_generation",
     "story_summary",
+    "scene_image_prompt",
+    "scene_image_prompt_compact",
     "worldstate_initialization",
     "worldstate_extraction",
 }
@@ -113,7 +115,8 @@ def _tasks(raw: Any, path: Path) -> list[PromptTask]:
     if set(seen) != _TASK_IDS:
         raise _invalid(
             path,
-            "tasks müssen genau story_initialization, story_generation, "
+            "tasks müssen genau story_initialization, story_generation, story_summary, "
+            "scene_image_prompt, scene_image_prompt_compact, "
             "worldstate_initialization und worldstate_extraction enthalten",
         )
     return values

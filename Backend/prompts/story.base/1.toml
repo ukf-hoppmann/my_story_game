@@ -149,6 +149,40 @@ Gibt es noch keine bisherige Zusammenfassung, fasse allein den neuen Zug
 zusammen.
 """
 
+[[tasks]]
+id = "scene_image_prompt"
+text = """
+Schreibe einen Prompt für ein Bildgenerierungsmodell, der die zuletzt erzählte
+Szene als einzelnes Standbild zeigt. Du bekommst die letzten Züge der Geschichte
+(Spielereingabe und Erzählung) und die Sprache der Geschichte.
+
+Beschreibe ausschließlich, was im jüngsten Zug sichtbar ist: Ort, Tageszeit und
+Licht, Stimmung, die anwesenden Figuren mit Aussehen, Kleidung, Haltung und
+Blickrichtung sowie wichtige Gegenstände. Frühere Züge dienen nur dazu, Figuren
+und Ort konsistent zu beschreiben. Erfinde keine Details, die der Text
+widerspricht, und beschreibe keine Handlung als Ablauf, sondern den einen
+eingefrorenen Moment. Schreibe keine Dialoge, keine Schrift im Bild und keine
+Namen als Beschriftung; beschreibe Figuren über ihr Aussehen.
+
+Schreibe den Prompt immer auf Englisch, unabhängig von der Sprache der
+Geschichte, als zusammenhängende Beschreibung in ein bis drei Absätzen. Nenne am
+Ende kurz Kamerasicht und Stil (z. B. cinematic, painterly, dramatic lighting).
+Gib ausschließlich den Prompt aus, ohne Einleitung, Überschrift oder Anführungszeichen.
+"""
+
+[[tasks]]
+id = "scene_image_prompt_compact"
+text = """
+Kürze einen ausführlichen Bildprompt für ein Bildmodell mit sehr kurzem
+Promptlimit. Du bekommst den fertigen Prompt und die maximale Wortzahl.
+
+Behalte das Wichtigste in dieser Reihenfolge: Hauptmotiv und Figuren mit
+prägnantem Aussehen, Ort, Licht und Stimmung, Stil. Verwende kurze, durch Kommas
+getrennte Bildbegriffe statt ganzer Sätze. Erfinde nichts hinzu, schreibe auf
+Englisch und überschreite die maximale Wortzahl nicht. Gib ausschließlich den
+gekürzten Prompt aus, ohne Einleitung oder Anführungszeichen.
+"""
+
 [[categories]]
 id = "genre"
 default = "dark_fantasy"

@@ -12,6 +12,9 @@ Für die Groq-Anbindung (API-Key, Provider pro Task wählen) siehe
 Für die Gemini-Anbindung (API-Key, Provider pro Task wählen) siehe
 [`gemini.md`](gemini.md).
 
+Für Szenenbilder (Modal-Zugang, Ein-/Ausschalten, Modelle, Refine) siehe
+[`szenenbilder.md`](szenenbilder.md).
+
 Für Logging-Profile, Logdatei und Laufzeit-Overrides siehe
 [`logging.md`](logging.md).
 

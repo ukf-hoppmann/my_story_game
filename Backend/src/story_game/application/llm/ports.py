@@ -18,6 +18,11 @@ from .contracts import (
 )
 from .prompts import PromptPackage
 from .initial_extraction import InitialWorldExtractionRequest, WorldInitializationCandidate
+from .scene_image_prompt import (
+    CompactImagePromptRequest,
+    SceneImagePromptRequest,
+    SceneImagePromptText,
+)
 from .summary import StorySummaryRequest, StorySummaryText
 from .turn_extraction import TurnChangeCandidate, TurnExtractionRequest
 
@@ -85,3 +90,21 @@ class StorySummaryPort(Protocol):
         self,
         call: LLMGenerationCall[StorySummaryRequest],
     ) -> OperationResult[StorySummaryText, LLMError]: ...
+
+
+class SceneImagePromptPort(Protocol):
+    """Write one detailed image prompt from the latest turns of a story."""
+
+    def write(
+        self,
+        call: LLMGenerationCall[SceneImagePromptRequest],
+    ) -> OperationResult[SceneImagePromptText, LLMError]: ...
+
+
+class CompactImagePromptPort(Protocol):
+    """Shorten a detailed image prompt for a model with a short prompt limit."""
+
+    def compact(
+        self,
+        call: LLMGenerationCall[CompactImagePromptRequest],
+    ) -> OperationResult[SceneImagePromptText, LLMError]: ...

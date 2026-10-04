@@ -118,6 +118,20 @@
     },
     "chronicle": {
       "empty": "Noch keine Zusammenfassung verfügbar."
+    },
+    "sceneImage": {
+      "generate": "Szenenbild erzeugen",
+      "generating": "Bild wird erzeugt …",
+      "alt": "Szenenbild zu Zug {{turn}}",
+      "failed": "Das Szenenbild konnte nicht erzeugt werden: {{message}}",
+      "failedFallback": "Das Szenenbild konnte nicht erzeugt werden.",
+      "createError": "Das Erzeugen des Szenenbilds konnte nicht gestartet werden.",
+      "loadError": "Das Bild konnte nicht geladen werden.",
+      "options": "Bildoptionen",
+      "model": "Bildmodell",
+      "refine": "Mit Verfeinerung",
+      "refineStrength": "Stärke der Verfeinerung: {{value}}",
+      "modelListingFailed": "Die Modellliste ist gerade nicht erreichbar; es gelten die Standardwerte."
     }
   },
   "wizard": {

@@ -30,6 +30,7 @@ timeout_seconds = 60
 story = "model.story.default"
 extraction = "model.extraction.default"
 summary = "model.summary.default"
+scene_image = "model.scene_image.default"
 
 [generation_options.story]
 temperature = 0.5
@@ -38,6 +39,9 @@ temperature = 0.5
 temperature = 0.5
 
 [generation_options.summary]
+temperature = 0.5
+
+[generation_options.scene_image]
 temperature = 0.5
 
 [[models]]
@@ -55,6 +59,12 @@ model_id = "mistralai/mistral-small-3.2"
 [[models]]
 id = "model.summary.default"
 task = "summary"
+provider_id = "lmstudio"
+model_id = "mistralai/mistral-small-3.2"
+
+[[models]]
+id = "model.scene_image.default"
+task = "scene_image"
 provider_id = "lmstudio"
 model_id = "mistralai/mistral-small-3.2"
 """
@@ -77,6 +87,20 @@ def test_loader_reads_three_task_models_and_resolves_concrete_selection(
     )
     assert configuration.generation_for_task(LlmTask.STORY).generation_options.temperature == 0.5
     assert configuration.generation_for_task(LlmTask.STORY).generation_options.max_output_tokens is None
+
+
+def test_loader_resolves_the_scene_image_task(tmp_path: Path) -> None:
+    configuration = TomlLlmConfigurationLoader().load(
+        write_config(tmp_path, valid_document())
+    )
+
+    assert configuration.task_models.for_task(LlmTask.SCENE_IMAGE) == (
+        "model.scene_image.default"
+    )
+    resolver = TomlGenerationConfigurationResolver(write_config(tmp_path, valid_document()))
+    assert resolver.resolve(GenerationTask.SCENE_IMAGE).data.model_selection == ModelSelection(
+        "lmstudio", "mistralai/mistral-small-3.2"
+    )
 
 
 def test_runtime_resolver_reads_current_task_settings_for_each_call(tmp_path: Path) -> None:
@@ -103,6 +127,7 @@ def test_repository_configuration_defines_all_three_active_tasks() -> None:
         LlmTask.STORY,
         LlmTask.EXTRACTION,
         LlmTask.SUMMARY,
+        LlmTask.SCENE_IMAGE,
     }
 
 

@@ -689,7 +689,7 @@ class HumanFullPlaythroughSupport:
     """Plays one real game through real PostgreSQL and real LM Studio.
 
     Closes the gap noted in the STORY-006 completion criteria in
-    ``docs/TODO.md``: no other test connects a live model with live
+    ``docs/todo/TODO.md``: no other test connects a live model with live
     persistence in one run. ``ProposeGameRun`` generates a reviewable,
     unsaved proposal; ``ConfirmGameRunProposal`` persists it as a DRAFT
     template at revision 1; ``StartPlaythrough`` forks it into a new ACTIVE

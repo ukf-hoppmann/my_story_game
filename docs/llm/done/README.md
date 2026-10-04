@@ -6,7 +6,7 @@ neue Quelle für Architekturregeln.
 
 Die aktive, kompaktere Regel bleibt direkt unter [`docs/llm/`](../). Offene
 Arbeit gehört weiterhin nach [`planned/`](../planned/) und in den
-autoritativen [`docs/TODO.md`](../../TODO.md).
+autoritativen [`docs/todo/TODO.md`](../../todo/TODO.md).
 
 Die Dateinamen beginnen mit dem Datum der finalen Umsetzung. Dadurch bleibt
 nachvollziehbar, welchen Stand ein Abschlussarchiv beschreibt.

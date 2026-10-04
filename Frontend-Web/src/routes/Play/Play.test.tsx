@@ -3,11 +3,11 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { apiSlice } from "../../api/apiSlice";
 import { ApiError } from "../../api/client";
 import * as client from "../../api/client";
-import type { GameDocument, WorldState } from "../../api/types";
+import type { GameDocument, SceneImageCapabilities, WorldState } from "../../api/types";
 import { Play } from "./Play";
 
 function buildStore() {
@@ -33,6 +33,20 @@ function renderPlay(runId = "11111111-1111-1111-1111-111111111111") {
 }
 
 const RUN_ID = "11111111-1111-1111-1111-111111111111";
+
+const CAPABILITIES_DISABLED: SceneImageCapabilities = {
+  enabled: false,
+  models: [],
+  refine_models: [],
+  model_listing_failed: false,
+  default_model: null,
+  default_refine: false,
+  default_refine_model: null,
+  default_refine_strength: null,
+  min_refine_strength: null,
+  max_refine_strength: null,
+  turn_window: null,
+};
 
 function buildDocument(
   overrides: Partial<GameDocument["game_run"]> = {},
@@ -89,6 +103,12 @@ function buildDocument(
 }
 
 describe("Play", () => {
+  beforeEach(() => {
+    // The scene-image controls ask the backend whether the feature is on;
+    // every test here runs with it off unless it says otherwise.
+    vi.spyOn(client, "fetchSceneImageCapabilities").mockResolvedValue(CAPABILITIES_DISABLED);
+  });
+
   afterEach(() => {
     vi.restoreAllMocks();
   });

@@ -6,7 +6,6 @@ import { toQueryError } from "../../api/queryError";
 import { Paragraphs } from "../../components/Paragraphs";
 import { Button } from "../../components/Button/Button";
 import { Chip } from "../../components/Chip/Chip";
-import { ImageSlot } from "../../components/ImageSlot/ImageSlot";
 import {
   ArrowRightIcon,
   BookIcon,
@@ -16,6 +15,7 @@ import {
   TargetIcon,
 } from "../../icons";
 import { ErrorBanner } from "../../components/ErrorBanner/ErrorBanner";
+import { SceneArt } from "./SceneArt";
 import { CharactersPanel, FactsPanel, GoalsPanel } from "./SidebarPanels";
 import "./Play.css";
 
@@ -175,11 +175,7 @@ export function Play() {
               </span>
             </div>
 
-            <ImageSlot
-              className="play-scene-art"
-              label={t("play.sceneArtPlaceholder")}
-              alt={doc.game_run.name}
-            />
+            <SceneArt runId={runId} name={doc.game_run.name} />
 
             {activeTab === "story" && (
               <div className="play-story-feed">

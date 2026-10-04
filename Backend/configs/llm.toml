@@ -21,6 +21,7 @@ timeout_seconds = 60
 story = "model.story.groq"
 extraction = "model.extraction.gemini"
 summary = "model.summary.gemini"
+scene_image = "model.scene_image.gemini"
 
 [generation_options.story]
 temperature = 0.5
@@ -30,6 +31,9 @@ temperature = 0.3
 
 [generation_options.summary]
 temperature = 0.5
+
+[generation_options.scene_image]
+temperature = 0.7
 
 
 #######################
@@ -88,5 +92,23 @@ model_id = "qwen3.8-27b-turbo-fable-cold-fusion-735-882-heretic-uncensored-neo-c
 [[models]]
 id = "model.summary.gemini"
 task = "summary"
+provider_id = "gemini"
+model_id = "gemini-3.5-flash-lite"
+
+###############################
+######## SCENE IMAGE ##########
+###############################
+# Writes the image prompt (and the optional short prompt for the refine
+# stage). The image model itself (Modal) is configured in configs/app.toml.
+
+[[models]]
+id = "model.scene_image.default"
+task = "scene_image"
+provider_id = "lmstudio"
+model_id = "qwen3.8-27b-turbo-fable-cold-fusion-735-882-heretic-uncensored-neo-coder-max-mtp"
+
+[[models]]
+id = "model.scene_image.gemini"
+task = "scene_image"
 provider_id = "gemini"
 model_id = "gemini-3.5-flash-lite"

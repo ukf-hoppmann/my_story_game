@@ -16,6 +16,7 @@ from story_game.application import (
 from story_game.application.diagnostics_reporting import ReportFrontendError
 from story_game.application.game_state import GameStateOperations, PromptProfileValidator
 from story_game.application.llm import PromptPackageCatalog
+from story_game.application.scene_image import SceneImageOperations
 
 from .auth import KeycloakTokenVerifier, TokenVerificationError
 
@@ -32,6 +33,8 @@ class ApiDependencies:
     prompt_catalog: PromptPackageCatalog
     prompt_profile_validator: PromptProfileValidator
     report_frontend_error: ReportFrontendError
+    scene_images: SceneImageOperations | None = None
+    """``None`` when the scene-image feature is disabled by configuration."""
 
 
 def get_api_dependencies(request: Request) -> ApiDependencies:

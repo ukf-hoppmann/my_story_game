@@ -78,6 +78,7 @@ class GenerationTask(StrEnum):
     STORY = "story"
     EXTRACTION = "extraction"
     SUMMARY = "summary"
+    SCENE_IMAGE = "scene_image"
 
 
 @dataclass(frozen=True, slots=True)

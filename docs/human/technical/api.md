@@ -22,6 +22,11 @@ Benutzerdaten.
 | `POST` | `/api/v1/runs/{run_id}/playthroughs` | Eine `DRAFT`-Vorlage als neues unabhängiges `ACTIVE`-Spiel abzweigen |
 | `PATCH` | `/api/v1/runs/{run_id}/configuration` | Sprache und editierbare Erzähloptionen als neue Konfigurationsrevision speichern |
 | `POST` | `/api/v1/runs/{run_id}/turns` | Einen Zug in einem `ACTIVE`-Spiel spielen |
+| `GET` | `/api/v1/scene-images/capabilities` | Prüfen, ob Szenenbilder aktiviert sind, und die wählbaren Bildmodelle lesen |
+| `POST` | `/api/v1/runs/{run_id}/scene-images` | Ein Szenenbild zum letzten Zug anstoßen (202, asynchron) |
+| `GET` | `/api/v1/runs/{run_id}/scene-images` | Szenenbilder eines Laufs auflisten, neueste zuerst |
+| `GET` | `/api/v1/runs/{run_id}/scene-images/{image_id}` | Status, Prompts und Optionen eines Szenenbilds lesen |
+| `GET` | `/api/v1/runs/{run_id}/scene-images/{image_id}/content` | Die Bilddaten eines fertigen Szenenbilds laden |
 | `POST` | `/api/v1/diagnostics/frontend-errors` | Einen authentifizierten Frontend-Tooling-Fehler für Diagnosezwecke melden |
 
 ## Vorschlag, Vorlage und abgespieltes Spiel
@@ -198,6 +203,42 @@ Anwendungslogik: `LoadGame` (genutzt von `GET /api/v1/runs/{run_id}`,
 `GameRun.members` und liefert sonst `not_a_run_member`. `GET /api/v1/runs`
 filtert direkt nach `(issuer, subject)`.
 
+## Szenenbilder
+
+Szenenbilder sind ein abschaltbares Zusatzfeature
+([Betrieb](../operations/szenenbilder.md), [Entscheidung](../decisions/szenenbilder.md)).
+`GET /api/v1/scene-images/capabilities` antwortet immer mit 200:
+`enabled: false`, wenn das Feature per Konfiguration aus ist, sonst zusätzlich
+mit den Standardwerten (`default_model`, `default_refine`,
+`default_refine_strength`, Grenzen `min_refine_strength`/`max_refine_strength`,
+`turn_window`) und den Modellen des Bildanbieters (`models`, `refine_models`).
+Ist der Anbieter gerade nicht erreichbar, bleibt `enabled: true`, die
+Modelllisten sind leer und `model_listing_failed` ist `true`. Das Frontend
+blendet seine Bedienelemente nur bei `enabled: true` ein. Bei ausgeschaltetem
+Feature antworten alle anderen Szenenbild-Endpunkte mit 409
+`scene_image_disabled`.
+
+`POST /api/v1/runs/{run_id}/scene-images` verlangt Mitgliedschaft im Lauf. Der
+Body ist optional: `model`, `refine` (an/aus) und `refine_strength`
+(Standard und Grenzen aus der Konfiguration); fehlende Felder übernehmen die
+Standardwerte. Die Antwort kommt sofort mit HTTP 202 und dem noch
+`pending`-Bild. Bild- und Promptschritte laufen danach im Hintergrund; der
+Client fragt `GET .../scene-images/{image_id}` (oder die Liste) ab, bis
+`status` `ready` oder `failed` ist. Bei `failed` steht der Grund in
+`error_message`. Es gibt keinen automatischen Retry; ein neuer POST startet
+eine neue Erzeugung. Läuft für denselben Zug bereits eine Erzeugung, liefert
+der POST dieses laufende Bild zurück, statt eine zweite (kostenpflichtige)
+zu starten. Ein `pending`-Bild, das älter als die längste mögliche Erzeugung
+ist, gilt als verwaist (z. B. nach einem Serverneustart) und blockiert den Zug
+nicht.
+
+Ein Bild gehört zum Zug, der beim Anstoßen der letzte war
+(`turn_sequence`; `0` = nur die Eröffnung). Es ist kein Teil des `GameState`
+und hat keine Revisionsprüfung. `.../content` liefert die Bytes mit dem
+gespeicherten Content-Type (nur für `ready`; sonst 404). Weil dafür der
+Bearer-Token nötig ist, lädt das Frontend die Bytes per `fetch` und zeigt sie
+über eine Object-URL an.
+
 ## Frontend-Diagnose
 
 `POST /api/v1/diagnostics/frontend-errors` benötigt ebenfalls einen gültigen
@@ -224,6 +265,10 @@ Jede Fehlerantwort hat die Form `{"error": <code>, "detail": <Text>, ...}`.
 | 403 | `not_a_run_member` | Die aufrufende Identität gehört nicht zum GameRun |
 | 409 | `run_not_active` | Ein Zug wurde gegen eine `DRAFT`-Vorlage versucht |
 | 409 | `playthrough_source_not_draft` | Ein Abzweig wurde von einem bereits aktiven Lauf versucht |
+| 409 | `scene_image_disabled` | Szenenbilder sind in dieser Installation ausgeschaltet |
+| 422 | `scene_image_no_story` | Der Lauf hat noch weder Eröffnung noch Zug, aus dem ein Bild entstehen könnte |
+| 422 | `scene_image_invalid_options` | Leeres Bildmodell oder Refine-Stärke außerhalb des erlaubten Bereichs |
+| 500 | `scene_image_configuration_invalid` | Die Szenenbild-Konfiguration ist serverseitig ungültig |
 | 502 | `story_model_unavailable` | Das Modell hat nicht geantwortet oder unbrauchbare Ausgabe geliefert |
 | 500 | `story_configuration_invalid` | Die serverseitig validierte Spielkonfiguration ist ungültig (kein Aufruferfehler) |
 | 500 | `story_initialization_inconsistent` / `story_turn_inconsistent` | Die eigene Extraktions-/Validierungskette hat eine intern inkonsistente Antwort erzeugt |
@@ -231,12 +276,13 @@ Jede Fehlerantwort hat die Form `{"error": <code>, "detail": <Text>, ...}`.
 ## Swagger UI und OpenAPI
 
 Mit gestarteter API sind die Verträge direkt unter folgenden Adressen
-verfügbar; über den lokalen Compose-Proxy sind sie außerdem unter
+(veröffentlichter Port `BACKEND_HOST_PORT` aus `configs/docker/docker.env`,
+lokal `8001`) verfügbar; über den lokalen Compose-Proxy sind sie außerdem unter
 `http://backend.storygame.localhost/…` erreichbar:
 
-- Swagger UI: `http://localhost:8000/docs`
-- OpenAPI JSON: `http://localhost:8000/openapi.json`
-- ReDoc: `http://localhost:8000/redoc`
+- Swagger UI: `http://localhost:8001/docs`
+- OpenAPI JSON: `http://localhost:8001/openapi.json`
+- ReDoc: `http://localhost:8001/redoc`
 
 ## Lokal starten
 

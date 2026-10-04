@@ -1,8 +1,11 @@
 import { createApi, fakeBaseQuery } from "@reduxjs/toolkit/query/react";
 import {
   confirmRun,
+  createSceneImage,
   fetchPromptProfileCatalog,
+  fetchSceneImageCapabilities,
   listRuns,
+  listSceneImages,
   loadRun,
   playTurn,
   proposeRun,
@@ -11,12 +14,15 @@ import {
 import { toQueryError, type QueryError } from "./queryError";
 import type {
   ConfirmRunProposalRequest,
+  CreateSceneImageRequest,
   GameDocument,
   PlayTurnRequest,
   ProposeRunRequest,
   PromptProfileCatalog,
   RunProposal,
   RunSummary,
+  SceneImage,
+  SceneImageCapabilities,
   TurnResult,
 } from "./types";
 
@@ -30,7 +36,7 @@ import type {
 export const apiSlice = createApi({
   reducerPath: "api",
   baseQuery: fakeBaseQuery<QueryError>(),
-  tagTypes: ["Run"],
+  tagTypes: ["Run", "SceneImage"],
   endpoints: (builder) => ({
     listRuns: builder.query<RunSummary[], void>({
       queryFn: async () => {
@@ -107,6 +113,39 @@ export const apiSlice = createApi({
       },
       invalidatesTags: (_result, _error, { runId }) => [{ type: "Run", id: runId }],
     }),
+    sceneImageCapabilities: builder.query<SceneImageCapabilities, void>({
+      queryFn: async () => {
+        try {
+          return { data: await fetchSceneImageCapabilities() };
+        } catch (error) {
+          return { error: toQueryError(error, "apiSlice.sceneImageCapabilities") };
+        }
+      },
+    }),
+    listSceneImages: builder.query<SceneImage[], string>({
+      queryFn: async (runId) => {
+        try {
+          const { images } = await listSceneImages(runId);
+          return { data: images };
+        } catch (error) {
+          return { error: toQueryError(error, "apiSlice.listSceneImages") };
+        }
+      },
+      providesTags: (_result, _error, runId) => [{ type: "SceneImage", id: runId }],
+    }),
+    createSceneImage: builder.mutation<
+      SceneImage,
+      { runId: string; payload: CreateSceneImageRequest }
+    >({
+      queryFn: async ({ runId, payload }) => {
+        try {
+          return { data: await createSceneImage(runId, payload) };
+        } catch (error) {
+          return { error: toQueryError(error, "apiSlice.createSceneImage") };
+        }
+      },
+      invalidatesTags: (_result, _error, { runId }) => [{ type: "SceneImage", id: runId }],
+    }),
   }),
 });
 
@@ -118,4 +157,7 @@ export const {
   useConfirmRunMutation,
   useStartPlaythroughMutation,
   usePlayTurnMutation,
+  useSceneImageCapabilitiesQuery,
+  useListSceneImagesQuery,
+  useCreateSceneImageMutation,
 } = apiSlice;

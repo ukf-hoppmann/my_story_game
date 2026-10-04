@@ -5,6 +5,12 @@ from .app_config import (
     StorySummarySettings,
     TomlAppConfigurationLoader,
 )
+from .scene_image import (
+    ModalCredentials,
+    ModalSettings,
+    SceneImageSettings,
+    load_modal_credentials,
+)
 from .llm import (
     LlmConfiguration,
     LlmConfigurationError,
@@ -17,6 +23,10 @@ from .llm import (
 )
 
 __all__ = [
+    "ModalCredentials",
+    "ModalSettings",
+    "SceneImageSettings",
+    "load_modal_credentials",
     "AppConfigurationError",
     "LlmConfiguration",
     "LlmConfigurationError",

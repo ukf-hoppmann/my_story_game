@@ -87,7 +87,7 @@ first thing visible and editable when you want to try a different turn.
 class TestFullPlaythroughHuman:
     """Play one real game: init, then one turn — against real PostgreSQL.
 
-    Closes the gap the STORY-006 completion note in docs/TODO.md flags: no
+    Closes the gap the STORY-006 completion note in docs/todo/TODO.md flags: no
     other test connects a live model call with live persistence in one run.
     Needs --run-lmstudio-live AND STORY_GAME_POSTGRES_DSN.
     """

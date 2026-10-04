@@ -183,7 +183,7 @@ The following items were completed in the state and persistence change:
 The remaining implementation work is the file-backed model and prompt catalog
 behind Application ports, together with actual LLM workflows. It is now
 decomposed under Epic EPIC-002 into the contract, LLM binding, Story
-Generation, and Extraction stories in [`docs/TODO.md`](../../TODO.md).
+Generation, and Extraction stories in [`docs/todo/TODO.md`](../../todo/TODO.md).
 
 ## 10. Reconsideration rule
 

@@ -8,7 +8,7 @@ erkennbar sein.
 Jedes Dokument muss deutlich zwischen aktuellem Stand, Zielbild,
 Abnahmekriterien und offenen Entscheidungen unterscheiden. Konkrete
 verschobene oder noch nicht begonnene Arbeiten werden zusätzlich im
-autoritativen [`docs/TODO.md`](../../../TODO.md) geführt.
+autoritativen [`docs/todo/TODO.md`](../../../todo/TODO.md) geführt.
 
 Dokumente mit verbleibenden Ziel- oder Ausbaupunkten:
 

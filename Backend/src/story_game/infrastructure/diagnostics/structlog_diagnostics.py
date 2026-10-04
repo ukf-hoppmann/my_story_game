@@ -8,6 +8,7 @@ from story_game.application.diagnostics import (
     DiagnosticEvent,
     FrontendToolingError,
     ModelCallFailed,
+    ProposalItemDropped,
     ProposalRejected,
     RevisionConflict,
     SummaryGenerationFailed,
@@ -64,6 +65,12 @@ def _render(event: DiagnosticEvent) -> tuple[str, str, dict[str, object]]:
     if isinstance(event, ProposalRejected):
         return (
             "proposal_rejected",
+            "warning",
+            {"reason": event.reason, "run_id": event.run_id},
+        )
+    if isinstance(event, ProposalItemDropped):
+        return (
+            "proposal_item_dropped",
             "warning",
             {"reason": event.reason, "run_id": event.run_id},
         )

@@ -17,7 +17,6 @@ from story_game.application.run_initiator import RunInitiator
 from story_game.application.llm import (
     CandidateEntity,
     CandidateLink,
-    CandidateRemoval,
     CandidateSceneReference,
     ExtractionPromptSelectionResolver,
     GenerationConfiguration,
@@ -273,7 +272,14 @@ def test_an_extraction_failure_leaves_the_state_untouched() -> None:
 
 def test_a_rejected_proposal_leaves_the_state_untouched() -> None:
     extraction_port = FakeExtractionPort(
-        Success(TurnChangeCandidate(removed_facts=(CandidateRemoval("f99"),)))
+        Success(
+            TurnChangeCandidate(
+                new_entities=(
+                    CandidateEntity("wald", EntityKind.LOCATION, "Wald"),
+                    CandidateEntity("wald", EntityKind.LOCATION, "Anderer Wald"),
+                )
+            )
+        )
     )
     operation, store = workflow(extraction_port=extraction_port)
 

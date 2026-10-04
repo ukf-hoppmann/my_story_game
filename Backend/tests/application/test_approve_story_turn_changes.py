@@ -22,7 +22,7 @@ from story_game.application.story_turn_context import (
     SelectStoryTurnContextRequest,
     build_story_turn_context_selection,
 )
-from story_game.application.diagnostics import ProposalRejected
+from story_game.application.diagnostics import ProposalItemDropped, ProposalRejected
 from story_game.application.story_turn_errors import StoryTurnErrorKind
 from story_game.domain import (
     AddFact,
@@ -177,8 +177,27 @@ def test_an_entity_update_changes_only_the_fields_it_names() -> None:
     [
         pytest.param(
             TurnChangeCandidate(
-                added_facts=(CandidateFact("Unbekannt.", "e99"),)
+                new_entities=(
+                    CandidateEntity("wald", EntityKind.LOCATION, "Wald"),
+                    CandidateEntity("wald", EntityKind.LOCATION, "Anderer Wald"),
+                )
             ),
+            id="duplicate_local_reference",
+        ),
+    ],
+)
+def test_bad_references_discard_the_whole_proposal(candidate) -> None:
+    result = approve(candidate)
+
+    assert isinstance(result, Failure)
+    assert result.error.kind is StoryTurnErrorKind.INVALID_CANDIDATE_REFERENCE
+
+
+@pytest.mark.parametrize(
+    "candidate",
+    [
+        pytest.param(
+            TurnChangeCandidate(added_facts=(CandidateFact("Unbekannt.", "e99"),)),
             id="unknown_entity_handle",
         ),
         pytest.param(
@@ -195,26 +214,41 @@ def test_an_entity_update_changes_only_the_fields_it_names() -> None:
         ),
         pytest.param(
             TurnChangeCandidate(
-                new_entities=(
-                    CandidateEntity("wald", EntityKind.LOCATION, "Wald"),
-                    CandidateEntity("wald", EntityKind.LOCATION, "Anderer Wald"),
-                )
-            ),
-            id="duplicate_local_reference",
-        ),
-        pytest.param(
-            TurnChangeCandidate(
                 entity_updates=(CandidateEntityUpdate("e99", description="x"),)
             ),
             id="update_of_an_unknown_entity",
         ),
     ],
 )
-def test_bad_references_discard_the_whole_proposal(candidate) -> None:
-    result = approve(candidate)
+def test_an_unknown_reference_drops_only_that_item(candidate) -> None:
+    """TEMPORARY (TASK-042): the rest of the proposal still goes through."""
+    diagnostics = FakeDiagnosticsLog()
 
-    assert isinstance(result, Failure)
-    assert result.error.kind is StoryTurnErrorKind.INVALID_CANDIDATE_REFERENCE
+    result = approve(candidate, diagnostics)
+
+    assert isinstance(result, Success)
+    assert result.data.approved.changes == ()
+    assert [type(event) for event in diagnostics.recorded] == [ProposalItemDropped]
+
+
+def test_valid_items_survive_next_to_an_item_with_an_unknown_reference() -> None:
+    result = approve(
+        TurnChangeCandidate(
+            new_entities=(CandidateEntity("wald", EntityKind.LOCATION, "Wald"),),
+            added_facts=(
+                CandidateFact("Unbekannt.", "e99"),
+                CandidateFact("Der Wald ist dunkel.", "wald"),
+            ),
+            scene=(
+                CandidateSceneReference("nirgendwo"),
+                CandidateSceneReference("wald"),
+            ),
+        )
+    )
+
+    assert isinstance(result, Success)
+    kinds = [type(change) for change in result.data.approved.changes]
+    assert kinds == [CreateEntity, AddFact, SetSceneLocations]
 
 
 def test_a_local_reference_may_not_shadow_an_existing_handle() -> None:
@@ -234,7 +268,12 @@ def test_a_rejected_reference_is_recorded_as_a_diagnostic_event() -> None:
     diagnostics = FakeDiagnosticsLog()
 
     result = approve(
-        TurnChangeCandidate(entity_updates=(CandidateEntityUpdate("unbekannt"),)),
+        TurnChangeCandidate(
+            new_entities=(
+                CandidateEntity("wald", EntityKind.LOCATION, "Wald"),
+                CandidateEntity("wald", EntityKind.LOCATION, "Anderer Wald"),
+            )
+        ),
         diagnostics,
     )
 

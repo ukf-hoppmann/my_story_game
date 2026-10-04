@@ -65,6 +65,18 @@ class ProposalRejected:
 
 
 @dataclass(frozen=True, slots=True)
+class ProposalItemDropped:
+    """One item of a turn proposal was dropped, the rest went on.
+
+    Temporary workaround (TASK-042) for models that invent references; the
+    ``reason`` names the unresolvable reference, never the proposal's content.
+    """
+
+    reason: str
+    run_id: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class RevisionConflict:
     """A write lost its expected-revision race."""
 
@@ -97,6 +109,7 @@ DiagnosticEvent = (
     ModelCallFailed
     | SummaryGenerationFailed
     | ProposalRejected
+    | ProposalItemDropped
     | RevisionConflict
     | FrontendToolingError
 )
@@ -134,6 +147,7 @@ __all__ = [
     "FrontendToolingError",
     "ModelCallFailed",
     "NullDiagnosticsLog",
+    "ProposalItemDropped",
     "ProposalRejected",
     "RevisionConflict",
     "SummaryGenerationFailed",

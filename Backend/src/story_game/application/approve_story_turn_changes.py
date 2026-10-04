@@ -9,6 +9,7 @@ from story_game.application.contracts import Failure, OperationResult, Success
 from story_game.application.diagnostics import (
     DiagnosticsLog,
     NullDiagnosticsLog,
+    ProposalItemDropped,
     ProposalRejected,
 )
 from story_game.application.extract_story_turn_changes import ExtractedTurnChanges
@@ -168,30 +169,48 @@ class ApproveStoryTurnChanges:
             *self._created(candidate.new_entities, entities),
             *self._updated(candidate.entity_updates, entities, state),
             # Removals come first so a move does not briefly claim two places.
-            *(
-                (RemoveLink(_resolve(item.handle, projection.link_handles)), item.evidence)
-                for item in candidate.removed_links
+            *self._each(
+                candidate.removed_links,
+                lambda item: (
+                    RemoveLink(_resolve(item.handle, projection.link_handles)),
+                    item.evidence,
+                ),
             ),
             *self._added_links(candidate.added_links, entities),
-            *(
-                (RemoveFact(_resolve(item.handle, projection.fact_handles)), item.evidence)
-                for item in candidate.removed_facts
+            *self._each(
+                candidate.removed_facts,
+                lambda item: (
+                    RemoveFact(_resolve(item.handle, projection.fact_handles)),
+                    item.evidence,
+                ),
             ),
             *self._added_facts(candidate.added_facts, entities),
         ]
-        if candidate.scene:
+        scene = self._each(
+            candidate.scene,
+            lambda item: (_resolve(item.reference, entities), item.evidence),
+        )
+        if scene:
             operations.append(
-                (
-                    SetSceneLocations(
-                        tuple(
-                            _resolve(item.reference, entities)
-                            for item in candidate.scene
-                        )
-                    ),
-                    candidate.scene[0].evidence,
-                )
+                (SetSceneLocations(tuple(ref for ref, _ in scene)), scene[0][1])
             )
         return tuple(operations)
+
+    def _each(self, items, build) -> tuple[_JustifiedOperation, ...]:
+        """Build one result per item, dropping those with an unknown reference.
+
+        TEMPORARY (TASK-042): a weaker model regularly invents a handle or
+        names a label instead. Discarding the whole turn for one such item made
+        the game unplayable, so only the offending item is dropped and the rest
+        of the proposal still goes through the normal validation.
+        """
+        built = []
+        for item in items:
+            try:
+                built.append(build(item))
+            except _UnknownReference as error:
+                self._diagnostics.record(ProposalItemDropped(reason=str(error)))
+        return tuple(built)
 
     def _created(
         self, items: tuple[CandidateEntity, ...], entities: dict[str, StableId]
@@ -219,8 +238,7 @@ class ApproveStoryTurnChanges:
         entities: dict[str, StableId],
         state: GameState,
     ) -> tuple[_JustifiedOperation, ...]:
-        operations: list[_JustifiedOperation] = []
-        for item in items:
+        def update(item: CandidateEntityUpdate) -> _JustifiedOperation:
             entity_id = _resolve(item.handle, entities)
             try:
                 current = state.world.entity(entity_id)
@@ -236,44 +254,49 @@ class ApproveStoryTurnChanges:
                 )
             if item.aliases is not None:
                 changes["aliases"] = item.aliases
-            operations.append(
-                (UpdateEntity(replace(current, **changes)), item.evidence)
-            )
-        return tuple(operations)
+            return UpdateEntity(replace(current, **changes)), item.evidence
+
+        return self._each(items, update)
 
     def _added_links(
         self, items: tuple[CandidateLink, ...], entities: dict[str, StableId]
     ) -> tuple[_JustifiedOperation, ...]:
-        return tuple(
-            (AddLink(
-                EntityLink(
-                    id=self._new_id(),
-                    source_id=_resolve(item.source_ref, entities),
-                    target_id=_resolve(item.target_ref, entities),
-                    kind=item.kind,
-                    quantity=item.quantity,
-                    description=item.description,
-                )
-            ), item.evidence)
-            for item in items
+        return self._each(
+            items,
+            lambda item: (
+                AddLink(
+                    EntityLink(
+                        id=self._new_id(),
+                        source_id=_resolve(item.source_ref, entities),
+                        target_id=_resolve(item.target_ref, entities),
+                        kind=item.kind,
+                        quantity=item.quantity,
+                        description=item.description,
+                    )
+                ),
+                item.evidence,
+            ),
         )
 
     def _added_facts(
         self, items: tuple[CandidateFact, ...], entities: dict[str, StableId]
     ) -> tuple[_JustifiedOperation, ...]:
-        return tuple(
-            (AddFact(
-                Fact(
-                    id=self._new_id(),
-                    statement=item.statement,
-                    subject_id=(
-                        None
-                        if item.subject_ref is None
-                        else _resolve(item.subject_ref, entities)
-                    ),
-                )
-            ), item.evidence)
-            for item in items
+        return self._each(
+            items,
+            lambda item: (
+                AddFact(
+                    Fact(
+                        id=self._new_id(),
+                        statement=item.statement,
+                        subject_id=(
+                            None
+                            if item.subject_ref is None
+                            else _resolve(item.subject_ref, entities)
+                        ),
+                    )
+                ),
+                item.evidence,
+            ),
         )
 
 

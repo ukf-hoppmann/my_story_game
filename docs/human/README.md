@@ -13,7 +13,7 @@ technische Zusammenhänge und den Betrieb des Projekts in verständlicher Form.
 - [`operations/`](operations/) enthält Anleitungen für Start, Tests,
   Migrationen, Deployment und Troubleshooting.
 
-Der autoritative Backlog liegt weiterhin in [`../TODO.md`](../TODO.md). Die
+Der autoritative Backlog liegt weiterhin in [`../todo/TODO.md`](../todo/TODO.md). Die
 verbindlichen, agenten- und harnessrelevanten Regeln liegen in
 [`../../.harness/`](../../.harness/); ihre fachliche Begründung gehört, wenn
 nötig, in `decisions/`.

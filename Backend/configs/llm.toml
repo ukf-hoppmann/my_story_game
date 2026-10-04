@@ -18,10 +18,16 @@ base_url = "https://generativelanguage.googleapis.com/v1beta/openai"
 timeout_seconds = 60
 
 [task_models]
-story = "model.story.groq"
-extraction = "model.extraction.gemini"
-summary = "model.summary.gemini"
-scene_image = "model.scene_image.gemini"
+[task_models]
+story = "model.story.default"
+extraction = "model.extraction.default"
+summary = "model.summary.default"
+scene_image = "model.scene_image.default"
+
+#story = "model.story.groq"
+#extraction = "model.extraction.gemini"
+#summary = "model.summary.gemini"
+#scene_image = "model.scene_image.gemini"
 
 [generation_options.story]
 temperature = 0.5
@@ -46,7 +52,8 @@ task = "story"
 provider_id = "lmstudio"
 #model_id = "fwvision-qwen3-vl-8b-v3"
 #model_id = "mistralai/mistral-small-3.2"
-model_id = "qwen3.8-27b-turbo-fable-cold-fusion-735-882-heretic-uncensored-neo-coder-max-mtp"
+#model_id = "qwen3.8-27b-turbo-fable-cold-fusion-735-882-heretic-uncensored-neo-coder-max-mtp"
+model_id = "qwen3.6-35b-a3b-abliterated-heretic"
 
 [[models]]
 id = "model.story.groq"
@@ -63,8 +70,8 @@ id = "model.extraction.default"
 task = "extraction"
 provider_id = "lmstudio"
 #model_id = "llama@f32"
-model_id = "qwen3.8-27b-turbo-fable-cold-fusion-735-882-heretic-uncensored-neo-coder-max-mtp"
-
+#model_id = "qwen3.8-27b-turbo-fable-cold-fusion-735-882-heretic-uncensored-neo-coder-max-mtp"
+model_id = "qwen3.6-35b-a3b-abliterated-heretic"
 
 [[models]]
 id = "model.extraction.groq"
@@ -87,7 +94,8 @@ id = "model.summary.default"
 task = "summary"
 provider_id = "lmstudio"
 #model_id = "mistralai/mistral-small-3.2"
-model_id = "qwen3.8-27b-turbo-fable-cold-fusion-735-882-heretic-uncensored-neo-coder-max-mtp"
+#model_id = "qwen3.8-27b-turbo-fable-cold-fusion-735-882-heretic-uncensored-neo-coder-max-mtp"
+model_id = "qwen3.6-35b-a3b-abliterated-heretic"
 
 [[models]]
 id = "model.summary.gemini"
@@ -105,7 +113,8 @@ model_id = "gemini-3.5-flash-lite"
 id = "model.scene_image.default"
 task = "scene_image"
 provider_id = "lmstudio"
-model_id = "qwen3.8-27b-turbo-fable-cold-fusion-735-882-heretic-uncensored-neo-coder-max-mtp"
+#model_id = "qwen3.8-27b-turbo-fable-cold-fusion-735-882-heretic-uncensored-neo-coder-max-mtp"
+model_id = "qwen3.6-35b-a3b-abliterated-heretic"
 
 [[models]]
 id = "model.scene_image.gemini"

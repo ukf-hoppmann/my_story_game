@@ -31,7 +31,7 @@ context_segment_count = 2
 # Off by default: switch it on only where the image provider is reachable.
 # Provider credentials never go here — put them in the gitignored
 # configs/scene_image.secrets.toml (copy scene_image.secrets.toml.example).
-enabled = false
+enabled = true
 provider = "modal"
 # How many of the latest turns the image prompt is written from.
 turn_window = 3
@@ -46,6 +46,7 @@ refine_strength = 0.35
 compact_prompt_max_words = 60
 
 [scene_image.modal]
+# TODO: echte URLs eintragen (im image_refiner: ./run.sh modal urls)
 url = "https://example--image-gpu.modal.run"
 control_url = "https://example--image-control.modal.run"
 model = "z-image-turbo"

@@ -48,3 +48,28 @@
 .scene-art-error {
   color: var(--wine-bright);
 }
+
+.scene-art-versions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: -14px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.scene-art-versions button {
+  background: none;
+  border: 0;
+  color: var(--gold);
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.scene-art-versions button:disabled {
+  color: var(--text-faint);
+  cursor: default;
+}

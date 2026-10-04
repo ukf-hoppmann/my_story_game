@@ -47,14 +47,14 @@ function image(overrides: Partial<SceneImage> = {}): SceneImage {
   };
 }
 
-function renderArt() {
+function renderArt(turn?: number) {
   const store = configureStore({
     reducer: { [apiSlice.reducerPath]: apiSlice.reducer },
     middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(apiSlice.middleware),
   });
   render(
     <Provider store={store}>
-      <SceneArt runId={RUN_ID} name="Die Schatten von Auenfall" />
+      <SceneArt runId={RUN_ID} name="Die Schatten von Auenfall" turn={turn} />
     </Provider>,
   );
 }
@@ -216,5 +216,28 @@ describe("SceneArt", () => {
 
     await screen.findByRole("button", { name: /Szenenbild erzeugen/ });
     expect(screen.queryByRole("button", { name: /Szenenbild vergrößern/ })).not.toBeInTheDocument();
+  });
+
+  it("shows the picture in effect at the given turn and steps through its versions", async () => {
+    vi.spyOn(client, "fetchSceneImageCapabilities").mockResolvedValue(ENABLED);
+    vi.spyOn(client, "listSceneImages").mockResolvedValue({
+      images: [
+        image({ image_id: "c", turn_sequence: 5 }),
+        image({ image_id: "b", turn_sequence: 2 }),
+        image({ image_id: "a", turn_sequence: 2 }),
+      ],
+    });
+    const blob = vi.spyOn(client, "fetchSceneImageBlob").mockResolvedValue(new Blob(["x"]));
+    renderArt(3);
+
+    expect(await screen.findByRole("img", { name: "Szenenbild zu Zug 2" })).toBeInTheDocument();
+    await waitFor(() => expect(blob).toHaveBeenCalledWith(RUN_ID, "b"));
+    expect(screen.getByText("Version 2 von 2")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Ältere Version" }));
+
+    await waitFor(() => expect(blob).toHaveBeenCalledWith(RUN_ID, "a"));
+    expect(screen.getByText("Version 1 von 2")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Ältere Version" })).toBeDisabled();
   });
 });

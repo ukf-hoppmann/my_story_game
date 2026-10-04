@@ -104,6 +104,7 @@ function buildDocument(
 
 describe("Play", () => {
   beforeEach(() => {
+    localStorage.clear();
     // The scene-image controls ask the backend whether the feature is on;
     // every test here runs with it off unless it says otherwise.
     vi.spyOn(client, "fetchSceneImageCapabilities").mockResolvedValue(CAPABILITIES_DISABLED);
@@ -238,6 +239,40 @@ describe("Play", () => {
     expect(await screen.findByDisplayValue("")).toBeInTheDocument();
   });
 
+  it("grows the action field with its content", async () => {
+    vi.spyOn(client, "loadRun").mockResolvedValue(buildDocument());
+    renderPlay();
+    const input = await screen.findByPlaceholderText("Was tust du?");
+    expect(input.tagName).toBe("TEXTAREA");
+
+    vi.spyOn(input as HTMLTextAreaElement, "scrollHeight", "get").mockReturnValue(120);
+    await userEvent.type(input, "Ein langer Text");
+
+    expect((input as HTMLTextAreaElement).style.height).toBe("120px");
+  });
+
+  it("submits on Enter but inserts a line break on Shift+Enter", async () => {
+    vi.spyOn(client, "loadRun").mockResolvedValue(buildDocument());
+    vi.spyOn(client, "playTurn").mockResolvedValue({
+      state: buildDocument().game_state,
+      continuation: { narration: "Bran nickt.", options: [] },
+      proposed_change_count: 1,
+      summary_failed: false,
+      summary_failure_message: null,
+    });
+    renderPlay();
+    const input = await screen.findByPlaceholderText("Was tust du?");
+
+    await userEvent.type(input, "Zeile eins{Shift>}{Enter}{/Shift}Zeile zwei");
+    expect(client.playTurn).not.toHaveBeenCalled();
+    expect(input).toHaveValue("Zeile eins\nZeile zwei");
+
+    await userEvent.type(input, "{Enter}");
+    expect(client.playTurn).toHaveBeenCalledWith(RUN_ID, {
+      player_input: "Zeile eins\nZeile zwei",
+    });
+  });
+
   it("hides continuation chips until a turn has been played (TASK-034)", async () => {
     vi.spyOn(client, "loadRun").mockResolvedValue(buildDocument());
     renderPlay();
@@ -364,5 +399,40 @@ describe("Play", () => {
     expect(
       await screen.findByText("Es gab zwischenzeitlich eine neue Aktualisierung. Lade die Geschichte neu."),
     ).toBeInTheDocument();
+  });
+
+  describe("view mode", () => {
+    it("starts as flowing text and switches to a chat with the player on the right", async () => {
+      vi.spyOn(client, "loadRun").mockResolvedValue(buildDocument());
+      renderPlay();
+      await screen.findByText("Der Regen hatte die Spuren fast fortgespült.");
+      expect(screen.getByText("Du: Ich untersuche die Laterne.")).toBeInTheDocument();
+
+      await userEvent.click(screen.getByRole("button", { name: "Chat-Ansicht" }));
+
+      expect(screen.queryByText("Du: Ich untersuche die Laterne.")).not.toBeInTheDocument();
+      const playerBubble = screen.getByText("Ich untersuche die Laterne.").closest(".chat-bubble");
+      expect(playerBubble).toHaveClass("chat-bubble--player");
+      const narratorBubble = screen
+        .getByText("Unter der Laterne glitzert ein silberner Faden.")
+        .closest(".chat-bubble");
+      expect(narratorBubble).toHaveClass("chat-bubble--narrator");
+      expect(screen.getByRole("button", { name: "Fließtext" })).toBeInTheDocument();
+    });
+
+    it("remembers the chosen mode", async () => {
+      vi.spyOn(client, "loadRun").mockResolvedValue(buildDocument());
+      renderPlay();
+      await userEvent.click(await screen.findByRole("button", { name: "Chat-Ansicht" }));
+      expect(localStorage.getItem("play.viewMode")).toBe("chat");
+    });
+
+    it("opens in chat mode when it was stored", async () => {
+      localStorage.setItem("play.viewMode", "chat");
+      vi.spyOn(client, "loadRun").mockResolvedValue(buildDocument());
+      renderPlay();
+
+      expect(await screen.findByRole("button", { name: "Fließtext" })).toBeInTheDocument();
+    });
   });
 });

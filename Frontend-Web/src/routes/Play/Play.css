@@ -108,6 +108,12 @@
   text-wrap: balance;
 }
 
+.play-scene-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
 .play-turn-badge {
   background: var(--wine);
   color: #f5e7ca;
@@ -185,7 +191,7 @@
   padding: 0 16px;
 }
 
-.play-action-input input {
+.play-action-input textarea {
   flex: 1;
   background: transparent;
   border: 0;
@@ -193,13 +199,16 @@
   font-family: var(--font-ui);
   font-size: 0.95rem;
   padding: 13px 0;
+  resize: none;
+  max-height: 12em;
+  line-height: 1.4;
 }
 
-.play-action-input input:focus {
+.play-action-input textarea:focus {
   outline: none;
 }
 
-.play-action-input input::placeholder {
+.play-action-input textarea::placeholder {
   color: var(--text-faint);
 }
 

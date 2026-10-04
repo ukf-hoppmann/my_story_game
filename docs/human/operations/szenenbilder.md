@@ -39,6 +39,14 @@ Der Bildprompt wird mit dem Modell der Aufgabe `scene_image` aus
 `[generation_options.scene_image]`, Katalogeinträge mit `task = "scene_image"`).
 Derselbe Aufruf schreibt bei aktiver Verfeinerung auch den Kurzprompt.
 
+## Versionen und Anzeige
+
+Jede Erzeugung legt ein neues Bild an, auch mehrere zum selben Zug; nichts wird
+überschrieben. Jedes Bild merkt sich den Zug, zu dem es entstand. Im Spiel zeigt
+die Fließtext-Ansicht beim Scrollen das Bild des gerade sichtbaren Zuges (oder
+das letzte davor), die Chat-Ansicht hängt es an die Antwort seines Zuges. Gibt
+es mehrere Versionen zu einem Zug, blättert man mit den Pfeilen am Bild.
+
 ## Zugangsdaten
 
 Das Modal-Proxy-Token gehört **nicht** in `app.toml`. Lege

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useLoadRunQuery, usePlayTurnMutation, useStartPlaythroughMutation } from "../../api/apiSlice";
@@ -15,9 +15,29 @@ import {
   TargetIcon,
 } from "../../icons";
 import { ErrorBanner } from "../../components/ErrorBanner/ErrorBanner";
-import { SceneArt } from "./SceneArt";
+import { ChatFeed } from "./ChatFeed";
+import { SceneArt, SceneImageControls } from "./SceneArt";
 import { CharactersPanel, FactsPanel, GoalsPanel } from "./SidebarPanels";
 import "./Play.css";
+
+type ViewMode = "text" | "chat";
+const VIEW_MODE_KEY = "play.viewMode";
+
+function loadViewMode(): ViewMode {
+  try {
+    return localStorage.getItem(VIEW_MODE_KEY) === "chat" ? "chat" : "text";
+  } catch {
+    return "text";
+  }
+}
+
+function saveViewMode(mode: ViewMode) {
+  try {
+    localStorage.setItem(VIEW_MODE_KEY, mode);
+  } catch {
+    // Storage may be blocked; the choice then only lasts for this visit.
+  }
+}
 
 /** Recovery copy for the error codes the old PlayScreen specifically
  *  handled — a stale run or a concurrent-edit conflict both need a reload,
@@ -35,7 +55,13 @@ export function Play() {
   const { runId = "" } = useParams<{ runId: string }>();
   const navigate = useNavigate();
   const [input, setInput] = useState("");
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const [activeTab, setActiveTab] = useState<PlayTab>("story");
+  const [viewMode, setViewMode] = useState<ViewMode>(loadViewMode);
+  const feedRef = useRef<HTMLDivElement>(null);
+  // The story turn at the top of the flowing-text feed; undefined while the
+  // feed sits at its end, where the newest picture belongs.
+  const [visibleTurn, setVisibleTurn] = useState<number | undefined>(undefined);
   // Suggested next moves from the most recent `playTurn` response. Transient
   // presentation data (TASK-034) — never part of `GameDocument`, so it is
   // held locally here rather than read back from the reloaded state.
@@ -45,6 +71,54 @@ export function Play() {
   const { data: doc, isLoading, error, refetch } = useLoadRunQuery(runId, { skip: runId === "" });
   const [playTurn, playTurnState] = usePlayTurnMutation();
   const [startPlaythrough, startState] = useStartPlaythroughMutation();
+
+  // Grow the field with its content; the CSS max-height caps it and lets the
+  // rest scroll. Reset first so the field also shrinks again.
+  useLayoutEffect(() => {
+    const field = inputRef.current;
+    if (!field) {
+      return;
+    }
+    field.style.height = "auto";
+    field.style.height = `${field.scrollHeight}px`;
+  }, [input, doc]);
+
+  // Like a chat: land on the newest turn on load, on a new turn and on a switch.
+  const turnCount = doc?.game_state.story.turns.length;
+  const hasFeed = doc?.game_run.status === "active";
+  useLayoutEffect(() => {
+    const feed = feedRef.current;
+    if (feed) {
+      feed.scrollTop = feed.scrollHeight;
+    }
+    setVisibleTurn(undefined);
+  }, [turnCount, hasFeed, viewMode, activeTab]);
+
+  function handleFeedScroll() {
+    const feed = feedRef.current;
+    if (!feed) {
+      return;
+    }
+    if (feed.scrollTop + feed.clientHeight >= feed.scrollHeight - 4) {
+      setVisibleTurn(undefined);
+      return;
+    }
+    const lineY = feed.getBoundingClientRect().top + 40;
+    let current = 0;
+    for (const element of feed.querySelectorAll<HTMLElement>("[data-turn]")) {
+      if (element.getBoundingClientRect().top > lineY) {
+        break;
+      }
+      current = Number(element.dataset.turn);
+    }
+    setVisibleTurn(current);
+  }
+
+  function handleToggleViewMode() {
+    const next: ViewMode = viewMode === "text" ? "chat" : "text";
+    setViewMode(next);
+    saveViewMode(next);
+  }
 
   async function handleSubmitTurn() {
     if (input.trim().length === 0) {
@@ -170,22 +244,29 @@ export function Play() {
           <>
             <div className="play-scene-header">
               <h1>{doc.game_run.name}</h1>
-              <span className="play-turn-badge">
-                {t("play.turnBadge", { turn: doc.game_state.story.current_turn_sequence })}
-              </span>
+              <div className="play-scene-header-actions">
+                <Button variant="ghost" aria-pressed={viewMode === "chat"} onClick={handleToggleViewMode}>
+                  {viewMode === "chat" ? t("play.viewMode.toText") : t("play.viewMode.toChat")}
+                </Button>
+                <span className="play-turn-badge">
+                  {t("play.turnBadge", { turn: doc.game_state.story.current_turn_sequence })}
+                </span>
+              </div>
             </div>
 
-            <SceneArt runId={runId} name={doc.game_run.name} />
+            {viewMode === "text" && (
+              <SceneArt runId={runId} name={doc.game_run.name} turn={visibleTurn} />
+            )}
 
-            {activeTab === "story" && (
-              <div className="play-story-feed">
+            {activeTab === "story" && viewMode === "text" && (
+              <div className="play-story-feed" ref={feedRef} onScroll={handleFeedScroll}>
                 {doc.game_state.story.initialization && (
-                  <div className="play-turn">
+                  <div className="play-turn" data-turn={0}>
                     <Paragraphs text={doc.game_state.story.initialization.narration} />
                   </div>
                 )}
                 {doc.game_state.story.turns.map((turn) => (
-                  <div className="play-turn" key={turn.id}>
+                  <div className="play-turn" data-turn={turn.sequence} key={turn.id}>
                     <p className="play-turn-input">{t("play.turnInputPrefix", { input: turn.player_input })}</p>
                     <Paragraphs text={turn.narration} />
                   </div>
@@ -193,8 +274,17 @@ export function Play() {
               </div>
             )}
 
+            {activeTab === "story" && viewMode === "chat" && (
+              <>
+                <div className="play-story-feed play-chat" ref={feedRef}>
+                  <ChatFeed runId={runId} story={doc.game_state.story} name={doc.game_run.name} />
+                </div>
+                <SceneImageControls runId={runId} />
+              </>
+            )}
+
             {activeTab === "chronicle" && (
-              <div className="play-story-feed play-chronicle">
+              <div className="play-story-feed play-chronicle" ref={feedRef}>
                 {doc.game_state.story.summaries.length === 0 ? (
                   <p className="play-status">{t("play.chronicle.empty")}</p>
                 ) : (
@@ -235,13 +325,15 @@ export function Play() {
 
             <div className="play-action-row">
               <label className="play-action-input">
-                <input
-                  type="text"
+                <textarea
+                  ref={inputRef}
+                  rows={1}
                   placeholder={t("play.actionPlaceholder")}
                   value={input}
                   onChange={(event) => handleInputChange(event.target.value)}
                   onKeyDown={(event) => {
-                    if (event.key === "Enter") {
+                    if (event.key === "Enter" && !event.shiftKey) {
+                      event.preventDefault();
                       handleSubmitTurn();
                     }
                   }}

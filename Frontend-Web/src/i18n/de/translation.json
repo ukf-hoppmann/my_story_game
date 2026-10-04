@@ -144,7 +144,14 @@
         "refineOff": "aus",
         "seed": "Seed",
         "size": "Größe"
-      }
+      },
+      "version": "Version {{current}} von {{total}}",
+      "olderVersion": "Ältere Version",
+      "newerVersion": "Neuere Version"
+    },
+    "viewMode": {
+      "toChat": "Chat-Ansicht",
+      "toText": "Fließtext"
     }
   },
   "wizard": {

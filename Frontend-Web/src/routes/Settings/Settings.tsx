@@ -9,6 +9,7 @@ import {
 import type { AdminPromptKind, AdminPromptVersion } from "../../api/types";
 import { Button } from "../../components/Button/Button";
 import { ErrorBanner } from "../../components/ErrorBanner/ErrorBanner";
+import { ModelSettings } from "./ModelSettings";
 import "./Settings.css";
 
 const KIND_ORDER: AdminPromptKind[] = ["task", "option", "directive"];
@@ -128,7 +129,9 @@ export function Settings() {
         <h1>{t("settings.heading")}</h1>
       </div>
 
-      <section>
+      <ModelSettings />
+
+      <section className="settings-section">
         <div className="settings-section-head">
           <h2>{t("settings.promptsHeading")}</h2>
           <Button variant="ghost" disabled={resetState.isLoading} onClick={() => reset({})}>

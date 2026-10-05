@@ -2,7 +2,7 @@ import { configureStore } from "@reduxjs/toolkit";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { apiSlice } from "../../api/apiSlice";
 import * as client from "../../api/client";
 import type { AdminPromptList, AdminPromptVersion } from "../../api/types";
@@ -70,6 +70,10 @@ function entry(key: string) {
 }
 
 describe("Settings", () => {
+  beforeEach(() => {
+    vi.spyOn(client, "listAdminModels").mockResolvedValue({ settings: [], candidates: [] });
+  });
+
   afterEach(() => {
     vi.restoreAllMocks();
   });

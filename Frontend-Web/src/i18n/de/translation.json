@@ -269,6 +269,21 @@
       "ui": "Bearbeitet",
       "toml_reset": "Auf Original zurückgesetzt"
     },
-    "active": "aktuell"
+    "active": "aktuell",
+    "modelsHeading": "Modelle",
+    "modelsIntro": "Welches Modell eine Aufgabe nutzt, kommt zunächst aus der Konfigurationsdatei. Zur Auswahl stehen die dort eingetragenen Modelle; Änderungen gelten ab dem nächsten Aufruf und bleiben im Verlauf erhalten.",
+    "modelsLoading": "Lade die Modelle …",
+    "modelsLoadError": "Die Modelle konnten nicht geladen werden.",
+    "resetAllModels": "Alle Modelle zurücksetzen",
+    "model": "Modell",
+    "temperature": "Temperatur",
+    "maxOutputTokens": "Maximale Ausgabelänge (Tokens)",
+    "defaultHint": "leer = Standard des Anbieters",
+    "task": {
+      "story": "Story",
+      "extraction": "Extraktion",
+      "summary": "Zusammenfassung",
+      "scene_image": "Szenenbild-Prompt"
+    }
   }
 }

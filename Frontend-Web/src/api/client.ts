@@ -1,4 +1,8 @@
 import type {
+  AdminModelOverview,
+  AdminModelSetting,
+  AdminModelSettingList,
+  AdminModelTask,
   AdminPromptKind,
   AdminPromptList,
   AdminPromptVersion,
@@ -11,9 +15,11 @@ import type {
   PlayTurnRequest,
   ProposeRunRequest,
   PromptProfileCatalog,
+  ResetModelSettingsRequest,
   ResetPromptsRequest,
   RunProposal,
   RunSummaryList,
+  SaveModelSettingRequest,
   SavePromptTextRequest,
   SceneImage,
   SceneImageCapabilities,
@@ -230,6 +236,38 @@ export async function resetPrompts(
   payload: ResetPromptsRequest,
 ): Promise<AdminPromptVersionList> {
   return request("/api/v1/admin/prompts/reset", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+/** Admin only: the active model choice of every task plus the catalog models
+ *  selectable for each. */
+export async function listAdminModels(): Promise<AdminModelOverview> {
+  return request("/api/v1/admin/models");
+}
+
+/** Every version of one task's model choice, newest first. */
+export async function fetchModelHistory(task: AdminModelTask): Promise<AdminModelSettingList> {
+  const query = new URLSearchParams({ task });
+  return request(`/api/v1/admin/models/history?${query.toString()}`);
+}
+
+/** Saves the choice as the task's new active version; the old one stays in the history. */
+export async function saveModelSetting(
+  payload: SaveModelSettingRequest,
+): Promise<AdminModelSetting> {
+  return request("/api/v1/admin/models", {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+/** Re-applies the shipped original as a new version, for one task or (with `{}`) all. */
+export async function resetModelSettings(
+  payload: ResetModelSettingsRequest,
+): Promise<AdminModelSettingList> {
+  return request("/api/v1/admin/models/reset", {
     method: "POST",
     body: JSON.stringify(payload),
   });

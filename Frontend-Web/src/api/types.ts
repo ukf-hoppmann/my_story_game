@@ -366,3 +366,50 @@ export interface ResetPromptsRequest {
   kind?: AdminPromptKind;
   key?: string;
 }
+
+export type AdminModelTask = "story" | "extraction" | "summary" | "scene_image";
+
+/** One stored version of a task's model choice (admin settings). */
+export interface AdminModelSetting {
+  version_id: string;
+  task: AdminModelTask;
+  /** Logical id of a model in the backend's `llm.toml` catalog. */
+  model_ref: string;
+  temperature: number | null;
+  max_output_tokens: number | null;
+  source: AdminPromptSource;
+  created_at: string;
+  created_by: string | null;
+  is_active: boolean;
+  /** True while the active version is an edit made in the UI. */
+  is_modified: boolean;
+}
+
+/** A catalog model that may be selected for `task`. */
+export interface AdminModelCandidate {
+  task: AdminModelTask;
+  model_ref: string;
+  provider_id: string;
+  model_id: string;
+}
+
+export interface AdminModelOverview {
+  settings: AdminModelSetting[];
+  candidates: AdminModelCandidate[];
+}
+
+export interface AdminModelSettingList {
+  versions: AdminModelSetting[];
+}
+
+export interface SaveModelSettingRequest {
+  task: AdminModelTask;
+  model_ref: string;
+  temperature: number | null;
+  max_output_tokens: number | null;
+}
+
+/** Name one task, or send `{}` to reset every task. */
+export interface ResetModelSettingsRequest {
+  task?: AdminModelTask;
+}

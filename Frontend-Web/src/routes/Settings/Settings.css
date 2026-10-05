@@ -148,3 +148,44 @@
   color: var(--text-muted);
   white-space: pre-wrap;
 }
+
+.settings-section {
+  margin-bottom: 44px;
+}
+
+.settings-fields {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 14px;
+}
+
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.settings-field select,
+.settings-field input {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--surface-line);
+  border-radius: var(--radius-sm);
+  padding: 9px 10px;
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+}
+
+.settings-field select:focus,
+.settings-field input:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+
+@media (max-width: 700px) {
+  .settings-fields {
+    grid-template-columns: 1fr;
+  }
+}

@@ -2,21 +2,29 @@ import { createApi, fakeBaseQuery } from "@reduxjs/toolkit/query/react";
 import {
   confirmRun,
   createSceneImage,
+  fetchModelHistory,
   fetchPromptHistory,
   fetchPromptProfileCatalog,
   fetchSceneImageCapabilities,
+  listAdminModels,
   listAdminPrompts,
   listRuns,
   listSceneImages,
   loadRun,
   playTurn,
   proposeRun,
+  resetModelSettings,
   resetPrompts,
+  saveModelSetting,
   savePromptText,
   startPlaythrough,
 } from "./client";
 import { toQueryError, type QueryError } from "./queryError";
 import type {
+  AdminModelOverview,
+  AdminModelSetting,
+  AdminModelSettingList,
+  AdminModelTask,
   AdminPromptKind,
   AdminPromptList,
   AdminPromptVersion,
@@ -28,8 +36,10 @@ import type {
   ProposeRunRequest,
   PromptProfileCatalog,
   RunProposal,
+  ResetModelSettingsRequest,
   ResetPromptsRequest,
   RunSummary,
+  SaveModelSettingRequest,
   SavePromptTextRequest,
   SceneImage,
   SceneImageCapabilities,
@@ -46,7 +56,7 @@ import type {
 export const apiSlice = createApi({
   reducerPath: "api",
   baseQuery: fakeBaseQuery<QueryError>(),
-  tagTypes: ["Run", "SceneImage", "AdminPrompt"],
+  tagTypes: ["Run", "SceneImage", "AdminPrompt", "AdminModel"],
   endpoints: (builder) => ({
     listAdminPrompts: builder.query<AdminPromptList, void>({
       queryFn: async () => {
@@ -57,6 +67,46 @@ export const apiSlice = createApi({
         }
       },
       providesTags: ["AdminPrompt"],
+    }),
+    listAdminModels: builder.query<AdminModelOverview, void>({
+      queryFn: async () => {
+        try {
+          return { data: await listAdminModels() };
+        } catch (error) {
+          return { error: toQueryError(error, "apiSlice.listAdminModels") };
+        }
+      },
+      providesTags: ["AdminModel"],
+    }),
+    modelHistory: builder.query<AdminModelSettingList, AdminModelTask>({
+      queryFn: async (task) => {
+        try {
+          return { data: await fetchModelHistory(task) };
+        } catch (error) {
+          return { error: toQueryError(error, "apiSlice.modelHistory") };
+        }
+      },
+      providesTags: ["AdminModel"],
+    }),
+    saveModelSetting: builder.mutation<AdminModelSetting, SaveModelSettingRequest>({
+      queryFn: async (payload) => {
+        try {
+          return { data: await saveModelSetting(payload) };
+        } catch (error) {
+          return { error: toQueryError(error, "apiSlice.saveModelSetting") };
+        }
+      },
+      invalidatesTags: ["AdminModel"],
+    }),
+    resetModelSettings: builder.mutation<AdminModelSettingList, ResetModelSettingsRequest>({
+      queryFn: async (payload) => {
+        try {
+          return { data: await resetModelSettings(payload) };
+        } catch (error) {
+          return { error: toQueryError(error, "apiSlice.resetModelSettings") };
+        }
+      },
+      invalidatesTags: ["AdminModel"],
     }),
     promptHistory: builder.query<AdminPromptVersionList, { kind: AdminPromptKind; key: string }>({
       queryFn: async ({ kind, key }) => {
@@ -210,6 +260,10 @@ export const {
   useSceneImageCapabilitiesQuery,
   useListSceneImagesQuery,
   useCreateSceneImageMutation,
+  useListAdminModelsQuery,
+  useModelHistoryQuery,
+  useSaveModelSettingMutation,
+  useResetModelSettingsMutation,
   useListAdminPromptsQuery,
   usePromptHistoryQuery,
   useSavePromptTextMutation,

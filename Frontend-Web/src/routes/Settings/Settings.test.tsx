@@ -28,6 +28,7 @@ function version(overrides: Partial<AdminPromptVersion>): AdminPromptVersion {
     created_by: null,
     is_active: true,
     is_modified: false,
+    is_custom: false,
     ...overrides,
   };
 }
@@ -107,37 +108,173 @@ describe("Settings", () => {
     const article = await screen.findByRole("article", { name: "tone/balanced" });
     expect(within(article).getByText("Geändert")).toBeInTheDocument();
     expect(within(article).queryByRole("textbox")).not.toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "Ton", selected: true })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Ton & Stil", selected: true })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Ton" })).toBeInTheDocument();
     expect(screen.queryByRole("article", { name: "story_generation" })).not.toBeInTheDocument();
 
     await userEvent.click(within(article).getAllByRole("button")[0]);
     expect(within(article).getByRole("textbox")).toHaveValue("Ausgewogen");
   });
 
-  it("splits the options into a sub-tab per group", async () => {
-    const withGenre: AdminPromptList = {
+  it("groups the option categories into a few sub-tabs", async () => {
+    const option = (id: string, key: string) =>
+      version({ version_id: id, kind: "option", key, text: key });
+    vi.spyOn(client, "listAdminPrompts").mockResolvedValue({
       ...list,
       entries: [
-        ...list.entries,
-        version({
-          version_id: "00000000-0000-0000-0000-000000000004",
-          kind: "option",
-          key: "genre/fantasy",
-          text: "Fantasy",
-        }),
+        option("00000000-0000-0000-0000-000000000011", "genre/fantasy"),
+        option("00000000-0000-0000-0000-000000000012", "tone/balanced"),
+        option("00000000-0000-0000-0000-000000000013", "prose_style/concise"),
+        option("00000000-0000-0000-0000-000000000014", "pacing/slow"),
+        option("00000000-0000-0000-0000-000000000015", "content_profile/teen"),
+        option("00000000-0000-0000-0000-000000000016", "setting/harbor"),
       ],
-    };
-    vi.spyOn(client, "listAdminPrompts").mockResolvedValue(withGenre);
+    });
     renderSettings();
     await userEvent.click(await screen.findByRole("tab", { name: "Optionen" }));
 
-    expect(await screen.findByRole("article", { name: "tone/balanced" })).toBeInTheDocument();
-    expect(screen.queryByRole("article", { name: "genre/fantasy" })).not.toBeInTheDocument();
-
-    await userEvent.click(screen.getByRole("tab", { name: "Genre" }));
-
-    expect(screen.getByRole("article", { name: "genre/fantasy" })).toBeInTheDocument();
+    await screen.findByRole("article", { name: "genre/fantasy" });
+    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
+      "Modelle",
+      "Aufgaben",
+      "Optionen",
+      "Direktiven",
+      "Genre",
+      "Ton & Stil",
+      "Spielgefühl",
+      "Sonstiges",
+    ]);
     expect(screen.queryByRole("article", { name: "tone/balanced" })).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("tab", { name: "Ton & Stil" }));
+    expect(screen.getByRole("article", { name: "tone/balanced" })).toBeInTheDocument();
+    expect(screen.getByRole("article", { name: "prose_style/concise" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Prosastil" })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("tab", { name: "Sonstiges" }));
+    expect(screen.getByRole("article", { name: "content_profile/teen" })).toBeInTheDocument();
+    expect(screen.getByRole("article", { name: "setting/harbor" })).toBeInTheDocument();
+  });
+
+  describe("options added by hand", () => {
+    const custom = version({
+      version_id: "00000000-0000-0000-0000-000000000021",
+      kind: "option",
+      key: "tone/melancholic",
+      text: "Wehmütig",
+      source: "ui",
+      created_by: "admin-1",
+      is_modified: true,
+      is_custom: true,
+    });
+    const withCustom: AdminPromptList = { ...list, entries: [...list.entries, custom] };
+
+    it("adds a new option to a category and closes the form", async () => {
+      vi.spyOn(client, "listAdminPrompts").mockResolvedValue(list);
+      const create = vi.spyOn(client, "createPromptOption").mockResolvedValue(custom);
+      renderSettings();
+      await userEvent.click(await screen.findByRole("tab", { name: "Optionen" }));
+
+      await userEvent.click(await screen.findByRole("button", { name: "Neue Option" }));
+      const create_ = screen.getByRole("button", { name: "Anlegen" });
+      expect(create_).toBeDisabled();
+      await userEvent.type(screen.getByLabelText("Options-ID"), "melancholic");
+      await userEvent.type(screen.getByLabelText("Beschreibung für das Modell"), "Wehmütig");
+      await userEvent.click(create_);
+
+      expect(create).toHaveBeenCalledWith({
+        category: "tone",
+        option_id: "melancholic",
+        text: "Wehmütig",
+      });
+      await vi.waitFor(() => expect(screen.queryByLabelText("Options-ID")).not.toBeInTheDocument());
+    });
+
+    it("rejects an id that is not a lowercase slug before sending it", async () => {
+      vi.spyOn(client, "listAdminPrompts").mockResolvedValue(list);
+      const create = vi.spyOn(client, "createPromptOption");
+      renderSettings();
+      await userEvent.click(await screen.findByRole("tab", { name: "Optionen" }));
+      await userEvent.click(await screen.findByRole("button", { name: "Neue Option" }));
+
+      await userEvent.type(screen.getByLabelText("Options-ID"), "Not Valid");
+      await userEvent.type(screen.getByLabelText("Beschreibung für das Modell"), "Text");
+
+      expect(screen.getByRole("button", { name: "Anlegen" })).toBeDisabled();
+      expect(create).not.toHaveBeenCalled();
+    });
+
+    it("shows the reason when the backend refuses the new option", async () => {
+      vi.spyOn(client, "listAdminPrompts").mockResolvedValue(list);
+      vi.spyOn(client, "createPromptOption").mockRejectedValue(
+        new client.ApiError(409, { error: "prompt_option_exists", detail: "Die Option tone/dark gibt es schon." }),
+      );
+      renderSettings();
+      await userEvent.click(await screen.findByRole("tab", { name: "Optionen" }));
+      await userEvent.click(await screen.findByRole("button", { name: "Neue Option" }));
+      await userEvent.type(screen.getByLabelText("Options-ID"), "dark");
+      await userEvent.type(screen.getByLabelText("Beschreibung für das Modell"), "Text");
+
+      await userEvent.click(screen.getByRole("button", { name: "Anlegen" }));
+
+      expect(await screen.findByText(/Die Option tone\/dark gibt es schon/)).toBeInTheDocument();
+    });
+
+    it("offers no new-option button for fixed categories", async () => {
+      vi.spyOn(client, "listAdminPrompts").mockResolvedValue({
+        ...list,
+        entries: [
+          version({
+            version_id: "00000000-0000-0000-0000-000000000031",
+            kind: "option",
+            key: "pacing/slow",
+            text: "Langsam",
+          }),
+        ],
+      });
+      renderSettings();
+      await userEvent.click(await screen.findByRole("tab", { name: "Optionen" }));
+
+      await screen.findByRole("article", { name: "pacing/slow" });
+      expect(screen.queryByRole("button", { name: "Neue Option" })).not.toBeInTheDocument();
+    });
+
+    it("marks a custom option, offers removal instead of a reset, and removes it after confirming", async () => {
+      vi.spyOn(client, "listAdminPrompts").mockResolvedValue(withCustom);
+      const remove = vi.spyOn(client, "removePromptOption").mockResolvedValue(undefined);
+      const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+      renderSettings();
+      await openEntry("Optionen", "tone/melancholic");
+
+      expect(entry("tone/melancholic").getByText("Eigene")).toBeInTheDocument();
+      expect(
+        entry("tone/melancholic").queryByRole("button", { name: "Auf Original zurücksetzen" }),
+      ).not.toBeInTheDocument();
+      await userEvent.click(entry("tone/melancholic").getByRole("button", { name: "Entfernen" }));
+
+      expect(confirm).toHaveBeenCalled();
+      expect(remove).toHaveBeenCalledWith({ category: "tone", option_id: "melancholic" });
+    });
+
+    it("keeps the option when the removal is not confirmed", async () => {
+      vi.spyOn(client, "listAdminPrompts").mockResolvedValue(withCustom);
+      const remove = vi.spyOn(client, "removePromptOption");
+      vi.spyOn(window, "confirm").mockReturnValue(false);
+      renderSettings();
+      await openEntry("Optionen", "tone/melancholic");
+
+      await userEvent.click(entry("tone/melancholic").getByRole("button", { name: "Entfernen" }));
+
+      expect(remove).not.toHaveBeenCalled();
+    });
+
+    it("does not offer removal for a shipped option", async () => {
+      vi.spyOn(client, "listAdminPrompts").mockResolvedValue(withCustom);
+      renderSettings();
+      await openEntry("Optionen", "tone/balanced");
+
+      expect(entry("tone/balanced").queryByRole("button", { name: "Entfernen" })).not.toBeInTheDocument();
+    });
   });
 
   it("switches tabs with the arrow keys", async () => {

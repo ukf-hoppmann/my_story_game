@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
@@ -174,3 +175,47 @@ def test_seeding_from_toml_into_postgres_is_the_story_prompt_source(prompts, tmp
     assert [r.package_id for r in first.data.seeded] == [package_id]
     assert second.data.seeded == ()
     assert catalog.load(package_id, "1") == source.load(package_id, "1")
+
+
+def test_deactivating_an_entry_keeps_its_history_but_drops_it_from_the_active_set(prompts) -> None:
+    store, catalog, package_id = prompts
+    keep = PromptEntry(PromptEntryKind.TASK, "keep", "Bleibt", 0)
+    retire = PromptEntry(PromptEntryKind.TASK, "retire", "Geht", 1)
+    store.append_versions([new(package_id, keep), new(package_id, retire)])
+
+    store.deactivate_entry(package_id, "1", PromptEntryKind.TASK, "retire")
+
+    assert [v.entry.key for v in store.list_active(package_id, "1")] == ["keep"]
+    history = store.list_history(package_id, "1", PromptEntryKind.TASK, "retire")
+    assert [(v.entry.text, v.is_active) for v in history] == [("Geht", False)]
+
+
+def test_option_usage_follows_the_stored_game_configurations(postgres_store) -> None:
+    from story_game.infrastructure.persistence.postgres import PostgresPromptOptionUsage
+    from tests.ids import sid
+    from tests.persistence.test_postgres_persistence import _delete_run, configuration, initial
+
+    store, connections = postgres_store
+    usage = PostgresPromptOptionUsage(connections)
+    tone = f"usage_{uuid4().hex[:10]}"
+    run_id = sid(f"usage-{uuid4()}")
+    run, state = initial(run_id)
+    state = replace(state, configuration=configuration(tone))
+
+    assert usage.is_option_used("tone", tone) is False
+    try:
+        store.create(run, state)
+        assert usage.is_option_used("tone", tone) is True
+    finally:
+        _delete_run(connections, run_id)
+    assert usage.is_option_used("tone", tone) is False
+
+
+def test_option_usage_is_only_defined_for_the_extensible_categories(postgres_store) -> None:
+    from story_game.application.prompt_management import PromptStoreError
+    from story_game.infrastructure.persistence.postgres import PostgresPromptOptionUsage
+
+    _, connections = postgres_store
+
+    with pytest.raises(PromptStoreError):
+        PostgresPromptOptionUsage(connections).is_option_used("pacing", "slow")

@@ -70,6 +70,32 @@ class InMemoryPromptStore:
             created.append(row)
         return tuple(created)
 
+    def deactivate_entry(
+        self, package_id: str, package_version: str, kind: PromptEntryKind, key: str
+    ) -> None:
+        self._maybe_fail()
+        self.rows = [
+            replace(row, is_active=False)
+            if row.is_active
+            and (row.package_id, row.package_version, row.entry.kind, row.entry.key)
+            == (package_id, package_version, kind, key)
+            else row
+            for row in self.rows
+        ]
+
     def _maybe_fail(self) -> None:
         if self.fail_with is not None:
             raise self.fail_with
+
+
+class FakeOptionUsage:
+    """Stand-in for the check whether a stored run still selects an option."""
+
+    def __init__(self, used: set[tuple[str, str]] | None = None) -> None:
+        self.used = used or set()
+        self.fail_with: PromptStoreError | None = None
+
+    def is_option_used(self, category_id: str, option_id: str) -> bool:
+        if self.fail_with is not None:
+            raise self.fail_with
+        return (category_id, option_id) in self.used

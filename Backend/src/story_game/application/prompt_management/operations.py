@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
@@ -22,6 +23,7 @@ from .models import (
 )
 from .packaging import flatten_package
 from .ports import (
+    PromptOptionUsage,
     PromptPackageSource,
     PromptStoreError,
     PromptVersionReader,
@@ -29,6 +31,11 @@ from .ports import (
 )
 
 MAX_PROMPT_TEXT_LENGTH = 20000
+
+EXTENSIBLE_CATEGORIES = ("genre", "tone", "prose_style")
+"""Categories that accept new options; the others are fixed by the shipped package."""
+
+_OPTION_ID = re.compile(r"^[a-z][a-z0-9_]{1,39}$")
 
 
 def _store_unavailable() -> Failure[PromptManagementError]:
@@ -51,6 +58,20 @@ def _source_unavailable(error: PromptPackageError) -> Failure[PromptManagementEr
         PromptManagementError(
             PromptManagementErrorKind.SOURCE_UNAVAILABLE,
             f"Das Original-Promptpaket ist nicht verfügbar: {error}",
+        )
+    )
+
+
+def _valid_text(text: str) -> bool:
+    return bool(text) and len(text) <= MAX_PROMPT_TEXT_LENGTH
+
+
+def _invalid_text() -> Failure[PromptManagementError]:
+    return Failure(
+        PromptManagementError(
+            PromptManagementErrorKind.INVALID_TEXT,
+            "Der Text darf nicht leer sein und höchstens "
+            f"{MAX_PROMPT_TEXT_LENGTH} Zeichen lang sein.",
         )
     )
 
@@ -218,14 +239,8 @@ class UpdatePromptText:
         self, request: UpdatePromptTextRequest
     ) -> OperationResult[PromptVersion, PromptManagementError]:
         text = request.text.strip()
-        if not text or len(text) > MAX_PROMPT_TEXT_LENGTH:
-            return Failure(
-                PromptManagementError(
-                    PromptManagementErrorKind.INVALID_TEXT,
-                    "Der Text darf nicht leer sein und höchstens "
-                    f"{MAX_PROMPT_TEXT_LENGTH} Zeichen lang sein.",
-                )
-            )
+        if not _valid_text(text):
+            return _invalid_text()
         reference = PromptPackageReference(request.package_id, request.package_version)
         try:
             current = next(
@@ -265,6 +280,8 @@ class ResetPromptTextRequest:
     """One entry, or ``None`` for every entry of the package."""
     editor: str
     """Name recorded as the author of the restored versions."""
+    kind: PromptEntryKind | None = None
+    """With no ``target``: restrict the reset to the entries of this kind."""
 
 
 class ResetPromptText:
@@ -311,7 +328,11 @@ class ResetPromptText:
                 request.target not in current or request.target not in originals
             ):
                 return _not_found("Der Prompt-Eintrag")
-            targets = [request.target] if request.target is not None else list(current)
+            targets = (
+                [request.target]
+                if request.target is not None
+                else [ref for ref in current if request.kind in (None, ref.kind)]
+            )
             restored = tuple(
                 _with_text(current[ref], originals[ref].text)
                 for ref in targets
@@ -334,6 +355,197 @@ class ResetPromptText:
         return Success(created)
 
 
+@dataclass(frozen=True, slots=True)
+class CreatePromptOptionRequest:
+    package_id: str
+    package_version: str
+    category_id: str
+    option_id: str
+    text: str
+    editor: str
+    """Name recorded as the author of the new option."""
+
+
+class CreatePromptOption:
+    """Add a selectable option to one of the extensible categories.
+
+    The new option is appended to the end of its category and never becomes
+    its default; the category itself must already exist in the package.
+    """
+
+    def __init__(
+        self,
+        reader: PromptVersionReader,
+        writer: PromptVersionWriter,
+        new_id: Callable[[], StableId],
+        clock: Callable[[], datetime],
+    ) -> None:
+        self._reader = reader
+        self._writer = writer
+        self._new_id = new_id
+        self._clock = clock
+
+    def apply(
+        self, request: CreatePromptOptionRequest
+    ) -> OperationResult[PromptVersion, PromptManagementError]:
+        if request.category_id not in EXTENSIBLE_CATEGORIES:
+            return _invalid_option(
+                "Neue Optionen sind nur für " + ", ".join(EXTENSIBLE_CATEGORIES) + " möglich."
+            )
+        if not _OPTION_ID.fullmatch(request.option_id):
+            return _invalid_option(
+                "Die Options-ID muss mit einem Kleinbuchstaben beginnen und darf nur "
+                "Kleinbuchstaben, Ziffern und Unterstriche enthalten (2 bis 40 Zeichen)."
+            )
+        text = request.text.strip()
+        if not _valid_text(text):
+            return _invalid_text()
+        key = f"{request.category_id}/{request.option_id}"
+        try:
+            options = [
+                version
+                for version in self._reader.list_active(request.package_id, request.package_version)
+                if version.entry.kind is PromptEntryKind.OPTION
+            ]
+            if not any(v.entry.key.startswith(f"{request.category_id}/") for v in options):
+                return _not_found("Die Kategorie")
+            if any(version.entry.key == key for version in options):
+                return Failure(
+                    PromptManagementError(
+                        PromptManagementErrorKind.ALREADY_EXISTS,
+                        f"Die Option {key} gibt es schon.",
+                    )
+                )
+            position = max(version.entry.position for version in options) + 1
+            created = self._writer.append_versions(
+                _new_versions(
+                    PromptPackageReference(request.package_id, request.package_version),
+                    (PromptEntry(PromptEntryKind.OPTION, key, text, position),),
+                    PromptVersionSource.UI,
+                    request.editor,
+                    self._new_id,
+                    self._clock(),
+                )
+            )
+        except PromptStoreError:
+            return _store_unavailable()
+        return Success(created[0])
+
+
+def _invalid_option(message: str) -> Failure[PromptManagementError]:
+    return Failure(PromptManagementError(PromptManagementErrorKind.INVALID_OPTION, message))
+
+
+@dataclass(frozen=True, slots=True)
+class ListCustomPromptOptionsRequest:
+    package_id: str
+    package_version: str
+
+
+class ListCustomPromptOptions:
+    """The keys of the active options that are not part of the shipped package."""
+
+    def __init__(self, source: PromptPackageSource, reader: PromptVersionReader) -> None:
+        self._source = source
+        self._reader = reader
+
+    def apply(
+        self, request: ListCustomPromptOptionsRequest
+    ) -> OperationResult[tuple[str, ...], PromptManagementError]:
+        try:
+            shipped = {
+                entry.ref
+                for entry in flatten_package(
+                    self._source.load(request.package_id, request.package_version)
+                )
+            }
+        except PromptPackageError as error:
+            return _source_unavailable(error)
+        try:
+            active = self._reader.list_active(request.package_id, request.package_version)
+        except PromptStoreError:
+            return _store_unavailable()
+        return Success(
+            tuple(
+                version.entry.key
+                for version in active
+                if version.entry.kind is PromptEntryKind.OPTION and version.entry.ref not in shipped
+            )
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class RemovePromptOptionRequest:
+    package_id: str
+    package_version: str
+    category_id: str
+    option_id: str
+
+
+class RemovePromptOption:
+    """Retire an option that was added by hand and that no stored game uses.
+
+    Shipped options cannot be removed, and neither can an option a game
+    configuration still selects: that game would fail on its next turn. The
+    versions stay in the history.
+    """
+
+    def __init__(
+        self,
+        source: PromptPackageSource,
+        reader: PromptVersionReader,
+        writer: PromptVersionWriter,
+        usage: PromptOptionUsage,
+    ) -> None:
+        self._source = source
+        self._reader = reader
+        self._writer = writer
+        self._usage = usage
+
+    def apply(
+        self, request: RemovePromptOptionRequest
+    ) -> OperationResult[PromptEntryRef, PromptManagementError]:
+        reference = PromptEntryRef(
+            PromptEntryKind.OPTION, f"{request.category_id}/{request.option_id}"
+        )
+        try:
+            shipped = {
+                entry.ref
+                for entry in flatten_package(
+                    self._source.load(request.package_id, request.package_version)
+                )
+            }
+        except PromptPackageError as error:
+            return _source_unavailable(error)
+        try:
+            active = {
+                version.entry.ref
+                for version in self._reader.list_active(request.package_id, request.package_version)
+            }
+            if reference not in active:
+                return _not_found("Die Option")
+            if reference in shipped:
+                return Failure(
+                    PromptManagementError(
+                        PromptManagementErrorKind.NOT_REMOVABLE,
+                        "Mitgelieferte Optionen lassen sich nicht entfernen.",
+                    )
+                )
+            if self._usage.is_option_used(request.category_id, request.option_id):
+                return Failure(
+                    PromptManagementError(
+                        PromptManagementErrorKind.IN_USE,
+                        "Die Option wird noch von einer Geschichte verwendet.",
+                    )
+                )
+            self._writer.deactivate_entry(
+                request.package_id, request.package_version, reference.kind, reference.key
+            )
+        except PromptStoreError:
+            return _store_unavailable()
+        return Success(reference)
+
+
 def _with_text(entry: PromptEntry, text: str) -> PromptEntry:
     return PromptEntry(
         entry.kind, entry.key, text, entry.position, entry.is_default, entry.task_ids
@@ -348,15 +560,25 @@ class PromptManagementOperations:
     history: ListPromptHistory
     update: UpdatePromptText
     reset: ResetPromptText
+    create_option: CreatePromptOption
+    custom_options: ListCustomPromptOptions
+    remove_option: RemovePromptOption
 
 
 __all__ = [
+    "CreatePromptOption",
+    "CreatePromptOptionRequest",
+    "EXTENSIBLE_CATEGORIES",
+    "ListCustomPromptOptions",
+    "ListCustomPromptOptionsRequest",
     "ListPromptEntries",
     "ListPromptEntriesRequest",
     "ListPromptHistory",
     "ListPromptHistoryRequest",
     "MAX_PROMPT_TEXT_LENGTH",
     "PromptManagementOperations",
+    "RemovePromptOption",
+    "RemovePromptOptionRequest",
     "ResetPromptText",
     "ResetPromptTextRequest",
     "SeedPromptPackages",

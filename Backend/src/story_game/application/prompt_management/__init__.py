@@ -11,12 +11,19 @@ from .models import (
     PromptVersionSource,
 )
 from .operations import (
+    EXTENSIBLE_CATEGORIES,
     MAX_PROMPT_TEXT_LENGTH,
+    CreatePromptOption,
+    CreatePromptOptionRequest,
+    ListCustomPromptOptions,
+    ListCustomPromptOptionsRequest,
     ListPromptEntries,
     ListPromptEntriesRequest,
     ListPromptHistory,
     ListPromptHistoryRequest,
     PromptManagementOperations,
+    RemovePromptOption,
+    RemovePromptOptionRequest,
     ResetPromptText,
     ResetPromptTextRequest,
     SeedPromptPackages,
@@ -27,6 +34,7 @@ from .operations import (
 )
 from .packaging import assemble_package, flatten_package
 from .ports import (
+    PromptOptionUsage,
     PromptPackageSource,
     PromptStoreError,
     PromptVersionReader,
@@ -34,6 +42,11 @@ from .ports import (
 )
 
 __all__ = [
+    "CreatePromptOption",
+    "CreatePromptOptionRequest",
+    "EXTENSIBLE_CATEGORIES",
+    "ListCustomPromptOptions",
+    "ListCustomPromptOptionsRequest",
     "ListPromptEntries",
     "ListPromptEntriesRequest",
     "ListPromptHistory",
@@ -46,6 +59,7 @@ __all__ = [
     "PromptManagementError",
     "PromptManagementErrorKind",
     "PromptManagementOperations",
+    "PromptOptionUsage",
     "PromptPackageReference",
     "PromptPackageSource",
     "PromptStoreError",
@@ -53,6 +67,8 @@ __all__ = [
     "PromptVersionReader",
     "PromptVersionSource",
     "PromptVersionWriter",
+    "RemovePromptOption",
+    "RemovePromptOptionRequest",
     "ResetPromptText",
     "ResetPromptTextRequest",
     "SeedPromptPackages",

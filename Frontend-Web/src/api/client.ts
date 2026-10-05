@@ -7,6 +7,7 @@ import type {
   AdminPromptList,
   AdminPromptVersion,
   AdminPromptVersionList,
+  CreatePromptOptionRequest,
   ApiErrorBody,
   ConfirmRunProposalRequest,
   CreateSceneImageRequest,
@@ -16,6 +17,7 @@ import type {
   ProposeRunRequest,
   PromptProfileCatalog,
   ResetModelSettingsRequest,
+  RemovePromptOptionRequest,
   ResetPromptsRequest,
   RunProposal,
   RunSummaryList,
@@ -229,6 +231,22 @@ export async function savePromptText(
     method: "PUT",
     body: JSON.stringify(payload),
   });
+}
+
+/** Adds a selectable option (genre, tone or prose style); it shows up in the wizard at once. */
+export async function createPromptOption(
+  payload: CreatePromptOptionRequest,
+): Promise<AdminPromptVersion> {
+  return request("/api/v1/admin/prompts/options", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+/** Removes an option added in the UI; refused for shipped options and ones a story still uses. */
+export async function removePromptOption(payload: RemovePromptOptionRequest): Promise<void> {
+  const query = new URLSearchParams(payload as unknown as Record<string, string>);
+  return request(`/api/v1/admin/prompts/options?${query.toString()}`, { method: "DELETE" });
 }
 
 /** Re-applies the shipped original as a new version, for one entry or (with `{}`) all. */

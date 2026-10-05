@@ -27,6 +27,8 @@ class PromptVersionModel(APIModel):
     is_active: bool
     is_modified: bool
     """``True`` while the active version is an edit made in the UI."""
+    is_custom: bool = False
+    """``True`` for an option added in the UI; it has no shipped original and can be removed."""
 
 
 class PromptListModel(APIModel):
@@ -46,13 +48,19 @@ class UpdatePromptTextRequestModel(APIModel):
 
 
 class ResetPromptsRequestModel(APIModel):
-    """Name one entry (``kind`` and ``key``) or none to reset the whole package."""
+    """Name one entry (``kind`` and ``key``), one ``kind``, or nothing for the whole package."""
 
     kind: PromptEntryKind | None = None
     key: str | None = Field(default=None, min_length=1)
 
     @model_validator(mode="after")
-    def _both_or_neither(self) -> ResetPromptsRequestModel:
-        if (self.kind is None) != (self.key is None):
-            raise ValueError("kind und key müssen gemeinsam angegeben werden")
+    def _key_needs_kind(self) -> ResetPromptsRequestModel:
+        if self.key is not None and self.kind is None:
+            raise ValueError("key braucht ein kind")
         return self
+
+
+class CreatePromptOptionRequestModel(APIModel):
+    category: str = Field(min_length=1)
+    option_id: str = Field(min_length=1)
+    text: str = Field(min_length=1)

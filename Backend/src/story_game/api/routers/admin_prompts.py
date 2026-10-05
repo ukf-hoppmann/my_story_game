@@ -4,12 +4,13 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Response
 
 from story_game.api.auth import VerifiedCaller
 from story_game.api.dependencies import ApiDependencies, get_api_dependencies, require_admin
 from story_game.api.results import unwrap
 from story_game.api.schemas.admin_prompts import (
+    CreatePromptOptionRequestModel,
     PromptListModel,
     PromptVersionListModel,
     PromptVersionModel,
@@ -17,6 +18,8 @@ from story_game.api.schemas.admin_prompts import (
     UpdatePromptTextRequestModel,
 )
 from story_game.application.prompt_management import (
+    CreatePromptOptionRequest,
+    ListCustomPromptOptionsRequest,
     ListPromptEntriesRequest,
     ListPromptHistoryRequest,
     PromptEntryKind,
@@ -24,6 +27,7 @@ from story_game.application.prompt_management import (
     PromptManagementOperations,
     PromptVersion,
     PromptVersionSource,
+    RemovePromptOptionRequest,
     ResetPromptTextRequest,
     UpdatePromptTextRequest,
 )
@@ -45,7 +49,18 @@ def _editor(caller: VerifiedCaller) -> str:
     return caller.username or caller.initiator.subject
 
 
-def _to_model(version: PromptVersion) -> PromptVersionModel:
+def _custom_keys(dependencies: ApiDependencies) -> frozenset[str]:
+    """The keys of the options added in the UI (they have no shipped original)."""
+    return frozenset(
+        unwrap(
+            _operations(dependencies).custom_options.apply(
+                ListCustomPromptOptionsRequest(_PACKAGE_ID, _PACKAGE_VERSION)
+            )
+        )
+    )
+
+
+def _to_model(version: PromptVersion, custom: frozenset[str]) -> PromptVersionModel:
     entry = version.entry
     return PromptVersionModel(
         version_id=version.version_id.value,
@@ -59,6 +74,7 @@ def _to_model(version: PromptVersion) -> PromptVersionModel:
         created_by=version.created_by,
         is_active=version.is_active,
         is_modified=version.is_active and version.source is PromptVersionSource.UI,
+        is_custom=entry.kind is PromptEntryKind.OPTION and entry.key in custom,
     )
 
 
@@ -72,10 +88,11 @@ def list_prompts(
             ListPromptEntriesRequest(_PACKAGE_ID, _PACKAGE_VERSION)
         )
     )
+    custom = _custom_keys(dependencies)
     return PromptListModel(
         package_id=_PACKAGE_ID,
         package_version=_PACKAGE_VERSION,
-        entries=[_to_model(version) for version in versions],
+        entries=[_to_model(version, custom) for version in versions],
     )
 
 
@@ -95,7 +112,8 @@ def prompt_history(
             ListPromptHistoryRequest(_PACKAGE_ID, _PACKAGE_VERSION, kind, key)
         )
     )
-    return PromptVersionListModel(versions=[_to_model(version) for version in versions])
+    custom = _custom_keys(dependencies)
+    return PromptVersionListModel(versions=[_to_model(version, custom) for version in versions])
 
 
 @router.put(
@@ -115,7 +133,52 @@ def update_prompt(
             )
         )
     )
-    return _to_model(version)
+    return _to_model(version, _custom_keys(dependencies))
+
+
+@router.post(
+    "/options",
+    response_model=PromptVersionModel,
+    status_code=201,
+    summary="Add a selectable option to genre, tone or prose style",
+)
+def create_option(
+    payload: CreatePromptOptionRequestModel,
+    dependencies: Annotated[ApiDependencies, Depends(get_api_dependencies)],
+    admin: Annotated[VerifiedCaller, Depends(require_admin)],
+) -> PromptVersionModel:
+    version = unwrap(
+        _operations(dependencies).create_option.apply(
+            CreatePromptOptionRequest(
+                _PACKAGE_ID,
+                _PACKAGE_VERSION,
+                payload.category,
+                payload.option_id,
+                payload.text,
+                _editor(admin),
+            )
+        )
+    )
+    return _to_model(version, frozenset({version.entry.key}))
+
+
+@router.delete(
+    "/options",
+    status_code=204,
+    summary="Remove an option that was added in the UI and is not used by any game",
+)
+def remove_option(
+    category: Annotated[str, Query(min_length=1)],
+    option_id: Annotated[str, Query(min_length=1)],
+    dependencies: Annotated[ApiDependencies, Depends(get_api_dependencies)],
+    _admin: Annotated[VerifiedCaller, Depends(require_admin)],
+) -> Response:
+    unwrap(
+        _operations(dependencies).remove_option.apply(
+            RemovePromptOptionRequest(_PACKAGE_ID, _PACKAGE_VERSION, category, option_id)
+        )
+    )
+    return Response(status_code=204)
 
 
 @router.post(
@@ -135,7 +198,10 @@ def reset_prompts(
     )
     versions = unwrap(
         _operations(dependencies).reset.apply(
-            ResetPromptTextRequest(_PACKAGE_ID, _PACKAGE_VERSION, target, _editor(admin))
+            ResetPromptTextRequest(
+                _PACKAGE_ID, _PACKAGE_VERSION, target, _editor(admin), payload.kind
+            )
         )
     )
-    return PromptVersionListModel(versions=[_to_model(version) for version in versions])
+    custom = _custom_keys(dependencies)
+    return PromptVersionListModel(versions=[_to_model(version, custom) for version in versions])

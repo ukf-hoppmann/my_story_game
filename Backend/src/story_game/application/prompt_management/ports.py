@@ -45,8 +45,25 @@ class PromptVersionWriter(Protocol):
         """Atomically deactivate the current version of each entry and insert the new ones."""
         ...
 
+    def deactivate_entry(
+        self,
+        package_id: str,
+        package_version: str,
+        kind: PromptEntryKind,
+        key: str,
+    ) -> None:
+        """Retire an entry: its history stays, but it is no longer active."""
+        ...
+
+
+class PromptOptionUsage(Protocol):
+    def is_option_used(self, category_id: str, option_id: str) -> bool:
+        """Whether any stored game configuration still selects this option."""
+        ...
+
 
 __all__ = [
+    "PromptOptionUsage",
     "PromptPackageSource",
     "PromptStoreError",
     "PromptVersionReader",

@@ -17,6 +17,7 @@ from story_game.application.prompt_management import (
     NewPromptVersion,
     PromptEntry,
     PromptEntryKind,
+    PromptOptionUsage,
     PromptStoreError,
     PromptVersion,
     PromptVersionReader,
@@ -113,12 +114,53 @@ class PostgresPromptStore(PromptVersionReader, PromptVersionWriter):
         assert row is not None
         return _version(row)
 
+    def deactivate_entry(
+        self, package_id: str, package_version: str, kind: PromptEntryKind, key: str
+    ) -> None:
+        try:
+            with self._connections.connect() as connection:
+                connection.execute(
+                    """
+                    UPDATE system_prompts SET is_active = FALSE
+                    WHERE package_id = %s AND package_version = %s
+                      AND entry_kind = %s AND entry_key = %s AND is_active
+                    """,
+                    (package_id, package_version, kind.value, key),
+                )
+        except psycopg.Error as error:
+            raise PromptStoreError("Der Prompt-Eintrag konnte nicht entfernt werden") from error
+
     def _query(self, sql: str, params: tuple[Any, ...], failure: str) -> tuple[PromptVersion, ...]:
         try:
             with self._connections.connect() as connection:
                 return tuple(_version(row) for row in connection.execute(sql, params).fetchall())
         except psycopg.Error as error:
             raise PromptStoreError(failure) from error
+
+
+# The configuration column that holds the selection of each extensible category.
+_OPTION_COLUMNS = {"genre": "genre", "tone": "tone", "prose_style": "prose_style"}
+
+
+class PostgresPromptOptionUsage(PromptOptionUsage):
+    """Whether any stored game revision still selects an option."""
+
+    def __init__(self, connections: PostgresConnectionFactory) -> None:
+        self._connections = connections
+
+    def is_option_used(self, category_id: str, option_id: str) -> bool:
+        column = _OPTION_COLUMNS.get(category_id)
+        if column is None:
+            raise PromptStoreError(f"Die Kategorie {category_id!r} kennt keine Nutzungsprüfung")
+        try:
+            with self._connections.connect() as connection:
+                row = connection.execute(
+                    f"SELECT EXISTS (SELECT 1 FROM game_state_configurations WHERE {column} = %s) AS used",  # noqa: S608 - column comes from the fixed mapping above
+                    (option_id,),
+                ).fetchone()
+        except psycopg.Error as error:
+            raise PromptStoreError("Die Nutzung der Option konnte nicht geprüft werden") from error
+        return bool(row and row["used"])
 
 
 class DbPromptPackageCatalog(PromptPackageCatalog):
@@ -161,4 +203,4 @@ def _version(row: dict[str, Any]) -> PromptVersion:
     )
 
 
-__all__ = ["DbPromptPackageCatalog", "PostgresPromptStore"]
+__all__ = ["DbPromptPackageCatalog", "PostgresPromptOptionUsage", "PostgresPromptStore"]

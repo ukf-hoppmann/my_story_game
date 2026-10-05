@@ -3,6 +3,7 @@ import {
   confirmRun,
   createSceneImage,
   fetchModelHistory,
+  createPromptOption,
   fetchPromptHistory,
   fetchPromptProfileCatalog,
   fetchSceneImageCapabilities,
@@ -14,6 +15,7 @@ import {
   playTurn,
   proposeRun,
   resetModelSettings,
+  removePromptOption,
   resetPrompts,
   saveModelSetting,
   savePromptText,
@@ -29,6 +31,7 @@ import type {
   AdminPromptList,
   AdminPromptVersion,
   AdminPromptVersionList,
+  CreatePromptOptionRequest,
   ConfirmRunProposalRequest,
   CreateSceneImageRequest,
   GameDocument,
@@ -37,6 +40,7 @@ import type {
   PromptProfileCatalog,
   RunProposal,
   ResetModelSettingsRequest,
+  RemovePromptOptionRequest,
   ResetPromptsRequest,
   RunSummary,
   SaveModelSettingRequest,
@@ -124,6 +128,26 @@ export const apiSlice = createApi({
           return { data: await savePromptText(payload) };
         } catch (error) {
           return { error: toQueryError(error, "apiSlice.savePromptText") };
+        }
+      },
+      invalidatesTags: ["AdminPrompt"],
+    }),
+    createPromptOption: builder.mutation<AdminPromptVersion, CreatePromptOptionRequest>({
+      queryFn: async (payload) => {
+        try {
+          return { data: await createPromptOption(payload) };
+        } catch (error) {
+          return { error: toQueryError(error, "apiSlice.createPromptOption") };
+        }
+      },
+      invalidatesTags: ["AdminPrompt"],
+    }),
+    removePromptOption: builder.mutation<void, RemovePromptOptionRequest>({
+      queryFn: async (payload) => {
+        try {
+          return { data: await removePromptOption(payload) };
+        } catch (error) {
+          return { error: toQueryError(error, "apiSlice.removePromptOption") };
         }
       },
       invalidatesTags: ["AdminPrompt"],
@@ -268,4 +292,6 @@ export const {
   usePromptHistoryQuery,
   useSavePromptTextMutation,
   useResetPromptsMutation,
+  useCreatePromptOptionMutation,
+  useRemovePromptOptionMutation,
 } = apiSlice;

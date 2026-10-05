@@ -9,6 +9,10 @@ from enum import StrEnum
 class PromptManagementErrorKind(StrEnum):
     NOT_FOUND = "not_found"
     INVALID_TEXT = "invalid_text"
+    INVALID_OPTION = "invalid_option"
+    ALREADY_EXISTS = "already_exists"
+    NOT_REMOVABLE = "not_removable"
+    IN_USE = "in_use"
     SOURCE_UNAVAILABLE = "source_unavailable"
     STORE_UNAVAILABLE = "store_unavailable"
 

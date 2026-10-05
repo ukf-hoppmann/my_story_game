@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import {
   usePromptHistoryQuery,
   useListAdminPromptsQuery,
+  useRemovePromptOptionMutation,
   useResetPromptsMutation,
   useSavePromptTextMutation,
 } from "../../api/apiSlice";
@@ -11,8 +12,10 @@ import { Accordion } from "../../components/Accordion/Accordion";
 import { Button } from "../../components/Button/Button";
 import { ErrorBanner } from "../../components/ErrorBanner/ErrorBanner";
 import { Tabs } from "../../components/Tabs/Tabs";
+import { PlusIcon } from "../../icons";
 import { formatOptionLabel } from "../../utils/formatOptionLabel";
 import { ModelSettings } from "./ModelSettings";
+import { NewOptionForm } from "./NewOptionForm";
 import "./Settings.css";
 
 
@@ -99,9 +102,17 @@ function PromptEntry({ version }: { version: AdminPromptVersion }) {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [save, saveState] = useSavePromptTextMutation();
   const [reset, resetState] = useResetPromptsMutation();
+  const [remove, removeState] = useRemovePromptOptionMutation();
 
   const unchanged = draft.trim() === version.text;
-  const busy = saveState.isLoading || resetState.isLoading;
+  const busy = saveState.isLoading || resetState.isLoading || removeState.isLoading;
+  const [category, optionId] = version.key.split("/");
+
+  const confirmRemove = () => {
+    if (window.confirm(t("settings.removeConfirm", { key: version.key }))) {
+      void remove({ category, option_id: optionId });
+    }
+  };
 
   return (
     <Accordion
@@ -109,6 +120,7 @@ function PromptEntry({ version }: { version: AdminPromptVersion }) {
       badges={
         <>
           {version.is_default && <span className="settings-badge">{t("settings.defaultOption")}</span>}
+          {version.is_custom && <span className="settings-badge">{t("settings.custom")}</span>}
           {version.is_modified && (
             <span className="settings-badge settings-badge--modified">{t("settings.modified")}</span>
           )}
@@ -123,6 +135,7 @@ function PromptEntry({ version }: { version: AdminPromptVersion }) {
       <AutoSizeTextarea label={version.key} value={draft} onChange={setDraft} />
       <ErrorBanner error={saveState.error} fallbackKey="settings.saveError" className="settings-error" />
       <ErrorBanner error={resetState.error} fallbackKey="settings.resetError" className="settings-error" />
+      <ErrorBanner error={removeState.error} fallbackKey="settings.removeError" className="settings-error" />
       <div className="settings-entry-actions">
         <Button
           disabled={unchanged || draft.trim() === "" || busy}
@@ -130,13 +143,19 @@ function PromptEntry({ version }: { version: AdminPromptVersion }) {
         >
           {t("settings.save")}
         </Button>
-        <Button
-          variant="ghost"
-          disabled={!version.is_modified || busy}
-          onClick={() => reset({ kind: version.kind, key: version.key })}
-        >
-          {t("settings.reset")}
-        </Button>
+        {version.is_custom ? (
+          <Button variant="ghost" disabled={busy} onClick={confirmRemove}>
+            {t("settings.remove")}
+          </Button>
+        ) : (
+          <Button
+            variant="ghost"
+            disabled={!version.is_modified || busy}
+            onClick={() => reset({ kind: version.kind, key: version.key })}
+          >
+            {t("settings.reset")}
+          </Button>
+        )}
         <Button variant="ghost" onClick={() => setHistoryOpen((open) => !open)}>
           {historyOpen ? t("settings.hideHistory") : t("settings.history")}
         </Button>
@@ -146,60 +165,89 @@ function PromptEntry({ version }: { version: AdminPromptVersion }) {
   );
 }
 
+/** The option categories shown together under one sub-tab. A category that
+ *  is in none of them (a new one) lands under `OTHER_GROUP`. */
+const OPTION_TABS: { id: string; categories: string[] }[] = [
+  { id: "genre", categories: ["genre"] },
+  { id: "voice", categories: ["tone", "prose_style", "perspective"] },
+  {
+    id: "feel",
+    categories: ["pacing", "length", "player_agency", "control_mode", "consequence", "challenge"],
+  },
+  { id: "other", categories: [] },
+];
 const OTHER_GROUP = "other";
 
+/** Categories that accept new options (the backend enforces the same list). */
+const EXTENSIBLE_CATEGORIES = ["genre", "tone", "prose_style"];
+
 /** Option keys look like `tone/balanced`; the part before the slash is the
- *  group they belong to. Other kinds have no groups. */
-function groupEntries(
-  kind: AdminPromptKind,
-  entries: AdminPromptVersion[],
-): { group: string | null; entries: AdminPromptVersion[] }[] {
-  if (kind !== "option") {
-    return [{ group: null, entries }];
-  }
-  const groups = new Map<string, AdminPromptVersion[]>();
-  for (const entry of entries) {
-    const group = entry.key.includes("/") ? entry.key.split("/")[0] : "";
-    groups.set(group, [...(groups.get(group) ?? []), entry]);
-  }
-  return [...groups].map(([group, grouped]) => ({ group: group || null, entries: grouped }));
+ *  category they belong to. */
+function categoryOf(entry: AdminPromptVersion): string {
+  return entry.key.includes("/") ? entry.key.split("/")[0] : "";
 }
 
-/** The entries of one kind; options get a sub-tab per group, since there are many. */
+function optionTabOf(category: string): string {
+  return OPTION_TABS.find((tab) => tab.categories.includes(category))?.id ?? OTHER_GROUP;
+}
+
+/** The entries of one kind; options get a sub-tab per group of categories,
+ *  with each category under its own heading. */
 function PromptGroups({ kind, entries }: { kind: AdminPromptKind; entries: AdminPromptVersion[] }) {
   const { t } = useTranslation();
-  const groups = groupEntries(kind, entries);
   const [selected, setSelected] = useState<string | null>(null);
+  const [adding, setAdding] = useState<string | null>(null);
 
-  if (groups.length === 0) {
-    return null;
-  }
-  if (groups.length === 1 && groups[0].group === null) {
+  if (kind !== "option") {
     return (
       <div className="settings-group">
-        {groups[0].entries.map((entry) => (
+        {entries.map((entry) => (
           <PromptEntry version={entry} key={entry.version_id} />
         ))}
       </div>
     );
   }
 
-  const ids = groups.map(({ group }) => group ?? OTHER_GROUP);
+  const byTab = new Map<string, Map<string, AdminPromptVersion[]>>();
+  for (const entry of entries) {
+    const category = categoryOf(entry);
+    const tab = optionTabOf(category);
+    const categories = byTab.get(tab) ?? new Map<string, AdminPromptVersion[]>();
+    categories.set(category, [...(categories.get(category) ?? []), entry]);
+    byTab.set(tab, categories);
+  }
+  const ids = OPTION_TABS.map(({ id }) => id).filter((id) => byTab.has(id));
+  if (ids.length === 0) {
+    return null;
+  }
   const activeId = selected !== null && ids.includes(selected) ? selected : ids[0];
-  const active = groups[ids.indexOf(activeId)];
 
   return (
     <Tabs
       idPrefix="group"
-      tabs={ids.map((id) => ({
-        id,
-        label: t(`settings.optionGroup.${id}`, { defaultValue: formatOptionLabel(id) }),
-      }))}
+      tabs={ids.map((id) => ({ id, label: t(`settings.optionTab.${id}`) }))}
       activeId={activeId}
       onChange={setSelected}
     >
-      {active.entries.map((entry) => (
-        <PromptEntry version={entry} key={entry.version_id} />
+      {[...(byTab.get(activeId) ?? [])].map(([category, grouped]) => (
+        <div className="settings-group" key={category}>
+          {category && (
+            <div className="settings-group-head">
+              <h3>
+                {t(`settings.optionGroup.${category}`, { defaultValue: formatOptionLabel(category) })}
+              </h3>
+              {EXTENSIBLE_CATEGORIES.includes(category) && adding !== category && (
+                <Button variant="ghost" icon={<PlusIcon />} onClick={() => setAdding(category)}>
+                  {t("settings.newOption.add")}
+                </Button>
+              )}
+            </div>
+          )}
+          {adding === category && <NewOptionForm category={category} onClose={() => setAdding(null)} />}
+          {grouped.map((entry) => (
+            <PromptEntry version={entry} key={entry.version_id} />
+          ))}
+        </div>
       ))}
     </Tabs>
   );

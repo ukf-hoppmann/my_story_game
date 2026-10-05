@@ -343,6 +343,8 @@ export interface AdminPromptVersion {
   is_active: boolean;
   /** True while the active version is an edit made in the UI. */
   is_modified: boolean;
+  /** True for an option added in the UI: it has no shipped original and can be removed. */
+  is_custom: boolean;
 }
 
 export interface AdminPromptList {
@@ -361,7 +363,19 @@ export interface SavePromptTextRequest {
   text: string;
 }
 
-/** Name one entry, or send `{}` to reset the whole package. */
+/** A new selectable option; only genre, tone and prose_style accept one. */
+export interface CreatePromptOptionRequest {
+  category: string;
+  option_id: string;
+  text: string;
+}
+
+export interface RemovePromptOptionRequest {
+  category: string;
+  option_id: string;
+}
+
+/** Name one entry, one `kind`, or send `{}` to reset the whole package. */
 export interface ResetPromptsRequest {
   kind?: AdminPromptKind;
   key?: string;

@@ -268,6 +268,25 @@
       "option": "Optionen",
       "directive": "Direktiven"
     },
+    "newOption": {
+      "add": "Neue Option",
+      "id": "Options-ID",
+      "idHint": "Kleinbuchstaben, Ziffern und Unterstriche, 2 bis 40 Zeichen, mit einem Buchstaben am Anfang. Die ID lässt sich später nicht ändern.",
+      "text": "Beschreibung für das Modell",
+      "create": "Anlegen",
+      "cancel": "Abbrechen",
+      "error": "Die Option konnte nicht angelegt werden."
+    },
+    "custom": "Eigene",
+    "remove": "Entfernen",
+    "removeConfirm": "Die Option „{{key}}“ wirklich entfernen? Der Verlauf bleibt erhalten.",
+    "removeError": "Die Option konnte nicht entfernt werden.",
+    "optionTab": {
+      "genre": "Genre",
+      "voice": "Ton & Stil",
+      "feel": "Spielgefühl",
+      "other": "Sonstiges"
+    },
     "optionGroup": {
       "genre": "Genre",
       "tone": "Ton",
@@ -280,8 +299,7 @@
       "consequence": "Konsequenzen",
       "challenge": "Herausforderung",
       "extraction": "Extraktion",
-      "content_profile": "Inhaltsprofil",
-      "other": "Weitere"
+      "content_profile": "Inhaltsprofil"
     },
     "history": "Verlauf",
     "hideHistory": "Verlauf ausblenden",

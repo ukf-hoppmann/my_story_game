@@ -91,6 +91,10 @@ _SCENE_IMAGE_STATUS: dict[SceneImageErrorKind, tuple[int, str]] = {
 _PROMPT_MANAGEMENT_STATUS: dict[PromptManagementErrorKind, tuple[int, str]] = {
     PromptManagementErrorKind.NOT_FOUND: (404, "not_found"),
     PromptManagementErrorKind.INVALID_TEXT: (422, "invalid_prompt_text"),
+    PromptManagementErrorKind.INVALID_OPTION: (422, "invalid_prompt_option"),
+    PromptManagementErrorKind.ALREADY_EXISTS: (409, "prompt_option_exists"),
+    PromptManagementErrorKind.NOT_REMOVABLE: (409, "prompt_option_not_removable"),
+    PromptManagementErrorKind.IN_USE: (409, "prompt_option_in_use"),
     PromptManagementErrorKind.SOURCE_UNAVAILABLE: (500, "prompt_source_unavailable"),
     PromptManagementErrorKind.STORE_UNAVAILABLE: (503, "persistence_unavailable"),
 }

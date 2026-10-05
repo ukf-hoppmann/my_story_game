@@ -30,7 +30,9 @@ Benutzerdaten.
 | `GET` | `/api/v1/admin/prompts` | Die aktiven System-Prompts mit Herkunft lesen (nur Rolle `admin`) |
 | `GET` | `/api/v1/admin/prompts/history` | Alle Versionen eines Prompts (`?kind=&key=`), neueste zuerst (nur `admin`) |
 | `PUT` | `/api/v1/admin/prompts` | Einen bearbeiteten Prompt-Text als neue aktive Version speichern (nur `admin`) |
-| `POST` | `/api/v1/admin/prompts/reset` | Das mitgelieferte Original eines Prompts oder aller Prompts neu einspielen (nur `admin`) |
+| `POST` | `/api/v1/admin/prompts/reset` | Das mitgelieferte Original eines Prompts, einer Art oder aller Prompts neu einspielen (nur `admin`) |
+| `POST` | `/api/v1/admin/prompts/options` | Eine neue Option für Genre, Ton oder Prosastil anlegen (nur `admin`) |
+| `DELETE` | `/api/v1/admin/prompts/options` | Eine selbst angelegte, unbenutzte Option entfernen (`?category=&option_id=`, nur `admin`) |
 | `GET` | `/api/v1/admin/models` | Aktive Modellwahl je Task und die wählbaren Katalogmodelle lesen (nur Rolle `admin`) |
 | `GET` | `/api/v1/admin/models/history` | Alle Versionen der Modellwahl eines Tasks (`?task=`), neueste zuerst (nur `admin`) |
 | `PUT` | `/api/v1/admin/models` | Modell und Optionen eines Tasks als neue aktive Version speichern (nur `admin`) |
@@ -260,18 +262,32 @@ blendet den Menüpunkt "Einstellungen" nur zusätzlich aus.
   Jeder Eintrag ist eine Version: `version_id`, `kind` (`task`, `option`,
   `directive`), `key` (Task-/Direktiven-ID, bei Optionen `<kategorie>/<option>`),
   `text`, `is_default`, `task_ids`, `source` (`toml_seed`, `ui`,
-  `toml_reset`), `created_at`, `created_by`, `is_active` und `is_modified`
-  (die aktive Version ist eine Bearbeitung in der UI).
+  `toml_reset`), `created_at`, `created_by`, `is_active`, `is_modified`
+  (die aktive Version ist eine Bearbeitung in der UI) und `is_custom`
+  (Option, die in der UI angelegt wurde und kein Original in der TOML hat).
 - `GET /api/v1/admin/prompts/history?kind=&key=` → `{versions[]}`, neueste
   zuerst, inklusive der inaktiven Vorgänger. Unbekannter Eintrag: 404.
 - `PUT /api/v1/admin/prompts` mit `{kind, key, text}` legt eine neue aktive
   Version an und deaktiviert die bisherige. Ein unveränderter Text legt
   nichts an. Leerer oder über 20000 Zeichen langer Text: 422; unbekannter
   Eintrag: 404.
-- `POST /api/v1/admin/prompts/reset` mit `{kind, key}` oder `{}` (alle) legt
-  für jeden vom Original abweichenden Eintrag eine neue Version mit
-  `source: toml_reset` an; die Bearbeitungen bleiben im Verlauf. `kind` und
-  `key` müssen gemeinsam angegeben werden (sonst 422).
+- `POST /api/v1/admin/prompts/reset` mit `{kind, key}` (ein Eintrag), `{kind}`
+  (alle Einträge dieser Art) oder `{}` (alle) legt für jeden vom Original
+  abweichenden Eintrag eine neue Version mit `source: toml_reset` an; die
+  Bearbeitungen bleiben im Verlauf. `key` ohne `kind` ergibt 422. Selbst
+  angelegte Optionen haben kein Original und bleiben unberührt.
+- `POST /api/v1/admin/prompts/options` mit `{category, option_id, text}` legt
+  eine neue Option an (201, Antwort wie ein Eintrag, `is_custom: true`). Nur
+  die Kategorien `genre`, `tone` und `prose_style` nehmen neue Optionen an;
+  die ID ist ein Kleinbuchstaben-Slug (`^[a-z][a-z0-9_]{1,39}$`). Fehler:
+  422 `invalid_prompt_option` (Kategorie oder ID unzulässig),
+  422 `invalid_prompt_text`, 409 `prompt_option_exists`. Die Option steht
+  sofort im Katalog des Wizards; sie wird nie Standardoption.
+- `DELETE /api/v1/admin/prompts/options?category=&option_id=` entfernt eine
+  selbst angelegte Option (204; die Versionen bleiben im Verlauf). 409
+  `prompt_option_not_removable` für mitgelieferte Optionen, 409
+  `prompt_option_in_use`, solange eine gespeicherte Spielkonfiguration sie
+  noch auswählt (sonst scheiterte deren nächster Zug), 404 für unbekannte.
 
 Änderungen wirken sofort auf die nächste Story-Anfrage; der Katalog liest bei
 jedem Aufruf die aktiven Versionen.

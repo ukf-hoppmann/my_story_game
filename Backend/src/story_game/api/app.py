@@ -60,9 +60,13 @@ from story_game.application.model_settings import (
     UpdateModelSetting,
 )
 from story_game.application.prompt_management import (
+    CreatePromptOption,
+    ListCustomPromptOptions,
     ListPromptEntries,
     ListPromptHistory,
     PromptManagementOperations,
+    PromptOptionUsage,
+    RemovePromptOption,
     ResetPromptText,
     SeedPromptPackages,
     SeedPromptPackagesRequest,
@@ -142,6 +146,7 @@ from story_game.infrastructure.persistence.postgres import (
     PostgresConnectionFactory,
     PostgresGameStore,
     PostgresModelSettingsStore,
+    PostgresPromptOptionUsage,
     PostgresPromptStore,
     PostgresSceneImageStore,
     PostgresSchemaMigrator,
@@ -239,7 +244,9 @@ def create_app(
                 prompt_profile_validator=PromptProfileValidator(prompt_catalog),
                 report_frontend_error=_compose_report_frontend_error(diagnostics),
                 scene_images=scene_images,
-                prompt_management=_compose_prompt_management(resolved_settings, prompt_store),
+                prompt_management=_compose_prompt_management(
+                    resolved_settings, prompt_store, PostgresPromptOptionUsage(connections)
+                ),
                 model_settings=_compose_model_settings(model_source, model_store),
             )
         application.state.api_dependencies = resolved
@@ -325,7 +332,7 @@ def _compose_model_settings(
 
 
 def _compose_prompt_management(
-    settings: ApiSettings, prompt_store: PostgresPromptStore
+    settings: ApiSettings, prompt_store: PostgresPromptStore, option_usage: PromptOptionUsage
 ) -> PromptManagementOperations:
     source = FilePromptPackageCatalog(settings.prompt_root)
     clock = lambda: datetime.now(UTC)  # noqa: E731
@@ -334,6 +341,11 @@ def _compose_prompt_management(
         history=ListPromptHistory(prompt_store),
         update=UpdatePromptText(prompt_store, prompt_store, StableId.new, clock),
         reset=ResetPromptText(source, prompt_store, prompt_store, StableId.new, clock),
+        create_option=CreatePromptOption(prompt_store, prompt_store, StableId.new, clock),
+        custom_options=ListCustomPromptOptions(source, prompt_store),
+        remove_option=RemovePromptOption(
+            source, prompt_store, prompt_store, option_usage
+        ),
     )
 
 

@@ -1,22 +1,54 @@
 # my_story_game
 
-<!-- Ein bis zwei Sätze: Was das Projekt ist und für wen es gedacht ist. -->
+Ein KI-gestütztes Textabenteuer. Eine Spielerin oder ein Spieler beschreibt
+eine Ausgangslage, ein Sprachmodell erzählt die Geschichte Zug für Zug, und die
+Anwendung hält den Spielzustand (Figuren, Orte, Fakten, Ziele) als kanonischen
+Zustand selbst fest. Zu jeder Szene lässt sich optional ein Bild erzeugen.
 
 ## Voraussetzungen
 
-<!-- Laufzeit, Werkzeuge, Konten. -->
+- Docker mit Docker Compose
+- Python 3.13 (nur für den Starter `./story-starter` und Backend-Tests)
+- Node 20 (nur für Frontend-Tests außerhalb von Docker)
+- Mindestens ein Sprachmodell-Anbieter: LM Studio lokal (Standard), Groq oder
+  Gemini (API-Key nötig, siehe [Konfiguration](docs/techdocs/configuration.md))
+- Optional für Szenenbilder: ein Modal-Zugang
 
 ## Installation
 
-<!-- Schritte zum Einrichten des Projekts. -->
+1. Repository klonen.
+2. Geheimnisse anlegen: `Backend/configs/llm.secrets.toml` aus
+   `llm.secrets.toml.example` kopieren (nur nötig für Groq/Gemini) und
+   `Backend/configs/scene_image.secrets.toml` aus
+   `scene_image.secrets.toml.example` (nur für Szenenbilder).
+3. Für lokale Modelle LM Studio starten und das gewünschte Modell laden
+   ([LM Studio](docs/human/operations/lmstudio.md)).
 
 ## Schnellstart
 
-<!-- Der kürzeste Weg zu einem ersten funktionierenden Ergebnis. -->
+```bash
+./story-starter start
+```
+
+Danach ist die App unter `http://storygame.localhost/` erreichbar. Test-Logins
+gibt es im lokalen Keycloak (`TestAdmin` hat zusätzlich die Rolle `admin` und
+sieht die Einstellungsseite), siehe
+[Keycloak](docs/human/operations/keycloak.md). Weitere Befehle
+(`stop`, `down`, `upgrade`, `logs`, …) beschreibt der
+[Story-Starter](docs/human/operations/story-starter.md).
+
+Tests:
+
+```bash
+cd Backend && pytest
+cd Frontend-Web && npm test
+```
 
 ## Dokumentation
 
 - [Architektur](docs/techdocs/architecture.md)
 - [Schnittstellen](docs/techdocs/interfaces.md)
 - [Konfiguration](docs/techdocs/configuration.md)
-- Ältere technische Beschreibungen: [docs/human/technical](docs/human/technical/README.md)
+- Vertiefende technische Beschreibungen: [docs/human/technical](docs/human/technical/README.md)
+- Betriebsanleitungen: [docs/human/operations](docs/human/operations/README.md)
+- Verbindliche Architekturregeln: [docs/development/architecture.md](docs/development/architecture.md)

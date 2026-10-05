@@ -203,24 +203,29 @@ Die Modellreferenzen `story_model_id`, `extraction_model_id` und
 aktuelle Systemkonfiguration, nicht der Modellstand einer vergangenen
 GameState-Revision.
 
-Die zentrale LLM-Konfiguration speichert weiterhin:
+Die aktive Modellreferenz je Aufgabe (`story`, `extraction`, `summary`,
+`scene_image`) samt Temperatur und maximaler Ausgabelänge liegt versioniert in
+der Datenbank (`llm_task_settings`, append-only, eine aktive Version je Task).
+Beim ersten Start wird sie aus `[task_models]` und `[generation_options]` in
+`llm.toml` übernommen; danach gilt die Datenbank, und `llm.toml` bleibt
+Vorgabe, Reset-Quelle und Katalog. Die zentrale LLM-Konfiguration speichert
+weiterhin:
 
-- die verfügbaren logischen Modelleinträge;
-- die aktive Modellreferenz für Story;
-- die aktive Modellreferenz für Extraction;
-- die aktive Modellreferenz für Summary;
-- die jeweilige technische Zuordnung zu Provider und konkreter Modell-ID.
+- die verfügbaren logischen Modelleinträge (Katalog);
+- die jeweilige technische Zuordnung zu Provider und konkreter Modell-ID;
+- die Provider mit URLs und Secrets.
 
-`LlmTask` kennzeichnet dabei nur den Auftrag `story`, `extraction` oder
-`summary`. Die Konfigurations- und Verdrahtungsgrenze verwendet diese Kennung,
-um die aktive Referenz auf eine konkrete `ModelSelection` aufzulösen. Der
-anschließende `LLMGenerationCall` transportiert bereits `provider_id` und
-`model_id`; Adapter und Provider-Client entscheiden das Modell nicht erneut.
+`LlmTask` kennzeichnet den Auftrag. Die Konfigurations- und Verdrahtungsgrenze
+verwendet diese Kennung, um die aktive Referenz auf eine konkrete
+`ModelSelection` aufzulösen: Der Laufzeit-Resolver liest bei jedem Aufruf die
+aktive Zeile und den frisch gelesenen Katalog, Änderungen wirken also ohne
+Neustart. Der anschließende `LLMGenerationCall` transportiert bereits
+`provider_id` und `model_id`; Adapter und Provider-Client entscheiden das
+Modell nicht erneut.
 
-Spätere zusätzliche Modelle können in den zentralen Modellkatalog aufgenommen
-werden. Eine spätere UI zur globalen Modellwahl muss die aktive Referenz je
-Aufgabe persistent ändern. Der heutige dateibasierte Vertrag bleibt bis zu
-einer solchen Erweiterung die maßgebliche Persistenz.
+Neue Modelle werden im Katalog in `llm.toml` ergänzt. Gewählt wird je Task in
+den Einstellungen (`/settings`, nur Rolle `admin`) über
+`GET/PUT /api/v1/admin/models`; zulässig sind nur Katalogmodelle des Tasks.
 
 ## Beibehaltene Vertragsgrenzen
 
@@ -263,5 +268,6 @@ Darstellung, Transport und technische Ergebnisnormalisierung.
 
 Die Umsetzung ersetzt den bestehenden Domain-, API- und Persistenzvertrag
 bewusst ohne Legacy-Schicht. Technische Dokumente beschreiben den neuen
-Ist-Zustand; eine UI für Paketoptionen oder globale Modellwahl und weitere
-Provider bleiben davon getrennte Folgearbeiten.
+Ist-Zustand. Die globale Modellwahl und die Prompttexte sind über die
+Einstellungsseite bearbeitbar; weitere Provider bleiben eine getrennte
+Folgearbeit.

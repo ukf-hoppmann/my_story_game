@@ -3,16 +3,20 @@ import { useTranslation } from "react-i18next";
 import {
   usePromptHistoryQuery,
   useListAdminPromptsQuery,
-  useRemovePromptOptionMutation,
+  useArchivePromptOptionMutation,
+  useListArchivedPromptOptionsQuery,
+  usePurgePromptOptionMutation,
+  useRemovePromptOptionsMutation,
+  useRestorePromptOptionMutation,
   useResetPromptsMutation,
   useSavePromptTextMutation,
 } from "../../api/apiSlice";
-import type { AdminPromptKind, AdminPromptVersion } from "../../api/types";
+import type { AdminPromptKind, AdminPromptVersion, RemovalOutcome } from "../../api/types";
 import { Accordion } from "../../components/Accordion/Accordion";
 import { Button } from "../../components/Button/Button";
 import { ErrorBanner } from "../../components/ErrorBanner/ErrorBanner";
 import { Tabs } from "../../components/Tabs/Tabs";
-import { PlusIcon } from "../../icons";
+import { CloseIcon, PlusIcon } from "../../icons";
 import { formatOptionLabel } from "../../utils/formatOptionLabel";
 import { ModelSettings } from "./ModelSettings";
 import { NewOptionForm } from "./NewOptionForm";
@@ -102,21 +106,48 @@ function PromptEntry({ version }: { version: AdminPromptVersion }) {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [save, saveState] = useSavePromptTextMutation();
   const [reset, resetState] = useResetPromptsMutation();
-  const [remove, removeState] = useRemovePromptOptionMutation();
+  const [remove, removeState] = useArchivePromptOptionMutation();
 
   const unchanged = draft.trim() === version.text;
   const busy = saveState.isLoading || resetState.isLoading || removeState.isLoading;
   const [category, optionId] = version.key.split("/");
 
+  const isOption = version.kind === "option";
   const confirmRemove = () => {
     if (window.confirm(t("settings.removeConfirm", { key: version.key }))) {
       void remove({ category, option_id: optionId });
     }
   };
 
+  const optionAction = version.is_custom ? (
+    <button
+      type="button"
+      className="settings-x"
+      aria-label={t("settings.remove")}
+      title={t("settings.remove")}
+      disabled={busy}
+      onClick={confirmRemove}
+    >
+      <CloseIcon />
+    </button>
+  ) : (
+    <button
+      type="button"
+      className="settings-x"
+      aria-label={t("settings.reset")}
+      title={t("settings.reset")}
+      disabled={!version.is_modified || busy}
+      onClick={() => reset({ kind: version.kind, key: version.key })}
+    >
+      <CloseIcon />
+    </button>
+  );
+
   return (
     <Accordion
-      title={version.key}
+      title={optionId ?? version.key}
+      ariaLabel={version.key}
+      actions={isOption ? optionAction : undefined}
       badges={
         <>
           {version.is_default && <span className="settings-badge">{t("settings.defaultOption")}</span>}
@@ -143,11 +174,7 @@ function PromptEntry({ version }: { version: AdminPromptVersion }) {
         >
           {t("settings.save")}
         </Button>
-        {version.is_custom ? (
-          <Button variant="ghost" disabled={busy} onClick={confirmRemove}>
-            {t("settings.remove")}
-          </Button>
-        ) : (
+        {!isOption && (
           <Button
             variant="ghost"
             disabled={!version.is_modified || busy}
@@ -253,28 +280,159 @@ function PromptGroups({ kind, entries }: { kind: AdminPromptKind; entries: Admin
   );
 }
 
+/** "Alle Optionen zurücksetzen": asks first what happens to the options added by hand. */
+function ResetAllOptions({ customCount }: { customCount: number }) {
+  const { t } = useTranslation();
+  const [reset, resetState] = useResetPromptsMutation();
+  const [removeAll, removeState] = useRemovePromptOptionsMutation();
+  const [asking, setAsking] = useState(false);
+  const [remained, setRemained] = useState<RemovalOutcome[]>([]);
+  const busy = resetState.isLoading || removeState.isLoading;
+
+  const run = async (includeCustom: boolean) => {
+    setAsking(false);
+    setRemained([]);
+    const restored = await reset({ kind: "option" });
+    if (!includeCustom || "error" in restored) {
+      return;
+    }
+    const removed = await removeAll({ mode: "archive" });
+    if ("data" in removed && removed.data) {
+      setRemained(removed.data.outcomes.filter((outcome) => outcome.status !== "done"));
+    }
+  };
+
+  return (
+    <>
+      <Button
+        variant="ghost"
+        disabled={busy}
+        onClick={() => (customCount > 0 ? setAsking(true) : void run(false))}
+      >
+        {t("settings.resetKind", { kind: t("settings.kind.option") })}
+      </Button>
+      {asking && (
+        <div className="settings-confirm" role="group" aria-label={t("settings.resetKind", { kind: t("settings.kind.option") })}>
+          <p>{t("settings.resetAllOptions.question", { count: customCount })}</p>
+          <div className="settings-entry-actions">
+            <Button variant="ghost" onClick={() => void run(false)}>
+              {t("settings.resetAllOptions.onlyShipped")}
+            </Button>
+            <Button onClick={() => void run(true)}>{t("settings.resetAllOptions.withCustom")}</Button>
+            <Button variant="ghost" onClick={() => setAsking(false)}>
+              {t("settings.resetAllOptions.cancel")}
+            </Button>
+          </div>
+        </div>
+      )}
+      <ErrorBanner error={removeState.error} fallbackKey="settings.removeError" className="settings-error" />
+      <ErrorBanner error={resetState.error} fallbackKey="settings.resetError" className="settings-error" />
+      {remained.map((outcome) => (
+        <p className="settings-error" key={outcome.key}>
+          {t("settings.resetAllOptions.remained", { key: outcome.key, message: outcome.message })}
+        </p>
+      ))}
+    </>
+  );
+}
+
+/** The options that were moved to the trash: restore one, delete one or all for good. */
+function Trash() {
+  const { t } = useTranslation();
+  const { data } = useListArchivedPromptOptionsQuery();
+  const [restore, restoreState] = useRestorePromptOptionMutation();
+  const [purge, purgeState] = usePurgePromptOptionMutation();
+  const [purgeAll, purgeAllState] = useRemovePromptOptionsMutation();
+  const trashed = data?.versions ?? [];
+  const busy = restoreState.isLoading || purgeState.isLoading || purgeAllState.isLoading;
+
+  if (trashed.length === 0) {
+    return null;
+  }
+  const refOf = (key: string) => {
+    const [category, option_id] = key.split("/");
+    return { category, option_id };
+  };
+
+  return (
+    <section className="settings-trash" role="region" aria-label={t("settings.trash.title")}>
+      <div className="settings-group-head">
+        <h3>{t("settings.trash.title")}</h3>
+        <Button
+          variant="ghost"
+          disabled={busy}
+          onClick={() => {
+            if (window.confirm(t("settings.trash.emptyConfirm"))) {
+              void purgeAll({ mode: "purge" });
+            }
+          }}
+        >
+          {t("settings.trash.empty")}
+        </Button>
+      </div>
+      <p className="settings-muted">{t("settings.trash.hint")}</p>
+      <ErrorBanner
+        error={restoreState.error ?? purgeState.error ?? purgeAllState.error}
+        fallbackKey="settings.trash.error"
+        className="settings-error"
+      />
+      <ul className="settings-trash-list">
+        {trashed.map((version) => (
+          <li key={version.version_id} className="settings-trash-item">
+            <span className="settings-trash-key">{version.key}</span>
+            <div className="settings-entry-actions">
+              <Button variant="ghost" disabled={busy} onClick={() => restore(refOf(version.key))}>
+                {t("settings.trash.restore")}
+              </Button>
+              <Button
+                variant="ghost"
+                disabled={busy}
+                onClick={() => {
+                  if (window.confirm(t("settings.trash.purgeConfirm", { key: version.key }))) {
+                    void purge(refOf(version.key));
+                  }
+                }}
+              >
+                {t("settings.trash.purge")}
+              </Button>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 /** The prompts of one kind, each collapsed into an accordion. */
 function PromptTab({ kind }: { kind: AdminPromptKind }) {
   const { t } = useTranslation();
   const { data, isLoading, error } = useListAdminPromptsQuery();
   const [reset, resetState] = useResetPromptsMutation();
   const entries = data?.entries.filter((entry) => entry.kind === kind) ?? [];
+  const customCount = entries.filter((entry) => entry.is_custom).length;
 
   return (
     <section className="settings-section">
       <div className="settings-section-head">
         <h2>{t(`settings.kind.${kind}`)}</h2>
-        <Button variant="ghost" disabled={resetState.isLoading} onClick={() => reset({ kind })}>
-          {t("settings.resetKind", { kind: t(`settings.kind.${kind}`) })}
-        </Button>
+        {kind === "option" ? (
+          <ResetAllOptions customCount={customCount} />
+        ) : (
+          <Button variant="ghost" disabled={resetState.isLoading} onClick={() => reset({ kind })}>
+            {t("settings.resetKind", { kind: t(`settings.kind.${kind}`) })}
+          </Button>
+        )}
       </div>
       <p className="settings-muted">{t("settings.intro")}</p>
 
       {isLoading && <p className="settings-muted">{t("settings.loading")}</p>}
       <ErrorBanner error={error} fallbackKey="settings.loadError" className="settings-error" />
-      <ErrorBanner error={resetState.error} fallbackKey="settings.resetError" className="settings-error" />
+      {kind !== "option" && (
+        <ErrorBanner error={resetState.error} fallbackKey="settings.resetError" className="settings-error" />
+      )}
 
       <PromptGroups kind={kind} entries={entries} />
+      {kind === "option" && <Trash />}
     </section>
   );
 }

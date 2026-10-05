@@ -5,11 +5,23 @@
   margin-bottom: 10px;
 }
 
+.accordion-head {
+  display: flex;
+  align-items: center;
+}
+
+.accordion-actions {
+  display: flex;
+  flex-shrink: 0;
+  padding-right: 10px;
+}
+
 .accordion-header {
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 10px;
-  width: 100%;
   padding: 13px 16px;
   background: transparent;
   border: 0;

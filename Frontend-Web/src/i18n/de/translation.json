@@ -281,6 +281,24 @@
     "remove": "Entfernen",
     "removeConfirm": "Die Option „{{key}}“ wirklich entfernen? Der Verlauf bleibt erhalten.",
     "removeError": "Die Option konnte nicht entfernt werden.",
+    "resetAllOptions": {
+      "question_one": "Es gibt {{count}} eigene Option. Soll sie auch entfernt werden?",
+      "question_other": "Es gibt {{count}} eigene Optionen. Sollen sie auch entfernt werden?",
+      "onlyShipped": "Nur Standard-Optionen zurücksetzen",
+      "withCustom": "Auch eigene entfernen",
+      "cancel": "Abbrechen",
+      "remained": "Nicht entfernt: {{key}} – {{message}}"
+    },
+    "trash": {
+      "title": "Papierkorb",
+      "hint": "Entfernte eigene Optionen. Wiederherstellen bringt sie zurück; endgültig gelöscht ist auch ihr Verlauf weg.",
+      "restore": "Wiederherstellen",
+      "purge": "Endgültig löschen",
+      "purgeConfirm": "Die Option „{{key}}“ endgültig löschen? Auch ihr Verlauf geht verloren.",
+      "empty": "Papierkorb leeren",
+      "emptyConfirm": "Den Papierkorb leeren? Alle darin liegenden Optionen werden samt Verlauf endgültig gelöscht.",
+      "error": "Der Papierkorb konnte nicht bearbeitet werden."
+    },
     "optionTab": {
       "genre": "Genre",
       "voice": "Ton & Stil",

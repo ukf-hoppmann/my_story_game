@@ -370,9 +370,30 @@ export interface CreatePromptOptionRequest {
   text: string;
 }
 
-export interface RemovePromptOptionRequest {
+/** Names one option: the category and the id after the slash of its key. */
+export interface PromptOptionRef {
   category: string;
   option_id: string;
+}
+
+export type RemovalMode = "archive" | "purge";
+export type RemovalStatus = "done" | "in_use" | "protected" | "not_archived" | "not_found";
+
+/** Archive (trash) or purge (delete for good); without `options`, every option the mode applies to. */
+export interface RemovePromptOptionsRequest {
+  mode: RemovalMode;
+  options?: PromptOptionRef[];
+}
+
+export interface RemovalOutcome {
+  /** `<category>/<option>` */
+  key: string;
+  status: RemovalStatus;
+  message: string;
+}
+
+export interface RemovalResult {
+  outcomes: RemovalOutcome[];
 }
 
 /** Name one entry, one `kind`, or send `{}` to reset the whole package. */

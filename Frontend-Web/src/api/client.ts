@@ -17,7 +17,9 @@ import type {
   ProposeRunRequest,
   PromptProfileCatalog,
   ResetModelSettingsRequest,
-  RemovePromptOptionRequest,
+  PromptOptionRef,
+  RemovalResult,
+  RemovePromptOptionsRequest,
   ResetPromptsRequest,
   RunProposal,
   RunSummaryList,
@@ -243,10 +245,41 @@ export async function createPromptOption(
   });
 }
 
-/** Removes an option added in the UI; refused for shipped options and ones a story still uses. */
-export async function removePromptOption(payload: RemovePromptOptionRequest): Promise<void> {
-  const query = new URLSearchParams(payload as unknown as Record<string, string>);
-  return request(`/api/v1/admin/prompts/options?${query.toString()}`, { method: "DELETE" });
+function optionQuery(payload: PromptOptionRef): string {
+  return new URLSearchParams({ category: payload.category, option_id: payload.option_id }).toString();
+}
+
+/** Moves an option added in the UI to the trash; refused for shipped options and ones a story still uses. */
+export async function archivePromptOption(payload: PromptOptionRef): Promise<void> {
+  return request(`/api/v1/admin/prompts/options?${optionQuery(payload)}`, { method: "DELETE" });
+}
+
+/** The options in the trash, newest version of each. */
+export async function listArchivedPromptOptions(): Promise<AdminPromptVersionList> {
+  return request("/api/v1/admin/prompts/options/archived");
+}
+
+/** Takes an option out of the trash. */
+export async function restorePromptOption(payload: PromptOptionRef): Promise<void> {
+  return request("/api/v1/admin/prompts/options/restore", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+/** Deletes an option in the trash for good, with its history. */
+export async function purgePromptOption(payload: PromptOptionRef): Promise<void> {
+  return request(`/api/v1/admin/prompts/options/archived?${optionQuery(payload)}`, { method: "DELETE" });
+}
+
+/** Archives or purges several options; every option gets its own outcome. */
+export async function removePromptOptions(
+  payload: RemovePromptOptionsRequest,
+): Promise<RemovalResult> {
+  return request("/api/v1/admin/prompts/options/removal", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }
 
 /** Re-applies the shipped original as a new version, for one entry or (with `{}`) all. */

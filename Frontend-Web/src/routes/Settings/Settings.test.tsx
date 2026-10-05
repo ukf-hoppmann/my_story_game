@@ -80,6 +80,7 @@ function entry(key: string) {
 describe("Settings", () => {
   beforeEach(() => {
     vi.spyOn(client, "listAdminModels").mockResolvedValue({ settings: [], candidates: [] });
+    vi.spyOn(client, "listArchivedPromptOptions").mockResolvedValue({ versions: [] });
   });
 
   afterEach(() => {
@@ -107,6 +108,8 @@ describe("Settings", () => {
 
     const article = await screen.findByRole("article", { name: "tone/balanced" });
     expect(within(article).getByText("Geändert")).toBeInTheDocument();
+    expect(within(article).getByText("balanced")).toBeInTheDocument();
+    expect(within(article).queryByText("tone/balanced")).not.toBeInTheDocument();
     expect(within(article).queryByRole("textbox")).not.toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Ton & Stil", selected: true })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Ton" })).toBeInTheDocument();
@@ -241,7 +244,7 @@ describe("Settings", () => {
 
     it("marks a custom option, offers removal instead of a reset, and removes it after confirming", async () => {
       vi.spyOn(client, "listAdminPrompts").mockResolvedValue(withCustom);
-      const remove = vi.spyOn(client, "removePromptOption").mockResolvedValue(undefined);
+      const remove = vi.spyOn(client, "archivePromptOption").mockResolvedValue(undefined);
       const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
       renderSettings();
       await openEntry("Optionen", "tone/melancholic");
@@ -258,7 +261,7 @@ describe("Settings", () => {
 
     it("keeps the option when the removal is not confirmed", async () => {
       vi.spyOn(client, "listAdminPrompts").mockResolvedValue(withCustom);
-      const remove = vi.spyOn(client, "removePromptOption");
+      const remove = vi.spyOn(client, "archivePromptOption");
       vi.spyOn(window, "confirm").mockReturnValue(false);
       renderSettings();
       await openEntry("Optionen", "tone/melancholic");
@@ -268,12 +271,224 @@ describe("Settings", () => {
       expect(remove).not.toHaveBeenCalled();
     });
 
+    it("shows the X of an option in its collapsed header", async () => {
+      vi.spyOn(client, "listAdminPrompts").mockResolvedValue(withCustom);
+      const archive = vi.spyOn(client, "archivePromptOption").mockResolvedValue(undefined);
+      vi.spyOn(window, "confirm").mockReturnValue(true);
+      renderSettings();
+      await userEvent.click(await screen.findByRole("tab", { name: "Optionen" }));
+      await screen.findByRole("article", { name: "tone/melancholic" });
+
+      expect(entry("tone/melancholic").queryByRole("textbox")).not.toBeInTheDocument();
+      await userEvent.click(entry("tone/melancholic").getByRole("button", { name: "Entfernen" }));
+
+      expect(archive).toHaveBeenCalledWith({ category: "tone", option_id: "melancholic" });
+    });
+
+    it("lets the X of a shipped option reset it to the original, only when it was changed", async () => {
+      vi.spyOn(client, "listAdminPrompts").mockResolvedValue(withCustom);
+      const reset = vi.spyOn(client, "resetPrompts").mockResolvedValue({ versions: [] });
+      renderSettings();
+      await userEvent.click(await screen.findByRole("tab", { name: "Optionen" }));
+      await screen.findByRole("article", { name: "tone/balanced" });
+
+      await userEvent.click(
+        entry("tone/balanced").getByRole("button", { name: "Auf Original zurücksetzen" }),
+      );
+
+      expect(reset).toHaveBeenCalledWith({ kind: "option", key: "tone/balanced" });
+    });
+
+    it("disables the X of an unchanged shipped option", async () => {
+      vi.spyOn(client, "listAdminPrompts").mockResolvedValue({
+        ...list,
+        entries: [
+          version({
+            version_id: "00000000-0000-0000-0000-000000000041",
+            kind: "option",
+            key: "tone/dark",
+            text: "Düster",
+          }),
+        ],
+      });
+      renderSettings();
+      await userEvent.click(await screen.findByRole("tab", { name: "Optionen" }));
+      await screen.findByRole("article", { name: "tone/dark" });
+
+      expect(
+        entry("tone/dark").getByRole("button", { name: "Auf Original zurücksetzen" }),
+      ).toBeDisabled();
+    });
+
     it("does not offer removal for a shipped option", async () => {
       vi.spyOn(client, "listAdminPrompts").mockResolvedValue(withCustom);
       renderSettings();
       await openEntry("Optionen", "tone/balanced");
 
       expect(entry("tone/balanced").queryByRole("button", { name: "Entfernen" })).not.toBeInTheDocument();
+    });
+  });
+
+  describe("resetting all options", () => {
+    const custom = version({
+      version_id: "00000000-0000-0000-0000-000000000021",
+      kind: "option",
+      key: "tone/melancholic",
+      text: "Wehmütig",
+      source: "ui",
+      created_by: "admin-1",
+      is_modified: true,
+      is_custom: true,
+    });
+    const withCustom: AdminPromptList = { ...list, entries: [...list.entries, custom] };
+
+    async function clickResetAll() {
+      await userEvent.click(await screen.findByRole("tab", { name: "Optionen" }));
+      await screen.findByRole("article", { name: "tone/balanced" });
+      await userEvent.click(screen.getByRole("button", { name: "Alle Optionen zurücksetzen" }));
+    }
+
+    it("resets right away when there are no options of one's own", async () => {
+      vi.spyOn(client, "listAdminPrompts").mockResolvedValue(list);
+      const reset = vi.spyOn(client, "resetPrompts").mockResolvedValue({ versions: [] });
+      const remove = vi.spyOn(client, "removePromptOptions");
+      renderSettings();
+
+      await clickResetAll();
+
+      expect(reset).toHaveBeenCalledWith({ kind: "option" });
+      expect(remove).not.toHaveBeenCalled();
+    });
+
+    it("asks what to do with options of one's own before resetting", async () => {
+      vi.spyOn(client, "listAdminPrompts").mockResolvedValue(withCustom);
+      const reset = vi.spyOn(client, "resetPrompts").mockResolvedValue({ versions: [] });
+      renderSettings();
+
+      await clickResetAll();
+
+      expect(await screen.findByText(/1 eigene Option/)).toBeInTheDocument();
+      expect(reset).not.toHaveBeenCalled();
+    });
+
+    it("resets only the shipped options when asked to", async () => {
+      vi.spyOn(client, "listAdminPrompts").mockResolvedValue(withCustom);
+      const reset = vi.spyOn(client, "resetPrompts").mockResolvedValue({ versions: [] });
+      const remove = vi.spyOn(client, "removePromptOptions");
+      renderSettings();
+      await clickResetAll();
+
+      await userEvent.click(await screen.findByRole("button", { name: "Nur Standard-Optionen zurücksetzen" }));
+
+      expect(reset).toHaveBeenCalledWith({ kind: "option" });
+      expect(remove).not.toHaveBeenCalled();
+    });
+
+    it("also moves the options of one's own to the trash when asked to", async () => {
+      vi.spyOn(client, "listAdminPrompts").mockResolvedValue(withCustom);
+      const reset = vi.spyOn(client, "resetPrompts").mockResolvedValue({ versions: [] });
+      const remove = vi
+        .spyOn(client, "removePromptOptions")
+        .mockResolvedValue({ outcomes: [{ key: "tone/melancholic", status: "done", message: "" }] });
+      renderSettings();
+      await clickResetAll();
+
+      await userEvent.click(await screen.findByRole("button", { name: "Auch eigene entfernen" }));
+
+      await vi.waitFor(() => expect(remove).toHaveBeenCalledWith({ mode: "archive" }));
+      expect(reset).toHaveBeenCalledWith({ kind: "option" });
+    });
+
+    it("names an own option that stayed because a story still uses it", async () => {
+      vi.spyOn(client, "listAdminPrompts").mockResolvedValue(withCustom);
+      vi.spyOn(client, "resetPrompts").mockResolvedValue({ versions: [] });
+      vi.spyOn(client, "removePromptOptions").mockResolvedValue({
+        outcomes: [
+          { key: "tone/melancholic", status: "in_use", message: "Die Option wird noch von einer Geschichte verwendet." },
+        ],
+      });
+      renderSettings();
+      await clickResetAll();
+
+      await userEvent.click(await screen.findByRole("button", { name: "Auch eigene entfernen" }));
+
+      expect(await screen.findByText(/tone\/melancholic.*noch von einer Geschichte/)).toBeInTheDocument();
+    });
+
+    it("does nothing when cancelled", async () => {
+      vi.spyOn(client, "listAdminPrompts").mockResolvedValue(withCustom);
+      const reset = vi.spyOn(client, "resetPrompts");
+      renderSettings();
+      await clickResetAll();
+
+      await userEvent.click(await screen.findByRole("button", { name: "Abbrechen" }));
+
+      expect(reset).not.toHaveBeenCalled();
+      expect(screen.queryByRole("button", { name: "Auch eigene entfernen" })).not.toBeInTheDocument();
+    });
+  });
+
+  describe("the trash", () => {
+    const trashed = version({
+      version_id: "00000000-0000-0000-0000-000000000051",
+      kind: "option",
+      key: "tone/melancholic",
+      text: "Wehmütig",
+      source: "ui",
+      is_active: false,
+      is_custom: true,
+    });
+
+    async function openTrash() {
+      vi.spyOn(client, "listAdminPrompts").mockResolvedValue(list);
+      vi.spyOn(client, "listArchivedPromptOptions").mockResolvedValue({ versions: [trashed] });
+      renderSettings();
+      await userEvent.click(await screen.findByRole("tab", { name: "Optionen" }));
+      return screen.findByRole("region", { name: "Papierkorb" });
+    }
+
+    it("is only shown when something is in it", async () => {
+      vi.spyOn(client, "listAdminPrompts").mockResolvedValue(list);
+      renderSettings();
+      await userEvent.click(await screen.findByRole("tab", { name: "Optionen" }));
+
+      await screen.findByRole("article", { name: "tone/balanced" });
+      expect(screen.queryByRole("region", { name: "Papierkorb" })).not.toBeInTheDocument();
+    });
+
+    it("lists the archived options and restores one", async () => {
+      const restore = vi.spyOn(client, "restorePromptOption").mockResolvedValue(undefined);
+      const trash = within(await openTrash());
+
+      expect(trash.getByText("tone/melancholic")).toBeInTheDocument();
+      await userEvent.click(trash.getByRole("button", { name: "Wiederherstellen" }));
+
+      expect(restore).toHaveBeenCalledWith({ category: "tone", option_id: "melancholic" });
+    });
+
+    it("deletes one option for good only after confirming", async () => {
+      const purge = vi.spyOn(client, "purgePromptOption").mockResolvedValue(undefined);
+      const confirm = vi.spyOn(window, "confirm").mockReturnValueOnce(false).mockReturnValueOnce(true);
+      const trash = within(await openTrash());
+
+      await userEvent.click(trash.getByRole("button", { name: "Endgültig löschen" }));
+      expect(purge).not.toHaveBeenCalled();
+      await userEvent.click(trash.getByRole("button", { name: "Endgültig löschen" }));
+
+      expect(confirm).toHaveBeenCalledTimes(2);
+      expect(purge).toHaveBeenCalledWith({ category: "tone", option_id: "melancholic" });
+    });
+
+    it("empties the trash after confirming", async () => {
+      const remove = vi
+        .spyOn(client, "removePromptOptions")
+        .mockResolvedValue({ outcomes: [{ key: "tone/melancholic", status: "done", message: "" }] });
+      vi.spyOn(window, "confirm").mockReturnValue(true);
+      const trash = within(await openTrash());
+
+      await userEvent.click(trash.getByRole("button", { name: "Papierkorb leeren" }));
+
+      expect(remove).toHaveBeenCalledWith({ mode: "purge" });
     });
   });
 

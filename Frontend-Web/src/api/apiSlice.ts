@@ -15,7 +15,11 @@ import {
   playTurn,
   proposeRun,
   resetModelSettings,
-  removePromptOption,
+  archivePromptOption,
+  listArchivedPromptOptions,
+  purgePromptOption,
+  removePromptOptions,
+  restorePromptOption,
   resetPrompts,
   saveModelSetting,
   savePromptText,
@@ -40,7 +44,9 @@ import type {
   PromptProfileCatalog,
   RunProposal,
   ResetModelSettingsRequest,
-  RemovePromptOptionRequest,
+  PromptOptionRef,
+  RemovalResult,
+  RemovePromptOptionsRequest,
   ResetPromptsRequest,
   RunSummary,
   SaveModelSettingRequest,
@@ -142,15 +148,55 @@ export const apiSlice = createApi({
       },
       invalidatesTags: ["AdminPrompt"],
     }),
-    removePromptOption: builder.mutation<void, RemovePromptOptionRequest>({
+    archivePromptOption: builder.mutation<void, PromptOptionRef>({
       queryFn: async (payload) => {
         try {
-          return { data: await removePromptOption(payload) };
+          return { data: await archivePromptOption(payload) };
         } catch (error) {
-          return { error: toQueryError(error, "apiSlice.removePromptOption") };
+          return { error: toQueryError(error, "apiSlice.archivePromptOption") };
         }
       },
       invalidatesTags: ["AdminPrompt"],
+    }),
+    restorePromptOption: builder.mutation<void, PromptOptionRef>({
+      queryFn: async (payload) => {
+        try {
+          return { data: await restorePromptOption(payload) };
+        } catch (error) {
+          return { error: toQueryError(error, "apiSlice.restorePromptOption") };
+        }
+      },
+      invalidatesTags: ["AdminPrompt"],
+    }),
+    purgePromptOption: builder.mutation<void, PromptOptionRef>({
+      queryFn: async (payload) => {
+        try {
+          return { data: await purgePromptOption(payload) };
+        } catch (error) {
+          return { error: toQueryError(error, "apiSlice.purgePromptOption") };
+        }
+      },
+      invalidatesTags: ["AdminPrompt"],
+    }),
+    removePromptOptions: builder.mutation<RemovalResult, RemovePromptOptionsRequest>({
+      queryFn: async (payload) => {
+        try {
+          return { data: await removePromptOptions(payload) };
+        } catch (error) {
+          return { error: toQueryError(error, "apiSlice.removePromptOptions") };
+        }
+      },
+      invalidatesTags: ["AdminPrompt"],
+    }),
+    listArchivedPromptOptions: builder.query<AdminPromptVersionList, void>({
+      queryFn: async () => {
+        try {
+          return { data: await listArchivedPromptOptions() };
+        } catch (error) {
+          return { error: toQueryError(error, "apiSlice.listArchivedPromptOptions") };
+        }
+      },
+      providesTags: ["AdminPrompt"],
     }),
     resetPrompts: builder.mutation<AdminPromptVersionList, ResetPromptsRequest>({
       queryFn: async (payload) => {
@@ -293,5 +339,9 @@ export const {
   useSavePromptTextMutation,
   useResetPromptsMutation,
   useCreatePromptOptionMutation,
-  useRemovePromptOptionMutation,
+  useArchivePromptOptionMutation,
+  useListArchivedPromptOptionsQuery,
+  usePurgePromptOptionMutation,
+  useRemovePromptOptionsMutation,
+  useRestorePromptOptionMutation,
 } = apiSlice;

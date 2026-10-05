@@ -37,8 +37,10 @@ Besonderheiten:
   ab (`pending`, `ready`, `failed`). Die Bildbytes brauchen den Bearer-Token.
 - Prompt- und Modelländerungen wirken ab dem nächsten Modellaufruf ohne
   Neustart. Neue Optionen lassen sich nur für `genre`, `tone` und
-  `prose_style` anlegen und nur entfernen, wenn sie selbst angelegt und von
-  keiner Spielkonfiguration gewählt sind.
+  `prose_style` anlegen. Selbst angelegte Optionen durchlaufen
+  aktiv → Papierkorb (archiviert) → endgültig gelöscht; ins Archiv geht nur,
+  was keine Spielkonfiguration wählt, und nur dort lässt sich endgültig
+  löschen. Mitgelieferte Optionen lassen sich nur zurücksetzen.
 
 ## Web-Oberfläche
 
@@ -51,7 +53,7 @@ Besonderheiten:
 | `/library` | Eigene Geschichten | angemeldet |
 | `/new` | Wizard für eine neue Geschichte | angemeldet |
 | `/stories/:runId` | Spielansicht: Fließtext oder Chat umschaltbar, Szenenbilder pro Zug und Version | angemeldet |
-| `/settings` | Tabs Modelle, Aufgaben, Optionen (Genre, Ton & Stil, Spielgefühl, Sonstiges), Direktiven: Prompts und Modelle bearbeiten, zurücksetzen, Verlauf; Optionen anlegen und entfernen | Rolle `admin` |
+| `/settings` | Tabs Modelle, Aufgaben, Optionen (Genre, Ton & Stil, Spielgefühl, Sonstiges), Direktiven: Prompts und Modelle bearbeiten, zurücksetzen, Verlauf; Optionen anlegen, entfernen (Papierkorb, wiederherstellen, endgültig löschen) | Rolle `admin` |
 
 Der Kopfbereich zeigt „Anmelden“ oder, angemeldet, ein Menü mit
 Benutzername, Geschichten, Neue Geschichte, für Admins Einstellungen, und

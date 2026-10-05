@@ -19,6 +19,7 @@ from story_game.application import (
     ConfirmGameRunProposal,
     ExtractInitialWorldState,
     ExtractStoryTurnChanges,
+    Failure,
     GenerateStory,
     InitializeStory,
     PlayStoryTurn,
@@ -37,6 +38,7 @@ from story_game.application.game_state import (
     PromptProfileValidator,
 )
 from story_game.application.llm import (
+    PromptPackageCatalog,
     CompactImagePromptResolver,
     ExtractionPromptSelectionResolver,
     SceneImagePromptResolver,
@@ -46,6 +48,15 @@ from story_game.application.llm import (
     SummaryPromptSelectionResolver,
 )
 from story_game.application.diagnostics_reporting import ReportFrontendError
+from story_game.application.prompt_management import (
+    ListPromptEntries,
+    ListPromptHistory,
+    PromptManagementOperations,
+    ResetPromptText,
+    SeedPromptPackages,
+    SeedPromptPackagesRequest,
+    UpdatePromptText,
+)
 from story_game.application.scene_image import (
     GenerateSceneImage,
     ListSceneImages,
@@ -116,8 +127,10 @@ from story_game.infrastructure.persistence.in_memory_proposal_store import (
     InMemoryProposalStore,
 )
 from story_game.infrastructure.persistence.postgres import (
+    DbPromptPackageCatalog,
     PostgresConnectionFactory,
     PostgresGameStore,
+    PostgresPromptStore,
     PostgresSceneImageStore,
     PostgresSchemaMigrator,
 )
@@ -154,6 +167,9 @@ def create_app(
             if resolved_settings.auto_migrate:
                 PostgresSchemaMigrator(connections).migrate()
             store = PostgresGameStore(connections)
+            prompt_store = PostgresPromptStore(connections)
+            _seed_prompts(resolved_settings, prompt_store)
+            prompt_catalog = DbPromptPackageCatalog(prompt_store)
             proposal_store = InMemoryProposalStore()
             llm_clients = _build_llm_clients(
                 resolved_settings, debug_enabled=resolved_logging_settings.debug_enabled
@@ -172,31 +188,31 @@ def create_app(
                     modal_renderer,
                     scene_image_settings,
                     resolved_settings,
+                    prompt_catalog,
                     llm_clients,
                     diagnostics,
                 )
             resolved = ApiDependencies(
                 operations=_compose_game_state_operations(
-                    store, resolved_settings.prompt_root, diagnostics
+                    store, prompt_catalog, diagnostics
                 ),
                 propose_run=_compose_propose_game_run(
-                    proposal_store, resolved_settings, llm_clients, diagnostics
+                    proposal_store, resolved_settings, prompt_catalog, llm_clients, diagnostics
                 ),
                 confirm_proposal=_compose_confirm_game_run_proposal(
-                    store, proposal_store, resolved_settings, diagnostics
+                    store, proposal_store, prompt_catalog, diagnostics
                 ),
                 play_turn=_compose_play_story_turn(
-                    store, resolved_settings, llm_clients, diagnostics
+                    store, resolved_settings, prompt_catalog, llm_clients, diagnostics
                 ),
                 start_playthrough=_compose_start_playthrough(
-                    store, resolved_settings, diagnostics
+                    store, prompt_catalog, diagnostics
                 ),
-                prompt_catalog=FilePromptPackageCatalog(resolved_settings.prompt_root),
-                prompt_profile_validator=PromptProfileValidator(
-                    FilePromptPackageCatalog(resolved_settings.prompt_root)
-                ),
+                prompt_catalog=prompt_catalog,
+                prompt_profile_validator=PromptProfileValidator(prompt_catalog),
                 report_frontend_error=_compose_report_frontend_error(diagnostics),
                 scene_images=scene_images,
+                prompt_management=_compose_prompt_management(resolved_settings, prompt_store),
             )
         application.state.api_dependencies = resolved
         application.state.api_settings = resolved_settings
@@ -233,12 +249,43 @@ def create_app(
     return application
 
 
+def _seed_prompts(settings: ApiSettings, prompt_store: PostgresPromptStore) -> None:
+    """Import the shipped TOML prompt packages the database does not hold yet.
+
+    Only a package without any stored version is imported, so a restart never
+    overwrites prompts edited in the UI. A failure is fatal: without prompts
+    no story can be generated.
+    """
+    result = SeedPromptPackages(
+        FilePromptPackageCatalog(settings.prompt_root),
+        prompt_store,
+        prompt_store,
+        StableId.new,
+        lambda: datetime.now(UTC),
+    ).apply(SeedPromptPackagesRequest())
+    if isinstance(result, Failure):
+        raise RuntimeError(f"Die Prompts konnten nicht initialisiert werden: {result.error.message}")
+
+
+def _compose_prompt_management(
+    settings: ApiSettings, prompt_store: PostgresPromptStore
+) -> PromptManagementOperations:
+    source = FilePromptPackageCatalog(settings.prompt_root)
+    clock = lambda: datetime.now(UTC)  # noqa: E731
+    return PromptManagementOperations(
+        entries=ListPromptEntries(prompt_store),
+        history=ListPromptHistory(prompt_store),
+        update=UpdatePromptText(prompt_store, prompt_store, StableId.new, clock),
+        reset=ResetPromptText(source, prompt_store, prompt_store, StableId.new, clock),
+    )
+
+
 def _compose_game_state_operations(
     store: PostgresGameStore,
-    prompt_root: str,
+    catalog: PromptPackageCatalog,
     diagnostics: StructlogDiagnosticsLog,
 ) -> GameStateOperations:
-    validator = PromptProfileValidator(FilePromptPackageCatalog(prompt_root))
+    validator = PromptProfileValidator(catalog)
     return GameStateOperations(
         create=CreateGameRun(store, validator),
         load=LoadGame(store, store),
@@ -311,10 +358,10 @@ def _build_llm_clients(settings: ApiSettings, *, debug_enabled: bool) -> _LlmCli
 def _compose_propose_game_run(
     proposal_store: InMemoryProposalStore,
     settings: ApiSettings,
+    catalog: PromptPackageCatalog,
     clients: _LlmClients,
     diagnostics: StructlogDiagnosticsLog,
 ) -> ProposeGameRun:
-    catalog = FilePromptPackageCatalog(settings.prompt_root)
     generation_config = TomlGenerationConfigurationResolver(settings.llm_config_path)
     story_initializer = InitializeStory(
         GenerateInitialStoryState(
@@ -350,10 +397,10 @@ def _compose_propose_game_run(
 def _compose_confirm_game_run_proposal(
     store: PostgresGameStore,
     proposal_store: InMemoryProposalStore,
-    settings: ApiSettings,
+    catalog: PromptPackageCatalog,
     diagnostics: StructlogDiagnosticsLog,
 ) -> ConfirmGameRunProposal:
-    validator = PromptProfileValidator(FilePromptPackageCatalog(settings.prompt_root))
+    validator = PromptProfileValidator(catalog)
     return ConfirmGameRunProposal(
         proposal_store,
         CreateGameRun(store, validator),
@@ -364,10 +411,10 @@ def _compose_confirm_game_run_proposal(
 def _compose_play_story_turn(
     store: PostgresGameStore,
     settings: ApiSettings,
+    catalog: PromptPackageCatalog,
     clients: _LlmClients,
     diagnostics: StructlogDiagnosticsLog,
 ) -> PlayStoryTurn:
-    catalog = FilePromptPackageCatalog(settings.prompt_root)
     generation_config = TomlGenerationConfigurationResolver(settings.llm_config_path)
     summary_settings = TomlAppConfigurationLoader().load_story_summary(
         settings.config_path
@@ -442,12 +489,12 @@ def _compose_scene_images(
     renderer: ModalSceneImageRenderer,
     scene_settings: SceneImageSettings,
     settings: ApiSettings,
+    catalog: PromptPackageCatalog,
     clients: _LlmClients,
     diagnostics: StructlogDiagnosticsLog,
 ) -> SceneImageOperations:
     modal = scene_settings.modal
     assert modal is not None
-    catalog = FilePromptPackageCatalog(settings.prompt_root)
     generation_config = TomlGenerationConfigurationResolver(settings.llm_config_path)
     defaults = SceneImageDefaults(
         turn_window=scene_settings.turn_window,
@@ -509,10 +556,10 @@ def _compose_scene_images(
 
 def _compose_start_playthrough(
     store: PostgresGameStore,
-    settings: ApiSettings,
+    catalog: PromptPackageCatalog,
     diagnostics: StructlogDiagnosticsLog,
 ) -> StartPlaythrough:
-    validator = PromptProfileValidator(FilePromptPackageCatalog(settings.prompt_root))
+    validator = PromptProfileValidator(catalog)
     return StartPlaythrough(
         LoadGame(store, store),
         CreateGameRun(store, validator),

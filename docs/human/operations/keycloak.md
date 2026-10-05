@@ -67,14 +67,31 @@ Nutzer, Sessions) — nicht die Story-Engine-Datenbank.
 
 ## Test-Logins
 
-Das importierte Realm enthält zwei Beispielnutzer, extra für den Fall
+Das importierte Realm enthält zwei Spielernutzer, extra für den Fall
 "mehrere Spieler parallel" — zwei Browserfenster (oder eines im
-Inkognito-Modus), zwei Logins, zwei unabhängige Spielstände:
+Inkognito-Modus), zwei Logins, zwei unabhängige Spielstände, sowie `TestAdmin` mit der Rolle `admin`
+(siehe unten):
 
 | Benutzername | Passwort |
 | --- | --- |
 | `player-one` | `player-one` |
 | `player-two` | `player-two` |
+| `TestAdmin` | `TestAdmin` (Rolle `admin`) |
+
+## Rolle `admin`
+
+Die Einstellungen der Anwendung (Prompts, später Modellwahl) dürfen nur
+Nutzer mit der Realm-Rolle `admin` ändern. Das Backend liest die Rolle aus
+dem Claim `realm_access.roles` des Access-Tokens und antwortet ohne sie mit
+HTTP 403; das Frontend blendet den Menüpunkt nur zusätzlich aus.
+
+- Das importierte Realm enthält die Rolle und den Test-Nutzer `TestAdmin`
+  (Passwort `TestAdmin`), der sie trägt. Keycloak speichert Benutzernamen
+  kleingeschrieben (`testadmin`); die Anmeldung ignoriert die Schreibweise.
+- Ein bereits importiertes Realm wird nicht erneut importiert. Dort die Rolle
+  einmalig in der Admin-Konsole anlegen (*Realm roles → Create role*, Name
+  `admin`) und dem eigenen Nutzer zuweisen (*Users → Role mapping*), oder das
+  Realm wie unter "Zurücksetzen" neu aufsetzen.
 
 ## Einen Token manuell holen (ohne Frontend)
 

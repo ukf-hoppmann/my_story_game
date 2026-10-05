@@ -27,6 +27,10 @@ Benutzerdaten.
 | `GET` | `/api/v1/runs/{run_id}/scene-images` | Szenenbilder eines Laufs auflisten, neueste zuerst |
 | `GET` | `/api/v1/runs/{run_id}/scene-images/{image_id}` | Status, Prompts und Optionen eines Szenenbilds lesen |
 | `GET` | `/api/v1/runs/{run_id}/scene-images/{image_id}/content` | Die Bilddaten eines fertigen Szenenbilds laden |
+| `GET` | `/api/v1/admin/prompts` | Die aktiven System-Prompts mit Herkunft lesen (nur Rolle `admin`) |
+| `GET` | `/api/v1/admin/prompts/history` | Alle Versionen eines Prompts (`?kind=&key=`), neueste zuerst (nur `admin`) |
+| `PUT` | `/api/v1/admin/prompts` | Einen bearbeiteten Prompt-Text als neue aktive Version speichern (nur `admin`) |
+| `POST` | `/api/v1/admin/prompts/reset` | Das mitgelieferte Original eines Prompts oder aller Prompts neu einspielen (nur `admin`) |
 | `POST` | `/api/v1/diagnostics/frontend-errors` | Einen authentifizierten Frontend-Tooling-Fehler für Diagnosezwecke melden |
 
 ## Vorschlag, Vorlage und abgespieltes Spiel
@@ -239,6 +243,35 @@ gespeicherten Content-Type (nur für `ready`; sonst 404). Weil dafür der
 Bearer-Token nötig ist, lädt das Frontend die Bytes per `fetch` und zeigt sie
 über eine Object-URL an.
 
+## System-Prompts verwalten (Rolle `admin`)
+
+Die Prompts des Pakets `story.base`/`1` (Aufgaben, Optionstexte, Direktiven)
+liegen in der Datenbank und lassen sich über diese Endpunkte lesen und ändern.
+Sie verlangen einen Bearer-Token mit der Keycloak-Realm-Rolle `admin`
+(Claim `realm_access.roles`): ohne Token HTTP 401, ohne die Rolle HTTP 403
+(`error: forbidden`). Das Backend ist die einzige Durchsetzung; das Frontend
+blendet den Menüpunkt "Einstellungen" nur zusätzlich aus.
+
+- `GET /api/v1/admin/prompts` → `{package_id, package_version, entries[]}`.
+  Jeder Eintrag ist eine Version: `version_id`, `kind` (`task`, `option`,
+  `directive`), `key` (Task-/Direktiven-ID, bei Optionen `<kategorie>/<option>`),
+  `text`, `is_default`, `task_ids`, `source` (`toml_seed`, `ui`,
+  `toml_reset`), `created_at`, `created_by`, `is_active` und `is_modified`
+  (die aktive Version ist eine Bearbeitung in der UI).
+- `GET /api/v1/admin/prompts/history?kind=&key=` → `{versions[]}`, neueste
+  zuerst, inklusive der inaktiven Vorgänger. Unbekannter Eintrag: 404.
+- `PUT /api/v1/admin/prompts` mit `{kind, key, text}` legt eine neue aktive
+  Version an und deaktiviert die bisherige. Ein unveränderter Text legt
+  nichts an. Leerer oder über 20000 Zeichen langer Text: 422; unbekannter
+  Eintrag: 404.
+- `POST /api/v1/admin/prompts/reset` mit `{kind, key}` oder `{}` (alle) legt
+  für jeden vom Original abweichenden Eintrag eine neue Version mit
+  `source: toml_reset` an; die Bearbeitungen bleiben im Verlauf. `kind` und
+  `key` müssen gemeinsam angegeben werden (sonst 422).
+
+Änderungen wirken sofort auf die nächste Story-Anfrage; der Katalog liest bei
+jedem Aufruf die aktiven Versionen.
+
 ## Frontend-Diagnose
 
 `POST /api/v1/diagnostics/frontend-errors` benötigt ebenfalls einen gültigen
@@ -321,7 +354,9 @@ zuerst ein manueller Datenbank-Reset erforderlich; Details stehen in
 [`persistence.md`](persistence.md).
 
 Der Paketroot ist standardmäßig `prompts` und kann für eine Laufzeitumgebung
-über `STORY_GAME_PROMPT_ROOT` gesetzt werden. Die LLM-Konfigurationsdatei ist
+über `STORY_GAME_PROMPT_ROOT` gesetzt werden. Er enthält die Original-TOML, aus
+denen beim ersten Start die Prompts in die Datenbank übernommen werden (siehe
+[`persistence.md`](persistence.md)); zur Laufzeit gilt die Datenbank. Die LLM-Konfigurationsdatei ist
 standardmäßig `configs/llm.toml` und kann über `STORY_GAME_LLM_CONFIG_PATH`
 gesetzt werden.
 

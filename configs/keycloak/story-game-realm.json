@@ -6,6 +6,14 @@
   "accessTokenLifespan": 3600,
   "ssoSessionIdleTimeout": 1800,
   "ssoSessionMaxLifespan": 36000,
+  "roles": {
+    "realm": [
+      {
+        "name": "admin",
+        "description": "Darf die Einstellungen (Prompts, Modelle) der Anwendung ändern"
+      }
+    ]
+  },
   "clients": [
     {
       "clientId": "story-game-frontend",
@@ -74,6 +82,26 @@
         {
           "type": "password",
           "value": "player-two",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "id": "c2f4a9d1-6e3b-5b87-8a40-2d9f7e1b3c65",
+      "username": "TestAdmin",
+      "enabled": true,
+      "emailVerified": true,
+      "requiredActions": [],
+      "firstName": "Test",
+      "lastName": "Admin",
+      "email": "testadmin@story-game.local",
+      "realmRoles": [
+        "admin"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "TestAdmin",
           "temporary": false
         }
       ]

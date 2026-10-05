@@ -10,6 +10,8 @@ infrastructure into application-facing values (see ``get_current_initiator``).
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 import jwt
 from jwt import PyJWKClient
 
@@ -18,6 +20,16 @@ from story_game.application.run_initiator import RunInitiator
 
 class TokenVerificationError(Exception):
     """The presented bearer token is missing, malformed, or not trustworthy."""
+
+
+@dataclass(frozen=True, slots=True)
+class VerifiedCaller:
+    """A verified token's identity together with its Keycloak realm roles."""
+
+    initiator: RunInitiator
+    roles: frozenset[str]
+    username: str | None = None
+    """Keycloak's ``preferred_username``, for display; ``None`` when absent."""
 
 
 class KeycloakTokenVerifier:
@@ -49,6 +61,9 @@ class KeycloakTokenVerifier:
         )
 
     def verify(self, token: str) -> RunInitiator:
+        return self.verify_caller(token).initiator
+
+    def verify_caller(self, token: str) -> VerifiedCaller:
         try:
             signing_key = self._jwks_client.get_signing_key_from_jwt(token)
             claims = jwt.decode(
@@ -64,4 +79,19 @@ class KeycloakTokenVerifier:
         subject = claims.get("sub")
         if not subject:
             raise TokenVerificationError("Dem Token fehlt der sub-Claim")
-        return RunInitiator(self._issuer, subject)
+        username = claims.get("preferred_username")
+        return VerifiedCaller(
+            RunInitiator(self._issuer, subject),
+            _realm_roles(claims.get("realm_access")),
+            username.strip() if isinstance(username, str) and username.strip() else None,
+        )
+
+
+def _realm_roles(realm_access: object) -> frozenset[str]:
+    """Keycloak puts realm roles under ``realm_access.roles``; anything else is no role."""
+    if not isinstance(realm_access, dict):
+        return frozenset()
+    roles = realm_access.get("roles")
+    if not isinstance(roles, list):
+        return frozenset()
+    return frozenset(role for role in roles if isinstance(role, str))

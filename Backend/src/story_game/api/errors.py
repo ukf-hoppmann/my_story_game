@@ -22,6 +22,10 @@ from story_game.application.initialization_errors import (
     StoryInitializationError,
     StoryInitializationErrorKind,
 )
+from story_game.application.prompt_management import (
+    PromptManagementError,
+    PromptManagementErrorKind,
+)
 from story_game.application.scene_image import SceneImageError, SceneImageErrorKind
 from story_game.application.start_playthrough_errors import (
     PlaythroughError,
@@ -83,6 +87,13 @@ _SCENE_IMAGE_STATUS: dict[SceneImageErrorKind, tuple[int, str]] = {
     SceneImageErrorKind.CONFIGURATION: (500, "scene_image_configuration_invalid"),
 }
 
+_PROMPT_MANAGEMENT_STATUS: dict[PromptManagementErrorKind, tuple[int, str]] = {
+    PromptManagementErrorKind.NOT_FOUND: (404, "not_found"),
+    PromptManagementErrorKind.INVALID_TEXT: (422, "invalid_prompt_text"),
+    PromptManagementErrorKind.SOURCE_UNAVAILABLE: (500, "prompt_source_unavailable"),
+    PromptManagementErrorKind.STORE_UNAVAILABLE: (503, "persistence_unavailable"),
+}
+
 
 def register_error_handlers(app: FastAPI) -> None:
     app.add_exception_handler(OperationFailed, _operation_failed)
@@ -132,6 +143,9 @@ async def _operation_failed(request: Request, exc: Exception) -> JSONResponse:
     if isinstance(error, SceneImageError):
         status_code, code = _SCENE_IMAGE_STATUS[error.kind]
         return _error_response(status_code, code, error.message)
+    if isinstance(error, PromptManagementError):
+        status_code, code = _PROMPT_MANAGEMENT_STATUS[error.kind]
+        return _error_response(status_code, code, error.message)
     if isinstance(error, ReportFrontendErrorRejected):
         return _error_response(400, "invalid_frontend_error_report", error.detail)
     raise exc
@@ -141,14 +155,14 @@ async def _http_exception(request: Request, exc: Exception) -> JSONResponse:
     """Keep the ``{error, detail}`` envelope for framework-raised HTTP errors.
 
     Mostly ``get_current_initiator`` (missing/invalid Bearer token, HTTP
-    401) plus the prompt-profile catalog endpoint's fixed-package lookup
+    401) and ``require_admin`` (missing admin role, HTTP 403) plus the prompt-profile catalog endpoint's fixed-package lookup
     (HTTP 500, no ``.apply()`` call involved) — everything else goes
     through the typed ``OperationFailed``/``DomainError`` paths above. Any
     other status here (e.g. Starlette's own 404/405) falls back to a
     generic code.
     """
     assert isinstance(exc, HTTPException)
-    code = "unauthorized" if exc.status_code == 401 else "http_error"
+    code = {401: "unauthorized", 403: "forbidden"}.get(exc.status_code, "http_error")
     return _error_response(exc.status_code, code, exc.detail)
 
 

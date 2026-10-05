@@ -76,6 +76,30 @@ nur `failed` eine Fehlermeldung hat. Lesen joint immer `game_run_members`, ein
 Nicht-Mitglied sieht dasselbe wie bei einem fehlenden Bild. Der Adapter ist
 `PostgresSceneImageStore`.
 
+## System-Prompts
+
+Die Tabelle `system_prompts` (`007_system_prompts.sql`) ersetzt zur Laufzeit
+die TOML-Dateien unter `Backend/prompts/` als Quelle der Prompts. Je Zeile
+eine Version eines Eintrags: `version_id` (UUID), `package_id`,
+`package_version`, `entry_kind` (`task`, `option`, `directive`), `entry_key`
+(spiegelt die TOML-Struktur: Task-ID, `<kategorie>/<option>`, Direktiven-ID),
+`entry_text`, `sort_position`, `is_default` (Standardoption einer Kategorie),
+`task_ids` (Aufgaben einer Direktive), `source`, `created_at`, `created_by`
+(Benutzername des Bearbeiters, ersatzweise sein Subject; bei `toml_seed` leer) und `is_active`.
+
+- **Append-only:** Texte werden nie überschrieben. Eine Änderung oder ein
+  Reset deaktiviert die aktive Zeile und fügt in derselben Transaktion eine
+  neue aktive ein; ein partieller Unique-Index erzwingt genau eine aktive
+  Version je Eintrag.
+- **Seed:** Beim Start importiert die API jedes Paket unter
+  `STORY_GAME_PROMPT_ROOT`, zu dem die Datenbank noch keine Version hat
+  (`source = toml_seed`). Danach überschreibt ein Neustart nie Änderungen.
+  Eine neue Datenbank oder ein geleerter Bestand liest wieder die TOML.
+- **Reset:** `toml_reset` spielt den Originaltext aus der TOML als neue
+  Version ein; die Bearbeitungen bleiben im Verlauf.
+- **Struktur** (Kategorien, Standardoptionen, Direktiven-Zuordnung) wird beim
+  Seed aus der TOML übernommen und nicht über die UI geändert.
+
 ## Schreibgrenzen
 
 Die Application besitzt getrennte Operationen für:

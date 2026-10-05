@@ -111,3 +111,49 @@ def test_a_token_without_a_subject_claim_is_rejected() -> None:
 
     with pytest.raises(TokenVerificationError):
         _verifier().verify(token)
+
+
+def _token_with_roles(roles: object, username: object = None) -> str:
+    now = datetime.now(UTC)
+    claims = {
+        "iss": ISSUER,
+        "aud": AUDIENCE,
+        "sub": "user-1",
+        "iat": now,
+        "exp": now + timedelta(minutes=5),
+        "realm_access": roles,
+    }
+    if username is not None:
+        claims["preferred_username"] = username
+    return jwt.encode(claims, _PRIVATE_KEY, algorithm="RS256", headers={"kid": KID})
+
+
+def test_realm_roles_of_the_token_are_exposed_on_the_verified_caller() -> None:
+    caller = _verifier().verify_caller(_token_with_roles({"roles": ["admin", "offline_access"]}))
+
+    assert caller.initiator == RunInitiator(ISSUER, "user-1")
+    assert caller.roles == frozenset({"admin", "offline_access"})
+
+
+def test_a_token_without_realm_access_has_no_roles() -> None:
+    caller = _verifier().verify_caller(_token())
+
+    assert caller.roles == frozenset()
+
+
+def test_a_malformed_realm_access_claim_yields_no_roles() -> None:
+    assert _verifier().verify_caller(_token_with_roles("admin")).roles == frozenset()
+    assert _verifier().verify_caller(_token_with_roles({"roles": "admin"})).roles == frozenset()
+    assert _verifier().verify_caller(_token_with_roles({"roles": [1, None]})).roles == frozenset()
+
+
+def test_the_username_claim_is_exposed_on_the_verified_caller() -> None:
+    caller = _verifier().verify_caller(_token_with_roles({"roles": []}, username="testadmin"))
+
+    assert caller.username == "testadmin"
+
+
+def test_a_missing_or_malformed_username_claim_yields_none() -> None:
+    assert _verifier().verify_caller(_token()).username is None
+    assert _verifier().verify_caller(_token_with_roles({"roles": []}, username=7)).username is None
+    assert _verifier().verify_caller(_token_with_roles({"roles": []}, username="  ")).username is None

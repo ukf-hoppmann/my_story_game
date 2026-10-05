@@ -233,3 +233,25 @@ def _synthetic_package(variant: str) -> str:
             ]
         )
     return "\n".join(lines) + "\n"
+
+
+def test_references_list_every_package_version_file_in_the_root(tmp_path: Path) -> None:
+    (tmp_path / "pkg.a").mkdir()
+    (tmp_path / "pkg.a" / "1.toml").write_text("", encoding="utf-8")
+    (tmp_path / "pkg.a" / "2.toml").write_text("", encoding="utf-8")
+    (tmp_path / "pkg.b").mkdir()
+    (tmp_path / "pkg.b" / "1.toml").write_text("", encoding="utf-8")
+    (tmp_path / "pkg.b" / "notes.txt").write_text("", encoding="utf-8")
+    (tmp_path / "stray.toml").write_text("", encoding="utf-8")
+
+    references = FilePromptPackageCatalog(tmp_path).references()
+
+    assert [(r.package_id, r.package_version) for r in references] == [
+        ("pkg.a", "1"),
+        ("pkg.a", "2"),
+        ("pkg.b", "1"),
+    ]
+
+
+def test_references_of_a_missing_root_are_empty(tmp_path: Path) -> None:
+    assert FilePromptPackageCatalog(tmp_path / "missing").references() == ()

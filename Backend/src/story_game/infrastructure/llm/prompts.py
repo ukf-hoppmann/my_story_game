@@ -16,6 +16,7 @@ from story_game.application.llm import (
     PromptPackageNotFoundError,
     PromptTask,
 )
+from story_game.application.prompt_management import PromptPackageReference
 
 
 _TASK_IDS = {
@@ -48,6 +49,15 @@ class FilePromptPackageCatalog(PromptPackageCatalog):
 
     def __init__(self, root: str | Path) -> None:
         self._root = Path(root)
+
+    def references(self) -> tuple[PromptPackageReference, ...]:
+        """Every ``<package id>/<version>.toml`` below the root, sorted."""
+        if not self._root.is_dir():
+            return ()
+        return tuple(
+            PromptPackageReference(path.parent.name, path.stem)
+            for path in sorted(self._root.glob("*/*.toml"))
+        )
 
     def load(self, package_id: str, version: str) -> PromptPackage:
         package_id = _package_reference(package_id, "Paket-ID")

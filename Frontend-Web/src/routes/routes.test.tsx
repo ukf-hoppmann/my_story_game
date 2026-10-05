@@ -1,8 +1,9 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { apiSlice } from "../api/apiSlice";
 import * as auth from "../api/auth";
 import * as client from "../api/client";
@@ -26,11 +27,16 @@ function renderAt(path: string) {
 }
 
 describe("routes", () => {
+  beforeEach(() => {
+    vi.spyOn(auth, "checkSession").mockResolvedValue(true);
+  });
+
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  it("renders the Landing page at / without triggering auth", () => {
+  it("renders the Landing page at / without forcing a login", () => {
+    vi.spyOn(auth, "checkSession").mockResolvedValue(false);
     const ensureAuthSpy = vi.spyOn(auth, "ensureAuth");
     renderAt("/");
 
@@ -38,6 +44,55 @@ describe("routes", () => {
       screen.getByRole("heading", { name: "Geschichten, die deinen Entscheidungen folgen." }),
     ).toBeInTheDocument();
     expect(ensureAuthSpy).not.toHaveBeenCalled();
+  });
+
+  it("offers sign-in to anonymous visitors and starts the Keycloak login on click", async () => {
+    vi.spyOn(auth, "checkSession").mockResolvedValue(false);
+    const ensureAuthSpy = vi.spyOn(auth, "ensureAuth").mockResolvedValue(undefined);
+    renderAt("/");
+
+    await userEvent.click(await screen.findByRole("button", { name: "Anmelden" }));
+
+    expect(ensureAuthSpy).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("button", { name: "Menü" })).not.toBeInTheDocument();
+  });
+
+  it("shows menu and sign-out instead of sign-in when a session exists", async () => {
+    vi.spyOn(auth, "checkSession").mockResolvedValue(true);
+    vi.spyOn(auth, "currentUsername").mockReturnValue("TestAdmin");
+    vi.spyOn(auth, "isAdmin").mockReturnValue(false);
+    const logoutSpy = vi.spyOn(auth, "logout").mockImplementation(() => {});
+    renderAt("/");
+
+    await userEvent.click(await screen.findByRole("button", { name: "Menü" }));
+
+    expect(screen.queryByRole("button", { name: "Anmelden" })).not.toBeInTheDocument();
+    expect(screen.getByText("TestAdmin")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Deine Geschichten" })).toHaveAttribute("href", "/library");
+    expect(screen.getByRole("link", { name: "Neue Geschichte" })).toHaveAttribute("href", "/new");
+    expect(screen.queryByRole("link", { name: "Einstellungen" })).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Abmelden" }));
+    expect(logoutSpy).toHaveBeenCalledOnce();
+  });
+
+  it("lists the settings in the menu for an admin and closes the menu on Escape", async () => {
+    vi.spyOn(auth, "checkSession").mockResolvedValue(true);
+    vi.spyOn(auth, "isAdmin").mockReturnValue(true);
+    renderAt("/");
+
+    await userEvent.click(await screen.findByRole("button", { name: "Menü" }));
+    expect(screen.getByRole("link", { name: "Einstellungen" })).toHaveAttribute("href", "/settings");
+
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("link", { name: "Einstellungen" })).not.toBeInTheDocument();
+  });
+
+  it("treats a failing session check as anonymous", async () => {
+    vi.spyOn(auth, "checkSession").mockRejectedValue(new Error("keycloak unreachable"));
+    renderAt("/");
+
+    expect(await screen.findByRole("button", { name: "Anmelden" })).toBeInTheDocument();
   });
 
   it("renders the Bibliothek at /library once auth resolves", async () => {

@@ -1,0 +1,9 @@
+<!doctype html>
+<html>
+  <body>
+    <!-- Target of Keycloak's silent `check-sso` iframe: hands the result back to the app. -->
+    <script>
+      parent.postMessage(location.href, location.origin);
+    </script>
+  </body>
+</html>

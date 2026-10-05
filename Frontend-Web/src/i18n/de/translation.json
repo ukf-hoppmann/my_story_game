@@ -1,6 +1,8 @@
 {
   "appHeader": {
-    "brand": "Story Engine"
+    "brand": "Story Engine",
+    "menu": "Menü",
+    "signOut": "Abmelden"
   },
   "common": {
     "next": "Weiter",

@@ -23,6 +23,7 @@ describe("auth", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({}), { status: 200 })));
     fakeKeycloak.tokenParsed = { preferred_username: "erzaehlerin" };
+    fakeKeycloak.onTokenExpired = undefined;
   });
 
   afterEach(() => {
@@ -30,22 +31,36 @@ describe("auth", () => {
     vi.clearAllMocks();
   });
 
-  it("initializes Keycloak with login-required and PKCE", async () => {
-    const { initAuth } = await import("./auth");
+  it("checks for an existing session silently (check-sso, PKCE) instead of redirecting", async () => {
+    const { checkSession, resetAuthForTests } = await import("./auth");
+    resetAuthForTests();
 
-    await initAuth();
+    await expect(checkSession()).resolves.toBe(true);
 
     expect(fakeKeycloak.init).toHaveBeenCalledWith({
-      onLoad: "login-required",
+      onLoad: "check-sso",
+      silentCheckSsoRedirectUri: `${window.location.origin}/silent-check-sso.html`,
       pkceMethod: "S256",
     });
+    expect(fakeKeycloak.login).not.toHaveBeenCalled();
+  });
+
+  it("reports no session when Keycloak finds none, without wiring the auth header", async () => {
+    const { checkSession, resetAuthForTests } = await import("./auth");
+    resetAuthForTests();
+    fakeKeycloak.init.mockResolvedValueOnce(false);
+
+    await expect(checkSession()).resolves.toBe(false);
+    expect(fakeKeycloak.onTokenExpired).toBeUndefined();
+    expect(fakeKeycloak.login).not.toHaveBeenCalled();
   });
 
   it("wires the auth header provider so every API request carries the bearer token", async () => {
-    const { initAuth } = await import("./auth");
+    const { checkSession, resetAuthForTests } = await import("./auth");
     const { checkHealth } = await import("./client");
+    resetAuthForTests();
 
-    await initAuth();
+    await checkSession();
     await checkHealth();
 
     const [, init] = vi.mocked(fetch).mock.calls[0];
@@ -53,8 +68,9 @@ describe("auth", () => {
   });
 
   it("proactively refreshes the token on expiry, falling back to login() on failure", async () => {
-    const { initAuth } = await import("./auth");
-    await initAuth();
+    const { checkSession, resetAuthForTests } = await import("./auth");
+    resetAuthForTests();
+    await checkSession();
 
     fakeKeycloak.updateToken.mockRejectedValueOnce(new Error("expired"));
     fakeKeycloak.onTokenExpired?.();
@@ -67,12 +83,12 @@ describe("auth", () => {
     expect(currentUsername()).toBe("erzaehlerin");
   });
 
-  it("delegates logout() to the underlying Keycloak client", async () => {
+  it("logs out through Keycloak and returns to the Landing page", async () => {
     const { logout } = await import("./auth");
 
     logout();
 
-    expect(fakeKeycloak.logout).toHaveBeenCalledOnce();
+    expect(fakeKeycloak.logout).toHaveBeenCalledWith({ redirectUri: `${window.location.origin}/` });
   });
 
   it("delegates login() to the underlying Keycloak client (TASK-030 re-login action)", async () => {
@@ -83,11 +99,35 @@ describe("auth", () => {
     expect(fakeKeycloak.login).toHaveBeenCalledOnce();
   });
 
-  it("ensureAuth runs initAuth only once across multiple calls", async () => {
+  it("ensureAuth resolves without a redirect when a session exists", async () => {
     const { ensureAuth, resetAuthForTests } = await import("./auth");
     resetAuthForTests();
 
-    await Promise.all([ensureAuth(), ensureAuth(), ensureAuth()]);
+    await ensureAuth();
+
+    expect(fakeKeycloak.login).not.toHaveBeenCalled();
+  });
+
+  it("ensureAuth redirects to the login and never settles when there is no session", async () => {
+    const { ensureAuth, resetAuthForTests } = await import("./auth");
+    resetAuthForTests();
+    fakeKeycloak.init.mockResolvedValueOnce(false);
+
+    let settled = false;
+    void ensureAuth().then(() => {
+      settled = true;
+    });
+    await vi.waitFor(() => expect(fakeKeycloak.login).toHaveBeenCalledOnce());
+    await Promise.resolve();
+
+    expect(settled).toBe(false);
+  });
+
+  it("runs Keycloak's init only once across multiple calls", async () => {
+    const { ensureAuth, checkSession, resetAuthForTests } = await import("./auth");
+    resetAuthForTests();
+
+    await Promise.all([ensureAuth(), ensureAuth(), checkSession()]);
 
     expect(fakeKeycloak.init).toHaveBeenCalledTimes(1);
   });

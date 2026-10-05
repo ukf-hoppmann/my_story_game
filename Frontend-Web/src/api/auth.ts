@@ -12,15 +12,34 @@ const keycloak = new Keycloak({
   clientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID ?? "story-game-frontend",
 });
 
+let sessionPromise: Promise<boolean> | null = null;
+
 /**
- * Redirects to Keycloak's login page if there's no session yet, otherwise
- * resolves once a valid token is available. Not called at app boot — the
- * Landing page (`/`) is meant to be reachable without a login redirect, so
- * this only runs when a protected route is actually entered (see
- * `ensureAuth` and `RequireAuth`).
+ * Asks Keycloak whether a session already exists, without redirecting the
+ * page: `check-sso` runs in a hidden iframe (`silent-check-sso.html`) and
+ * only reports the outcome. Used at app start so the Landing page can show
+ * the right header (sign-in vs. menu + sign-out) without forcing a login.
+ * Resolves `true` when a user is signed in; the API client's auth header and
+ * proactive token refresh are wired up in that case. The result is cached
+ * (see `resetAuthForTests`) because Keycloak's client throws if `init()`
+ * runs twice.
  */
-export async function initAuth(): Promise<void> {
-  await keycloak.init({ onLoad: "login-required", pkceMethod: "S256" });
+export function checkSession(): Promise<boolean> {
+  if (!sessionPromise) {
+    sessionPromise = initSession();
+  }
+  return sessionPromise;
+}
+
+async function initSession(): Promise<boolean> {
+  const authenticated = await keycloak.init({
+    onLoad: "check-sso",
+    silentCheckSsoRedirectUri: `${window.location.origin}/silent-check-sso.html`,
+    pkceMethod: "S256",
+  });
+  if (!authenticated) {
+    return false;
+  }
 
   setAuthHeaderProvider(() => ({ Authorization: `Bearer ${keycloak.token}` }));
 
@@ -30,26 +49,27 @@ export async function initAuth(): Promise<void> {
   keycloak.onTokenExpired = () => {
     keycloak.updateToken(30).catch(() => keycloak.login());
   };
+  return true;
 }
 
-let authPromise: Promise<void> | null = null;
-
 /**
- * Lazily runs `initAuth()` on first call and caches the in-flight/resolved
- * promise, so multiple protected routes mounting (or React StrictMode's
- * double-invoked effects) only ever trigger one login flow — Keycloak's
- * client throws if `init()` runs twice.
+ * Resolves once a valid session exists, redirecting to Keycloak's login page
+ * first if there is none. Only protected routes and the sign-in action call
+ * this (see `RequireAuth`); the Landing page stays reachable without a
+ * login redirect. In the redirect case the promise never settles, because
+ * the page is leaving anyway and must not render protected content.
  */
-export function ensureAuth(): Promise<void> {
-  if (!authPromise) {
-    authPromise = initAuth();
+export async function ensureAuth(): Promise<void> {
+  if (await checkSession()) {
+    return;
   }
-  return authPromise;
+  await keycloak.login();
+  await new Promise<never>(() => {});
 }
 
 /** Test-only: clears the cached auth promise so each test starts fresh. */
 export function resetAuthForTests(): void {
-  authPromise = null;
+  sessionPromise = null;
 }
 
 /** The logged-in user's display name, for the "who am I" corner of the UI. */
@@ -67,8 +87,9 @@ export function isAdmin(): boolean {
   return keycloak.hasRealmRole(ADMIN_ROLE);
 }
 
+/** Ends the Keycloak session and returns to the Landing page. */
 export function logout(): void {
-  keycloak.logout();
+  keycloak.logout({ redirectUri: `${window.location.origin}/` });
 }
 
 /** Redirects to Keycloak's login page. Used by `ErrorBanner`'s re-login

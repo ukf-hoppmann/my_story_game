@@ -11,6 +11,7 @@ import { Accordion } from "../../components/Accordion/Accordion";
 import { Button } from "../../components/Button/Button";
 import { ErrorBanner } from "../../components/ErrorBanner/ErrorBanner";
 import { Tabs } from "../../components/Tabs/Tabs";
+import { formatOptionLabel } from "../../utils/formatOptionLabel";
 import { ModelSettings } from "./ModelSettings";
 import "./Settings.css";
 
@@ -145,6 +146,8 @@ function PromptEntry({ version }: { version: AdminPromptVersion }) {
   );
 }
 
+const OTHER_GROUP = "other";
+
 /** Option keys look like `tone/balanced`; the part before the slash is the
  *  group they belong to. Other kinds have no groups. */
 function groupEntries(
@@ -160,6 +163,46 @@ function groupEntries(
     groups.set(group, [...(groups.get(group) ?? []), entry]);
   }
   return [...groups].map(([group, grouped]) => ({ group: group || null, entries: grouped }));
+}
+
+/** The entries of one kind; options get a sub-tab per group, since there are many. */
+function PromptGroups({ kind, entries }: { kind: AdminPromptKind; entries: AdminPromptVersion[] }) {
+  const { t } = useTranslation();
+  const groups = groupEntries(kind, entries);
+  const [selected, setSelected] = useState<string | null>(null);
+
+  if (groups.length === 0) {
+    return null;
+  }
+  if (groups.length === 1 && groups[0].group === null) {
+    return (
+      <div className="settings-group">
+        {groups[0].entries.map((entry) => (
+          <PromptEntry version={entry} key={entry.version_id} />
+        ))}
+      </div>
+    );
+  }
+
+  const ids = groups.map(({ group }) => group ?? OTHER_GROUP);
+  const activeId = selected !== null && ids.includes(selected) ? selected : ids[0];
+  const active = groups[ids.indexOf(activeId)];
+
+  return (
+    <Tabs
+      idPrefix="group"
+      tabs={ids.map((id) => ({
+        id,
+        label: t(`settings.optionGroup.${id}`, { defaultValue: formatOptionLabel(id) }),
+      }))}
+      activeId={activeId}
+      onChange={setSelected}
+    >
+      {active.entries.map((entry) => (
+        <PromptEntry version={entry} key={entry.version_id} />
+      ))}
+    </Tabs>
+  );
 }
 
 /** The prompts of one kind, each collapsed into an accordion. */
@@ -183,14 +226,7 @@ function PromptTab({ kind }: { kind: AdminPromptKind }) {
       <ErrorBanner error={error} fallbackKey="settings.loadError" className="settings-error" />
       <ErrorBanner error={resetState.error} fallbackKey="settings.resetError" className="settings-error" />
 
-      {groupEntries(kind, entries).map(({ group, entries: grouped }) => (
-        <div className="settings-group" key={group ?? ""}>
-          {group && <h3>{t(`settings.optionGroup.${group}`, { defaultValue: group })}</h3>}
-          {grouped.map((entry) => (
-            <PromptEntry version={entry} key={entry.version_id} />
-          ))}
-        </div>
-      ))}
+      <PromptGroups kind={kind} entries={entries} />
     </section>
   );
 }

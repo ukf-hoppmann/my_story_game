@@ -107,11 +107,37 @@ describe("Settings", () => {
     const article = await screen.findByRole("article", { name: "tone/balanced" });
     expect(within(article).getByText("Geändert")).toBeInTheDocument();
     expect(within(article).queryByRole("textbox")).not.toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "tone" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Ton", selected: true })).toBeInTheDocument();
     expect(screen.queryByRole("article", { name: "story_generation" })).not.toBeInTheDocument();
 
     await userEvent.click(within(article).getAllByRole("button")[0]);
     expect(within(article).getByRole("textbox")).toHaveValue("Ausgewogen");
+  });
+
+  it("splits the options into a sub-tab per group", async () => {
+    const withGenre: AdminPromptList = {
+      ...list,
+      entries: [
+        ...list.entries,
+        version({
+          version_id: "00000000-0000-0000-0000-000000000004",
+          kind: "option",
+          key: "genre/fantasy",
+          text: "Fantasy",
+        }),
+      ],
+    };
+    vi.spyOn(client, "listAdminPrompts").mockResolvedValue(withGenre);
+    renderSettings();
+    await userEvent.click(await screen.findByRole("tab", { name: "Optionen" }));
+
+    expect(await screen.findByRole("article", { name: "tone/balanced" })).toBeInTheDocument();
+    expect(screen.queryByRole("article", { name: "genre/fantasy" })).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("tab", { name: "Genre" }));
+
+    expect(screen.getByRole("article", { name: "genre/fantasy" })).toBeInTheDocument();
+    expect(screen.queryByRole("article", { name: "tone/balanced" })).not.toBeInTheDocument();
   });
 
   it("switches tabs with the arrow keys", async () => {

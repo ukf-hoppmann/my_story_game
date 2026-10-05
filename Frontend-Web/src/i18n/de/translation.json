@@ -268,7 +268,21 @@
       "option": "Optionen",
       "directive": "Direktiven"
     },
-    "optionGroup": {},
+    "optionGroup": {
+      "genre": "Genre",
+      "tone": "Ton",
+      "prose_style": "Prosastil",
+      "perspective": "Perspektive",
+      "pacing": "Tempo",
+      "length": "Länge",
+      "control_mode": "Steuerung",
+      "player_agency": "Handlungsfreiheit",
+      "consequence": "Konsequenzen",
+      "challenge": "Herausforderung",
+      "extraction": "Extraktion",
+      "content_profile": "Inhaltsprofil",
+      "other": "Weitere"
+    },
     "history": "Verlauf",
     "hideHistory": "Verlauf ausblenden",
     "historyLoading": "Lade den Verlauf …",

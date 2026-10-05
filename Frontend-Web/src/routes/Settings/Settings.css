@@ -42,11 +42,11 @@
   display: block;
   box-sizing: border-box;
   width: 100%;
-  min-height: 7rem;
-  max-height: 60vh;
-  /* Grows with the text up to max-height; the rows attribute is the
-     fallback where field-sizing is unsupported. */
-  field-sizing: content;
+  min-height: 4.5rem;
+  /* The height follows the text (see PromptEntry); longer prompts scroll
+     inside the box instead of filling the page. */
+  max-height: min(28rem, 50vh);
+  overflow-y: auto;
   resize: vertical;
   color-scheme: dark;
   background: var(--surface);

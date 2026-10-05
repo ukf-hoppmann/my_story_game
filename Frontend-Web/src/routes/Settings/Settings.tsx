@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   usePromptHistoryQuery,
@@ -56,6 +56,40 @@ function PromptHistory({ kind, entryKey }: { kind: AdminPromptKind; entryKey: st
   );
 }
 
+/** A textarea whose height follows its text; the CSS max-height takes over
+ *  for long prompts. Lives in its own component so the fit runs when the
+ *  accordion opens, not only when the text changes. */
+function AutoSizeTextarea({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+
+  useLayoutEffect(() => {
+    const box = ref.current;
+    if (box) {
+      box.style.height = "auto";
+      box.style.height = `${box.scrollHeight + 2}px`;
+    }
+  }, [value]);
+
+  return (
+    <textarea
+      ref={ref}
+      className="settings-textarea"
+      rows={1}
+      aria-label={label}
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+    />
+  );
+}
+
 /** Keyed by `version_id` by its parent, so a new active version (after a
  *  save or reset) remounts it and replaces the draft. */
 function PromptEntry({ version }: { version: AdminPromptVersion }) {
@@ -85,13 +119,7 @@ function PromptEntry({ version }: { version: AdminPromptVersion }) {
           {t("settings.appliesTo", { tasks: version.task_ids.join(", ") })}
         </p>
       )}
-      <textarea
-        className="settings-textarea"
-        aria-label={version.key}
-        value={draft}
-        rows={Math.min(20, Math.max(5, draft.split("\n").length + 1))}
-        onChange={(event) => setDraft(event.target.value)}
-      />
+      <AutoSizeTextarea label={version.key} value={draft} onChange={setDraft} />
       <ErrorBanner error={saveState.error} fallbackKey="settings.saveError" className="settings-error" />
       <ErrorBanner error={resetState.error} fallbackKey="settings.resetError" className="settings-error" />
       <div className="settings-entry-actions">

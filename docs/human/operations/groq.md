@@ -3,9 +3,9 @@
 Groq ist ein zweiter, optionaler Provider neben LM Studio (siehe
 [`lmstudio.md`](lmstudio.md)). Beide sind gleichzeitig konfiguriert; welcher
 Provider für welchen Task (`story`, `extraction`, `summary`) tatsächlich
-läuft, entscheidet allein `task_models` in `configs/llm.toml` — pro Task frei
-mischbar, z.B. `story`/`summary` weiter über LM Studio, `extraction` über
-Groq.
+läuft, entscheidet die Modellwahl pro Task (in der Einstellungsseite, siehe
+unten) — frei mischbar, z.B. `story`/`summary` weiter über LM Studio,
+`extraction` über Groq.
 
 ## API-Key einrichten
 
@@ -31,19 +31,19 @@ zeigt.
 
 `configs/llm.toml` enthält bereits einen Katalogeintrag für Groq-Extraction
 (`model.extraction.groq`, Modell `openai/gpt-oss-120b`). Um Extraction auf
-Groq umzustellen:
+Groq umzustellen, wählt ein Admin in den Einstellungen unter "Modelle" für
+"Extraktion" das Groq-Modell und speichert. Die Wahl liegt versioniert in der
+Datenbank und gilt ab dem nächsten Aufruf, ohne Neustart.
 
-```toml
-[task_models]
-extraction = "model.extraction.groq"   # statt "model.extraction.default"
-```
-
-Änderungen an `configs/llm.toml` und `configs/llm.secrets.toml` werden bei
-jedem Aufruf neu eingelesen — ein Neustart des Backends ist dafür nicht
-nötig.
+`[task_models]` in `configs/llm.toml` ist nur noch die Vorgabe: Es wird beim
+ersten Start je Task übernommen und ist das Ziel von "Auf Original
+zurücksetzen". Änderungen an den Katalogeinträgen (`[[models]]`), den
+Providern und an `configs/llm.secrets.toml` werden bei jedem Aufruf neu
+eingelesen.
 
 ## Weitere Groq-Modelle
 
 Weitere `[[models]]`-Einträge mit `provider_id = "groq"` und einer anderen
 `model_id` (z.B. `gpt-oss-120b`, `qwen3.6-27b` je nach Groq-Katalog) lassen
-sich unabhängig von diesem Eintrag ergänzen und über `task_models` aktivieren.
+sich unabhängig von diesem Eintrag ergänzen und danach in den Einstellungen
+auswählen.

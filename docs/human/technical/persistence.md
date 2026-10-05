@@ -100,6 +100,27 @@ eine Version eines Eintrags: `version_id` (UUID), `package_id`,
 - **Struktur** (Kategorien, Standardoptionen, Direktiven-Zuordnung) wird beim
   Seed aus der TOML übernommen und nicht über die UI geändert.
 
+## Modellwahl je Task
+
+Die Tabelle `llm_task_settings` (`008_llm_task_settings.sql`) hält die
+Modellwahl nach demselben Muster wie `system_prompts`: je Zeile eine Version
+eines Tasks (`story`, `extraction`, `summary`, `scene_image`) mit `version_id`
+(UUID), `model_ref` (logische ID eines Modells aus dem Katalog in
+`configs/llm.toml`), `temperature`, `max_output_tokens` (beide optional),
+`source` (`toml_seed`, `ui`, `toml_reset`), `created_at`, `created_by`
+(Benutzername) und `is_active`.
+
+- **Append-only** mit genau einer aktiven Version je Task (partieller
+  Unique-Index); eine Änderung deaktiviert die aktive Zeile und fügt in
+  derselben Transaktion eine neue ein.
+- **Seed:** Beim Start wird für jeden Task ohne gespeicherte Version die
+  Vorgabe aus `[task_models]` und `[generation_options]` übernommen. Danach
+  überschreibt ein Neustart nie eine Wahl aus der UI.
+- **Nicht in der Datenbank:** Provider, URLs, Secrets und der Modellkatalog.
+  Der Laufzeit-Resolver liest bei jedem Aufruf die aktive Zeile und löst
+  `model_ref` gegen den frisch gelesenen Katalog auf; fehlt das Modell dort
+  inzwischen, scheitert der Aufruf mit einem Konfigurationsfehler.
+
 ## Schreibgrenzen
 
 Die Application besitzt getrennte Operationen für:

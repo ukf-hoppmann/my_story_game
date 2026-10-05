@@ -38,6 +38,7 @@ from story_game.application.game_state import (
     PromptProfileValidator,
 )
 from story_game.application.llm import (
+    GenerationConfigurationResolver,
     PromptPackageCatalog,
     CompactImagePromptResolver,
     ExtractionPromptSelectionResolver,
@@ -48,6 +49,16 @@ from story_game.application.llm import (
     SummaryPromptSelectionResolver,
 )
 from story_game.application.diagnostics_reporting import ReportFrontendError
+from story_game.application.model_settings import (
+    ListModelSettingHistory,
+    ListModelSettings,
+    ManagedGenerationConfigurationResolver,
+    ModelSettingsOperations,
+    ResetModelSettings,
+    SeedModelSettings,
+    SeedModelSettingsRequest,
+    UpdateModelSetting,
+)
 from story_game.application.prompt_management import (
     ListPromptEntries,
     ListPromptHistory,
@@ -75,7 +86,7 @@ from story_game.infrastructure.configuration import (
     SceneImageSettings,
     TomlAppConfigurationLoader,
     load_modal_credentials,
-    TomlGenerationConfigurationResolver,
+    TomlModelSettingsSource,
     TomlLlmConfigurationLoader,
 )
 from story_game.infrastructure.diagnostics import StructlogDiagnosticsLog
@@ -130,6 +141,7 @@ from story_game.infrastructure.persistence.postgres import (
     DbPromptPackageCatalog,
     PostgresConnectionFactory,
     PostgresGameStore,
+    PostgresModelSettingsStore,
     PostgresPromptStore,
     PostgresSceneImageStore,
     PostgresSchemaMigrator,
@@ -170,6 +182,10 @@ def create_app(
             prompt_store = PostgresPromptStore(connections)
             _seed_prompts(resolved_settings, prompt_store)
             prompt_catalog = DbPromptPackageCatalog(prompt_store)
+            model_store = PostgresModelSettingsStore(connections)
+            model_source = TomlModelSettingsSource(resolved_settings.llm_config_path)
+            _seed_model_settings(model_source, model_store)
+            generation_config = ManagedGenerationConfigurationResolver(model_store, model_source)
             proposal_store = InMemoryProposalStore()
             llm_clients = _build_llm_clients(
                 resolved_settings, debug_enabled=resolved_logging_settings.debug_enabled
@@ -189,6 +205,7 @@ def create_app(
                     scene_image_settings,
                     resolved_settings,
                     prompt_catalog,
+                    generation_config,
                     llm_clients,
                     diagnostics,
                 )
@@ -197,13 +214,23 @@ def create_app(
                     store, prompt_catalog, diagnostics
                 ),
                 propose_run=_compose_propose_game_run(
-                    proposal_store, resolved_settings, prompt_catalog, llm_clients, diagnostics
+                    proposal_store,
+                    resolved_settings,
+                    prompt_catalog,
+                    generation_config,
+                    llm_clients,
+                    diagnostics,
                 ),
                 confirm_proposal=_compose_confirm_game_run_proposal(
                     store, proposal_store, prompt_catalog, diagnostics
                 ),
                 play_turn=_compose_play_story_turn(
-                    store, resolved_settings, prompt_catalog, llm_clients, diagnostics
+                    store,
+                    resolved_settings,
+                    prompt_catalog,
+                    generation_config,
+                    llm_clients,
+                    diagnostics,
                 ),
                 start_playthrough=_compose_start_playthrough(
                     store, prompt_catalog, diagnostics
@@ -213,6 +240,7 @@ def create_app(
                 report_frontend_error=_compose_report_frontend_error(diagnostics),
                 scene_images=scene_images,
                 prompt_management=_compose_prompt_management(resolved_settings, prompt_store),
+                model_settings=_compose_model_settings(model_source, model_store),
             )
         application.state.api_dependencies = resolved
         application.state.api_settings = resolved_settings
@@ -265,6 +293,35 @@ def _seed_prompts(settings: ApiSettings, prompt_store: PostgresPromptStore) -> N
     ).apply(SeedPromptPackagesRequest())
     if isinstance(result, Failure):
         raise RuntimeError(f"Die Prompts konnten nicht initialisiert werden: {result.error.message}")
+
+
+def _seed_model_settings(
+    source: TomlModelSettingsSource, model_store: PostgresModelSettingsStore
+) -> None:
+    """Import the task models of llm.toml for every task the database has none for.
+
+    A restart never overwrites a choice made in the UI. A failure is fatal:
+    without a model setting no task can be generated.
+    """
+    result = SeedModelSettings(
+        source, model_store, model_store, StableId.new, lambda: datetime.now(UTC)
+    ).apply(SeedModelSettingsRequest())
+    if isinstance(result, Failure):
+        raise RuntimeError(
+            f"Die Modelleinstellungen konnten nicht initialisiert werden: {result.error.message}"
+        )
+
+
+def _compose_model_settings(
+    source: TomlModelSettingsSource, model_store: PostgresModelSettingsStore
+) -> ModelSettingsOperations:
+    clock = lambda: datetime.now(UTC)  # noqa: E731
+    return ModelSettingsOperations(
+        overview=ListModelSettings(model_store, source),
+        history=ListModelSettingHistory(model_store),
+        update=UpdateModelSetting(model_store, model_store, source, StableId.new, clock),
+        reset=ResetModelSettings(source, model_store, model_store, StableId.new, clock),
+    )
 
 
 def _compose_prompt_management(
@@ -359,10 +416,10 @@ def _compose_propose_game_run(
     proposal_store: InMemoryProposalStore,
     settings: ApiSettings,
     catalog: PromptPackageCatalog,
+    generation_config: GenerationConfigurationResolver,
     clients: _LlmClients,
     diagnostics: StructlogDiagnosticsLog,
 ) -> ProposeGameRun:
-    generation_config = TomlGenerationConfigurationResolver(settings.llm_config_path)
     story_initializer = InitializeStory(
         GenerateInitialStoryState(
             StoryInitializationPromptResolver(catalog),
@@ -412,10 +469,10 @@ def _compose_play_story_turn(
     store: PostgresGameStore,
     settings: ApiSettings,
     catalog: PromptPackageCatalog,
+    generation_config: GenerationConfigurationResolver,
     clients: _LlmClients,
     diagnostics: StructlogDiagnosticsLog,
 ) -> PlayStoryTurn:
-    generation_config = TomlGenerationConfigurationResolver(settings.llm_config_path)
     summary_settings = TomlAppConfigurationLoader().load_story_summary(
         settings.config_path
     )
@@ -490,12 +547,12 @@ def _compose_scene_images(
     scene_settings: SceneImageSettings,
     settings: ApiSettings,
     catalog: PromptPackageCatalog,
+    generation_config: GenerationConfigurationResolver,
     clients: _LlmClients,
     diagnostics: StructlogDiagnosticsLog,
 ) -> SceneImageOperations:
     modal = scene_settings.modal
     assert modal is not None
-    generation_config = TomlGenerationConfigurationResolver(settings.llm_config_path)
     defaults = SceneImageDefaults(
         turn_window=scene_settings.turn_window,
         width=scene_settings.width,

@@ -3,8 +3,8 @@
 Gemini ist ein dritter, optionaler Provider neben LM Studio (siehe
 [`lmstudio.md`](lmstudio.md)) und Groq (siehe [`groq.md`](groq.md)). Alle drei
 sind gleichzeitig konfiguriert; welcher Provider für welchen Task (`story`,
-`extraction`, `summary`) tatsächlich läuft, entscheidet allein `task_models`
-in `configs/llm.toml` — pro Task frei mischbar.
+`extraction`, `summary`) tatsächlich läuft, entscheidet die Modellwahl pro Task
+in den Einstellungen (siehe unten) — frei mischbar.
 
 Gemini spricht über seinen OpenAI-Kompatibilitäts-Endpunkt
 (`https://generativelanguage.googleapis.com/v1beta/openai`) dasselbe
@@ -37,16 +37,15 @@ zeigt.
 
 `configs/llm.toml` enthält bereits einen Katalogeintrag für Gemini-Extraction
 (`model.extraction.gemini`, Modell `gemini-3.5-flash-lite`). Um Extraction auf
-Gemini umzustellen:
+Gemini umzustellen, wählt ein Admin in den Einstellungen unter "Modelle" für
+"Extraktion" das Gemini-Modell und speichert. Die Wahl liegt versioniert in
+der Datenbank und gilt ab dem nächsten Aufruf, ohne Neustart.
 
-```toml
-[task_models]
-extraction = "model.extraction.gemini"   # statt "model.extraction.groq"
-```
-
-Änderungen an `configs/llm.toml` und `configs/llm.secrets.toml` werden bei
-jedem Aufruf neu eingelesen — ein Neustart des Backends ist dafür nicht
-nötig.
+`[task_models]` in `configs/llm.toml` ist nur noch die Vorgabe: Es wird beim
+ersten Start je Task übernommen und ist das Ziel von "Auf Original
+zurücksetzen". Änderungen an den Katalogeinträgen (`[[models]]`), den
+Providern und an `configs/llm.secrets.toml` werden bei jedem Aufruf neu
+eingelesen.
 
 ## Rate-Limits (kostenlose Stufe, Stand der letzten Recherche)
 
@@ -63,7 +62,7 @@ der Google-AI-Studio-Konsole gegenchecken.
 
 Weitere `[[models]]`-Einträge mit `provider_id = "gemini"` und einer anderen
 `model_id` (z.B. `gemini-2.5-flash`, `gemini-2.5-pro`) lassen sich unabhängig
-von diesem Eintrag ergänzen und über `task_models` aktivieren. Modellnamen
+von diesem Eintrag ergänzen und danach in den Einstellungen auswählen. Modellnamen
 ändern sich bei Google gelegentlich (z.B. wurde `gemini-2.5-flash-lite`
 zwischenzeitlich durch `gemini-3.5-flash-lite` abgelöst) — bei einem
 `model_unavailable`-Fehler lohnt sich ein Blick in die aktuelle

@@ -526,6 +526,7 @@ def test_new_baseline_uses_native_uuid_for_internal_id_columns(
         ("story_state_metadata", "run_id"),
         ("story_turns", "run_id"),
         ("story_turns", "turn_id"),
+        ("llm_task_settings", "version_id"),
         ("system_prompts", "version_id"),
     }
 

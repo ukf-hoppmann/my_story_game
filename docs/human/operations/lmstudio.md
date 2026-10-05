@@ -6,7 +6,9 @@ Provider und Modelle werden aus der einzigen Projektkonfiguration
 jeweils ein logischer Katalogeintrag definiert. Die Einträge dürfen zunächst dieselbe
 konkrete LM-Studio-Modell-ID verwenden.
 
-Die Task-Zuordnung sieht beispielsweise so aus:
+Die Vorgabe der Task-Zuordnung sieht beispielsweise so aus; sie wird beim
+ersten Start in die Datenbank übernommen und lässt sich danach in den
+Einstellungen ändern:
 
 ```toml
 [task_models]

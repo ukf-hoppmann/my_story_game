@@ -31,6 +31,10 @@ Benutzerdaten.
 | `GET` | `/api/v1/admin/prompts/history` | Alle Versionen eines Prompts (`?kind=&key=`), neueste zuerst (nur `admin`) |
 | `PUT` | `/api/v1/admin/prompts` | Einen bearbeiteten Prompt-Text als neue aktive Version speichern (nur `admin`) |
 | `POST` | `/api/v1/admin/prompts/reset` | Das mitgelieferte Original eines Prompts oder aller Prompts neu einspielen (nur `admin`) |
+| `GET` | `/api/v1/admin/models` | Aktive Modellwahl je Task und die wählbaren Katalogmodelle lesen (nur Rolle `admin`) |
+| `GET` | `/api/v1/admin/models/history` | Alle Versionen der Modellwahl eines Tasks (`?task=`), neueste zuerst (nur `admin`) |
+| `PUT` | `/api/v1/admin/models` | Modell und Optionen eines Tasks als neue aktive Version speichern (nur `admin`) |
+| `POST` | `/api/v1/admin/models/reset` | Die Original-Modellwahl aus `llm.toml` für einen oder alle Tasks neu einspielen (nur `admin`) |
 | `POST` | `/api/v1/diagnostics/frontend-errors` | Einen authentifizierten Frontend-Tooling-Fehler für Diagnosezwecke melden |
 
 ## Vorschlag, Vorlage und abgespieltes Spiel
@@ -271,6 +275,33 @@ blendet den Menüpunkt "Einstellungen" nur zusätzlich aus.
 
 Änderungen wirken sofort auf die nächste Story-Anfrage; der Katalog liest bei
 jedem Aufruf die aktiven Versionen.
+
+## Modellwahl verwalten (Rolle `admin`)
+
+Welches Katalogmodell ein Task (`story`, `extraction`, `summary`,
+`scene_image`) nutzt und mit welchen Optionen, liegt in der Datenbank und
+lässt sich über diese Endpunkte lesen und ändern. Authentifizierung und
+Rollenprüfung wie bei den Prompts (401 ohne Token, 403 ohne Rolle `admin`).
+
+- `GET /api/v1/admin/models` → `{settings[], candidates[]}`. `settings` hat je
+  Task die aktive Version (`task`, `model_ref`, `temperature`,
+  `max_output_tokens`, `source`, `created_at`, `created_by`, `is_active`,
+  `is_modified`); `candidates` listet die in `llm.toml` eingetragenen Modelle
+  je Task (`model_ref`, `provider_id`, `model_id`).
+- `GET /api/v1/admin/models/history?task=` → `{versions[]}`, neueste zuerst.
+- `PUT /api/v1/admin/models` mit `{task, model_ref, temperature?,
+  max_output_tokens?}` legt eine neue aktive Version an. Das Modell muss zu
+  dem Task im Katalog stehen (sonst 422 `invalid_model_selection`), die
+  Temperatur zwischen 0 und 2 liegen und die Ausgabelänge positiv sein (sonst
+  422 `invalid_generation_options`). Fehlende Optionen bedeuten: Standard des
+  Anbieters. Unveränderte Werte legen nichts an.
+- `POST /api/v1/admin/models/reset` mit `{task}` oder `{}` (alle) legt für
+  jeden von der Vorgabe abweichenden Task eine neue Version mit
+  `source: toml_reset` an; Bearbeitungen bleiben im Verlauf.
+
+Provider, URLs, Secrets und die Liste der wählbaren Modelle bleiben in
+`configs/llm.toml` und `llm.secrets.toml` und sind nicht über die API änderbar.
+Eine Änderung wirkt ab dem nächsten Modellaufruf, ohne Neustart.
 
 ## Frontend-Diagnose
 

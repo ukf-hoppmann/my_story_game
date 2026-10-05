@@ -35,8 +35,9 @@ Bei `enabled = true` ist `[scene_image.modal]` Pflicht (`url`, `control_url`,
 Die Konfiguration wird beim Start gelesen: Änderungen brauchen einen Neustart.
 
 Der Bildprompt wird mit dem Modell der Aufgabe `scene_image` aus
-`configs/llm.toml` geschrieben (`[task_models] scene_image`,
-`[generation_options.scene_image]`, Katalogeinträge mit `task = "scene_image"`).
+`configs/llm.toml` geschrieben (Vorgabe `[task_models] scene_image` und
+`[generation_options.scene_image]`, danach in den Einstellungen wählbar;
+Katalogeinträge mit `task = "scene_image"`).
 Derselbe Aufruf schreibt bei aktiver Verfeinerung auch den Kurzprompt.
 
 ## Versionen und Anzeige

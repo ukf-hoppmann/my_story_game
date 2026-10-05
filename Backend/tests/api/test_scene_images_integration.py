@@ -30,6 +30,7 @@ from story_game.domain import StoryInitialization, StoryState  # noqa: E402
 from story_game.infrastructure.logging_config import LoggingSettings  # noqa: E402
 from story_game.infrastructure.persistence.postgres import PostgresGameStore  # noqa: E402
 from tests.ids import sid  # noqa: E402
+from tests.persistence.model_settings_isolation import parked_model_settings  # noqa: E402
 from tests.persistence.test_postgres_persistence import (  # noqa: E402,F401
     POSTGRES_DSN,
     initial,
@@ -134,6 +135,13 @@ timeout_seconds = 10
         config_path=str(tmp_path / "app.toml"),
         llm_config_path=str(tmp_path / "llm.toml"),
     )
+
+
+@pytest.fixture(autouse=True)
+def isolated_model_settings(postgres_store):  # noqa: F811
+    """The app seeds ``llm_task_settings`` from this test's own ``llm.toml``."""
+    with parked_model_settings(postgres_store[1]):
+        yield
 
 
 @pytest.fixture

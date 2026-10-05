@@ -11,6 +11,7 @@ from .scene_image import (
     SceneImageSettings,
     load_modal_credentials,
 )
+from .model_settings import TomlModelSettingsSource
 from .llm import (
     LlmConfiguration,
     LlmConfigurationError,
@@ -38,4 +39,5 @@ __all__ = [
     "TomlAppConfigurationLoader",
     "TomlGenerationConfigurationResolver",
     "TomlLlmConfigurationLoader",
+    "TomlModelSettingsSource",
 ]

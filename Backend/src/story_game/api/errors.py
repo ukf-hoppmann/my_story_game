@@ -22,6 +22,7 @@ from story_game.application.initialization_errors import (
     StoryInitializationError,
     StoryInitializationErrorKind,
 )
+from story_game.application.model_settings import ModelSettingsError, ModelSettingsErrorKind
 from story_game.application.prompt_management import (
     PromptManagementError,
     PromptManagementErrorKind,
@@ -94,6 +95,14 @@ _PROMPT_MANAGEMENT_STATUS: dict[PromptManagementErrorKind, tuple[int, str]] = {
     PromptManagementErrorKind.STORE_UNAVAILABLE: (503, "persistence_unavailable"),
 }
 
+_MODEL_SETTINGS_STATUS: dict[ModelSettingsErrorKind, tuple[int, str]] = {
+    ModelSettingsErrorKind.NOT_FOUND: (404, "not_found"),
+    ModelSettingsErrorKind.INVALID_MODEL: (422, "invalid_model_selection"),
+    ModelSettingsErrorKind.INVALID_OPTIONS: (422, "invalid_generation_options"),
+    ModelSettingsErrorKind.SOURCE_UNAVAILABLE: (500, "model_catalog_unavailable"),
+    ModelSettingsErrorKind.STORE_UNAVAILABLE: (503, "persistence_unavailable"),
+}
+
 
 def register_error_handlers(app: FastAPI) -> None:
     app.add_exception_handler(OperationFailed, _operation_failed)
@@ -142,6 +151,9 @@ async def _operation_failed(request: Request, exc: Exception) -> JSONResponse:
         return _error_response(status_code, code, error.message)
     if isinstance(error, SceneImageError):
         status_code, code = _SCENE_IMAGE_STATUS[error.kind]
+        return _error_response(status_code, code, error.message)
+    if isinstance(error, ModelSettingsError):
+        status_code, code = _MODEL_SETTINGS_STATUS[error.kind]
         return _error_response(status_code, code, error.message)
     if isinstance(error, PromptManagementError):
         status_code, code = _PROMPT_MANAGEMENT_STATUS[error.kind]

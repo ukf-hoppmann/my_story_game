@@ -16,6 +16,7 @@ from story_game.application import (
 from story_game.application.diagnostics_reporting import ReportFrontendError
 from story_game.application.game_state import GameStateOperations, PromptProfileValidator
 from story_game.application.llm import PromptPackageCatalog
+from story_game.application.model_settings import ModelSettingsOperations
 from story_game.application.prompt_management import PromptManagementOperations
 from story_game.application.scene_image import SceneImageOperations
 
@@ -39,6 +40,8 @@ class ApiDependencies:
     report_frontend_error: ReportFrontendError
     scene_images: SceneImageOperations | None = None
     """``None`` when the scene-image feature is disabled by configuration."""
+    model_settings: ModelSettingsOperations | None = None
+    """Set by the composition root; ``None`` only in tests that never reach the admin routes."""
     prompt_management: PromptManagementOperations | None = None
     """Set by the composition root; ``None`` only in tests that never reach the admin routes."""
 

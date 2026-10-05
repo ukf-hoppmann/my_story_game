@@ -2,17 +2,25 @@ import { createApi, fakeBaseQuery } from "@reduxjs/toolkit/query/react";
 import {
   confirmRun,
   createSceneImage,
+  fetchPromptHistory,
   fetchPromptProfileCatalog,
   fetchSceneImageCapabilities,
+  listAdminPrompts,
   listRuns,
   listSceneImages,
   loadRun,
   playTurn,
   proposeRun,
+  resetPrompts,
+  savePromptText,
   startPlaythrough,
 } from "./client";
 import { toQueryError, type QueryError } from "./queryError";
 import type {
+  AdminPromptKind,
+  AdminPromptList,
+  AdminPromptVersion,
+  AdminPromptVersionList,
   ConfirmRunProposalRequest,
   CreateSceneImageRequest,
   GameDocument,
@@ -20,7 +28,9 @@ import type {
   ProposeRunRequest,
   PromptProfileCatalog,
   RunProposal,
+  ResetPromptsRequest,
   RunSummary,
+  SavePromptTextRequest,
   SceneImage,
   SceneImageCapabilities,
   TurnResult,
@@ -36,8 +46,48 @@ import type {
 export const apiSlice = createApi({
   reducerPath: "api",
   baseQuery: fakeBaseQuery<QueryError>(),
-  tagTypes: ["Run", "SceneImage"],
+  tagTypes: ["Run", "SceneImage", "AdminPrompt"],
   endpoints: (builder) => ({
+    listAdminPrompts: builder.query<AdminPromptList, void>({
+      queryFn: async () => {
+        try {
+          return { data: await listAdminPrompts() };
+        } catch (error) {
+          return { error: toQueryError(error, "apiSlice.listAdminPrompts") };
+        }
+      },
+      providesTags: ["AdminPrompt"],
+    }),
+    promptHistory: builder.query<AdminPromptVersionList, { kind: AdminPromptKind; key: string }>({
+      queryFn: async ({ kind, key }) => {
+        try {
+          return { data: await fetchPromptHistory(kind, key) };
+        } catch (error) {
+          return { error: toQueryError(error, "apiSlice.promptHistory") };
+        }
+      },
+      providesTags: ["AdminPrompt"],
+    }),
+    savePromptText: builder.mutation<AdminPromptVersion, SavePromptTextRequest>({
+      queryFn: async (payload) => {
+        try {
+          return { data: await savePromptText(payload) };
+        } catch (error) {
+          return { error: toQueryError(error, "apiSlice.savePromptText") };
+        }
+      },
+      invalidatesTags: ["AdminPrompt"],
+    }),
+    resetPrompts: builder.mutation<AdminPromptVersionList, ResetPromptsRequest>({
+      queryFn: async (payload) => {
+        try {
+          return { data: await resetPrompts(payload) };
+        } catch (error) {
+          return { error: toQueryError(error, "apiSlice.resetPrompts") };
+        }
+      },
+      invalidatesTags: ["AdminPrompt"],
+    }),
     listRuns: builder.query<RunSummary[], void>({
       queryFn: async () => {
         try {
@@ -160,4 +210,8 @@ export const {
   useSceneImageCapabilitiesQuery,
   useListSceneImagesQuery,
   useCreateSceneImageMutation,
+  useListAdminPromptsQuery,
+  usePromptHistoryQuery,
+  useSavePromptTextMutation,
+  useResetPromptsMutation,
 } = apiSlice;

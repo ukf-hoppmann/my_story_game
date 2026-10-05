@@ -90,4 +90,27 @@ describe("routes", () => {
       await screen.findByRole("heading", { name: "Die Schatten von Auenfall" }),
     ).toBeInTheDocument();
   });
+
+  it("renders the settings at /settings for an admin", async () => {
+    vi.spyOn(auth, "ensureAuth").mockResolvedValue(undefined);
+    vi.spyOn(auth, "isAdmin").mockReturnValue(true);
+    vi.spyOn(client, "listAdminPrompts").mockResolvedValue({
+      package_id: "story.base",
+      package_version: "1",
+      entries: [],
+    });
+
+    renderAt("/settings");
+
+    expect(await screen.findByRole("heading", { name: "Einstellungen" })).toBeInTheDocument();
+  });
+
+  it("refuses /settings to a user without the admin role", async () => {
+    vi.spyOn(auth, "ensureAuth").mockResolvedValue(undefined);
+    vi.spyOn(auth, "isAdmin").mockReturnValue(false);
+
+    renderAt("/settings");
+
+    expect(await screen.findByText("Dafür fehlt dir die Berechtigung.")).toBeInTheDocument();
+  });
 });

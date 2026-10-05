@@ -324,3 +324,45 @@ export interface ApiErrorBody {
   detail: string;
   [key: string]: unknown;
 }
+
+export type AdminPromptKind = "task" | "option" | "directive";
+export type AdminPromptSource = "toml_seed" | "ui" | "toml_reset";
+
+/** One stored version of a system-prompt entry (admin settings). */
+export interface AdminPromptVersion {
+  version_id: string;
+  kind: AdminPromptKind;
+  /** Task/directive id, or `<category>/<option>` for an option. */
+  key: string;
+  text: string;
+  is_default: boolean;
+  task_ids: string[];
+  source: AdminPromptSource;
+  created_at: string;
+  created_by: string | null;
+  is_active: boolean;
+  /** True while the active version is an edit made in the UI. */
+  is_modified: boolean;
+}
+
+export interface AdminPromptList {
+  package_id: string;
+  package_version: string;
+  entries: AdminPromptVersion[];
+}
+
+export interface AdminPromptVersionList {
+  versions: AdminPromptVersion[];
+}
+
+export interface SavePromptTextRequest {
+  kind: AdminPromptKind;
+  key: string;
+  text: string;
+}
+
+/** Name one entry, or send `{}` to reset the whole package. */
+export interface ResetPromptsRequest {
+  kind?: AdminPromptKind;
+  key?: string;
+}

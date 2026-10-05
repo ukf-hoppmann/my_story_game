@@ -68,7 +68,8 @@
       "active": "Aktiv",
       "paused": "Pausiert",
       "completed": "Abgeschlossen"
-    }
+    },
+    "settings": "Einstellungen"
   },
   "play": {
     "brandFallback": "Story Game",
@@ -235,5 +236,39 @@
         "description": "Langsamer Sog, aber kompromisslos in den Folgen."
       }
     }
+  },
+  "requireAdmin": {
+    "forbidden": "Dafür fehlt dir die Berechtigung."
+  },
+  "settings": {
+    "heading": "Einstellungen",
+    "promptsHeading": "Prompts",
+    "intro": "Die Prompts stammen zunächst aus den mitgelieferten Dateien. Jede Änderung legt eine neue Version an; frühere Versionen bleiben im Verlauf erhalten.",
+    "loading": "Lade die Prompts …",
+    "loadError": "Die Prompts konnten nicht geladen werden.",
+    "saveError": "Die Änderung konnte nicht gespeichert werden.",
+    "resetError": "Das Zurücksetzen ist fehlgeschlagen.",
+    "historyError": "Der Verlauf konnte nicht geladen werden.",
+    "kind": {
+      "task": "Aufgaben",
+      "option": "Optionen",
+      "directive": "Direktiven"
+    },
+    "modified": "Geändert",
+    "defaultOption": "Standard",
+    "appliesTo": "Gilt für: {{tasks}}",
+    "save": "Speichern",
+    "reset": "Auf Original zurücksetzen",
+    "resetAll": "Alle zurücksetzen",
+    "history": "Verlauf",
+    "hideHistory": "Verlauf ausblenden",
+    "historyLoading": "Lade den Verlauf …",
+    "system": "System",
+    "source": {
+      "toml_seed": "Original (TOML)",
+      "ui": "Bearbeitet",
+      "toml_reset": "Auf Original zurückgesetzt"
+    },
+    "active": "aktuell"
   }
 }

@@ -6,6 +6,7 @@ import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { apiSlice } from "../../api/apiSlice";
 import { ApiError } from "../../api/client";
+import * as auth from "../../api/auth";
 import * as client from "../../api/client";
 import type { RunSummary } from "../../api/types";
 import { Library } from "./Library";
@@ -99,5 +100,22 @@ describe("Library", () => {
     await userEvent.click(await screen.findByRole("button", { name: /Neue Geschichte/ }));
 
     expect(await screen.findByText("Wizard-Route")).toBeInTheDocument();
+  });
+
+  it("offers the settings only to admins", async () => {
+    vi.spyOn(client, "listRuns").mockResolvedValue({ runs: [] });
+    vi.spyOn(auth, "isAdmin").mockReturnValue(true);
+    renderLibrary();
+    expect(await screen.findByRole("button", { name: "Einstellungen" })).toBeInTheDocument();
+  });
+
+  it("hides the settings from other users", async () => {
+    vi.spyOn(client, "listRuns").mockResolvedValue({ runs: [] });
+    vi.spyOn(auth, "isAdmin").mockReturnValue(false);
+
+    renderLibrary();
+
+    await screen.findByText("Noch keine aktive Geschichte — leg los!");
+    expect(screen.queryByRole("button", { name: "Einstellungen" })).not.toBeInTheDocument();
   });
 });

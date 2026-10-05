@@ -19,6 +19,11 @@
   text-wrap: balance;
 }
 
+.library-head-actions {
+  display: flex;
+  gap: 10px;
+}
+
 .library-group {
   margin-bottom: 34px;
 }

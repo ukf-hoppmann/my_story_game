@@ -1,4 +1,8 @@
 import type {
+  AdminPromptKind,
+  AdminPromptList,
+  AdminPromptVersion,
+  AdminPromptVersionList,
   ApiErrorBody,
   ConfirmRunProposalRequest,
   CreateSceneImageRequest,
@@ -7,8 +11,10 @@ import type {
   PlayTurnRequest,
   ProposeRunRequest,
   PromptProfileCatalog,
+  ResetPromptsRequest,
   RunProposal,
   RunSummaryList,
+  SavePromptTextRequest,
   SceneImage,
   SceneImageCapabilities,
   SceneImageList,
@@ -189,6 +195,41 @@ export interface FrontendErrorReport {
 
 export async function reportFrontendError(payload: FrontendErrorReport): Promise<void> {
   return request("/api/v1/diagnostics/frontend-errors", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+/** Admin only (backend answers 403 without the `admin` role): the active
+ *  system prompts, each with where its current text came from. */
+export async function listAdminPrompts(): Promise<AdminPromptList> {
+  return request("/api/v1/admin/prompts");
+}
+
+/** Every version of one prompt entry, newest first. */
+export async function fetchPromptHistory(
+  kind: AdminPromptKind,
+  key: string,
+): Promise<AdminPromptVersionList> {
+  const query = new URLSearchParams({ kind, key });
+  return request(`/api/v1/admin/prompts/history?${query.toString()}`);
+}
+
+/** Saves the text as the entry's new active version; the old one stays in the history. */
+export async function savePromptText(
+  payload: SavePromptTextRequest,
+): Promise<AdminPromptVersion> {
+  return request("/api/v1/admin/prompts", {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+/** Re-applies the shipped original as a new version, for one entry or (with `{}`) all. */
+export async function resetPrompts(
+  payload: ResetPromptsRequest,
+): Promise<AdminPromptVersionList> {
+  return request("/api/v1/admin/prompts/reset", {
     method: "POST",
     body: JSON.stringify(payload),
   });

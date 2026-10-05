@@ -57,6 +57,16 @@ export function currentUsername(): string | undefined {
   return keycloak.tokenParsed?.preferred_username as string | undefined;
 }
 
+/** Name of the Keycloak realm role that unlocks the settings. The backend
+ *  enforces it on every admin request; this only decides what the UI shows. */
+const ADMIN_ROLE = "admin";
+
+/** Whether the logged-in user holds the admin realm role. `false` before
+ *  `ensureAuth()` has resolved. */
+export function isAdmin(): boolean {
+  return keycloak.hasRealmRole(ADMIN_ROLE);
+}
+
 export function logout(): void {
   keycloak.logout();
 }

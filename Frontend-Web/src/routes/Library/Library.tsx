@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useListRunsQuery } from "../../api/apiSlice";
+import { isAdmin } from "../../api/auth";
 import type { GameRunStatus, RunSummary } from "../../api/types";
 import { ArrowRightIcon } from "../../icons";
 import { Button } from "../../components/Button/Button";
@@ -51,9 +52,16 @@ export function Library() {
     <div className="library">
       <div className="library-head">
         <h1>{t("library.heading")}</h1>
-        <Button icon={<ArrowRightIcon />} onClick={() => navigate("/new")}>
-          {t("library.newStory")}
-        </Button>
+        <div className="library-head-actions">
+          {isAdmin() && (
+            <Button variant="ghost" onClick={() => navigate("/settings")}>
+              {t("library.settings")}
+            </Button>
+          )}
+          <Button icon={<ArrowRightIcon />} onClick={() => navigate("/new")}>
+            {t("library.newStory")}
+          </Button>
+        </div>
       </div>
 
       {isLoading && <p className="library-empty">{t("library.loading")}</p>}

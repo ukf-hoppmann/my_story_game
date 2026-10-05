@@ -101,10 +101,13 @@ eine Version eines Eintrags: `version_id` (UUID), `package_id`,
   Seed aus der TOML übernommen und nicht über die UI geändert. Einzige
   Ausnahme: In `genre`, `tone` und `prose_style` lassen sich Optionen
   hinzufügen (neue Zeile, `source = ui`, Position hinter der letzten Option).
-  Das Entfernen deaktiviert die aktive Zeile, ohne eine neue einzufügen; die
-  Historie bleibt. Entfernbar ist nur, was nicht in der TOML steht und in
-  keiner Zeile von `game_state_configurations` (Spalte `genre`, `tone` oder
-  `prose_style`) gewählt ist.
+  Das Archivieren deaktiviert die aktive Zeile, ohne eine neue einzufügen; die
+  Historie bleibt. Ein Eintrag ohne aktive Zeile liegt im Papierkorb. Das
+  Wiederherstellen aktiviert seine neueste Zeile wieder, das endgültige
+  Löschen entfernt alle seine Zeilen (nur, wenn keine aktiv ist). Archivierbar
+  ist nur, was nicht in der TOML steht und in keiner Zeile von
+  `game_state_configurations` (Spalte `genre`, `tone` oder `prose_style`)
+  gewählt ist.
 
 ## Modellwahl je Task
 

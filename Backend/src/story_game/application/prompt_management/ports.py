@@ -27,6 +27,12 @@ class PromptVersionReader(Protocol):
         """Every active entry of the package, tasks then options then directives."""
         ...
 
+    def list_archived(
+        self, package_id: str, package_version: str
+    ) -> tuple[PromptVersion, ...]:
+        """The newest version of every entry that has no active version (the trash)."""
+        ...
+
     def list_history(
         self,
         package_id: str,
@@ -52,7 +58,27 @@ class PromptVersionWriter(Protocol):
         kind: PromptEntryKind,
         key: str,
     ) -> None:
-        """Retire an entry: its history stays, but it is no longer active."""
+        """Archive an entry: its history stays, but it is no longer active."""
+        ...
+
+    def restore_entry(
+        self,
+        package_id: str,
+        package_version: str,
+        kind: PromptEntryKind,
+        key: str,
+    ) -> None:
+        """Make the newest version of an archived entry active again."""
+        ...
+
+    def purge_entry(
+        self,
+        package_id: str,
+        package_version: str,
+        kind: PromptEntryKind,
+        key: str,
+    ) -> None:
+        """Delete every version of an archived entry; an active entry is left alone."""
         ...
 
 

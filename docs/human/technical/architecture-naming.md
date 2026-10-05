@@ -83,6 +83,20 @@ Leaves führen jeweils einen konkreten Schritt aus. Eine `Composition Root`
 oder ein `Composition Builder` darf diese Reihenfolge nicht als versteckten
 Workflow im Constructor festlegen.
 
+## Lebenszyklus und Löschen
+
+Entfernbare Daten durchlaufen `active → archived → purged`.
+
+| Begriff | Bedeutung | Beispiel |
+| --- | --- | --- |
+| `Archive` | Umkehrbar deaktivieren (Papierkorb); der Verlauf bleibt | `ArchivePromptOption` (`Leaf`) |
+| `Restore` | Aus dem Papierkorb zurückholen | `RestorePromptOption` (`Leaf`) |
+| `Purge` | Endgültig löschen, samt Verlauf; nur für archivierte Einträge | `PurgePromptOption` (`Leaf`) |
+
+Ein Sammelvorgang wie `RemovePromptOptions` ist ein `Composite Level 1` über
+diesen drei Leaves. Er erhält `RemovalMode` (`ARCHIVE` oder `PURGE`) und den
+Umfang als typisierte Eingabe; der `Composition Root` verdrahtet nur die Leaves.
+
 ## Kurzform für Kommunikation
 
 Für Architekturgespräche gelten folgende Formulierungen als eindeutig:

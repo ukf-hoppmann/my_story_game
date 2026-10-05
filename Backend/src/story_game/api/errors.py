@@ -94,6 +94,7 @@ _PROMPT_MANAGEMENT_STATUS: dict[PromptManagementErrorKind, tuple[int, str]] = {
     PromptManagementErrorKind.INVALID_OPTION: (422, "invalid_prompt_option"),
     PromptManagementErrorKind.ALREADY_EXISTS: (409, "prompt_option_exists"),
     PromptManagementErrorKind.NOT_REMOVABLE: (409, "prompt_option_not_removable"),
+    PromptManagementErrorKind.NOT_ARCHIVED: (409, "prompt_option_not_archived"),
     PromptManagementErrorKind.IN_USE: (409, "prompt_option_in_use"),
     PromptManagementErrorKind.SOURCE_UNAVAILABLE: (500, "prompt_source_unavailable"),
     PromptManagementErrorKind.STORE_UNAVAILABLE: (503, "persistence_unavailable"),

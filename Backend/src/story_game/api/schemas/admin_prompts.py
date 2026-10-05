@@ -7,7 +7,7 @@ from uuid import UUID
 
 from pydantic import Field, model_validator
 
-from story_game.application.prompt_management import PromptEntryKind
+from story_game.application.prompt_management import PromptEntryKind, RemovalMode, RemovalStatus
 
 from .common import APIModel
 
@@ -64,3 +64,25 @@ class CreatePromptOptionRequestModel(APIModel):
     category: str = Field(min_length=1)
     option_id: str = Field(min_length=1)
     text: str = Field(min_length=1)
+
+
+class PromptOptionRefModel(APIModel):
+    category: str = Field(min_length=1)
+    option_id: str = Field(min_length=1)
+
+
+class RemovePromptOptionsRequestModel(APIModel):
+    """Archive or purge options; without ``options`` every option the mode applies to."""
+
+    mode: RemovalMode
+    options: list[PromptOptionRefModel] | None = None
+
+
+class RemovalOutcomeModel(APIModel):
+    key: str = Field(min_length=1)
+    status: RemovalStatus
+    message: str = ""
+
+
+class RemovalResultModel(APIModel):
+    outcomes: list[RemovalOutcomeModel] = Field(default_factory=list)

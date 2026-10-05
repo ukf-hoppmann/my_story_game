@@ -12,6 +12,7 @@ class PromptManagementErrorKind(StrEnum):
     INVALID_OPTION = "invalid_option"
     ALREADY_EXISTS = "already_exists"
     NOT_REMOVABLE = "not_removable"
+    NOT_ARCHIVED = "not_archived"
     IN_USE = "in_use"
     SOURCE_UNAVAILABLE = "source_unavailable"
     STORE_UNAVAILABLE = "store_unavailable"

@@ -44,6 +44,19 @@ class InMemoryPromptStore:
         ]
         return tuple(sorted(matching, key=lambda row: row.created_at, reverse=True))
 
+    def list_archived(self, package_id: str, package_version: str) -> tuple[PromptVersion, ...]:
+        self._maybe_fail()
+        scoped = [
+            row
+            for row in self.rows
+            if row.package_id == package_id and row.package_version == package_version
+        ]
+        active = {(row.entry.kind, row.entry.key) for row in scoped if row.is_active}
+        newest: dict[tuple[PromptEntryKind, str], PromptVersion] = {}
+        for row in sorted(scoped, key=lambda row: row.created_at):
+            newest[(row.entry.kind, row.entry.key)] = row
+        return tuple(row for ref, row in newest.items() if ref not in active)
+
     def append_versions(self, versions: Sequence[NewPromptVersion]) -> tuple[PromptVersion, ...]:
         self._maybe_fail()
         created: list[PromptVersion] = []
@@ -82,6 +95,35 @@ class InMemoryPromptStore:
             else row
             for row in self.rows
         ]
+
+    def restore_entry(
+        self, package_id: str, package_version: str, kind: PromptEntryKind, key: str
+    ) -> None:
+        self._maybe_fail()
+        scope = (package_id, package_version, kind, key)
+        matching = [
+            row
+            for row in self.rows
+            if (row.package_id, row.package_version, row.entry.kind, row.entry.key) == scope
+        ]
+        if not matching or any(row.is_active for row in matching):
+            return
+        newest = max(matching, key=lambda row: row.created_at)
+        self.rows = [replace(row, is_active=True) if row is newest else row for row in self.rows]
+
+    def purge_entry(
+        self, package_id: str, package_version: str, kind: PromptEntryKind, key: str
+    ) -> None:
+        self._maybe_fail()
+        scope = (package_id, package_version, kind, key)
+        matching = [
+            row
+            for row in self.rows
+            if (row.package_id, row.package_version, row.entry.kind, row.entry.key) == scope
+        ]
+        if any(row.is_active for row in matching):
+            return
+        self.rows = [row for row in self.rows if row not in matching]
 
     def _maybe_fail(self) -> None:
         if self.fail_with is not None:

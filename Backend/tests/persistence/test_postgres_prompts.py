@@ -190,6 +190,55 @@ def test_deactivating_an_entry_keeps_its_history_but_drops_it_from_the_active_se
     assert [(v.entry.text, v.is_active) for v in history] == [("Geht", False)]
 
 
+def _option(key, text="Text", position=0):
+    return PromptEntry(PromptEntryKind.OPTION, key, text, position)
+
+
+def test_an_archived_entry_is_listed_in_the_trash_with_its_newest_version(prompts) -> None:
+    store, _, package_id = prompts
+    store.append_versions([new(package_id, _option("tone/a", "Eins")), new(package_id, _option("tone/b"))])
+    store.append_versions([new(package_id, _option("tone/a", "Zwei"), minutes=1)])
+
+    store.deactivate_entry(package_id, "1", PromptEntryKind.OPTION, "tone/a")
+
+    archived = store.list_archived(package_id, "1")
+    assert [(v.entry.key, v.entry.text, v.is_active) for v in archived] == [("tone/a", "Zwei", False)]
+
+
+def test_restoring_reactivates_the_newest_version_only(prompts) -> None:
+    store, _, package_id = prompts
+    store.append_versions([new(package_id, _option("tone/a", "Eins"))])
+    store.append_versions([new(package_id, _option("tone/a", "Zwei"), minutes=1)])
+    store.deactivate_entry(package_id, "1", PromptEntryKind.OPTION, "tone/a")
+
+    store.restore_entry(package_id, "1", PromptEntryKind.OPTION, "tone/a")
+
+    assert [(v.entry.text, v.is_active) for v in store.list_active(package_id, "1")] == [("Zwei", True)]
+    assert store.list_archived(package_id, "1") == ()
+    assert len(store.list_history(package_id, "1", PromptEntryKind.OPTION, "tone/a")) == 2
+
+
+def test_purging_deletes_every_version_of_an_archived_entry(prompts) -> None:
+    store, _, package_id = prompts
+    store.append_versions([new(package_id, _option("tone/a", "Eins"))])
+    store.append_versions([new(package_id, _option("tone/a", "Zwei"), minutes=1)])
+    store.deactivate_entry(package_id, "1", PromptEntryKind.OPTION, "tone/a")
+
+    store.purge_entry(package_id, "1", PromptEntryKind.OPTION, "tone/a")
+
+    assert store.list_archived(package_id, "1") == ()
+    assert store.list_history(package_id, "1", PromptEntryKind.OPTION, "tone/a") == ()
+
+
+def test_purging_leaves_an_active_entry_alone(prompts) -> None:
+    store, _, package_id = prompts
+    store.append_versions([new(package_id, _option("tone/a"))])
+
+    store.purge_entry(package_id, "1", PromptEntryKind.OPTION, "tone/a")
+
+    assert [v.entry.key for v in store.list_active(package_id, "1")] == ["tone/a"]
+
+
 def test_option_usage_follows_the_stored_game_configurations(postgres_store) -> None:
     from story_game.infrastructure.persistence.postgres import PostgresPromptOptionUsage
     from tests.ids import sid

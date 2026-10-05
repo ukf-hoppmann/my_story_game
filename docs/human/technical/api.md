@@ -32,7 +32,11 @@ Benutzerdaten.
 | `PUT` | `/api/v1/admin/prompts` | Einen bearbeiteten Prompt-Text als neue aktive Version speichern (nur `admin`) |
 | `POST` | `/api/v1/admin/prompts/reset` | Das mitgelieferte Original eines Prompts, einer Art oder aller Prompts neu einspielen (nur `admin`) |
 | `POST` | `/api/v1/admin/prompts/options` | Eine neue Option für Genre, Ton oder Prosastil anlegen (nur `admin`) |
-| `DELETE` | `/api/v1/admin/prompts/options` | Eine selbst angelegte, unbenutzte Option entfernen (`?category=&option_id=`, nur `admin`) |
+| `DELETE` | `/api/v1/admin/prompts/options` | Eine selbst angelegte, unbenutzte Option in den Papierkorb legen (`?category=&option_id=`, nur `admin`) |
+| `GET` | `/api/v1/admin/prompts/options/archived` | Die Optionen im Papierkorb (nur `admin`) |
+| `POST` | `/api/v1/admin/prompts/options/restore` | Eine Option aus dem Papierkorb zurückholen (nur `admin`) |
+| `DELETE` | `/api/v1/admin/prompts/options/archived` | Eine Option im Papierkorb endgültig löschen (`?category=&option_id=`, nur `admin`) |
+| `POST` | `/api/v1/admin/prompts/options/removal` | Mehrere Optionen archivieren oder endgültig löschen, mit Ergebnis je Option (nur `admin`) |
 | `GET` | `/api/v1/admin/models` | Aktive Modellwahl je Task und die wählbaren Katalogmodelle lesen (nur Rolle `admin`) |
 | `GET` | `/api/v1/admin/models/history` | Alle Versionen der Modellwahl eines Tasks (`?task=`), neueste zuerst (nur `admin`) |
 | `PUT` | `/api/v1/admin/models` | Modell und Optionen eines Tasks als neue aktive Version speichern (nur `admin`) |
@@ -283,11 +287,27 @@ blendet den Menüpunkt "Einstellungen" nur zusätzlich aus.
   422 `invalid_prompt_option` (Kategorie oder ID unzulässig),
   422 `invalid_prompt_text`, 409 `prompt_option_exists`. Die Option steht
   sofort im Katalog des Wizards; sie wird nie Standardoption.
-- `DELETE /api/v1/admin/prompts/options?category=&option_id=` entfernt eine
-  selbst angelegte Option (204; die Versionen bleiben im Verlauf). 409
-  `prompt_option_not_removable` für mitgelieferte Optionen, 409
-  `prompt_option_in_use`, solange eine gespeicherte Spielkonfiguration sie
-  noch auswählt (sonst scheiterte deren nächster Zug), 404 für unbekannte.
+- `DELETE /api/v1/admin/prompts/options?category=&option_id=` legt eine
+  selbst angelegte Option in den Papierkorb (204; die Versionen bleiben im
+  Verlauf). 409 `prompt_option_not_removable` für mitgelieferte Optionen
+  (die lassen sich nur zurücksetzen), 409 `prompt_option_in_use`, solange eine
+  gespeicherte Spielkonfiguration sie noch auswählt (sonst scheiterte deren
+  nächster Zug), 404 für unbekannte.
+- `GET …/options/archived` liefert die Optionen im Papierkorb
+  (`{versions: […]}`, neueste Version je Option). `POST …/options/restore`
+  mit `{category, option_id}` macht eine davon wieder aktiv (204, sonst 404).
+  Eine ID, die im Papierkorb liegt, lässt sich nicht neu anlegen
+  (409 `prompt_option_exists`).
+- `DELETE …/options/archived?category=&option_id=` löscht eine Option aus dem
+  Papierkorb endgültig, samt Verlauf (204). Eine aktive Option ergibt 409
+  `prompt_option_not_archived`, eine unbekannte 404.
+- `POST …/options/removal` mit `{mode: "archive" | "purge", options?: [{category,
+  option_id}]}` entfernt mehrere Optionen. Ohne `options` trifft `archive`
+  alle selbst angelegten, `purge` alles im Papierkorb. Die Antwort
+  `{outcomes: [{key, status, message}]}` nennt je Option `done`, `in_use`,
+  `protected`, `not_archived` oder `not_found`; eine gesperrte Option stoppt
+  die übrigen nicht. Es ist keine gemeinsame Transaktion, und eine
+  Wiederholung ist ungefährlich.
 
 Änderungen wirken sofort auf die nächste Story-Anfrage; der Katalog liest bei
 jedem Aufruf die aktiven Versionen.

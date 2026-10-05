@@ -66,7 +66,11 @@ from story_game.application.prompt_management import (
     ListPromptHistory,
     PromptManagementOperations,
     PromptOptionUsage,
-    RemovePromptOption,
+    RemovePromptOptions,
+    RestorePromptOption,
+    PurgePromptOption,
+    ListArchivedPromptOptions,
+    ArchivePromptOption,
     ResetPromptText,
     SeedPromptPackages,
     SeedPromptPackagesRequest,
@@ -336,6 +340,9 @@ def _compose_prompt_management(
 ) -> PromptManagementOperations:
     source = FilePromptPackageCatalog(settings.prompt_root)
     clock = lambda: datetime.now(UTC)  # noqa: E731
+    archive = ArchivePromptOption(source, prompt_store, prompt_store, option_usage)
+    purge = PurgePromptOption(prompt_store, prompt_store)
+    archived = ListArchivedPromptOptions(prompt_store)
     return PromptManagementOperations(
         entries=ListPromptEntries(prompt_store),
         history=ListPromptHistory(prompt_store),
@@ -343,8 +350,12 @@ def _compose_prompt_management(
         reset=ResetPromptText(source, prompt_store, prompt_store, StableId.new, clock),
         create_option=CreatePromptOption(prompt_store, prompt_store, StableId.new, clock),
         custom_options=ListCustomPromptOptions(source, prompt_store),
-        remove_option=RemovePromptOption(
-            source, prompt_store, prompt_store, option_usage
+        archive_option=archive,
+        restore_option=RestorePromptOption(prompt_store, prompt_store),
+        purge_option=purge,
+        archived_options=archived,
+        remove_options=RemovePromptOptions(
+            archive, purge, ListCustomPromptOptions(source, prompt_store), archived
         ),
     )
 

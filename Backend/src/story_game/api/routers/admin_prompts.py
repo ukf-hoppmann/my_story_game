@@ -12,13 +12,19 @@ from story_game.api.results import unwrap
 from story_game.api.schemas.admin_prompts import (
     CreatePromptOptionRequestModel,
     PromptListModel,
+    PromptOptionRefModel,
     PromptVersionListModel,
     PromptVersionModel,
+    RemovalOutcomeModel,
+    RemovalResultModel,
+    RemovePromptOptionsRequestModel,
     ResetPromptsRequestModel,
     UpdatePromptTextRequestModel,
 )
 from story_game.application.prompt_management import (
+    ArchivePromptOptionRequest,
     CreatePromptOptionRequest,
+    ListArchivedPromptOptionsRequest,
     ListCustomPromptOptionsRequest,
     ListPromptEntriesRequest,
     ListPromptHistoryRequest,
@@ -27,7 +33,9 @@ from story_game.application.prompt_management import (
     PromptManagementOperations,
     PromptVersion,
     PromptVersionSource,
-    RemovePromptOptionRequest,
+    PurgePromptOptionRequest,
+    RemovePromptOptionsRequest,
+    RestorePromptOptionRequest,
     ResetPromptTextRequest,
     UpdatePromptTextRequest,
 )
@@ -165,20 +173,108 @@ def create_option(
 @router.delete(
     "/options",
     status_code=204,
-    summary="Remove an option that was added in the UI and is not used by any game",
+    summary="Move an option added in the UI to the trash (refused while a game uses it)",
 )
-def remove_option(
+def archive_option(
     category: Annotated[str, Query(min_length=1)],
     option_id: Annotated[str, Query(min_length=1)],
     dependencies: Annotated[ApiDependencies, Depends(get_api_dependencies)],
     _admin: Annotated[VerifiedCaller, Depends(require_admin)],
 ) -> Response:
     unwrap(
-        _operations(dependencies).remove_option.apply(
-            RemovePromptOptionRequest(_PACKAGE_ID, _PACKAGE_VERSION, category, option_id)
+        _operations(dependencies).archive_option.apply(
+            ArchivePromptOptionRequest(_PACKAGE_ID, _PACKAGE_VERSION, category, option_id)
         )
     )
     return Response(status_code=204)
+
+
+@router.get(
+    "/options/archived",
+    response_model=PromptVersionListModel,
+    summary="List the options in the trash",
+)
+def list_archived_options(
+    dependencies: Annotated[ApiDependencies, Depends(get_api_dependencies)],
+    _admin: Annotated[VerifiedCaller, Depends(require_admin)],
+) -> PromptVersionListModel:
+    versions = unwrap(
+        _operations(dependencies).archived_options.apply(
+            ListArchivedPromptOptionsRequest(_PACKAGE_ID, _PACKAGE_VERSION)
+        )
+    )
+    keys = frozenset(version.entry.key for version in versions)
+    return PromptVersionListModel(versions=[_to_model(version, keys) for version in versions])
+
+
+@router.post(
+    "/options/restore",
+    status_code=204,
+    summary="Take an option out of the trash",
+)
+def restore_option(
+    payload: PromptOptionRefModel,
+    dependencies: Annotated[ApiDependencies, Depends(get_api_dependencies)],
+    _admin: Annotated[VerifiedCaller, Depends(require_admin)],
+) -> Response:
+    unwrap(
+        _operations(dependencies).restore_option.apply(
+            RestorePromptOptionRequest(
+                _PACKAGE_ID, _PACKAGE_VERSION, payload.category, payload.option_id
+            )
+        )
+    )
+    return Response(status_code=204)
+
+
+@router.delete(
+    "/options/archived",
+    status_code=204,
+    summary="Delete an option in the trash for good, including its history",
+)
+def purge_option(
+    category: Annotated[str, Query(min_length=1)],
+    option_id: Annotated[str, Query(min_length=1)],
+    dependencies: Annotated[ApiDependencies, Depends(get_api_dependencies)],
+    _admin: Annotated[VerifiedCaller, Depends(require_admin)],
+) -> Response:
+    unwrap(
+        _operations(dependencies).purge_option.apply(
+            PurgePromptOptionRequest(_PACKAGE_ID, _PACKAGE_VERSION, category, option_id)
+        )
+    )
+    return Response(status_code=204)
+
+
+@router.post(
+    "/options/removal",
+    response_model=RemovalResultModel,
+    summary="Archive or purge several options; every option gets its own outcome",
+)
+def remove_options(
+    payload: RemovePromptOptionsRequestModel,
+    dependencies: Annotated[ApiDependencies, Depends(get_api_dependencies)],
+    _admin: Annotated[VerifiedCaller, Depends(require_admin)],
+) -> RemovalResultModel:
+    named = (
+        None
+        if payload.options is None
+        else tuple(
+            PromptEntryRef(PromptEntryKind.OPTION, f"{ref.category}/{ref.option_id}")
+            for ref in payload.options
+        )
+    )
+    outcomes = unwrap(
+        _operations(dependencies).remove_options.apply(
+            RemovePromptOptionsRequest(_PACKAGE_ID, _PACKAGE_VERSION, payload.mode, named)
+        )
+    )
+    return RemovalResultModel(
+        outcomes=[
+            RemovalOutcomeModel(key=o.ref.key, status=o.status, message=o.message)
+            for o in outcomes
+        ]
+    )
 
 
 @router.post(

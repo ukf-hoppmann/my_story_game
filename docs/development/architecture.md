@@ -116,6 +116,31 @@ meanings defined there. The naming document is the detailed human-readable
 reference; this section makes its use discoverable from the binding
 architecture contract.
 
+## 10. Lifecycle and removal
+
+- Removable application data MUST follow the lifecycle
+  `active → archived → purged`. Archiving is reversible and keeps the history.
+  Purging is irreversible, removes the history, and MUST apply only to archived
+  items.
+- Archive, restore, and purge MUST each be a separate `Leaf` under the
+  Operation Contract (for example `ArchivePromptOption`,
+  `RestorePromptOption`, `PurgePromptOption`). Each returns a typed outcome per
+  item: done, blocked with a typed reason (protected, in use), or not found.
+- Blocking rules MUST live in the `Leaf`, not in an adapter or the UI, so
+  single and bulk paths are guarded identically. Shipped defaults are
+  protected: they MUST NOT be archived, and "reset" restores their original
+  content instead.
+- Bulk removal MUST be a Composite that delegates to the Leaves. Its request
+  carries a typed `RemovalMode` (`ARCHIVE` or `PURGE`) and a typed scope. The
+  Composition Root wires the Leaves only. It MUST NOT choose mode or scope
+  (rule 4).
+- A bulk removal MUST NOT be presented as one transaction. Its result lists
+  the outcome per item (rule 5). Repeating it MUST be safe: items already in
+  the target state are skipped.
+- Persistence ports MUST expose archive, restore, and purge as separate narrow
+  capabilities. A generic `delete(anything)` port MUST NOT be introduced
+  (rule 3).
+
 If a requirement or design does not fit these rules, the AI names the conflict
 and proposes solutions, and the project owner decides (skill
 `claude-harness:conflicts`).

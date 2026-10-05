@@ -53,6 +53,25 @@ class PostgresPromptStore(PromptVersionReader, PromptVersionWriter):
             "Die aktiven Prompts konnten nicht gelesen werden",
         )
 
+    def list_archived(self, package_id: str, package_version: str) -> tuple[PromptVersion, ...]:
+        return self._query(
+            f"""
+            SELECT DISTINCT ON (entry_kind, entry_key) {_COLUMNS} FROM system_prompts AS row
+            WHERE package_id = %s AND package_version = %s
+              AND NOT EXISTS (
+                  SELECT 1 FROM system_prompts AS other
+                  WHERE other.package_id = row.package_id
+                    AND other.package_version = row.package_version
+                    AND other.entry_kind = row.entry_kind
+                    AND other.entry_key = row.entry_key
+                    AND other.is_active
+              )
+            ORDER BY entry_kind, entry_key, created_at DESC
+            """,
+            (package_id, package_version),
+            "Der Papierkorb konnte nicht gelesen werden",
+        )
+
     def list_history(
         self, package_id: str, package_version: str, kind: PromptEntryKind, key: str
     ) -> tuple[PromptVersion, ...]:
@@ -129,6 +148,53 @@ class PostgresPromptStore(PromptVersionReader, PromptVersionWriter):
                 )
         except psycopg.Error as error:
             raise PromptStoreError("Der Prompt-Eintrag konnte nicht entfernt werden") from error
+
+    def restore_entry(
+        self, package_id: str, package_version: str, kind: PromptEntryKind, key: str
+    ) -> None:
+        try:
+            with self._connections.connect() as connection:
+                connection.execute(
+                    """
+                    UPDATE system_prompts SET is_active = TRUE
+                    WHERE version_id = (
+                        SELECT version_id FROM system_prompts
+                        WHERE package_id = %s AND package_version = %s
+                          AND entry_kind = %s AND entry_key = %s
+                        ORDER BY created_at DESC LIMIT 1
+                    )
+                    AND NOT EXISTS (
+                        SELECT 1 FROM system_prompts
+                        WHERE package_id = %s AND package_version = %s
+                          AND entry_kind = %s AND entry_key = %s AND is_active
+                    )
+                    """,
+                    (package_id, package_version, kind.value, key) * 2,
+                )
+        except psycopg.Error as error:
+            raise PromptStoreError("Der Prompt-Eintrag konnte nicht wiederhergestellt werden") from error
+
+    def purge_entry(
+        self, package_id: str, package_version: str, kind: PromptEntryKind, key: str
+    ) -> None:
+        try:
+            with self._connections.connect() as connection:
+                connection.execute(
+                    """
+                    DELETE FROM system_prompts
+                    WHERE package_id = %s AND package_version = %s
+                      AND entry_kind = %s AND entry_key = %s
+                      AND NOT EXISTS (
+                          SELECT 1 FROM system_prompts AS active
+                          WHERE active.package_id = %s AND active.package_version = %s
+                            AND active.entry_kind = %s AND active.entry_key = %s
+                            AND active.is_active
+                      )
+                    """,
+                    (package_id, package_version, kind.value, key) * 2,
+                )
+        except psycopg.Error as error:
+            raise PromptStoreError("Der Prompt-Eintrag konnte nicht gelöscht werden") from error
 
     def _query(self, sql: str, params: tuple[Any, ...], failure: str) -> tuple[PromptVersion, ...]:
         try:

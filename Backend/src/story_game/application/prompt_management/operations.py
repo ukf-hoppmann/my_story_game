@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 from collections.abc import Callable
 from dataclasses import dataclass
+from enum import StrEnum
 from datetime import datetime
 
 from story_game.application.contracts import Failure, OperationResult, Success
@@ -416,6 +417,18 @@ class CreatePromptOption:
                         f"Die Option {key} gibt es schon.",
                     )
                 )
+            if any(
+                version.entry.key == key
+                for version in self._reader.list_archived(
+                    request.package_id, request.package_version
+                )
+            ):
+                return Failure(
+                    PromptManagementError(
+                        PromptManagementErrorKind.ALREADY_EXISTS,
+                        f"Die Option {key} liegt im Papierkorb; stelle sie dort wieder her.",
+                    )
+                )
             position = max(version.entry.position for version in options) + 1
             created = self._writer.append_versions(
                 _new_versions(
@@ -475,19 +488,19 @@ class ListCustomPromptOptions:
 
 
 @dataclass(frozen=True, slots=True)
-class RemovePromptOptionRequest:
+class ArchivePromptOptionRequest:
     package_id: str
     package_version: str
     category_id: str
     option_id: str
 
 
-class RemovePromptOption:
-    """Retire an option that was added by hand and that no stored game uses.
+class ArchivePromptOption:
+    """Move an option that was added by hand and that no stored game uses to the trash.
 
-    Shipped options cannot be removed, and neither can an option a game
+    Shipped options cannot be archived, and neither can an option a game
     configuration still selects: that game would fail on its next turn. The
-    versions stay in the history.
+    versions stay in the history and the option can be restored.
     """
 
     def __init__(
@@ -503,7 +516,7 @@ class RemovePromptOption:
         self._usage = usage
 
     def apply(
-        self, request: RemovePromptOptionRequest
+        self, request: ArchivePromptOptionRequest
     ) -> OperationResult[PromptEntryRef, PromptManagementError]:
         reference = PromptEntryRef(
             PromptEntryKind.OPTION, f"{request.category_id}/{request.option_id}"
@@ -528,7 +541,7 @@ class RemovePromptOption:
                 return Failure(
                     PromptManagementError(
                         PromptManagementErrorKind.NOT_REMOVABLE,
-                        "Mitgelieferte Optionen lassen sich nicht entfernen.",
+                        "Mitgelieferte Optionen lassen sich nicht entfernen; sie lassen sich nur zurücksetzen.",
                     )
                 )
             if self._usage.is_option_used(request.category_id, request.option_id):
@@ -544,6 +557,241 @@ class RemovePromptOption:
         except PromptStoreError:
             return _store_unavailable()
         return Success(reference)
+
+
+def _option_ref(category_id: str, option_id: str) -> PromptEntryRef:
+    return PromptEntryRef(PromptEntryKind.OPTION, f"{category_id}/{option_id}")
+
+
+def _split_option_key(key: str) -> tuple[str, str]:
+    category_id, _, option_id = key.partition("/")
+    return category_id, option_id
+
+
+@dataclass(frozen=True, slots=True)
+class ListArchivedPromptOptionsRequest:
+    package_id: str
+    package_version: str
+
+
+class ListArchivedPromptOptions:
+    """The options in the trash: archived, not yet purged."""
+
+    def __init__(self, reader: PromptVersionReader) -> None:
+        self._reader = reader
+
+    def apply(
+        self, request: ListArchivedPromptOptionsRequest
+    ) -> OperationResult[tuple[PromptVersion, ...], PromptManagementError]:
+        try:
+            archived = self._reader.list_archived(request.package_id, request.package_version)
+        except PromptStoreError:
+            return _store_unavailable()
+        return Success(
+            tuple(version for version in archived if version.entry.kind is PromptEntryKind.OPTION)
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class RestorePromptOptionRequest:
+    package_id: str
+    package_version: str
+    category_id: str
+    option_id: str
+
+
+class RestorePromptOption:
+    """Take an archived option out of the trash; it is active again with its last text."""
+
+    def __init__(self, reader: PromptVersionReader, writer: PromptVersionWriter) -> None:
+        self._reader = reader
+        self._writer = writer
+
+    def apply(
+        self, request: RestorePromptOptionRequest
+    ) -> OperationResult[PromptEntryRef, PromptManagementError]:
+        reference = _option_ref(request.category_id, request.option_id)
+        try:
+            archived = {
+                version.entry.ref
+                for version in self._reader.list_archived(request.package_id, request.package_version)
+            }
+            if reference not in archived:
+                return _not_found("Die Option im Papierkorb")
+            self._writer.restore_entry(
+                request.package_id, request.package_version, reference.kind, reference.key
+            )
+        except PromptStoreError:
+            return _store_unavailable()
+        return Success(reference)
+
+
+@dataclass(frozen=True, slots=True)
+class PurgePromptOptionRequest:
+    package_id: str
+    package_version: str
+    category_id: str
+    option_id: str
+
+
+class PurgePromptOption:
+    """Delete an archived option for good, with every version of its history.
+
+    Only an option in the trash can be purged. Shipped options are never
+    archived, so they can never be purged either.
+    """
+
+    def __init__(self, reader: PromptVersionReader, writer: PromptVersionWriter) -> None:
+        self._reader = reader
+        self._writer = writer
+
+    def apply(
+        self, request: PurgePromptOptionRequest
+    ) -> OperationResult[PromptEntryRef, PromptManagementError]:
+        reference = _option_ref(request.category_id, request.option_id)
+        try:
+            archived = {
+                version.entry.ref
+                for version in self._reader.list_archived(request.package_id, request.package_version)
+            }
+            if reference not in archived:
+                active = {
+                    version.entry.ref
+                    for version in self._reader.list_active(
+                        request.package_id, request.package_version
+                    )
+                }
+                if reference in active:
+                    return Failure(
+                        PromptManagementError(
+                            PromptManagementErrorKind.NOT_ARCHIVED,
+                            "Nur Optionen im Papierkorb lassen sich endgültig löschen.",
+                        )
+                    )
+                return _not_found("Die Option im Papierkorb")
+            self._writer.purge_entry(
+                request.package_id, request.package_version, reference.kind, reference.key
+            )
+        except PromptStoreError:
+            return _store_unavailable()
+        return Success(reference)
+
+
+class RemovalMode(StrEnum):
+    """Which step of the lifecycle a bulk removal performs."""
+
+    ARCHIVE = "archive"
+    PURGE = "purge"
+
+
+class RemovalStatus(StrEnum):
+    """What happened to one option in a bulk removal."""
+
+    DONE = "done"
+    IN_USE = "in_use"
+    PROTECTED = "protected"
+    NOT_ARCHIVED = "not_archived"
+    NOT_FOUND = "not_found"
+
+
+_BLOCKED_BY = {
+    PromptManagementErrorKind.IN_USE: RemovalStatus.IN_USE,
+    PromptManagementErrorKind.NOT_REMOVABLE: RemovalStatus.PROTECTED,
+    PromptManagementErrorKind.NOT_ARCHIVED: RemovalStatus.NOT_ARCHIVED,
+    PromptManagementErrorKind.NOT_FOUND: RemovalStatus.NOT_FOUND,
+}
+
+
+@dataclass(frozen=True, slots=True)
+class RemovalOutcome:
+    ref: PromptEntryRef
+    status: RemovalStatus
+    message: str = ""
+
+
+@dataclass(frozen=True, slots=True)
+class RemovePromptOptionsRequest:
+    package_id: str
+    package_version: str
+    mode: RemovalMode
+    options: tuple[PromptEntryRef, ...] | None = None
+    """The options to remove; ``None`` takes every option the mode applies to
+    (all custom options for ``ARCHIVE``, everything in the trash for ``PURGE``)."""
+
+
+class RemovePromptOptions:
+    """Archive or purge several options, one `Leaf` call each.
+
+    Not one transaction: every option gets its own outcome, so a blocked option
+    (still in use) does not stop the others. A store that is down fails the
+    whole operation. Options already in the target state are not selected, so
+    repeating the call is safe.
+    """
+
+    def __init__(
+        self,
+        archive: ArchivePromptOption,
+        purge: PurgePromptOption,
+        custom_options: ListCustomPromptOptions,
+        archived_options: ListArchivedPromptOptions,
+    ) -> None:
+        self._archive = archive
+        self._purge = purge
+        self._custom_options = custom_options
+        self._archived_options = archived_options
+
+    def apply(
+        self, request: RemovePromptOptionsRequest
+    ) -> OperationResult[tuple[RemovalOutcome, ...], PromptManagementError]:
+        targets = request.options
+        if targets is None:
+            selected = self._select(request)
+            if isinstance(selected, Failure):
+                return selected
+            targets = selected.data
+        outcomes: list[RemovalOutcome] = []
+        for ref in targets:
+            category_id, option_id = _split_option_key(ref.key)
+            result = (
+                self._archive.apply(
+                    ArchivePromptOptionRequest(
+                        request.package_id, request.package_version, category_id, option_id
+                    )
+                )
+                if request.mode is RemovalMode.ARCHIVE
+                else self._purge.apply(
+                    PurgePromptOptionRequest(
+                        request.package_id, request.package_version, category_id, option_id
+                    )
+                )
+            )
+            if isinstance(result, Success):
+                outcomes.append(RemovalOutcome(ref, RemovalStatus.DONE))
+                continue
+            blocked = _BLOCKED_BY.get(result.error.kind)
+            if blocked is None:
+                return result
+            outcomes.append(RemovalOutcome(ref, blocked, result.error.message))
+        return Success(tuple(outcomes))
+
+    def _select(
+        self, request: RemovePromptOptionsRequest
+    ) -> OperationResult[tuple[PromptEntryRef, ...], PromptManagementError]:
+        if request.mode is RemovalMode.ARCHIVE:
+            custom = self._custom_options.apply(
+                ListCustomPromptOptionsRequest(request.package_id, request.package_version)
+            )
+            if isinstance(custom, Failure):
+                return custom
+            return Success(
+                tuple(PromptEntryRef(PromptEntryKind.OPTION, key) for key in custom.data)
+            )
+        archived = self._archived_options.apply(
+            ListArchivedPromptOptionsRequest(request.package_id, request.package_version)
+        )
+        if isinstance(archived, Failure):
+            return archived
+        return Success(tuple(version.entry.ref for version in archived.data))
 
 
 def _with_text(entry: PromptEntry, text: str) -> PromptEntry:
@@ -562,13 +810,21 @@ class PromptManagementOperations:
     reset: ResetPromptText
     create_option: CreatePromptOption
     custom_options: ListCustomPromptOptions
-    remove_option: RemovePromptOption
+    archive_option: ArchivePromptOption
+    restore_option: RestorePromptOption
+    purge_option: PurgePromptOption
+    archived_options: ListArchivedPromptOptions
+    remove_options: RemovePromptOptions
 
 
 __all__ = [
+    "ArchivePromptOption",
+    "ArchivePromptOptionRequest",
     "CreatePromptOption",
     "CreatePromptOptionRequest",
     "EXTENSIBLE_CATEGORIES",
+    "ListArchivedPromptOptions",
+    "ListArchivedPromptOptionsRequest",
     "ListCustomPromptOptions",
     "ListCustomPromptOptionsRequest",
     "ListPromptEntries",
@@ -577,10 +833,17 @@ __all__ = [
     "ListPromptHistoryRequest",
     "MAX_PROMPT_TEXT_LENGTH",
     "PromptManagementOperations",
-    "RemovePromptOption",
-    "RemovePromptOptionRequest",
+    "PurgePromptOption",
+    "PurgePromptOptionRequest",
+    "RemovalMode",
+    "RemovalOutcome",
+    "RemovalStatus",
+    "RemovePromptOptions",
+    "RemovePromptOptionsRequest",
     "ResetPromptText",
     "ResetPromptTextRequest",
+    "RestorePromptOption",
+    "RestorePromptOptionRequest",
     "SeedPromptPackages",
     "SeedPromptPackagesRequest",
     "SeedPromptPackagesResult",

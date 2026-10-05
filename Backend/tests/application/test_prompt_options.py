@@ -18,8 +18,8 @@ from story_game.application.prompt_management import (
     PromptManagementErrorKind,
     PromptStoreError,
     PromptVersionSource,
-    RemovePromptOption,
-    RemovePromptOptionRequest,
+    ArchivePromptOption,
+    ArchivePromptOptionRequest,
     ResetPromptText,
     ResetPromptTextRequest,
     SeedPromptPackages,
@@ -51,7 +51,7 @@ class _Setup:
             SeedPromptPackagesRequest()
         )
         self.create = CreatePromptOption(self.store, self.store, StableId.new, clock)
-        self.remove = RemovePromptOption(self.source, self.store, self.store, self.usage)
+        self.remove = ArchivePromptOption(self.source, self.store, self.store, self.usage)
         self.custom = ListCustomPromptOptions(self.source, self.store)
         self.entries = ListPromptEntries(self.store)
 
@@ -61,7 +61,7 @@ class _Setup:
         )
 
     def drop(self, category: str = "tone", option: str = "melancholic"):  # type: ignore[no-untyped-def]
-        return self.remove.apply(RemovePromptOptionRequest(PACKAGE, VERSION, category, option))
+        return self.remove.apply(ArchivePromptOptionRequest(PACKAGE, VERSION, category, option))
 
     def keys(self) -> set[str]:
         result = self.entries.apply(ListPromptEntriesRequest(PACKAGE, VERSION))
@@ -158,7 +158,7 @@ def test_only_options_added_by_hand_are_listed_as_custom() -> None:
     assert result.data == ("tone/melancholic",)
 
 
-def test_an_unused_added_option_can_be_removed_and_stays_in_the_history() -> None:
+def test_an_unused_added_option_can_be_archived_and_stays_in_the_history() -> None:
     setup = _Setup()
     setup.add()
 

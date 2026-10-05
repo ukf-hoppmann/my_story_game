@@ -20,7 +20,11 @@ from story_game.application.prompt_management import (
     ListPromptEntries,
     ListPromptHistory,
     PromptManagementOperations,
-    RemovePromptOption,
+    ArchivePromptOption,
+    ListArchivedPromptOptions,
+    PurgePromptOption,
+    RemovePromptOptions,
+    RestorePromptOption,
     ResetPromptText,
     SeedPromptPackages,
     SeedPromptPackagesRequest,
@@ -57,6 +61,9 @@ def _operations() -> PromptManagementOperations:
     SeedPromptPackages(source, store, store, StableId.new, clock).apply(
         SeedPromptPackagesRequest()
     )
+    archive = ArchivePromptOption(source, store, store, _USAGE)
+    purge = PurgePromptOption(store, store)
+    archived = ListArchivedPromptOptions(store)
     return PromptManagementOperations(
         entries=ListPromptEntries(store),
         history=ListPromptHistory(store),
@@ -64,7 +71,13 @@ def _operations() -> PromptManagementOperations:
         reset=ResetPromptText(source, store, store, StableId.new, clock),
         create_option=CreatePromptOption(store, store, StableId.new, clock),
         custom_options=ListCustomPromptOptions(source, store),
-        remove_option=RemovePromptOption(source, store, store, _USAGE),
+        archive_option=archive,
+        restore_option=RestorePromptOption(store, store),
+        purge_option=purge,
+        archived_options=archived,
+        remove_options=RemovePromptOptions(
+            archive, purge, ListCustomPromptOptions(source, store), archived
+        ),
     )
 
 
@@ -269,6 +282,113 @@ def test_removing_an_unknown_option_is_not_found(admin: TestClient) -> None:
     assert removed.status_code == 404
 
 
+def _params(option: str = "melancholic") -> dict[str, str]:
+    return {"category": "tone", "option_id": option}
+
+
+def _archive(admin: TestClient, option: str = "melancholic") -> None:
+    assert admin.delete(URL + "/options", params=_params(option)).status_code == 204
+
+
+def _trash(admin: TestClient) -> set[str]:
+    listed = admin.get(URL + "/options/archived")
+    assert listed.status_code == 200
+    return {v["key"] for v in listed.json()["versions"]}
+
+
+def test_an_archived_option_appears_in_the_trash_not_in_the_list(admin: TestClient) -> None:
+    _add(admin)
+    _archive(admin)
+
+    assert _trash(admin) == {"tone/melancholic"}
+    assert "tone/melancholic" not in {e["key"] for e in admin.get(URL).json()["entries"]}
+
+
+def test_an_archived_option_can_be_restored(admin: TestClient) -> None:
+    _add(admin)
+    _archive(admin)
+
+    restored = admin.post(URL + "/options/restore", json=_params())
+
+    assert restored.status_code == 204
+    assert _trash(admin) == set()
+    assert "tone/melancholic" in {e["key"] for e in admin.get(URL).json()["entries"]}
+
+
+def test_restoring_an_option_that_is_not_in_the_trash_is_not_found(admin: TestClient) -> None:
+    assert admin.post(URL + "/options/restore", json=_params("ghost")).status_code == 404
+
+
+def test_an_option_in_the_trash_can_be_purged(admin: TestClient) -> None:
+    _add(admin)
+    _archive(admin)
+
+    purged = admin.delete(URL + "/options/archived", params=_params())
+
+    assert purged.status_code == 204
+    assert _trash(admin) == set()
+
+
+def test_an_active_option_cannot_be_purged(admin: TestClient) -> None:
+    _add(admin)
+
+    purged = admin.delete(URL + "/options/archived", params=_params())
+
+    assert purged.status_code == 409
+    assert purged.json()["error"] == "prompt_option_not_archived"
+
+
+def test_an_id_in_the_trash_cannot_be_created_again(admin: TestClient) -> None:
+    _add(admin)
+    _archive(admin)
+
+    assert _add(admin).status_code == 409
+
+
+def test_bulk_archive_reports_each_option(admin: TestClient) -> None:
+    _add(admin)
+    _add(admin, option_id="grim", category="genre")
+    _USAGE.used.add(("tone", "melancholic"))
+
+    response = admin.post(URL + "/options/removal", json={"mode": "archive"})
+
+    assert response.status_code == 200
+    assert {(o["key"], o["status"]) for o in response.json()["outcomes"]} == {
+        ("tone/melancholic", "in_use"),
+        ("genre/grim", "done"),
+    }
+    assert _trash(admin) == {"genre/grim"}
+
+
+def test_bulk_purge_empties_the_trash(admin: TestClient) -> None:
+    _add(admin)
+    _archive(admin)
+
+    response = admin.post(URL + "/options/removal", json={"mode": "purge"})
+
+    assert [(o["key"], o["status"]) for o in response.json()["outcomes"]] == [
+        ("tone/melancholic", "done")
+    ]
+    assert _trash(admin) == set()
+
+
+def test_a_bulk_removal_can_name_the_options(admin: TestClient) -> None:
+    _add(admin)
+    _add(admin, option_id="grim", category="genre")
+
+    response = admin.post(
+        URL + "/options/removal",
+        json={"mode": "archive", "options": [{"category": "genre", "option_id": "grim"}]},
+    )
+
+    assert [o["key"] for o in response.json()["outcomes"]] == ["genre/grim"]
+    assert "tone/melancholic" in {e["key"] for e in admin.get(URL).json()["entries"]}
+
+
+def test_a_bulk_removal_needs_a_known_mode(admin: TestClient) -> None:
+    assert admin.post(URL + "/options/removal", json={"mode": "burn"}).status_code == 422
+
+
 @pytest.mark.parametrize(
     ("method", "path", "body"),
     [
@@ -278,6 +398,10 @@ def test_removing_an_unknown_option_is_not_found(admin: TestClient) -> None:
         ("POST", URL + "/reset", {}),
         ("POST", URL + "/options", {"category": "tone", "option_id": "ab", "text": "x"}),
         ("DELETE", URL + "/options?category=tone&option_id=ab", None),
+        ("GET", URL + "/options/archived", None),
+        ("POST", URL + "/options/restore", {"category": "tone", "option_id": "ab"}),
+        ("DELETE", URL + "/options/archived?category=tone&option_id=ab", None),
+        ("POST", URL + "/options/removal", {"mode": "archive"}),
     ],
 )
 def test_the_endpoints_require_the_admin_role(

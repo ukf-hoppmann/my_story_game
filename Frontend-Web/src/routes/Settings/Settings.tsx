@@ -7,12 +7,13 @@ import {
   useSavePromptTextMutation,
 } from "../../api/apiSlice";
 import type { AdminPromptKind, AdminPromptVersion } from "../../api/types";
+import { Accordion } from "../../components/Accordion/Accordion";
 import { Button } from "../../components/Button/Button";
 import { ErrorBanner } from "../../components/ErrorBanner/ErrorBanner";
+import { Tabs } from "../../components/Tabs/Tabs";
 import { ModelSettings } from "./ModelSettings";
 import "./Settings.css";
 
-const KIND_ORDER: AdminPromptKind[] = ["task", "option", "directive"];
 
 function formatDateTime(iso: string): string {
   return new Date(iso).toLocaleString("de-DE", {
@@ -68,23 +69,27 @@ function PromptEntry({ version }: { version: AdminPromptVersion }) {
   const busy = saveState.isLoading || resetState.isLoading;
 
   return (
-    <article className="settings-entry" aria-label={version.key}>
-      <div className="settings-entry-head">
-        <h4>{version.key}</h4>
-        {version.is_default && <span className="settings-badge">{t("settings.defaultOption")}</span>}
-        {version.is_modified && (
-          <span className="settings-badge settings-badge--modified">{t("settings.modified")}</span>
-        )}
-      </div>
+    <Accordion
+      title={version.key}
+      badges={
+        <>
+          {version.is_default && <span className="settings-badge">{t("settings.defaultOption")}</span>}
+          {version.is_modified && (
+            <span className="settings-badge settings-badge--modified">{t("settings.modified")}</span>
+          )}
+        </>
+      }
+    >
       {version.task_ids.length > 0 && (
         <p className="settings-muted">
           {t("settings.appliesTo", { tasks: version.task_ids.join(", ") })}
         </p>
       )}
       <textarea
+        className="settings-textarea"
         aria-label={version.key}
         value={draft}
-        rows={Math.min(24, Math.max(3, draft.split("\n").length + 1))}
+        rows={Math.min(20, Math.max(5, draft.split("\n").length + 1))}
         onChange={(event) => setDraft(event.target.value)}
       />
       <ErrorBanner error={saveState.error} fallbackKey="settings.saveError" className="settings-error" />
@@ -108,20 +113,74 @@ function PromptEntry({ version }: { version: AdminPromptVersion }) {
         </Button>
       </div>
       {historyOpen && <PromptHistory kind={version.kind} entryKey={version.key} />}
-    </article>
+    </Accordion>
   );
 }
 
-/**
- * Admin-only settings (reached through `RequireAdmin`). The prompts start as
- * the shipped TOML defaults; every edit is stored as a new version, so the
- * history of each entry stays traceable and a reset just appends the
- * original again.
- */
-export function Settings() {
+/** Option keys look like `tone/balanced`; the part before the slash is the
+ *  group they belong to. Other kinds have no groups. */
+function groupEntries(
+  kind: AdminPromptKind,
+  entries: AdminPromptVersion[],
+): { group: string | null; entries: AdminPromptVersion[] }[] {
+  if (kind !== "option") {
+    return [{ group: null, entries }];
+  }
+  const groups = new Map<string, AdminPromptVersion[]>();
+  for (const entry of entries) {
+    const group = entry.key.includes("/") ? entry.key.split("/")[0] : "";
+    groups.set(group, [...(groups.get(group) ?? []), entry]);
+  }
+  return [...groups].map(([group, grouped]) => ({ group: group || null, entries: grouped }));
+}
+
+/** The prompts of one kind, each collapsed into an accordion. */
+function PromptTab({ kind }: { kind: AdminPromptKind }) {
   const { t } = useTranslation();
   const { data, isLoading, error } = useListAdminPromptsQuery();
   const [reset, resetState] = useResetPromptsMutation();
+  const entries = data?.entries.filter((entry) => entry.kind === kind) ?? [];
+
+  return (
+    <section className="settings-section">
+      <div className="settings-section-head">
+        <h2>{t(`settings.kind.${kind}`)}</h2>
+        <Button variant="ghost" disabled={resetState.isLoading} onClick={() => reset({ kind })}>
+          {t("settings.resetKind", { kind: t(`settings.kind.${kind}`) })}
+        </Button>
+      </div>
+      <p className="settings-muted">{t("settings.intro")}</p>
+
+      {isLoading && <p className="settings-muted">{t("settings.loading")}</p>}
+      <ErrorBanner error={error} fallbackKey="settings.loadError" className="settings-error" />
+      <ErrorBanner error={resetState.error} fallbackKey="settings.resetError" className="settings-error" />
+
+      {groupEntries(kind, entries).map(({ group, entries: grouped }) => (
+        <div className="settings-group" key={group ?? ""}>
+          {group && <h3>{t(`settings.optionGroup.${group}`, { defaultValue: group })}</h3>}
+          {grouped.map((entry) => (
+            <PromptEntry version={entry} key={entry.version_id} />
+          ))}
+        </div>
+      ))}
+    </section>
+  );
+}
+
+type SettingsTab = "models" | AdminPromptKind;
+
+const TAB_ORDER: SettingsTab[] = ["models", "task", "option", "directive"];
+
+/**
+ * Admin-only settings (reached through `RequireAdmin`), split into tabs:
+ * the model per task, then the prompts by kind. The prompts start as the
+ * shipped TOML defaults; every edit is stored as a new version, so the
+ * history of each entry stays traceable and a reset just appends the
+ * original again. Entries are collapsed until opened.
+ */
+export function Settings() {
+  const { t } = useTranslation();
+  const [tab, setTab] = useState<SettingsTab>("models");
 
   return (
     <div className="settings">
@@ -129,37 +188,13 @@ export function Settings() {
         <h1>{t("settings.heading")}</h1>
       </div>
 
-      <ModelSettings />
-
-      <section className="settings-section">
-        <div className="settings-section-head">
-          <h2>{t("settings.promptsHeading")}</h2>
-          <Button variant="ghost" disabled={resetState.isLoading} onClick={() => reset({})}>
-            {t("settings.resetAll")}
-          </Button>
-        </div>
-        <p className="settings-muted">{t("settings.intro")}</p>
-
-        {isLoading && <p className="settings-muted">{t("settings.loading")}</p>}
-        <ErrorBanner error={error} fallbackKey="settings.loadError" className="settings-error" />
-        <ErrorBanner error={resetState.error} fallbackKey="settings.resetError" className="settings-error" />
-
-        {data &&
-          KIND_ORDER.map((kind) => {
-            const entries = data.entries.filter((entry) => entry.kind === kind);
-            if (entries.length === 0) {
-              return null;
-            }
-            return (
-              <div className="settings-group" key={kind}>
-                <h3>{t(`settings.kind.${kind}`)}</h3>
-                {entries.map((entry) => (
-                  <PromptEntry version={entry} key={entry.version_id} />
-                ))}
-              </div>
-            );
-          })}
-      </section>
+      <Tabs
+        tabs={TAB_ORDER.map((id) => ({ id, label: t(`settings.tab.${id}`) }))}
+        activeId={tab}
+        onChange={(id) => setTab(id as SettingsTab)}
+      >
+        {tab === "models" ? <ModelSettings /> : <PromptTab kind={tab} />}
+      </Tabs>
     </div>
   );
 }

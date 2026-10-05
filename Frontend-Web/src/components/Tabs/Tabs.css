@@ -1,0 +1,30 @@
+.tabs-bar {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--surface-line);
+  margin-bottom: 26px;
+  overflow-x: auto;
+}
+
+.tabs-tab {
+  padding: 11px 18px;
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  color: var(--text-muted);
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.tabs-tab:hover {
+  color: var(--text);
+}
+
+.tabs-tab--active {
+  color: var(--gold-bright);
+  border-bottom-color: var(--gold);
+}

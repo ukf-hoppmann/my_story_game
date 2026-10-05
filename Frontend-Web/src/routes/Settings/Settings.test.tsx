@@ -65,6 +65,13 @@ function renderSettings() {
   );
 }
 
+/** Selects a tab, then waits for the item and expands it (items start collapsed). */
+async function openEntry(tab: string, key: string) {
+  await userEvent.click(screen.getByRole("tab", { name: tab }));
+  const article = await screen.findByRole("article", { name: key });
+  await userEvent.click(within(article).getAllByRole("button")[0]);
+}
+
 function entry(key: string) {
   return within(screen.getByRole("article", { name: key }));
 }
@@ -78,18 +85,44 @@ describe("Settings", () => {
     vi.restoreAllMocks();
   });
 
-  it("lists tasks, options and directives and marks edited ones", async () => {
+  it("opens on the models and offers one tab per prompt kind", async () => {
     vi.spyOn(client, "listAdminPrompts").mockResolvedValue(list);
 
     renderSettings();
 
     expect(await screen.findByRole("heading", { name: "Einstellungen" })).toBeInTheDocument();
-    expect(await screen.findByRole("heading", { name: "Aufgaben" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Optionen" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Direktiven" })).toBeInTheDocument();
-    expect(entry("story_generation").getByRole("textbox")).toHaveValue("Original-Text");
-    expect(entry("tone/balanced").getByText("Geändert")).toBeInTheDocument();
-    expect(entry("story_generation").queryByText("Geändert")).not.toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Modelle", selected: true })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Aufgaben" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Optionen" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Direktiven" })).toBeInTheDocument();
+    expect(screen.queryByRole("article", { name: "story_generation" })).not.toBeInTheDocument();
+  });
+
+  it("lists the entries of a kind collapsed and marks edited ones", async () => {
+    vi.spyOn(client, "listAdminPrompts").mockResolvedValue(list);
+    renderSettings();
+
+    await userEvent.click(await screen.findByRole("tab", { name: "Optionen" }));
+
+    const article = await screen.findByRole("article", { name: "tone/balanced" });
+    expect(within(article).getByText("Geändert")).toBeInTheDocument();
+    expect(within(article).queryByRole("textbox")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "tone" })).toBeInTheDocument();
+    expect(screen.queryByRole("article", { name: "story_generation" })).not.toBeInTheDocument();
+
+    await userEvent.click(within(article).getAllByRole("button")[0]);
+    expect(within(article).getByRole("textbox")).toHaveValue("Ausgewogen");
+  });
+
+  it("switches tabs with the arrow keys", async () => {
+    vi.spyOn(client, "listAdminPrompts").mockResolvedValue(list);
+    renderSettings();
+    const models = await screen.findByRole("tab", { name: "Modelle" });
+    models.focus();
+
+    await userEvent.keyboard("{ArrowRight}");
+
+    expect(screen.getByRole("tab", { name: "Aufgaben", selected: true })).toHaveFocus();
   });
 
   it("saves an edited text as a new version", async () => {
@@ -98,7 +131,8 @@ describe("Settings", () => {
       .spyOn(client, "savePromptText")
       .mockResolvedValue(version({ text: "Neuer Text", source: "ui", is_modified: true }));
     renderSettings();
-    const box = (await screen.findAllByRole("textbox"))[0];
+    await openEntry("Aufgaben", "story_generation");
+    const box = screen.getByRole("textbox");
     expect(entry("story_generation").getByRole("button", { name: "Speichern" })).toBeDisabled();
 
     await userEvent.clear(box);
@@ -116,10 +150,7 @@ describe("Settings", () => {
     vi.spyOn(client, "listAdminPrompts").mockResolvedValue(list);
     const reset = vi.spyOn(client, "resetPrompts").mockResolvedValue({ versions: [] });
     renderSettings();
-    await screen.findByRole("article", { name: "tone/balanced" });
-    expect(
-      entry("story_generation").getByRole("button", { name: "Auf Original zurücksetzen" }),
-    ).toBeDisabled();
+    await openEntry("Optionen", "tone/balanced");
 
     await userEvent.click(
       entry("tone/balanced").getByRole("button", { name: "Auf Original zurücksetzen" }),
@@ -128,14 +159,25 @@ describe("Settings", () => {
     expect(reset).toHaveBeenCalledWith({ kind: "option", key: "tone/balanced" });
   });
 
-  it("restores every prompt at once", async () => {
+  it("disables the reset of an unmodified entry", async () => {
+    vi.spyOn(client, "listAdminPrompts").mockResolvedValue(list);
+    renderSettings();
+    await openEntry("Aufgaben", "story_generation");
+
+    expect(
+      entry("story_generation").getByRole("button", { name: "Auf Original zurücksetzen" }),
+    ).toBeDisabled();
+  });
+
+  it("restores every prompt of the open kind at once", async () => {
     vi.spyOn(client, "listAdminPrompts").mockResolvedValue(list);
     const reset = vi.spyOn(client, "resetPrompts").mockResolvedValue({ versions: [] });
     renderSettings();
+    await userEvent.click(await screen.findByRole("tab", { name: "Optionen" }));
 
-    await userEvent.click(await screen.findByRole("button", { name: "Alle zurücksetzen" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Alle Optionen zurücksetzen" }));
 
-    expect(reset).toHaveBeenCalledWith({});
+    expect(reset).toHaveBeenCalledWith({ kind: "option" });
   });
 
   it("shows the history of an entry on demand", async () => {
@@ -160,7 +202,7 @@ describe("Settings", () => {
       ],
     });
     renderSettings();
-    await screen.findByRole("article", { name: "tone/balanced" });
+    await openEntry("Optionen", "tone/balanced");
 
     await userEvent.click(entry("tone/balanced").getByRole("button", { name: "Verlauf" }));
 

@@ -261,7 +261,14 @@
     "appliesTo": "Gilt für: {{tasks}}",
     "save": "Speichern",
     "reset": "Auf Original zurücksetzen",
-    "resetAll": "Alle zurücksetzen",
+    "resetKind": "Alle {{kind}} zurücksetzen",
+    "tab": {
+      "models": "Modelle",
+      "task": "Aufgaben",
+      "option": "Optionen",
+      "directive": "Direktiven"
+    },
+    "optionGroup": {},
     "history": "Verlauf",
     "hideHistory": "Verlauf ausblenden",
     "historyLoading": "Lade den Verlauf …",

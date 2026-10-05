@@ -11,6 +11,7 @@ import type {
   AdminModelSetting,
   AdminModelTask,
 } from "../../api/types";
+import { Accordion } from "../../components/Accordion/Accordion";
 import { Button } from "../../components/Button/Button";
 import { ErrorBanner } from "../../components/ErrorBanner/ErrorBanner";
 
@@ -106,13 +107,15 @@ function ModelCard({
   const label = t(`settings.task.${version.task}`);
 
   return (
-    <article className="settings-entry" aria-label={label}>
-      <div className="settings-entry-head">
-        <h4>{label}</h4>
-        {version.is_modified && (
+    <Accordion
+      title={label}
+      badges={
+        version.is_modified && (
           <span className="settings-badge settings-badge--modified">{t("settings.modified")}</span>
-        )}
-      </div>
+        )
+      }
+      summary={`${version.model_ref}${describeOptions(version) && ` (${describeOptions(version)})`}`}
+    >
       <div className="settings-fields">
         <label className="settings-field">
           <span>{t("settings.model")}</span>
@@ -175,7 +178,7 @@ function ModelCard({
         </Button>
       </div>
       {historyOpen && <ModelHistory task={version.task} />}
-    </article>
+    </Accordion>
   );
 }
 

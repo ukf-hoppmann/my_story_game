@@ -67,6 +67,12 @@ function card(name: string) {
   return within(screen.getByRole("article", { name }));
 }
 
+/** Waits for the item and expands it (items start collapsed). */
+async function openCard(name: string) {
+  const article = await screen.findByRole("article", { name });
+  await userEvent.click(within(article).getAllByRole("button")[0]);
+}
+
 describe("ModelSettings", () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -78,7 +84,8 @@ describe("ModelSettings", () => {
     renderModels();
 
     expect(await screen.findByRole("heading", { name: "Modelle" })).toBeInTheDocument();
-    await screen.findByRole("article", { name: "Story" });
+    await openCard("Story");
+    await screen.findByRole("article", { name: "Extraktion" });
     const story = card("Story");
     expect(story.getByRole("combobox", { name: "Modell" })).toHaveValue("model.story.default");
     expect(story.getByRole("spinbutton", { name: "Temperatur" })).toHaveValue(0.5);
@@ -93,7 +100,7 @@ describe("ModelSettings", () => {
     vi.spyOn(client, "listAdminModels").mockResolvedValue(overview);
     renderModels();
 
-    await screen.findByRole("article", { name: "Story" });
+    await openCard("Story");
 
     const options = card("Story").getAllByRole("option");
     expect(options.map((o) => o.textContent)).toEqual(["lmstudio · qwen", "groq · gpt-oss"]);
@@ -103,7 +110,7 @@ describe("ModelSettings", () => {
     vi.spyOn(client, "listAdminModels").mockResolvedValue(overview);
     const save = vi.spyOn(client, "saveModelSetting").mockResolvedValue(setting({}));
     renderModels();
-    await screen.findByRole("article", { name: "Story" });
+    await openCard("Story");
     expect(card("Story").getByRole("button", { name: "Speichern" })).toBeDisabled();
 
     await userEvent.selectOptions(
@@ -131,7 +138,7 @@ describe("ModelSettings", () => {
     vi.spyOn(client, "listAdminModels").mockResolvedValue(overview);
     const save = vi.spyOn(client, "saveModelSetting").mockResolvedValue(setting({}));
     renderModels();
-    await screen.findByRole("article", { name: "Story" });
+    await openCard("Story");
 
     await userEvent.clear(card("Story").getByRole("spinbutton", { name: "Temperatur" }));
     await userEvent.click(card("Story").getByRole("button", { name: "Speichern" }));
@@ -148,7 +155,8 @@ describe("ModelSettings", () => {
     vi.spyOn(client, "listAdminModels").mockResolvedValue(overview);
     const reset = vi.spyOn(client, "resetModelSettings").mockResolvedValue({ versions: [] });
     renderModels();
-    await screen.findByRole("article", { name: "Extraktion" });
+    await openCard("Story");
+    await openCard("Extraktion");
     expect(card("Story").getByRole("button", { name: "Auf Original zurücksetzen" })).toBeDisabled();
 
     await userEvent.click(
@@ -174,7 +182,7 @@ describe("ModelSettings", () => {
       ],
     });
     renderModels();
-    await screen.findByRole("article", { name: "Story" });
+    await openCard("Story");
 
     await userEvent.click(card("Story").getByRole("button", { name: "Verlauf" }));
 

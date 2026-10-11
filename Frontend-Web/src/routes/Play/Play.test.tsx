@@ -108,6 +108,7 @@ describe("Play", () => {
     // The scene-image controls ask the backend whether the feature is on;
     // every test here runs with it off unless it says otherwise.
     vi.spyOn(client, "fetchSceneImageCapabilities").mockResolvedValue(CAPABILITIES_DISABLED);
+    vi.spyOn(client, "fetchWorldTrackingStatus").mockResolvedValue({ enabled: true });
   });
 
   afterEach(() => {
@@ -138,6 +139,22 @@ describe("Play", () => {
     expect(screen.getByText("Du: Ich untersuche die Laterne.")).toBeInTheDocument();
     expect(screen.getByText("Unter der Laterne glitzert ein silberner Faden.")).toBeInTheDocument();
     expect(screen.getByText("Zug 1")).toBeInTheDocument();
+  });
+
+  it("tells the player when world tracking is switched off", async () => {
+    vi.spyOn(client, "fetchWorldTrackingStatus").mockResolvedValue({ enabled: false });
+    vi.spyOn(client, "loadRun").mockResolvedValue(buildDocument());
+    renderPlay();
+
+    expect(await screen.findByText(/Welt-Tracking ist deaktiviert/)).toBeInTheDocument();
+  });
+
+  it("shows no world-tracking notice while tracking is on", async () => {
+    vi.spyOn(client, "loadRun").mockResolvedValue(buildDocument());
+    renderPlay();
+
+    await screen.findByText("Der Regen hatte die Spuren fast fortgespült.");
+    expect(screen.queryByText(/Welt-Tracking ist deaktiviert/)).not.toBeInTheDocument();
   });
 
   it("shows a scene-art placeholder above the story feed for an active run", async () => {

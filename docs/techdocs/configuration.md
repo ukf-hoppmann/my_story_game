@@ -7,6 +7,12 @@ Backend-Neustart. Ausnahme: Prompts und Modellwahl je Task liegen nach dem
 ersten Start in der Datenbank und werden in `/settings` (Rolle `admin`)
 geändert, ohne Neustart. Die TOML-Werte dafür sind nur Vorgabe und Reset-Quelle.
 
+Nur in der Datenbank, ohne Datei-Gegenstück, liegt der Schalter
+**Welt-Tracking** (Tab „Spiel“ in `/settings`, Typ bool, Standard an).
+Ausgeschaltet läuft keine Weltextraktion, gedacht für schwache lokale Modelle;
+die Änderung gilt ab dem nächsten Start oder Zug. Lässt sich der Wert nicht
+lesen, bleibt Tracking an.
+
 ## Umgebungsvariablen des Backends
 
 Gesetzt in `compose.yaml`; Standardwerte gelten ohne Docker.

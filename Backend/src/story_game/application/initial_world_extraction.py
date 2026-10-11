@@ -158,7 +158,7 @@ class ExtractInitialWorldState:
                 world_state=built.data,
                 suggested_title=(
                     extracted.data.suggested_title.strip()
-                    or _default_title(self._now())
+                    or default_run_title(self._now())
                 ),
             )
         )
@@ -255,7 +255,7 @@ def _build_world(
         )
 
 
-def _default_title(now: datetime) -> str:
+def default_run_title(now: datetime) -> str:
     return f"Neue Geschichte – {now:%d.%m.%Y %H:%M}"
 
 

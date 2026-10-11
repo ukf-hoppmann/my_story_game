@@ -448,3 +448,15 @@ export interface SaveModelSettingRequest {
 export interface ResetModelSettingsRequest {
   task?: AdminModelTask;
 }
+
+/** Global admin switch: whether world extraction runs (admin view). */
+export interface WorldTrackingSetting {
+  enabled: boolean;
+  updated_at: string | null;
+  updated_by: string | null;
+}
+
+/** What every player may see of the switch. */
+export interface WorldTrackingStatus {
+  enabled: boolean;
+}

@@ -15,6 +15,7 @@ from story_game.application.initialization_models import (
 from story_game.application.initial_world_extraction import WorldExtractionResult
 from story_game.application.initialize_story import InitializeStory, InitializeStoryRequest
 from story_game.application.story_initialization import GeneratedStoryOpening
+from tests.application.world_tracking_double import FixedWorldTrackingPolicy
 from story_game.domain import (
     GameConfiguration,
     PromptProfile,
@@ -55,6 +56,15 @@ def configuration() -> GameConfiguration:
     )
 
 
+def initializer(story_generation, world_extraction, seed_world=None, tracking=True):  # type: ignore[no-untyped-def]
+    return InitializeStory(
+        story_generation,
+        world_extraction,
+        seed_world=seed_world or RecordingOperation(Success(WorldState())),
+        world_tracking=FixedWorldTrackingPolicy(tracking),
+    )
+
+
 def test_orchestrates_story_then_world_and_returns_both_transient_states() -> None:
     story = StoryState(
         initialization=StoryInitialization(
@@ -72,7 +82,7 @@ def test_orchestrates_story_then_world_and_returns_both_transient_states() -> No
     )
     seed = ControllableCharacterSeed("Maren")
 
-    result = InitializeStory(story_generation, world_extraction).apply(
+    result = initializer(story_generation, world_extraction).apply(
         InitializeStoryRequest(
             configuration(), "Maren geht in den Dungeon.", (seed,)
         )
@@ -97,7 +107,7 @@ def test_does_not_extract_when_story_generation_fails() -> None:
     story_generation = RecordingOperation(Failure(error))
     world_extraction = RecordingOperation(Success(WorldState()))
 
-    result = InitializeStory(story_generation, world_extraction).apply(
+    result = initializer(story_generation, world_extraction).apply(
         InitializeStoryRequest(
             configuration(), "Maren geht los.", (ControllableCharacterSeed("Maren"),)
         )
@@ -121,7 +131,7 @@ def test_returns_extraction_failure_without_a_partial_initialized_result() -> No
         "Extraction lieferte kein JSON.",
     )
 
-    result = InitializeStory(
+    result = initializer(
         RecordingOperation(Success(GeneratedStoryOpening(story))),
         RecordingOperation(Failure(error)),
     ).apply(
@@ -131,3 +141,30 @@ def test_returns_extraction_failure_without_a_partial_initialized_result() -> No
     )
 
     assert result == Failure(error)
+
+
+def test_without_world_tracking_the_seed_world_replaces_extraction() -> None:
+    story = StoryState(
+        initialization=StoryInitialization(
+            "Maren geht los.",
+            "Maren geht los.",
+            datetime(2026, 8, 10, tzinfo=UTC),
+        )
+    )
+    world = WorldState()
+    world_extraction = RecordingOperation(Success(WorldExtractionResult(world, "Egal")))
+    seed_world = RecordingOperation(
+        Success(WorldExtractionResult(world, "Neue Geschichte"))
+    )
+    seed = ControllableCharacterSeed("Maren")
+
+    result = initializer(
+        RecordingOperation(Success(GeneratedStoryOpening(story, ("Los",)))),
+        world_extraction,
+        seed_world=seed_world,
+        tracking=False,
+    ).apply(InitializeStoryRequest(configuration(), "Maren geht los.", (seed,)))
+
+    assert result == Success(InitializedStory(story, world, "Neue Geschichte", ("Los",)))
+    assert world_extraction.requests == []
+    assert seed_world.requests[0].controllable_characters == (seed,)

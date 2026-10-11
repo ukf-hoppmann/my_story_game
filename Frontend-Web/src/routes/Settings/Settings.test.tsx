@@ -142,6 +142,7 @@ describe("Settings", () => {
       "Aufgaben",
       "Optionen",
       "Direktiven",
+      "Spiel",
       "Genre",
       "Ton & Stil",
       "Spielgefühl",

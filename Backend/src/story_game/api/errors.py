@@ -28,6 +28,7 @@ from story_game.application.prompt_management import (
     PromptManagementErrorKind,
 )
 from story_game.application.scene_image import SceneImageError, SceneImageErrorKind
+from story_game.application.world_tracking import WorldTrackingError, WorldTrackingErrorKind
 from story_game.application.start_playthrough_errors import (
     PlaythroughError,
     PlaythroughErrorKind,
@@ -108,6 +109,10 @@ _MODEL_SETTINGS_STATUS: dict[ModelSettingsErrorKind, tuple[int, str]] = {
     ModelSettingsErrorKind.STORE_UNAVAILABLE: (503, "persistence_unavailable"),
 }
 
+_WORLD_TRACKING_STATUS: dict[WorldTrackingErrorKind, tuple[int, str]] = {
+    WorldTrackingErrorKind.STORE_UNAVAILABLE: (503, "persistence_unavailable"),
+}
+
 
 def register_error_handlers(app: FastAPI) -> None:
     app.add_exception_handler(OperationFailed, _operation_failed)
@@ -159,6 +164,9 @@ async def _operation_failed(request: Request, exc: Exception) -> JSONResponse:
         return _error_response(status_code, code, error.message)
     if isinstance(error, ModelSettingsError):
         status_code, code = _MODEL_SETTINGS_STATUS[error.kind]
+        return _error_response(status_code, code, error.message)
+    if isinstance(error, WorldTrackingError):
+        status_code, code = _WORLD_TRACKING_STATUS[error.kind]
         return _error_response(status_code, code, error.message)
     if isinstance(error, PromptManagementError):
         status_code, code = _PROMPT_MANAGEMENT_STATUS[error.kind]

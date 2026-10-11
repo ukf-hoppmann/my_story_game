@@ -24,6 +24,9 @@ import {
   saveModelSetting,
   savePromptText,
   startPlaythrough,
+  fetchWorldTracking,
+  fetchWorldTrackingStatus,
+  saveWorldTracking,
 } from "./client";
 import { toQueryError, type QueryError } from "./queryError";
 import type {
@@ -54,6 +57,8 @@ import type {
   SceneImage,
   SceneImageCapabilities,
   TurnResult,
+  WorldTrackingSetting,
+  WorldTrackingStatus,
 } from "./types";
 
 /**
@@ -66,7 +71,7 @@ import type {
 export const apiSlice = createApi({
   reducerPath: "api",
   baseQuery: fakeBaseQuery<QueryError>(),
-  tagTypes: ["Run", "SceneImage", "AdminPrompt", "AdminModel"],
+  tagTypes: ["Run", "SceneImage", "AdminPrompt", "AdminModel", "WorldTracking"],
   endpoints: (builder) => ({
     listAdminPrompts: builder.query<AdminPromptList, void>({
       queryFn: async () => {
@@ -87,6 +92,36 @@ export const apiSlice = createApi({
         }
       },
       providesTags: ["AdminModel"],
+    }),
+    worldTracking: builder.query<WorldTrackingSetting, void>({
+      queryFn: async () => {
+        try {
+          return { data: await fetchWorldTracking() };
+        } catch (error) {
+          return { error: toQueryError(error, "apiSlice.worldTracking") };
+        }
+      },
+      providesTags: ["WorldTracking"],
+    }),
+    saveWorldTracking: builder.mutation<WorldTrackingSetting, boolean>({
+      queryFn: async (enabled) => {
+        try {
+          return { data: await saveWorldTracking(enabled) };
+        } catch (error) {
+          return { error: toQueryError(error, "apiSlice.saveWorldTracking") };
+        }
+      },
+      invalidatesTags: ["WorldTracking"],
+    }),
+    worldTrackingStatus: builder.query<WorldTrackingStatus, void>({
+      queryFn: async () => {
+        try {
+          return { data: await fetchWorldTrackingStatus() };
+        } catch (error) {
+          return { error: toQueryError(error, "apiSlice.worldTrackingStatus") };
+        }
+      },
+      providesTags: ["WorldTracking"],
     }),
     modelHistory: builder.query<AdminModelSettingList, AdminModelTask>({
       queryFn: async (task) => {
@@ -334,6 +369,9 @@ export const {
   useModelHistoryQuery,
   useSaveModelSettingMutation,
   useResetModelSettingsMutation,
+  useWorldTrackingQuery,
+  useSaveWorldTrackingMutation,
+  useWorldTrackingStatusQuery,
   useListAdminPromptsQuery,
   usePromptHistoryQuery,
   useSavePromptTextMutation,

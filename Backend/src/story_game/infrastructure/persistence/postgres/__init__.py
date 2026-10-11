@@ -6,6 +6,7 @@ from .model_settings_store import PostgresModelSettingsStore
 from .prompt_store import DbPromptPackageCatalog, PostgresPromptOptionUsage, PostgresPromptStore
 from .scene_image_store import PostgresSceneImageStore
 from .store import PostgresGameStore
+from .world_tracking_store import PostgresWorldTrackingStore
 
 __all__ = [
     "DbPromptPackageCatalog",
@@ -16,4 +17,5 @@ __all__ = [
     "PostgresPromptStore",
     "PostgresSceneImageStore",
     "PostgresSchemaMigrator",
+    "PostgresWorldTrackingStore",
 ]

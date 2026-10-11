@@ -70,6 +70,7 @@ from story_game.application.llm import (
 )
 from story_game.application.diagnostics import DiagnosticsLog
 from story_game.application.summarize_story import SummarizeStory
+from story_game.application.seed_world_state import BuildSeedWorldState
 from story_game.application.story_initialization import (
     GenerateInitialStoryState,
     GenerateInitialStoryStateRequest,
@@ -120,6 +121,7 @@ from story_game.infrastructure.llm.openai_compatible.models import (
 )
 
 from tests.application import turn_context_world as w
+from tests.application.world_tracking_double import FixedWorldTrackingPolicy
 
 from .live_settings import live_base_url
 
@@ -443,6 +445,8 @@ class HumanInitStorySupport:
                     diagnostics=diagnostics,
                 ),
                 diagnostics,
+                seed_world=BuildSeedWorldState(),
+                world_tracking=FixedWorldTrackingPolicy(True),
             )
             result = operation.apply(
                 InitializeStoryRequest(
@@ -658,6 +662,7 @@ class HumanStoryTurnSupport:
                     diagnostics,
                 ),
                 CommitCompletedTurn(store, store, diagnostics),
+                world_tracking=FixedWorldTrackingPolicy(True),
                 diagnostics=diagnostics,
             )
             result = operation.apply(
@@ -768,6 +773,8 @@ class HumanFullPlaythroughSupport:
                         diagnostics=diagnostics,
                     ),
                     diagnostics,
+                    seed_world=BuildSeedWorldState(),
+                    world_tracking=FixedWorldTrackingPolicy(True),
                 ),
                 proposal_store,
                 diagnostics=diagnostics,
@@ -877,6 +884,7 @@ class HumanFullPlaythroughSupport:
                     diagnostics,
                 ),
                 CommitCompletedTurn(store, store, diagnostics),
+                world_tracking=FixedWorldTrackingPolicy(True),
                 diagnostics=diagnostics,
             )
             played = turn_operation.apply(

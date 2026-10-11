@@ -155,7 +155,8 @@
     "viewMode": {
       "toChat": "Chat-Ansicht",
       "toText": "Fließtext"
-    }
+    },
+    "worldTrackingOff": "Welt-Tracking ist deaktiviert: Ziele, Wissen und Figuren werden nicht aus der Geschichte aktualisiert."
   },
   "wizard": {
     "eyebrow": "Neue Geschichte",
@@ -266,7 +267,8 @@
       "models": "Modelle",
       "task": "Aufgaben",
       "option": "Optionen",
-      "directive": "Direktiven"
+      "directive": "Direktiven",
+      "game": "Spiel"
     },
     "newOption": {
       "add": "Neue Option",
@@ -343,6 +345,14 @@
       "extraction": "Extraktion",
       "summary": "Zusammenfassung",
       "scene_image": "Szenenbild-Prompt"
+    },
+    "gameHeading": "Spiel",
+    "worldTracking": {
+      "label": "Welt-Tracking",
+      "hint": "Erfasst nach jedem Zug Figuren, Orte und Beziehungen im WorldState. Ausgeschaltet läuft keine Weltextraktion mehr – gedacht für schwache lokale Modelle. Die Änderung gilt ab dem nächsten Zug, auch in laufenden Spielen.",
+      "changed": "Zuletzt geändert am {{at}} von {{by}}",
+      "loading": "Lade die Spiel-Einstellungen …",
+      "loadError": "Die Spiel-Einstellungen konnten nicht geladen werden."
     }
   }
 }

@@ -18,6 +18,7 @@ import { ErrorBanner } from "../../components/ErrorBanner/ErrorBanner";
 import { Tabs } from "../../components/Tabs/Tabs";
 import { CloseIcon, PlusIcon } from "../../icons";
 import { formatOptionLabel } from "../../utils/formatOptionLabel";
+import { GameSettings } from "./GameSettings";
 import { ModelSettings } from "./ModelSettings";
 import { NewOptionForm } from "./NewOptionForm";
 import "./Settings.css";
@@ -437,14 +438,14 @@ function PromptTab({ kind }: { kind: AdminPromptKind }) {
   );
 }
 
-type SettingsTab = "models" | AdminPromptKind;
+type SettingsTab = "game" | "models" | AdminPromptKind;
 
-const TAB_ORDER: SettingsTab[] = ["models", "task", "option", "directive"];
+const TAB_ORDER: SettingsTab[] = ["models", "task", "option", "directive", "game"];
 
 /**
  * Admin-only settings (reached through `RequireAdmin`), split into tabs:
- * the model per task, then the prompts by kind. The prompts start as the
- * shipped TOML defaults; every edit is stored as a new version, so the
+ * the model per task, the prompts by kind, then global game switches. The
+ * prompts start as the shipped TOML defaults; every edit is stored as a new version, so the
  * history of each entry stays traceable and a reset just appends the
  * original again. Entries are collapsed until opened.
  */
@@ -463,7 +464,13 @@ export function Settings() {
         activeId={tab}
         onChange={(id) => setTab(id as SettingsTab)}
       >
-        {tab === "models" ? <ModelSettings /> : <PromptTab kind={tab} />}
+        {tab === "game" ? (
+          <GameSettings />
+        ) : tab === "models" ? (
+          <ModelSettings />
+        ) : (
+          <PromptTab kind={tab} />
+        )}
       </Tabs>
     </div>
   );

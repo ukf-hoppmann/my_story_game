@@ -49,6 +49,7 @@ from story_game.application.llm import (
     WorldInitializationCandidate,
 )
 from story_game.application.ports import GameStateConflictError, GameStateNotFoundError
+from story_game.application.seed_world_state import BuildSeedWorldState
 from story_game.application.story_initialization import GenerateInitialStoryState
 from story_game.application.story_turn_context import build_story_turn_context_selection
 from story_game.domain import (
@@ -65,6 +66,7 @@ from story_game.infrastructure.llm import FilePromptPackageCatalog
 from story_game.infrastructure.persistence.in_memory_proposal_store import (
     InMemoryProposalStore,
 )
+from tests.application.world_tracking_double import FixedWorldTrackingPolicy
 from tests.ids import uuid_text
 
 from tests.api.llm_doubles import (
@@ -175,6 +177,8 @@ def build_dependencies(
                 generation_config,
                 extraction_port or FakeInitialWorldExtractionPort(),
             ),
+            seed_world=BuildSeedWorldState(),
+            world_tracking=FixedWorldTrackingPolicy(True),
         ),
         proposal_store,
     )
@@ -199,6 +203,7 @@ def build_dependencies(
             FakeStorySummaryPort(),
         ),
         CommitCompletedTurn(store, store),
+        world_tracking=FixedWorldTrackingPolicy(True),
     )
     start_playthrough = StartPlaythrough(LoadGame(store, store), CreateGameRun(store, validator))
     return ApiDependencies(

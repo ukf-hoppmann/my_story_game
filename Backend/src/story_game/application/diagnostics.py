@@ -85,6 +85,11 @@ class RevisionConflict:
 
 
 @dataclass(frozen=True, slots=True)
+class WorldTrackingSettingUnavailable:
+    """The world-tracking switch could not be read; the game kept tracking."""
+
+
+@dataclass(frozen=True, slots=True)
 class FrontendToolingError:
     """A frontend-side failure that never reached the backend as a typed API
     error (TASK-030): a network failure, a JSON-parse failure, or a
@@ -111,6 +116,7 @@ DiagnosticEvent = (
     | ProposalRejected
     | ProposalItemDropped
     | RevisionConflict
+    | WorldTrackingSettingUnavailable
     | FrontendToolingError
 )
 
@@ -151,4 +157,5 @@ __all__ = [
     "ProposalRejected",
     "RevisionConflict",
     "SummaryGenerationFailed",
+    "WorldTrackingSettingUnavailable",
 ]

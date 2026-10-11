@@ -30,6 +30,8 @@ import type {
   SceneImageList,
   TurnResult,
   UpdateConfigurationRequest,
+  WorldTrackingSetting,
+  WorldTrackingStatus,
 } from "./types";
 
 const API_BASE_URL: string =
@@ -296,6 +298,24 @@ export async function resetPrompts(
  *  selectable for each. */
 export async function listAdminModels(): Promise<AdminModelOverview> {
   return request("/api/v1/admin/models");
+}
+
+/** Whether world extraction runs, with who last changed it (admin only). */
+export async function fetchWorldTracking(): Promise<WorldTrackingSetting> {
+  return request("/api/v1/admin/settings/world-tracking");
+}
+
+/** Switches world extraction on or off for all games, effective from the next turn. */
+export async function saveWorldTracking(enabled: boolean): Promise<WorldTrackingSetting> {
+  return request("/api/v1/admin/settings/world-tracking", {
+    method: "PUT",
+    body: JSON.stringify({ enabled }),
+  });
+}
+
+/** Whether world tracking is on; readable by every signed-in player. */
+export async function fetchWorldTrackingStatus(): Promise<WorldTrackingStatus> {
+  return request("/api/v1/settings/world-tracking");
 }
 
 /** Every version of one task's model choice, newest first. */

@@ -12,6 +12,7 @@ from story_game.application.diagnostics import (
     ProposalRejected,
     RevisionConflict,
     SummaryGenerationFailed,
+    WorldTrackingSettingUnavailable,
 )
 
 _logger = structlog.get_logger("story_game.diagnostics")
@@ -80,6 +81,8 @@ def _render(event: DiagnosticEvent) -> tuple[str, str, dict[str, object]]:
             "warning",
             {"detail": event.detail, "run_id": event.run_id},
         )
+    if isinstance(event, WorldTrackingSettingUnavailable):
+        return "world_tracking_setting_unavailable", "warning", {}
     if isinstance(event, FrontendToolingError):
         return (
             "frontend_tooling_error",

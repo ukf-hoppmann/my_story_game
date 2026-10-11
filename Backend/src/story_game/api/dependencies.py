@@ -19,6 +19,7 @@ from story_game.application.llm import PromptPackageCatalog
 from story_game.application.model_settings import ModelSettingsOperations
 from story_game.application.prompt_management import PromptManagementOperations
 from story_game.application.scene_image import SceneImageOperations
+from story_game.application.world_tracking import WorldTrackingOperations
 
 from .auth import KeycloakTokenVerifier, TokenVerificationError, VerifiedCaller
 
@@ -44,6 +45,8 @@ class ApiDependencies:
     """Set by the composition root; ``None`` only in tests that never reach the admin routes."""
     prompt_management: PromptManagementOperations | None = None
     """Set by the composition root; ``None`` only in tests that never reach the admin routes."""
+    world_tracking: WorldTrackingOperations | None = None
+    """Set by the composition root; ``None`` in tests that never read the switch."""
 
 
 def get_api_dependencies(request: Request) -> ApiDependencies:

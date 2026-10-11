@@ -209,6 +209,33 @@ contract remains binding together with this scope.
   as the existing DRAFT-at-revision-one contract already requires. The
   proposal MUST be discarded once successfully confirmed.
 
+## 6c. Disabled world tracking (provisional)
+
+This exception exists for weak local models and MUST be removed once
+Extraction runs reliably with them. It applies only while world tracking is
+disabled; with world tracking enabled (the default) every other rule of this
+scope remains binding unchanged.
+
+- A single, global setting MAY disable world tracking. Only an admin MAY
+  change it. It MUST be read anew for every Story initialization and every
+  turn, so a change takes effect with the next one, also in running games.
+- The decision whether Extraction runs MUST be an explicit policy at workflow
+  level (root rule 4), not a choice of the composition root.
+- While disabled, Story initialization MUST NOT invoke initial Extraction.
+  Instead the Application MUST build a minimal WorldState solely from the
+  caller-provided controllable-character seeds: one entity per seed with the
+  neutral actor role, and no links, facts, knowledge, rules, goals, or scene
+  locations. No model output enters this WorldState. In this case it satisfies
+  the "after successful initial Extraction" conditions of §5a and §6a, and
+  §6b confirmation selects and role-assigns among these characters.
+- While disabled, a turn MUST NOT invoke turn Extraction or change approval.
+  It commits an empty change set through the regular revision-checked commit
+  path (root rule 5). Story summaries continue unchanged.
+- Domain invariants are never relaxed: the minimal WorldState and every
+  committed turn still pass full Domain validation.
+- Re-enabling world tracking MUST NOT reconstruct missed changes. Extraction
+  resumes against the existing, possibly incomplete WorldState.
+
 ## 7. Extensibility without a universal model service
 
 - Shared generation infrastructure MUST NOT assume that every success value is
@@ -245,5 +272,8 @@ contract remains binding together with this scope.
   unknown/expired/not-owned proposal without distinguishing the three, and
   that only a successful confirmation persists a GameRun and discards the
   proposal.
+- Disabled-world-tracking tests MUST cover that neither initial nor turn
+  Extraction is invoked, the seed-only minimal WorldState for player and
+  director control, and that a turn still commits a new revision.
 - Architecture tests MUST enforce inward dependency direction for model ports,
   adapters, provider clients, and composition.

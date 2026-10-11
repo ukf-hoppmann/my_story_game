@@ -264,3 +264,11 @@
   font-weight: 700;
   color: var(--text-muted);
 }
+
+.settings-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+}

@@ -13,6 +13,7 @@ from story_game.application import (
     InitializeStoryRequest,
     Success,
 )
+from story_game.application.seed_world_state import BuildSeedWorldState
 from story_game.application.story_initialization import (
     GenerateInitialStoryState,
 )
@@ -39,6 +40,8 @@ from story_game.infrastructure.llm.openai_compatible.models import (
     ChatRequest as LmStudioChatRequest,
     ChatResponse as LmStudioChatResponse,
 )
+
+from tests.application.world_tracking_double import FixedWorldTrackingPolicy
 
 from .live_settings import live_base_url
 
@@ -103,6 +106,8 @@ def test_live_initializes_and_prints_story_and_world_state(
                 resolver,
                 LmStudioInitialWorldExtractionAdapter(printing_client),
             ),
+            seed_world=BuildSeedWorldState(),
+            world_tracking=FixedWorldTrackingPolicy(True),
         )
         result = operation.apply(
             InitializeStoryRequest(

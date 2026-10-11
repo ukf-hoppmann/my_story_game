@@ -51,6 +51,7 @@ from story_game.domain import (
 )
 from story_game.infrastructure.llm import FilePromptPackageCatalog
 from tests.application import turn_context_world as w
+from tests.application.world_tracking_double import FixedWorldTrackingPolicy
 from tests.ids import sid
 
 
@@ -150,6 +151,7 @@ def workflow(
     store=None,
     run=None,
     summary_interval=1,
+    world_tracking=None,
 ) -> tuple[PlayStoryTurn, FakeStore]:
     state = w.game_state((w.TAVERN,), "Maren sitzt am Feuer.")
     resolved_store = store or FakeStore(state, run or run_with())
@@ -176,6 +178,7 @@ def workflow(
         ),
         CommitCompletedTurn(resolved_store, resolved_store),
         summary_interval=summary_interval,
+        world_tracking=world_tracking or FixedWorldTrackingPolicy(True),
         new_id=lambda: sid(next(ids)),
         now=lambda: datetime(2026, 8, 17, 12, tzinfo=UTC),
     )
@@ -238,6 +241,37 @@ def test_an_approved_delta_reaches_the_next_revision() -> None:
     labels = {entity.label for entity in result.data.state.world.entities}
     assert "Schwarzwald" in labels
     assert len(result.data.state.world.scene_location_ids) == 1
+
+
+def test_without_world_tracking_the_turn_skips_extraction_and_still_commits() -> None:
+    extraction_port = FakeExtractionPort(
+        Failure(LLMError(LLMErrorKind.INVALID_RESPONSE, "Kein JSON."))
+    )
+    policy = FixedWorldTrackingPolicy(False)
+    operation, store = workflow(extraction_port=extraction_port, world_tracking=policy)
+    world_before = store.state.world
+
+    result = operation.apply(request())
+
+    assert isinstance(result, Success), result
+    assert extraction_port.call is None
+    assert policy.calls == 1
+    assert result.data.state.revision == StateRevision(2)
+    assert result.data.state.world == world_before
+    assert result.data.proposed_changes is None
+    assert store.committed.turn.narration == NARRATION
+
+
+def test_without_world_tracking_summaries_continue() -> None:
+    summary_port = FakeSummaryPort()
+    operation, store = workflow(
+        summary_port=summary_port, world_tracking=FixedWorldTrackingPolicy(False)
+    )
+
+    result = operation.apply(request())
+
+    assert isinstance(result, Success), result
+    assert summary_port.call is not None
 
 
 def test_a_story_failure_leaves_the_state_untouched() -> None:

@@ -15,10 +15,15 @@ from story_game.application.initialization_models import (
     ControllableCharacterSeed,
     InitializedStory,
 )
+from story_game.application.seed_world_state import (
+    BuildSeedWorldState,
+    BuildSeedWorldStateRequest,
+)
 from story_game.application.story_initialization import (
     GenerateInitialStoryState,
     GenerateInitialStoryStateRequest,
 )
+from story_game.application.world_tracking import WorldTrackingPolicy
 from story_game.domain import GameConfiguration
 
 
@@ -38,17 +43,26 @@ class InitializeStoryRequest:
 
 
 class InitializeStory:
-    """Run opening generation and initial extraction as two ordered processes."""
+    """Run opening generation and initial extraction as two ordered processes.
+
+    While world tracking is disabled (llm-integration §6c), the seed-only
+    world replaces initial extraction.
+    """
 
     def __init__(
         self,
         story_generation: GenerateInitialStoryState,
         world_extraction: ExtractInitialWorldState,
         diagnostics: DiagnosticsLog = NullDiagnosticsLog(),
+        *,
+        seed_world: BuildSeedWorldState,
+        world_tracking: WorldTrackingPolicy,
     ) -> None:
         self._story_generation = story_generation
         self._world_extraction = world_extraction
         self._diagnostics = diagnostics
+        self._seed_world = seed_world
+        self._world_tracking = world_tracking
 
     def apply(
         self, request: InitializeStoryRequest
@@ -63,14 +77,22 @@ class InitializeStory:
         )
         if isinstance(generated, Failure):
             return generated
-        self._diagnostics.trace("initialize_story.world_extraction.start")
-        extracted = self._world_extraction.apply(
-            ExtractInitialWorldStateRequest(
-                request.configuration,
-                generated.data.story_state,
-                request.controllable_characters,
+        if self._world_tracking.extraction_enabled():
+            self._diagnostics.trace("initialize_story.world_extraction.start")
+            extracted = self._world_extraction.apply(
+                ExtractInitialWorldStateRequest(
+                    request.configuration,
+                    generated.data.story_state,
+                    request.controllable_characters,
+                )
             )
-        )
+        else:
+            self._diagnostics.trace("initialize_story.seed_world.start")
+            extracted = self._seed_world.apply(
+                BuildSeedWorldStateRequest(
+                    request.configuration, request.controllable_characters
+                )
+            )
         if isinstance(extracted, Failure):
             return extracted
         self._diagnostics.trace("initialize_story.done")

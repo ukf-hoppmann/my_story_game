@@ -1,7 +1,12 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useLoadRunQuery, usePlayTurnMutation, useStartPlaythroughMutation } from "../../api/apiSlice";
+import {
+  useLoadRunQuery,
+  usePlayTurnMutation,
+  useStartPlaythroughMutation,
+  useWorldTrackingStatusQuery,
+} from "../../api/apiSlice";
 import { toQueryError } from "../../api/queryError";
 import { Paragraphs } from "../../components/Paragraphs";
 import { Button } from "../../components/Button/Button";
@@ -69,6 +74,7 @@ export function Play() {
   const [activeOption, setActiveOption] = useState<string | null>(null);
 
   const { data: doc, isLoading, error, refetch } = useLoadRunQuery(runId, { skip: runId === "" });
+  const { data: worldTracking } = useWorldTrackingStatusQuery();
   const [playTurn, playTurnState] = usePlayTurnMutation();
   const [startPlaythrough, startState] = useStartPlaythroughMutation();
 
@@ -354,6 +360,11 @@ export function Play() {
       <aside className="play-sidebar">
         {doc ? (
           <>
+            {worldTracking?.enabled === false && (
+              <p className="play-sidebar-note" role="note">
+                {t("play.worldTrackingOff")}
+              </p>
+            )}
             <GoalsPanel goals={doc.game_state.world.goals} />
             <FactsPanel facts={doc.game_state.world.facts} />
             <CharactersPanel entities={doc.game_state.world.entities} />

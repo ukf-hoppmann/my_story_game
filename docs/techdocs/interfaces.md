@@ -27,6 +27,8 @@ Ausführliche Anfrage- und Antwortformen, Fehlercodes und Beispiele stehen in
 | Szenenbilder | `GET /api/v1/scene-images/capabilities`, `POST` und `GET /api/v1/runs/{run_id}/scene-images`, `GET …/{image_id}`, `GET …/{image_id}/content` | angemeldet, Mitglied des Laufs; bei abgeschaltetem Feature 409 `scene_image_disabled` |
 | Prompts verwalten | `GET/PUT /api/v1/admin/prompts`, `GET …/history`, `POST …/reset`, `POST/DELETE …/options` | Rolle `admin` |
 | Modellwahl verwalten | `GET/PUT /api/v1/admin/models`, `GET …/history`, `POST …/reset` | Rolle `admin` |
+| Welt-Tracking schalten | `GET/PUT /api/v1/admin/settings/world-tracking` (`{"enabled": bool}`, Antwort mit `updated_at`, `updated_by`) | Rolle `admin` |
+| Welt-Tracking abfragen | `GET /api/v1/settings/world-tracking` (`{"enabled": bool}`) | angemeldet |
 | Diagnose | `POST /api/v1/diagnostics/frontend-errors` | angemeldet |
 
 Besonderheiten:
@@ -41,6 +43,11 @@ Besonderheiten:
   aktiv → Papierkorb (archiviert) → endgültig gelöscht; ins Archiv geht nur,
   was keine Spielkonfiguration wählt, und nur dort lässt sich endgültig
   löschen. Mitgelieferte Optionen lassen sich nur zurücksetzen.
+- Welt-Tracking ist global und standardmäßig an. Ausgeschaltet läuft beim
+  Start und in jedem Zug keine Weltextraktion: Der Vorschlag enthält dann nur
+  die im Wizard eingegebenen Figuren, und ein Zug speichert eine leere
+  Änderungsmenge. Die Einstellung gilt ab dem nächsten Start oder Zug, auch in
+  laufenden Spielen.
 
 ## Web-Oberfläche
 
@@ -52,8 +59,8 @@ Besonderheiten:
 | `/` | Landing-Page | öffentlich |
 | `/library` | Eigene Geschichten | angemeldet |
 | `/new` | Wizard für eine neue Geschichte | angemeldet |
-| `/stories/:runId` | Spielansicht: Fließtext oder Chat umschaltbar, Szenenbilder pro Zug und Version | angemeldet |
-| `/settings` | Tabs Modelle, Aufgaben, Optionen (Genre, Ton & Stil, Spielgefühl, Sonstiges), Direktiven: Prompts und Modelle bearbeiten, zurücksetzen, Verlauf; Optionen anlegen, entfernen (Papierkorb, wiederherstellen, endgültig löschen) | Rolle `admin` |
+| `/stories/:runId` | Spielansicht: Fließtext oder Chat umschaltbar, Szenenbilder pro Zug und Version; Hinweis in der Seitenleiste, wenn Welt-Tracking aus ist | angemeldet |
+| `/settings` | Tabs Modelle, Aufgaben, Optionen (Genre, Ton & Stil, Spielgefühl, Sonstiges), Direktiven, Spiel: Prompts und Modelle bearbeiten, zurücksetzen, Verlauf; Optionen anlegen, entfernen (Papierkorb, wiederherstellen, endgültig löschen); Welt-Tracking ein- und ausschalten | Rolle `admin` |
 
 Der Kopfbereich zeigt „Anmelden“ oder, angemeldet, ein Menü mit
 Benutzername, Geschichten, Neue Geschichte, für Admins Einstellungen, und

@@ -35,7 +35,9 @@ from story_game.application.story_turn_context import (
 from story_game.application.story_turn_context_errors import ContextSelectionError
 from story_game.application.story_turn_errors import StoryTurnError, StoryTurnErrorKind
 from story_game.application.summarize_story import SummarizeStory, SummarizeStoryRequest
+from story_game.application.world_tracking import WorldTrackingPolicy
 from story_game.domain import (
+    ApprovedChangeSet,
     GameRun,
     GameRunStatus,
     GameState,
@@ -116,6 +118,7 @@ class PlayStoryTurn:
         commit_turn: CommitCompletedTurn,
         *,
         summary_interval: int = 4,
+        world_tracking: WorldTrackingPolicy,
         new_id: Callable[[], StableId] = StableId.new,
         now: Callable[[], datetime] = lambda: datetime.now(UTC),
         diagnostics: DiagnosticsLog = NullDiagnosticsLog(),
@@ -130,6 +133,7 @@ class PlayStoryTurn:
         self._summarize_story = summarize_story
         self._commit_turn = commit_turn
         self._summary_interval = summary_interval
+        self._world_tracking = world_tracking
         self._new_id = new_id
         self._now = now
         self._diagnostics = diagnostics
@@ -178,19 +182,26 @@ class PlayStoryTurn:
         if isinstance(narrated, Failure):
             return narrated
 
-        extracted = self._extract_changes.apply(
-            ExtractStoryTurnChangesRequest(
-                context.data, state.configuration, narrated.data.text
+        if self._world_tracking.extraction_enabled():
+            extracted = self._extract_changes.apply(
+                ExtractStoryTurnChangesRequest(
+                    context.data, state.configuration, narrated.data.text
+                )
             )
-        )
-        if isinstance(extracted, Failure):
-            return extracted
+            if isinstance(extracted, Failure):
+                return extracted
 
-        approved = self._approve_changes.apply(
-            ApproveStoryTurnChangesRequest(state, extracted.data)
-        )
-        if isinstance(approved, Failure):
-            return approved
+            approved = self._approve_changes.apply(
+                ApproveStoryTurnChangesRequest(state, extracted.data)
+            )
+            if isinstance(approved, Failure):
+                return approved
+            changes, proposed = approved.data.approved, approved.data.proposed
+        else:
+            # World tracking is off (llm-integration §6c): no Extraction, and
+            # the turn commits an empty change set on the regular path.
+            changes = ApprovedChangeSet(self._new_id(), state.revision)
+            proposed = None
 
         next_sequence = state.story.current_turn_sequence + 1
         new_summary_segment: StorySummarySegment | None = None
@@ -220,7 +231,7 @@ class PlayStoryTurn:
         committed = self._commit_turn.apply(
             CommitCompletedTurnRequest(
                 run_id=request.run_id,
-                changes=approved.data.approved,
+                changes=changes,
                 turn_id=self._new_id(),
                 player_input=request.player_input,
                 narration=narrated.data.text,
@@ -238,7 +249,7 @@ class PlayStoryTurn:
         return Success(
             PlayedStoryTurn(
                 committed.data,
-                approved.data.proposed,
+                proposed,
                 summary_failure,
                 narrated.data.continuation_options,
             )

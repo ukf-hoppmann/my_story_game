@@ -35,7 +35,11 @@ Der Browser meldet sich per Keycloak an (`keycloak-js`, stiller
 die API mit dem Bearer-Token auf. Ein Zug läuft in der Application als sichtbar
 zusammengesetzte Kette: Kontext auswählen → Erzählung erzeugen → Änderungen
 extrahieren → fachlich prüfen und freigeben → speichern → bei Bedarf
-Zusammenfassungssegment erzeugen. Unbekannte Referenzen im Vorschlag verwerfen
+Zusammenfassungssegment erzeugen. Ist das globale Welt-Tracking aus (vorläufige
+Ausnahme für schwache lokale Modelle, Scope `llm-integration` §6c), entfallen
+Extraktion und Freigabe: Der Start baut die Welt nur aus den eingegebenen
+Figuren, ein Zug speichert eine leere Änderungsmenge. Eine Policy liest die
+Einstellung bei jedem Start und Zug neu. Unbekannte Referenzen im Vorschlag verwerfen
 nur das betroffene Element (Übergangslösung, TASK-042); andere Verstöße
 verwerfen den Zug. Alle Modellaufrufe laufen über Ports; Modell, Temperatur und
 Ausgabelänge je Task löst ein Resolver bei jedem Aufruf aus der Datenbank
@@ -51,6 +55,8 @@ PostgreSQL ist der einzige persistente Speicher
 - Spielzustand als unveränderliche Revisionen je Lauf (`game_runs`,
   `game_state_revisions`, `world_*`, `story_turns`, `story_summary_segments`).
 - Szenenbilder (`scene_images`, außerhalb des Spielzustands).
+- Globaler Schalter für Welt-Tracking (`world_tracking_setting`, höchstens
+  eine Zeile; ohne Zeile ist Tracking an).
 - System-Prompts (`system_prompts`) und Modellwahl je Task
   (`llm_task_settings`): append-only, je Eintrag genau eine aktive Version;
   beim ersten Start aus TOML übernommen, danach gilt die Datenbank.

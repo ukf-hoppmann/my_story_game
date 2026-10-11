@@ -86,7 +86,15 @@ from story_game.application.scene_image import (
     SceneImageDefaults,
     SceneImageOperations,
 )
+from story_game.application.world_tracking import (
+    GetWorldTracking,
+    SetWorldTracking,
+    StoredWorldTrackingPolicy,
+    WorldTrackingOperations,
+    WorldTrackingPolicy,
+)
 from story_game.domain import StableId
+from story_game.application.seed_world_state import BuildSeedWorldState
 from story_game.application.story_initialization import GenerateInitialStoryState
 from story_game.application.story_turn_context import build_story_turn_context_selection
 from story_game.application.story_turn_context_models import SelectionBudget
@@ -154,6 +162,7 @@ from story_game.infrastructure.persistence.postgres import (
     PostgresPromptStore,
     PostgresSceneImageStore,
     PostgresSchemaMigrator,
+    PostgresWorldTrackingStore,
 )
 
 from .config import ApiSettings
@@ -196,6 +205,8 @@ def create_app(
             _seed_model_settings(model_source, model_store)
             generation_config = ManagedGenerationConfigurationResolver(model_store, model_source)
             proposal_store = InMemoryProposalStore()
+            world_tracking_store = PostgresWorldTrackingStore(connections)
+            world_tracking_policy = StoredWorldTrackingPolicy(world_tracking_store, diagnostics)
             llm_clients = _build_llm_clients(
                 resolved_settings, debug_enabled=resolved_logging_settings.debug_enabled
             )
@@ -228,6 +239,7 @@ def create_app(
                     prompt_catalog,
                     generation_config,
                     llm_clients,
+                    world_tracking_policy,
                     diagnostics,
                 ),
                 confirm_proposal=_compose_confirm_game_run_proposal(
@@ -239,6 +251,7 @@ def create_app(
                     prompt_catalog,
                     generation_config,
                     llm_clients,
+                    world_tracking_policy,
                     diagnostics,
                 ),
                 start_playthrough=_compose_start_playthrough(
@@ -252,6 +265,10 @@ def create_app(
                     resolved_settings, prompt_store, PostgresPromptOptionUsage(connections)
                 ),
                 model_settings=_compose_model_settings(model_source, model_store),
+                world_tracking=WorldTrackingOperations(
+                    get=GetWorldTracking(world_tracking_store),
+                    set=SetWorldTracking(world_tracking_store),
+                ),
             )
         application.state.api_dependencies = resolved
         application.state.api_settings = resolved_settings
@@ -441,6 +458,7 @@ def _compose_propose_game_run(
     catalog: PromptPackageCatalog,
     generation_config: GenerationConfigurationResolver,
     clients: _LlmClients,
+    world_tracking: WorldTrackingPolicy,
     diagnostics: StructlogDiagnosticsLog,
 ) -> ProposeGameRun:
     story_initializer = InitializeStory(
@@ -470,6 +488,8 @@ def _compose_propose_game_run(
             diagnostics=diagnostics,
         ),
         diagnostics,
+        seed_world=BuildSeedWorldState(),
+        world_tracking=world_tracking,
     )
     return ProposeGameRun(story_initializer, proposal_store, diagnostics=diagnostics)
 
@@ -494,6 +514,7 @@ def _compose_play_story_turn(
     catalog: PromptPackageCatalog,
     generation_config: GenerationConfigurationResolver,
     clients: _LlmClients,
+    world_tracking: WorldTrackingPolicy,
     diagnostics: StructlogDiagnosticsLog,
 ) -> PlayStoryTurn:
     summary_settings = TomlAppConfigurationLoader().load_story_summary(
@@ -546,6 +567,7 @@ def _compose_play_story_turn(
         ),
         CommitCompletedTurn(store, store, diagnostics),
         summary_interval=summary_settings.interval,
+        world_tracking=world_tracking,
         diagnostics=diagnostics,
     )
 

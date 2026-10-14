@@ -59,7 +59,7 @@ Besonderheiten:
 | `/` | Landing-Page | öffentlich |
 | `/library` | Eigene Geschichten | angemeldet |
 | `/new` | Wizard für eine neue Geschichte | angemeldet |
-| `/stories/:runId` | Spielansicht: Fließtext oder Chat umschaltbar, Szenenbilder pro Zug und Version; Hinweis in der Seitenleiste, wenn Welt-Tracking aus ist | angemeldet |
+| `/stories/:runId` | Spielansicht: Fließtext oder Chat umschaltbar, Szenenbilder pro Zug und Version; Reiter „Welt“ mit Figuren, Orten, Gegenständen, Wesen & Gruppen, Fakten und Wissensmatrix; Hinweis, wenn Welt-Tracking aus ist | angemeldet |
 | `/settings` | Tabs Modelle, Aufgaben, Optionen (Genre, Ton & Stil, Spielgefühl, Sonstiges), Direktiven, Spiel: Prompts und Modelle bearbeiten, zurücksetzen, Verlauf; Optionen anlegen, entfernen (Papierkorb, wiederherstellen, endgültig löschen); Welt-Tracking ein- und ausschalten | Rolle `admin` |
 
 Der Kopfbereich zeigt „Anmelden“ oder, angemeldet, ein Menü mit

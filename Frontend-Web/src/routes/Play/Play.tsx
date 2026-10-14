@@ -23,6 +23,7 @@ import { ErrorBanner } from "../../components/ErrorBanner/ErrorBanner";
 import { ChatFeed } from "./ChatFeed";
 import { SceneArt, SceneImageControls } from "./SceneArt";
 import { CharactersPanel, FactsPanel, GoalsPanel } from "./SidebarPanels";
+import { WorldView } from "./World/WorldView";
 import "./Play.css";
 
 type ViewMode = "text" | "chat";
@@ -53,7 +54,7 @@ const TURN_ERROR_KEYS: Record<string, string> = {
   revision_conflict: "play.errors.revisionConflict",
 };
 
-type PlayTab = "story" | "chronicle";
+type PlayTab = "story" | "world" | "chronicle";
 
 export function Play() {
   const { t } = useTranslation();
@@ -168,8 +169,11 @@ export function Play() {
     }
   }
 
+  // The Welt tab takes the whole stage; the sidebar would only repeat it.
+  const showWorld = activeTab === "world";
+
   return (
-    <div className="play-shell">
+    <div className={`play-shell${showWorld ? " play-shell--world" : ""}`}>
       <aside className="play-rail">
         <div className="play-brand">
           <CompassIcon />
@@ -191,7 +195,17 @@ export function Play() {
             <BookIcon />
             {t("play.nav.story")}
           </div>
-          <div className="play-nav-item">
+          <div
+            className={`play-nav-item${activeTab === "world" ? " play-nav-item--active" : ""}`}
+            onClick={() => setActiveTab("world")}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                setActiveTab("world");
+              }
+            }}
+          >
             <GlobeIcon />
             {t("play.nav.world")}
           </div>
@@ -232,7 +246,15 @@ export function Play() {
           </div>
         )}
 
-        {doc && doc.game_run.status !== "active" && (
+        {doc && showWorld && (
+          <WorldView
+            world={doc.game_state.world}
+            currentTurn={doc.game_state.story.current_turn_sequence}
+            trackingOff={worldTracking?.enabled === false}
+          />
+        )}
+
+        {doc && !showWorld && doc.game_run.status !== "active" && (
           <div className="play-draft-banner">
             <p>{t("play.draftBanner")}</p>
             <ErrorBanner error={startState.error} fallbackKey="play.startError" className="play-status" />
@@ -246,7 +268,7 @@ export function Play() {
           </div>
         )}
 
-        {doc && doc.game_run.status === "active" && (
+        {doc && !showWorld && doc.game_run.status === "active" && (
           <>
             <div className="play-scene-header">
               <h1>{doc.game_run.name}</h1>
@@ -357,22 +379,24 @@ export function Play() {
         )}
       </main>
 
-      <aside className="play-sidebar">
-        {doc ? (
-          <>
-            {worldTracking?.enabled === false && (
-              <p className="play-sidebar-note" role="note">
-                {t("play.worldTrackingOff")}
-              </p>
-            )}
-            <GoalsPanel goals={doc.game_state.world.goals} />
-            <FactsPanel facts={doc.game_state.world.facts} />
-            <CharactersPanel entities={doc.game_state.world.entities} />
-          </>
-        ) : (
-          <p className="play-sidebar-note">{t("play.sidebarNote")}</p>
-        )}
-      </aside>
+      {!showWorld && (
+        <aside className="play-sidebar">
+          {doc ? (
+            <>
+              {worldTracking?.enabled === false && (
+                <p className="play-sidebar-note" role="note">
+                  {t("play.worldTrackingOff")}
+                </p>
+              )}
+              <GoalsPanel goals={doc.game_state.world.goals} />
+              <FactsPanel facts={doc.game_state.world.facts} />
+              <CharactersPanel entities={doc.game_state.world.entities} />
+            </>
+          ) : (
+            <p className="play-sidebar-note">{t("play.sidebarNote")}</p>
+          )}
+        </aside>
+      )}
     </div>
   );
 }

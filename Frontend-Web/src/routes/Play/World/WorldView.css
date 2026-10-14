@@ -1,0 +1,676 @@
+/* Welt tab of the Play screen. Fills the stage; the active tab's content
+   scrolls inside it while header and tab bar stay put. */
+.world-view {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.world-view > .tabs {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.world-view .tabs-bar {
+  margin-bottom: 0;
+}
+
+.world-view .tabs-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding-top: 20px;
+}
+
+.world-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+}
+
+.world-head h1 {
+  font-family: var(--font-display);
+  font-size: 1.55rem;
+  color: var(--text);
+}
+
+.world-ctl-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.world-slider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 1 380px;
+  min-width: 0;
+}
+
+.world-slider input {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--gold);
+}
+
+.world-slider output {
+  color: var(--gold-bright);
+  font-weight: 700;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.world-note {
+  color: var(--text-faint);
+  font-size: 0.82rem;
+  font-style: italic;
+  font-family: var(--font-body);
+}
+
+.world-empty {
+  color: var(--text-faint);
+  font-style: italic;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+}
+
+/* ---------- List + detail ---------- */
+.world-browser {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+
+.world-list {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.world-list-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.world-list-item:hover {
+  background: var(--surface);
+}
+
+.world-list-item[aria-current="true"] {
+  background: var(--surface-raised);
+  box-shadow: inset 3px 0 0 var(--gold);
+}
+
+.world-list-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.world-list-trait {
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--text-muted);
+}
+
+.world-pill {
+  font-family: var(--font-ui);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  border: 1px solid var(--surface-line);
+  border-radius: 999px;
+  padding: 1px 8px;
+  color: var(--gold);
+  white-space: nowrap;
+}
+
+.world-pill--player {
+  border-color: var(--gold);
+}
+
+.world-pill--scene {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--void);
+}
+
+.world-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  min-width: 0;
+  max-width: 880px;
+}
+
+.world-detail-head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.world-avatar {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+}
+
+.world-avatar--square {
+  border-radius: var(--radius-md);
+}
+
+.world-detail-head h2 {
+  font-family: var(--font-display);
+  font-size: 1.45rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.world-detail-sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.world-desc {
+  font-family: var(--font-body);
+  font-size: 1.1rem;
+  line-height: 1.5;
+  max-width: 65ch;
+}
+
+.world-section-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.world-section-heading::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--surface-line);
+}
+
+.world-section-count {
+  color: var(--text-muted);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.world-conditions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.world-condition {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 300px;
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--surface-line);
+  border-radius: var(--radius-md);
+}
+
+.world-condition b {
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.world-condition span {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.world-relations {
+  display: flex;
+  flex-direction: column;
+}
+
+.world-relation {
+  display: grid;
+  grid-template-columns: 170px minmax(0, 1fr);
+  gap: 4px 14px;
+  align-items: baseline;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--surface-line);
+}
+
+.world-relation:last-child {
+  border-bottom: 0;
+}
+
+.world-relation-kind {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.world-relation-note {
+  grid-column: 2;
+  color: var(--text-faint);
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: 0.92rem;
+}
+
+.world-quantity {
+  margin-left: 8px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.world-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  color: var(--gold-bright);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--gold) 40%, transparent);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.world-link:hover {
+  text-decoration-color: var(--gold-bright);
+}
+
+/* ---------- Knowledge ---------- */
+.world-knowledge-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.world-knowledge-head .world-section-heading {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.world-seg {
+  display: inline-flex;
+  flex-wrap: wrap;
+  border: 1px solid var(--surface-line);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.world-seg button {
+  padding: 5px 11px;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.world-seg button + button {
+  border-left: 1px solid var(--surface-line);
+}
+
+.world-seg button[aria-pressed="true"] {
+  background: var(--surface-raised);
+  color: var(--gold-bright);
+}
+
+.world-knowledge-list {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  list-style: none;
+}
+
+.world-knowledge-item {
+  display: grid;
+  gap: 6px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--surface-line);
+}
+
+.world-knowledge-item:last-child {
+  border-bottom: 0;
+}
+
+.world-knowledge-statement {
+  font-family: var(--font-body);
+  font-size: 1.03rem;
+  line-height: 1.35;
+}
+
+.world-knowledge-item--forgotten .world-knowledge-statement {
+  color: var(--text-faint);
+  text-decoration: line-through;
+  text-decoration-color: var(--wine-bright);
+}
+
+.world-knowledge-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.world-learned {
+  color: var(--gold-bright);
+}
+
+.world-forgotten {
+  color: var(--wine-bright);
+}
+
+.world-life {
+  position: relative;
+  height: 5px;
+  max-width: 420px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: var(--surface-raised);
+}
+
+.world-life i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 3px;
+}
+
+.world-life-known {
+  background: var(--gold);
+}
+
+.world-life-forgotten {
+  background: repeating-linear-gradient(90deg, var(--wine-bright) 0 3px, transparent 3px 6px);
+}
+
+.world-life-now {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--gold-bright);
+}
+
+/* ---------- Visibility + knowers ---------- */
+.world-vis {
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  border: 1px solid var(--surface-line);
+  border-radius: 999px;
+  padding: 1px 8px;
+  color: var(--text-muted);
+}
+
+.world-vis--player_known {
+  color: var(--gold-bright);
+}
+
+.world-vis--actor_known {
+  color: var(--parchment-edge);
+}
+
+.world-vis--director_only {
+  background: var(--wine);
+  border-color: var(--wine-bright);
+  color: var(--parchment);
+}
+
+.world-who {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  border: 1px solid var(--surface-line);
+  border-radius: 999px;
+  background: var(--surface-raised);
+  font-size: 0.76rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.world-who--forgotten {
+  color: var(--text-faint);
+}
+
+.world-who--forgotten .world-who-name {
+  text-decoration: line-through;
+  text-decoration-color: var(--wine-bright);
+}
+
+.world-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--gold);
+  flex-shrink: 0;
+}
+
+.world-dot--forgotten,
+.world-who--forgotten .world-dot {
+  background: transparent;
+  border: 1.5px solid var(--wine-bright);
+}
+
+.world-nobody {
+  color: var(--text-faint);
+  font-style: italic;
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+}
+
+/* ---------- Facts ---------- */
+.world-wide {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.world-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+}
+
+.world-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.world-fact {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 16px;
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--surface-line);
+  border-radius: var(--radius-md);
+}
+
+.world-fact-statement {
+  font-family: var(--font-body);
+  font-size: 1.05rem;
+  line-height: 1.35;
+}
+
+.world-fact-sub {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.world-fact-label {
+  margin-right: 2px;
+  color: var(--text-faint);
+}
+
+/* ---------- Matrix ---------- */
+.world-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.world-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.world-matrix-wrap {
+  overflow-x: auto;
+  background: var(--surface);
+  border: 1px solid var(--surface-line);
+  border-radius: var(--radius-md);
+}
+
+.world-matrix {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+}
+
+.world-matrix th,
+.world-matrix td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--surface-line);
+  text-align: center;
+}
+
+.world-matrix th {
+  background: var(--surface-raised);
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.world-matrix .world-matrix-fact {
+  width: 46%;
+  text-align: left;
+  font-family: var(--font-body);
+  font-size: 0.98rem;
+  line-height: 1.3;
+}
+
+.world-matrix th.world-matrix-fact {
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+}
+
+.world-matrix tbody tr:hover {
+  background: var(--surface-raised);
+}
+
+.world-cell {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.world-cell--forgotten {
+  color: var(--wine-bright);
+}
+
+.world-cell--none {
+  color: var(--surface-line);
+}
+
+@media (max-width: 980px) {
+  .world-view,
+  .world-view > .tabs {
+    flex: 0 1 auto;
+  }
+  .world-view .tabs-panel {
+    overflow-y: visible;
+  }
+  .world-browser {
+    grid-template-columns: 1fr;
+  }
+  .world-list {
+    position: static;
+    flex-direction: row;
+    overflow-x: auto;
+    gap: 6px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--surface-line);
+  }
+  .world-list-item {
+    flex: none;
+    width: auto;
+    min-width: 170px;
+  }
+  .world-relation {
+    grid-template-columns: 1fr;
+  }
+  .world-relation-note {
+    grid-column: 1;
+  }
+}

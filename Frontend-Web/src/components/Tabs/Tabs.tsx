@@ -4,6 +4,8 @@ import "./Tabs.css";
 export interface TabItem {
   id: string;
   label: string;
+  /** Optional item count shown as a small badge after the label. */
+  count?: number;
 }
 
 export interface TabsProps {
@@ -51,6 +53,7 @@ export function Tabs({ tabs, activeId, onChange, idPrefix = "tab", children }: T
               onClick={() => onChange(tab.id)}
             >
               {tab.label}
+              {tab.count !== undefined && <span className="tabs-count">{tab.count}</span>}
             </button>
           );
         })}

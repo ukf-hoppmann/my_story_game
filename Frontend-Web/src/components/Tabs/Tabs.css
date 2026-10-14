@@ -28,3 +28,14 @@
   color: var(--gold-bright);
   border-bottom-color: var(--gold);
 }
+
+.tabs-count {
+  margin-left: 8px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--surface-raised);
+  color: var(--text-faint);
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}

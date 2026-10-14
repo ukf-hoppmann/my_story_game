@@ -64,6 +64,17 @@ der Eröffnung werden aktuell noch nicht im Play-Screen angezeigt, weil sie
 `GameDocument` nicht enthält. Geschichte und Chronik zeigen den Story-Feed
 beziehungsweise die geordnete Summary-Segmentkette.
 
+Der Reiter „Welt“ ersetzt Bühne und Seitenleiste durch eine Ansicht des
+gesamten `WorldState` aus dem bereits geladenen `GameDocument` (kein eigener
+Endpunkt). Themen-Tabs trennen Figuren, Orte, Gegenstände, Wesen & Gruppen,
+Fakten (mit Weltregeln) und eine Wissensmatrix. In den Eintrags-Tabs steht
+links eine Liste mit ein bis zwei Hauptmerkmalen, rechts die Detailansicht mit
+Zuständen, Beziehungen (anklickbar), dem Wissen der Figur und den Fakten über
+den Eintrag. Angezeigt wird alles, auch vergessenes Wissen und jede
+Sichtbarkeit; gefiltert wird nicht. Ein Zug-Regler zeigt den Wissensstand zu
+einem früheren Zug und erscheint nur, wenn Wissenseinträge existieren. Die
+Ableitungen liegen testbar in `src/routes/Play/World/worldModel.ts`.
+
 Im Wizard kann der Ton ausdrücklich leer bleiben (`Kein zusätzlicher Ton`). In
 diesem Fall wird keine zusätzliche Tonvorgabe an das Modell gesendet; die
 Stimmung des gewählten Genres bleibt maßgeblich.

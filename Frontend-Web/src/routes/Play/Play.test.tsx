@@ -157,6 +157,38 @@ describe("Play", () => {
     expect(screen.queryByText(/Welt-Tracking ist deaktiviert/)).not.toBeInTheDocument();
   });
 
+  it("opens the world view from the rail in place of story and sidebar", async () => {
+    vi.spyOn(client, "loadRun").mockResolvedValue(
+      buildDocument(
+        {},
+        {
+          entities: [
+            {
+              id: "char-1",
+              kind: "character",
+              label: "Bran",
+              description: "Wirkt besorgt.",
+              actor: { role: "npc" },
+              conditions: [],
+              aliases: [],
+            },
+          ],
+        },
+      ),
+    );
+    renderPlay();
+    await screen.findByText("Der Regen hatte die Spuren fast fortgespült.");
+
+    await userEvent.click(screen.getByRole("button", { name: "Welt" }));
+
+    expect(screen.getByRole("heading", { level: 2, name: "Bran" })).toBeInTheDocument();
+    expect(screen.queryByText("Der Regen hatte die Spuren fast fortgespült.")).not.toBeInTheDocument();
+    expect(screen.queryByText("Noch keine Ziele bekannt.")).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Geschichte" }));
+    expect(screen.getByText("Der Regen hatte die Spuren fast fortgespült.")).toBeInTheDocument();
+  });
+
   it("shows a scene-art placeholder above the story feed for an active run", async () => {
     vi.spyOn(client, "loadRun").mockResolvedValue(buildDocument());
     renderPlay();

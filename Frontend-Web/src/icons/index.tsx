@@ -192,3 +192,41 @@ export function SignOutIcon(props: SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
+
+export function MapPinIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} {...props}>
+      <path d="M12 20.5s-6.3-5.8-6.3-10.8a6.3 6.3 0 0 1 12.6 0c0 5-6.3 10.8-6.3 10.8z" />
+      <circle cx="12" cy="9.6" r="2.3" />
+    </svg>
+  );
+}
+
+export function KeyIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} {...props}>
+      <circle cx="8" cy="8" r="3.8" />
+      <path d="M10.8 10.8l8.7 8.7M15.8 15.8l2-2M17.9 17.9l2-2" />
+    </svg>
+  );
+}
+
+export function PawIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} {...props}>
+      <path d="M12 12.5c-3 0-5.5 3.2-5.5 5.4 0 1.5 1.2 2.2 2.6 2.2 1.1 0 1.9-.6 2.9-.6s1.8.6 2.9.6c1.4 0 2.6-.7 2.6-2.2 0-2.2-2.5-5.4-5.5-5.4z" />
+      <circle cx="6.2" cy="9.4" r="1.7" />
+      <circle cx="9.6" cy="5.8" r="1.7" />
+      <circle cx="14.4" cy="5.8" r="1.7" />
+      <circle cx="17.8" cy="9.4" r="1.7" />
+    </svg>
+  );
+}
+
+export function BannerIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} {...props}>
+      <path d="M6 3.5v17M6 4.5h11.5l-2.3 4 2.3 4H6" />
+    </svg>
+  );
+}

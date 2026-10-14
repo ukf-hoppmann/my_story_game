@@ -156,7 +156,131 @@
       "toChat": "Chat-Ansicht",
       "toText": "Fließtext"
     },
-    "worldTrackingOff": "Welt-Tracking ist deaktiviert: Ziele, Wissen und Figuren werden nicht aus der Geschichte aktualisiert."
+    "worldTrackingOff": "Welt-Tracking ist deaktiviert: Ziele, Wissen und Figuren werden nicht aus der Geschichte aktualisiert.",
+    "world": {
+      "title": "Welt",
+      "trackingOff": "Welt-Tracking ist deaktiviert: Die Welt wird gerade nicht aus der Geschichte aktualisiert.",
+      "turnLabel": "Wissensstand bei",
+      "turnValue": "Zug {{turn}}",
+      "turnValueCurrent": "Zug {{turn}} (aktuell)",
+      "tabs": {
+        "characters": "Figuren",
+        "locations": "Orte",
+        "items": "Gegenstände",
+        "others": "Wesen & Gruppen",
+        "facts": "Fakten",
+        "knowledge": "Wissen"
+      },
+      "listLabel": "Einträge",
+      "empty": {
+        "characters": "Noch keine Figuren bekannt.",
+        "locations": "Noch keine Orte bekannt.",
+        "items": "Noch keine Gegenstände bekannt.",
+        "others": "Noch keine Wesen oder Gruppen bekannt."
+      },
+      "kind": {
+        "character": "Figur",
+        "location": "Ort",
+        "item": "Gegenstand",
+        "creature": "Wesen",
+        "faction": "Gruppe"
+      },
+      "you": "Du",
+      "scene": "Szene",
+      "currentScene": "Aktuelle Szene",
+      "aliases": "auch: {{names}}",
+      "sections": {
+        "conditions": "Zustände",
+        "relations": "Beziehungen",
+        "knowledge": "Wissen",
+        "factsAbout": "Fakten über {{name}}",
+        "facts": "Fakten",
+        "rules": "Weltregeln"
+      },
+      "noRelations": "Keine Beziehungen bekannt.",
+      "noFactsAbout": "Keine Fakten zu diesem Eintrag.",
+      "noKnowledge": "Noch kein Wissen erfasst.",
+      "noEntriesForFilter": "Keine Einträge für diesen Filter.",
+      "noFacts": "Noch keine Fakten bekannt.",
+      "noRules": "Keine Weltregeln festgelegt.",
+      "knowledgeCounts": "{{known}} gewusst · {{forgotten}} vergessen",
+      "filterLabel": "Wissensfilter",
+      "filter": {
+        "all": "Alles",
+        "known": "Gewusst",
+        "forgotten": "Vergessen"
+      },
+      "learnedAt": "gelernt Zug {{turn}}",
+      "forgottenAt": "vergessen Zug {{turn}}",
+      "knownSince": "seit Zug {{turn}}",
+      "knownSpan": "Zug {{from}}–{{to}}",
+      "knowers": "Wissen",
+      "subject": "Betrifft",
+      "noSubject": "kein Eintrag",
+      "nobodyKnows": "Niemand weiß davon.",
+      "visibilityLabel": "Sichtbarkeit",
+      "visibility": {
+        "all": "Alle",
+        "public": "Öffentlich",
+        "player_known": "Spieler bekannt",
+        "actor_known": "Figurenwissen",
+        "actor_knownNamed": "Figurenwissen: {{name}}",
+        "director_only": "Nur Spielleitung"
+      },
+      "relation": {
+        "located_in": {
+          "outgoing": "befindet sich in",
+          "incoming": "hier befindet sich"
+        },
+        "possesses": {
+          "outgoing": "besitzt",
+          "incoming": "im Besitz von"
+        },
+        "contains": {
+          "outgoing": "enthält",
+          "incoming": "liegt in"
+        },
+        "member_of": {
+          "outgoing": "gehört zu",
+          "incoming": "Mitglied"
+        },
+        "knows": {
+          "outgoing": "kennt",
+          "incoming": "bekannt mit"
+        },
+        "allied_with": {
+          "outgoing": "verbündet mit",
+          "incoming": "verbündet mit"
+        },
+        "hostile_to": {
+          "outgoing": "feindlich gegenüber",
+          "incoming": "feindlich gesinnt"
+        },
+        "related_to": {
+          "outgoing": "verbunden mit",
+          "incoming": "verbunden mit"
+        }
+      },
+      "quantity": "×{{count}}",
+      "matrix": {
+        "fact": "Fakt",
+        "legendKnown": "gewusst, ab Zug",
+        "legendForgotten": "vergessen, Zug von–bis",
+        "legendNone": "nicht bekannt",
+        "empty": "Noch kein Wissen erfasst. Sobald Figuren Fakten erfahren, steht hier, wer was weiß und seit wann.",
+        "cellKnown": "ab {{turn}}",
+        "cellForgotten": "{{from}}–{{to}}",
+        "statusKnown": "gewusst",
+        "statusForgotten": "vergessen"
+      },
+      "traits": {
+        "whereaboutsUnknown": "Verbleib unbekannt",
+        "presentCount": "{{count}} hier",
+        "inside": "in {{name}}",
+        "heldBy": "bei {{name}}",
+        "nobodyHere": "niemand hier"
+      }
+    }
   },
   "wizard": {
     "eyebrow": "Neue Geschichte",

@@ -25,7 +25,7 @@ Gesetzt in `compose.yaml`; Standardwerte gelten ohne Docker.
 | `STORY_GAME_CONFIG_PATH` | Pfad | `configs/app.toml` | nein | Anwendungskonfiguration |
 | `STORY_GAME_LLM_CONFIG_PATH` | Pfad | `configs/llm.toml` | nein | LLM-Katalog |
 | `STORY_GAME_CORS_ALLOWED_ORIGINS` | Liste (Komma) | `http://localhost:5173` | nein | Erlaubte Browser-Origins (im Compose: `http://storygame.localhost`) |
-| `STORY_GAME_KEYCLOAK_ISSUER` | URL | `http://localhost:8081/realms/story-game` | ja im Betrieb | Vertrauter Realm; muss dem `iss` des Tokens entsprechen |
+| `STORY_GAME_KEYCLOAK_ISSUER` | URL | `http://localhost:8082/realms/story-game` | ja im Betrieb | Vertrauter Realm; muss dem `iss` des Tokens entsprechen |
 | `STORY_GAME_KEYCLOAK_AUDIENCE` | Text | `story-game-frontend` | nein | Erwarteter `aud`-Claim; leer schaltet die Prüfung ab |
 | `STORY_GAME_KEYCLOAK_JWKS_URI` | URL | `<issuer>/protocol/openid-connect/certs` | nein | Quelle der Signaturschlüssel, wenn Backend und Browser Keycloak unter verschiedenen Adressen erreichen |
 | `STORY_GAME_LOG_MODE` | `prod` oder `debug` | Wert aus `app.toml` | nein | Überschreibt `[logging] mode` |
@@ -88,7 +88,7 @@ Anleitungen je Anbieter: [LM Studio](../human/operations/lmstudio.md),
 | Einstellung | Typ | Standard | Pflicht | Wirkung |
 |---|---|---|---|---|
 | `POSTGRES_HOST_PORT` | Zahl | `5433` | nein | Host-Port der Datenbank |
-| `KEYCLOAK_HOST_PORT` | Zahl | `8081` | nein | Host-Port von Keycloak |
+| `KEYCLOAK_HOST_PORT` | Zahl | `8082` | nein | Host-Port von Keycloak |
 | `BACKEND_HOST_PORT` | Zahl | `8001` | nein | Host-Port des Backends |
 | `FRONTEND_HOST_PORT` | Zahl | `5173` | nein | Host-Port des Frontends (nur 127.0.0.1) |
 | `PROXY_HOST_PORT` | Zahl | `80` | nein | Host-Port des nginx-Proxys |

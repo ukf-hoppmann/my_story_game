@@ -55,7 +55,7 @@ docker compose up keycloak
 Das löscht den kompletten Keycloak-Datenbestand unwiederbringlich (Realm,
 Nutzer, Sessions) — nicht die Story-Engine-Datenbank.
 
-- Admin-Konsole: `http://localhost:${KEYCLOAK_HOST_PORT:-8081}` (Login
+- Admin-Konsole: `http://localhost:${KEYCLOAK_HOST_PORT:-8082}` (Login
   `admin`/`admin`, siehe `KEYCLOAK_ADMIN`/`KEYCLOAK_ADMIN_PASSWORD` in
   `compose.yaml`) — direkt über den veröffentlichten Container-Port, nicht
   über nginx.

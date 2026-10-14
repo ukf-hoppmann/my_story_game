@@ -27,7 +27,7 @@ class ApiSettings:
     dev_subject: str = "dev-user"
     cors_allowed_origins: tuple[str, ...] = ("http://localhost:5173",)
     """Browser origins allowed to call this API — the Vite dev server by default."""
-    keycloak_issuer: str = "http://localhost:8081/realms/story-game"
+    keycloak_issuer: str = "http://localhost:8082/realms/story-game"
     """The trusted realm; must equal a token's ``iss`` claim exactly."""
     keycloak_audience: str | None = "story-game-frontend"
     """Expected ``aud`` claim; ``None`` disables audience checking entirely."""

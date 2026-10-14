@@ -15,12 +15,6 @@ fresh each time, since the user edits them directly.
 - `docs/human/technical/architecture-naming.md` — shared naming vocabulary for
   application composition, referenced by architecture rule 9.
 
-## Project-specific conventions
-
-- Daily reports in `docs/development/daily/` use the filename
-  `<YYYY-MM-DD>-day<N>.md`, where `<N>` is the sequential development-day
-  number (for example `2026-08-06-day11.md`).
-
 ## Approval before implementation
 
 Discuss what will be built and how first; implementation MUST NOT start until

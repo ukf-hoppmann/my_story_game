@@ -11,8 +11,11 @@ Figuren, Orte und Situationen, ohne eine spätere Spielerentscheidung
 vorwegzunehmen. Es gibt noch keine frühere Story und keinen kanonischen
 WorldState. Behandle die Inhaltsgrenze und erzählerischen Direktiven als
 verbindlich. Wenn ein Spielercharakter bereitgestellt wurde, übernimm dessen
-Identität unverändert und erfinde keinen Ersatz. Gliedere den Text in
-mehrere Absätze und trenne sie durch eine Leerzeile.
+Identität unverändert und erfinde keinen Ersatz. Wenn Figuren miteinander
+sprechen oder angesprochen werden, gib das Gespräch als wörtliche Rede wieder,
+statt es zusammenzufassen. Gliedere den Text im Rahmen der gewählten Länge in
+Absätze, trenne sie durch eine Leerzeile und beginne bei einem Sprecherwechsel
+eine neue Zeile.
 
 Liefere zusätzlich 3-4 kurze, klar unterscheidbare Vorschläge, wie der
 Spieler nach dieser Eröffnung weitermachen könnte. Formuliere jeden Vorschlag
@@ -26,12 +29,16 @@ id = "story_generation"
 text = """
 Erzeuge den nächsten zusammenhängenden Storyabschnitt aus den vom Spiel
 bereitgestellten Informationen. Beschreibe nur nachvollziehbare Ereignisse,
-Reaktionen und Wahrnehmungen, wahre die bekannten Weltfakten und lasse die
-Handlung auf die aktuelle Eingabe des Spielers reagieren. Lege keine
+Reaktionen, Gespräche und Wahrnehmungen, wahre die bekannten Weltfakten und
+lasse die Handlung auf die aktuelle Eingabe des Spielers reagieren. Wenn
+Figuren miteinander sprechen oder angesprochen werden, gib das Gespräch als
+wörtliche Rede wieder, statt es zusammenzufassen; spricht der Spieler eine
+Figur an, antwortet sie in eigenen Worten. Lege keine
 Spielerentscheidung fest, wenn der gewählte Steuerungs- oder Agency-Modus sie
 dem Spieler überlässt. Behandle die Inhaltsgrenze als Mindestschutz und die
-erzählerischen Direktiven als verbindlich. Gliedere den Text in mehrere
-Absätze und trenne sie durch eine Leerzeile.
+erzählerischen Direktiven als verbindlich. Gliedere den Text im Rahmen der
+gewählten Länge in Absätze, trenne sie durch eine Leerzeile und beginne bei
+einem Sprecherwechsel eine neue Zeile.
 
 Liefere zusätzlich 3-4 kurze, klar unterscheidbare Vorschläge, wie der
 Spieler als Nächstes weitermachen könnte. Formuliere jeden Vorschlag als eine
@@ -311,11 +318,11 @@ default = "standard"
 
 [[categories.options]]
 id = "short"
-description = "Erzähle in genau einem Absatz, der die Szene knapp abschließt."
+description = "Erzähle knapp in einem kurzen Absatz; wörtliche Rede darf dabei eigene kurze Zeilen bekommen."
 
 [[categories.options]]
 id = "standard"
-description = "Erzähle in ein bis zwei Absätzen, die zusammen die Szene abschließen."
+description = "Erzähle in ein bis zwei Absätzen; wörtliche Rede darf dabei eigene Zeilen bekommen."
 
 [[categories.options]]
 id = "long"
@@ -421,9 +428,13 @@ selectable = false
 tasks = ["story_generation"]
 text = """
 Nur vom Spieler gesteuerte Figuren dürfen der Anweisung im Spieler-Prompt
-unmittelbar folgen. Alle anderen Figuren (NSCs) handeln ausschließlich aus
-ihrer eigenen, im Weltzustand etablierten Logik, ihren Zielen und
-Charakterzügen — niemals weil der Prompt es für sie vorschreibt.
+unmittelbar folgen. Alle anderen Figuren (NSCs) handeln nach ihrer eigenen
+Logik, ihren Zielen und Charakterzügen — niemals weil der Prompt es für sie
+vorschreibt. Was im Weltzustand oder in der bisherigen Story über sie
+etabliert ist, ist verbindlich; wo noch nichts etabliert ist, handeln sie
+plausibel für ihre Rolle in der Szene. NSCs sind keine Statisten: Sie
+reagieren aktiv, ergreifen das Wort, antworten, wenn sie angesprochen werden,
+und dürfen widersprechen, nachfragen oder eigene Absichten verfolgen.
 """
 
 [[directives]]

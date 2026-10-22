@@ -5,7 +5,7 @@
 # (LM Studio adapters) and every transformed intermediate value at each
 # operation boundary (Application trace()) — never do this against a real
 # player-facing deployment, only for local development.
-mode = "debug"
+mode = "prod"
 # Only relevant in "prod" mode; "debug" always forces DEBUG regardless.
 level = "INFO"
 file_path = "logs/story-game.log"

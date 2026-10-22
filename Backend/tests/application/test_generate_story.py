@@ -123,7 +123,7 @@ def test_every_call_carries_the_npc_agency_directive() -> None:
 
     prepared = generator.call.request
     assert any(
-        "handeln ausschließlich aus" in prompt for prompt in prepared.system_prompts
+        "NSCs sind keine Statisten" in prompt for prompt in prepared.system_prompts
     )
 
 

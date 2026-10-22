@@ -601,8 +601,7 @@ Format: Claude_Harness backlog format version 2. The rules are defined in
   - Dependencies: None.
   - Goal: Testeintrag, um die Cloud-Funktionalität des Backlogs zu prüfen.
     Er kann nach dem Test gelöscht werden.
-  - Completion criteria:
-    1. Der Eintrag erscheint nach dem Sync mit Uid und Label im ToDo-Viewer.
+  - Completion criteria: 1. Der Eintrag erscheint nach dem Sync mit Uid und Label im ToDo-Viewer.
 - `NEW-test-story` **test_entry**
   - Type: Story.
   - Parent: `NEW-test-epic`.
@@ -613,8 +612,7 @@ Format: Claude_Harness backlog format version 2. The rules are defined in
   - Dependencies: None.
   - Goal: Teststory unter dem Testepic, um die Cloud-Funktionalität des
     Backlogs zu prüfen.
-  - Completion criteria:
-    1. Die Story erscheint nach dem Sync unter dem Testepic.
+  - Completion criteria: 1. Die Story erscheint nach dem Sync unter dem Testepic.
 - `NEW-test-task` **test_entry**
   - Type: Task.
   - Parent: `NEW-test-story`.
@@ -625,5 +623,4 @@ Format: Claude_Harness backlog format version 2. The rules are defined in
   - Dependencies: None.
   - Goal: Testtask unter der Teststory, um die Cloud-Funktionalität des
     Backlogs zu prüfen.
-  - Completion criteria:
-    1. Der Task erscheint nach dem Sync unter der Teststory.
+  - Completion criteria: 1. Der Task erscheint nach dem Sync unter der Teststory.

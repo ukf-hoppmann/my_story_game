@@ -727,3 +727,37 @@ After explicit rejection:
   - Dependencies: `TASK-023`.
   - Goal: Die in `TASK-023` eingeführte "rollierende Zusammenfassung" ersetzt nach jedem Zug die bisherige Zusammenfassung vollständig durch eine neu erzeugte (siehe `StoryState`, das nur die *eine aktuelle* Zusammenfassung hält, und die in `b4ff9d4` neu verdrahtete Chronik-Anzeige in [Play.tsx](Frontend-Web/src/routes/Play/Play.tsx), die genau dieses eine `story.summary` zeigt). Das soll sich ändern: Statt die eine bestehende Zusammenfassung durch eine neu geschriebene zu überschreiben, soll je Zug (oder Zug-Batch) ein neuer, eigenständiger Zusammenfassungs-Abschnitt entstehen, der zu den bisherigen Abschnitten hinzukommt, statt sie zu ersetzen. Aneinandergereiht ergeben diese Abschnitte der Reihe nach die bisher gespielte Geschichte — explizit **keine** vom Modell laufend umgeschriebene Gesamtzusammenfassung, sondern eine fortlaufende Kette bereits fertiger, unveränderter Abschnitte.
   - Completion criteria: `StoryState` (oder ein neues Modell) hält eine geordnete Folge von Zusammenfassungs-Abschnitten statt einer einzelnen Zusammenfassung; ein abgeschlossener Zug hängt genau einen neuen Abschnitt an, bestehende Abschnitte werden nicht verändert. Entschieden und dokumentiert ist die Granularität (ein Abschnitt pro Zug oder pro Zug-Batch/Kapitel) und wie mit potenziell vielen Abschnitten über eine lange Spielzeit umgegangen wird (z. B. Anzeige/Prompt-Kontext-Budget), ohne dass das die Kettenstruktur selbst aufgibt. Die Chronik-Ansicht im Frontend zeigt die Abschnitte in Reihenfolge (Ersatz für die bisherige Einzeltext-Anzeige aus `b4ff9d4`). Tests belegen, dass ein neuer Zug bestehende Abschnitte unverändert lässt und dass die Abschnittsfolge in Erzeugungsreihenfolge sortiert bleibt.
+
+- `EPIC-003` **testepic**
+  - Type: Epic.
+  - Status: Open.
+  - Created: 2026-10-22.
+  - Area: Test.
+  - Priority: Perspektivisch.
+  - Dependencies: None.
+  - Goal: Platzhalter-Epic, um die Backlog-Struktur Epic, Story und Task zu erproben.
+  - Completion criteria: Der Epic enthält die Story `STORY-012`; sobald der Projektbesitzer ihn bestätigt oder verwirft, ist er abgeschlossen.
+
+- `STORY-012` **test story**
+  - Type: Story.
+  - Status: Open.
+  - Parent: `EPIC-003`.
+  - Required for parent: Yes.
+  - Created: 2026-10-22.
+  - Area: Test.
+  - Priority: Perspektivisch.
+  - Dependencies: None.
+  - Goal: Platzhalter-Story unter `EPIC-003`, um die Hierarchie zu erproben.
+  - Completion criteria: Der Task `TASK-033` ist abgeschlossen und der Projektbesitzer hat die Story bestätigt.
+
+- `TASK-033` **test task**
+  - Type: Task.
+  - Status: Open.
+  - Parent: `STORY-012`.
+  - Required for parent: Yes.
+  - Created: 2026-10-22.
+  - Area: Test.
+  - Priority: Perspektivisch.
+  - Dependencies: None.
+  - Goal: Platzhalter-Task unter `STORY-012`, um die Hierarchie zu erproben.
+  - Completion criteria: Der Projektbesitzer hat den Task bestätigt oder verworfen.

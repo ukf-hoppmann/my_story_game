@@ -593,3 +593,19 @@ Format: Claude_Harness backlog format version 2. The rules are defined in
     einen abgeschlossenen StoryTurn mit der resultierenden
     GameState-Revision persistieren. Modellaufrufe, Rohantworten,
     ProposedChangeSets und Validierungsergebnisse bleiben transient.
+
+- `NEW-cloud-test-harness` **Cloud-Test des Harness (Testeintrag, darf beendet werden)**
+  - Type: Task.
+  - Parent: `EPIC-002`.
+  - Required for parent: No.
+  - Status: Open.
+  - Area: Betrieb und Diagnose.
+  - Priority: Prospective.
+  - Dependencies: None.
+  - Goal: Der Eintrag dient als Nachweis, dass ein in der Cloud angelegter
+    Backlog-Eintrag nach dem Zusammenführen im ToDo-Viewer ankommt.
+  - Completion criteria: 1. Der Eintrag erscheint nach Pull und Sync im
+    ToDo-Viewer mit Label und Uid. 2. Der Eintrag darf danach beendet
+    werden.
+  - Summary: Testeintrag aus einer Cloud-Sitzung, um den Weg von der Cloud
+    in den ToDo-Viewer zu belegen. Er hat keinen fachlichen Inhalt.

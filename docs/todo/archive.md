@@ -1208,3 +1208,92 @@ Format: Claude_Harness backlog format version 2. The rules are defined in
     sind lückenlos; Goals, Chapters, Scenes, StoryThreads und ein
     zusätzliches StoryEvent sind nicht Teil des StoryState.
   - Resolution: Confirmed by the project owner on 2026-08-18.
+
+- `EPIC-003` **test_entry**
+  - Uid: 029c0648-542f-4dd8-906d-43de029aebf0.
+  - Type: Epic.
+  - Status: Open.
+  - Created: 2026-10-22.
+  - Area: Betrieb und Diagnose.
+  - Priority: Prospective.
+  - Dependencies: None.
+  - Goal: Testeintrag, um die Cloud-Funktionalität des Backlogs zu prüfen.
+    Er kann nach dem Test gelöscht werden.
+  - Completion criteria: 1. Der Eintrag erscheint nach dem Sync mit Uid und
+    Label im ToDo-Viewer.
+  - Deleted: 2026-10-22.
+
+- `TASK-050` **test_entry**
+  - Uid: 7ead047f-b3f1-405f-b07f-9b39168c7491.
+  - Type: Task.
+  - Parent: `STORY-014`.
+  - Required for parent: Yes.
+  - Status: Open.
+  - Created: 2026-10-22.
+  - Area: Betrieb und Diagnose.
+  - Priority: Prospective.
+  - Dependencies: None.
+  - Goal: Testtask unter der Teststory, um die Cloud-Funktionalität des
+    Backlogs zu prüfen.
+  - Completion criteria: 1. Der Task erscheint nach dem Sync unter der
+    Teststory.
+  - Deleted: 2026-10-22.
+
+- `STORY-014` **test_entry**
+  - Uid: dd739af4-9a85-4886-8fc1-ef9c22038530.
+  - Type: Story.
+  - Parent: `EPIC-003`.
+  - Required for parent: Yes.
+  - Status: Open.
+  - Created: 2026-10-22.
+  - Area: Betrieb und Diagnose.
+  - Priority: Prospective.
+  - Dependencies: None.
+  - Goal: Teststory unter dem Testepic, um die Cloud-Funktionalität des
+    Backlogs zu prüfen.
+  - Completion criteria: 1. Die Story erscheint nach dem Sync unter dem
+    Testepic.
+  - Deleted: 2026-10-22.
+
+- `EPIC-004` **test_entry**
+  - Uid: 049c090f-abaa-4ee7-94fd-3b6b02c8371d.
+  - Type: Epic.
+  - Status: Open.
+  - Created: 2026-10-22.
+  - Area: Betrieb und Diagnose.
+  - Priority: Prospective.
+  - Dependencies: None.
+  - Goal: Testeintrag, um die Cloud-Funktionalität des Backlogs zu prüfen.
+    Er kann nach dem Test gelöscht werden.
+  - Completion criteria: 1. Der Eintrag erscheint nach dem Sync mit Uid und Label im ToDo-Viewer.
+  - Deleted: 2026-10-22.
+
+- `STORY-015` **test_entry**
+  - Uid: bc0d26a4-8df1-4bbd-9690-e12a98c0a6ab.
+  - Type: Story.
+  - Parent: `EPIC-004`.
+  - Required for parent: Yes.
+  - Status: Open.
+  - Created: 2026-10-22.
+  - Area: Betrieb und Diagnose.
+  - Priority: Prospective.
+  - Dependencies: None.
+  - Goal: Teststory unter dem Testepic, um die Cloud-Funktionalität des
+    Backlogs zu prüfen.
+  - Completion criteria: 1. Die Story erscheint nach dem Sync unter dem Testepic.
+  - Deleted: 2026-10-22.
+
+- `TASK-051` **test_entry**
+  - Uid: c2e7a2ee-ee9b-4ba4-9849-5a87419c1b7b.
+  - Type: Task.
+  - Parent: `STORY-015`.
+  - Required for parent: Yes.
+  - Status: Open.
+  - Created: 2026-10-22.
+  - Area: Betrieb und Diagnose.
+  - Priority: Prospective.
+  - Dependencies: None.
+  - Goal: Testtask unter der Teststory, um die Cloud-Funktionalität des
+    Backlogs zu prüfen.
+  - Completion criteria: 1. Der Task erscheint nach dem Sync unter der Teststory.
+  - Deleted: 2026-10-22.

@@ -593,34 +593,3 @@ Format: Claude_Harness backlog format version 2. The rules are defined in
     einen abgeschlossenen StoryTurn mit der resultierenden
     GameState-Revision persistieren. Modellaufrufe, Rohantworten,
     ProposedChangeSets und Validierungsergebnisse bleiben transient.
-- `NEW-test-epic` **test_entry**
-  - Type: Epic.
-  - Status: Open.
-  - Area: Betrieb und Diagnose.
-  - Priority: Prospective.
-  - Dependencies: None.
-  - Goal: Testeintrag, um die Cloud-Funktionalität des Backlogs zu prüfen.
-    Er kann nach dem Test gelöscht werden.
-  - Completion criteria: 1. Der Eintrag erscheint nach dem Sync mit Uid und Label im ToDo-Viewer.
-- `NEW-test-story` **test_entry**
-  - Type: Story.
-  - Parent: `NEW-test-epic`.
-  - Required for parent: Yes.
-  - Status: Open.
-  - Area: Betrieb und Diagnose.
-  - Priority: Prospective.
-  - Dependencies: None.
-  - Goal: Teststory unter dem Testepic, um die Cloud-Funktionalität des
-    Backlogs zu prüfen.
-  - Completion criteria: 1. Die Story erscheint nach dem Sync unter dem Testepic.
-- `NEW-test-task` **test_entry**
-  - Type: Task.
-  - Parent: `NEW-test-story`.
-  - Required for parent: Yes.
-  - Status: Open.
-  - Area: Betrieb und Diagnose.
-  - Priority: Prospective.
-  - Dependencies: None.
-  - Goal: Testtask unter der Teststory, um die Cloud-Funktionalität des
-    Backlogs zu prüfen.
-  - Completion criteria: 1. Der Task erscheint nach dem Sync unter der Teststory.

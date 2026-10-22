@@ -12,6 +12,4 @@ Frontend-Web/dist/
 Backend/configs/llm.secrets.toml
 
 # Claude_Harness configs (the cloud copy in runtime/ is committed)
-.claude-harness/*
-!.claude-harness/runtime/
 Backend/configs/scene_image.secrets.toml

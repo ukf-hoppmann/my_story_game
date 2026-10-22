@@ -1,9 +1,9 @@
 # Claude_Harness backlog format, version 2
 
 The backlog lives in the folder configured as `[todo].path` below `[docs].root` in
-`.claude-harness/config.toml` (default `docs/todo`). With `[todo].backend =
-"api"` the ToDo-Viewer server writes this format and enforces its rules
-(see [api.md](api.md)); with `"files"` the AI writes it directly. The files
+`.claude-harness/config.toml` (default `docs/todo`). With the
+`api` backend the ToDo-Viewer server writes this format and enforces its rules
+(see [api.md](api.md)); with `files` the AI writes it directly. The files
 are required only in `"files"` mode; in `"api"` mode the AI does not touch
 them and the server may keep the backlog in a database instead.
 

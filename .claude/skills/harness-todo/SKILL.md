@@ -14,7 +14,11 @@ description: Rules for the project backlog and for notes, topics, and alarms (vi
 2. The backlog folder is `[todo].path` below `[docs].root` (default
    `docs/todo`). Write backlog texts in `[docs].language`; field names stay
    English.
-3. `[todo].backend` decides how you work on it (default `api`):
+3. The backend decides how you work on it (default `api`). It is the one the
+   session start names for the backlog, which can differ from `[todo].backend`:
+   `CLAUDE_HARNESS_TODO_BACKEND` overrides it, and a cloud session
+   (`CLAUDE_CODE_REMOTE=true`) uses `files`. Trust the session start line over
+   the config file:
    - `api`: only through the ToDo-Viewer's HTTP API, using
      `python3 ".claude-harness/runtime/scripts/backlog_api.py" [--project <name>] <command>`
      (`--project` for a subproject's backlog).
@@ -133,7 +137,7 @@ Read only what the task needs:
 
 Reminders, open questions, observations, and ideas without a completion
 definition are not backlog work; they are notes ([notes.md](notes.md), only
-with `[todo].backend = "api"`; read it when asked to remember, remind, or look
+with the `api` backend; read it when asked to remember, remind, or look
 at due notes). Turning a note into an item and an item back into a note runs
 through it. A backlog item's notes entries
 (`<ID>_notes.md`) are not those notes; when unclear which is meant, ask.

@@ -3,8 +3,8 @@ from __future__ import annotations
 import os
 import re
 import tomllib
-from collections.abc import Callable
-from dataclasses import dataclass
+from collections.abc import Callable, Mapping
+from dataclasses import dataclass, replace
 from pathlib import Path, PurePosixPath
 from typing import Any
 
@@ -20,6 +20,10 @@ DEFAULT_TODO_PATH = PurePosixPath("todo")
 # How the AI works on the backlog: through the ToDo-Viewer's HTTP API, or on the files directly.
 TODO_BACKENDS = ("api", "files")
 DEFAULT_TODO_BACKEND = "api"
+# Environment variables that choose the backend per environment without touching the checked-in config.
+TODO_BACKEND_ENV = "CLAUDE_HARNESS_TODO_BACKEND"
+# Set to "true" by Claude Code in cloud sessions (claude.ai/code), where the ToDo-Viewer is not reachable.
+CLOUD_ENV = "CLAUDE_CODE_REMOTE"
 # Default address of the ToDo-Viewer container (bound to localhost only); todo.api_url overrides it.
 DEFAULT_TODO_API_URL = "http://localhost:5411/api"
 # The old viewer served /api/v2; the rebuilt one serves /api/<plugin>/... Old configs are read as the new address.
@@ -142,6 +146,8 @@ class HarnessConfig:
     semver_paths: tuple[PurePosixPath, ...] = (PurePosixPath("."),)
     todo_backend: str = DEFAULT_TODO_BACKEND
     todo_api_url: str = DEFAULT_TODO_API_URL
+    # Why todo_backend differs from the config file ("cloud session; config.toml says api"); empty when it does not.
+    todo_backend_note: str = ""
     # The project keeps a copy of the plugin for cloud sessions (see cloud_export.py).
     cloud_export: bool = False
 
@@ -230,7 +236,24 @@ def load_config(root: Path, *, subproject: bool = False) -> HarnessConfig | None
         data = tomllib.loads(path.read_text(encoding="utf-8"))
     except tomllib.TOMLDecodeError as exc:
         raise ConfigError(f"{CONFIG_RELATIVE_PATH}: invalid TOML: {exc}") from exc
-    return parse_config(data, subproject=subproject)
+    config = parse_config(data, subproject=subproject)
+    override = _backend_override(os.environ)
+    if override is None or override[0] == config.todo_backend:
+        return config
+    backend, source = override
+    return replace(config, todo_backend=backend, todo_backend_note=f"{source}; config.toml says {config.todo_backend}")
+
+
+def _backend_override(env: Mapping[str, str]) -> tuple[str, str] | None:
+    """The backend the environment forces and why, or None when the config decides."""
+    value = env.get(TODO_BACKEND_ENV, "")
+    if value:
+        if value not in TODO_BACKENDS:
+            raise ConfigError(f"{TODO_BACKEND_ENV} must be one of {', '.join(TODO_BACKENDS)}, got {value!r}")
+        return value, TODO_BACKEND_ENV
+    if env.get(CLOUD_ENV) == "true":
+        return "files", "cloud session"
+    return None
 
 
 def _api_base(url: str) -> str:

@@ -1,6 +1,6 @@
 # Backlog through the ToDo-Viewer API
 
-Used when `[todo].backend` is `api` (the default). The ToDo-Viewer server
+Used when the backend is `api` (the default; see [SKILL.md](SKILL.md) for how it is chosen). The ToDo-Viewer server
 checks the format and the parent rules, assigns IDs, writes notes entries in
 the format, and detects concurrent changes through version numbers. It does
 not know which changes the project owner approved: the change authority in

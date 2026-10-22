@@ -2,7 +2,7 @@
 
 An alarm is a reminder at a fixed time: it rings in the ToDo-Viewer at `at`,
 as long as the viewer runs. It is not work and not a note: no review date, no
-completion criteria. Only with `[todo].backend = "api"`.
+completion criteria. Only with the `api` backend.
 
 ## When an alarm
 

@@ -1,4 +1,4 @@
-# NEW-cloud-test-harness — Cloud-Test des Harness (Testeintrag, darf beendet werden)
+# TASK-052 — Cloud-Test des Harness (Testeintrag, darf beendet werden)
 
 ## State
 

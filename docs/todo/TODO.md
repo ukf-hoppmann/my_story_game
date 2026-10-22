@@ -594,11 +594,13 @@ Format: Claude_Harness backlog format version 2. The rules are defined in
     GameState-Revision persistieren. Modellaufrufe, Rohantworten,
     ProposedChangeSets und Validierungsergebnisse bleiben transient.
 
-- `NEW-cloud-test-harness` **Cloud-Test des Harness (Testeintrag, darf beendet werden)**
+- `TASK-052` **Cloud-Test des Harness (Testeintrag, darf beendet werden)**
+  - Uid: e330a499-4821-49c5-bd52-3da5bd62f039.
   - Type: Task.
   - Parent: `EPIC-002`.
   - Required for parent: No.
   - Status: Open.
+  - Created: 2026-10-22.
   - Area: Betrieb und Diagnose.
   - Priority: Prospective.
   - Dependencies: None.

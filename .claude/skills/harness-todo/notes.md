@@ -8,23 +8,32 @@ to [SKILL.md](SKILL.md).
 
 1. Read `.claude-harness/config.toml` of the project the work belongs to (with
    subprojects, the session start lists each project and its folder; paths
-   below are relative to that folder). If `[modules].todo` is not `true` or
-   the backend is not `api` (for example in a cloud session), these rules do
-   not apply — say so and stop.
+   below are relative to that folder). If `[modules].todo` is not `true`,
+   these rules do not apply — say so and stop. If the backend is not `api`
+   (for example in a cloud session), the notes are files: follow
+   [notes-files.md](notes-files.md) instead and ignore the rest of this file.
 2. Write note texts (summary, body) in `[docs].language`; field names, status
    values, and roles stay English.
 3. Work only through
    `python3 ".claude-harness/runtime/scripts/notes_api.py" [--project <name>] <command>`.
    Commands and inputs: [notes-api.md](notes-api.md); read it before the first call. Notes
-   live only in the ToDo-Viewer's database: there are no note files, so
-   nothing is committed, and nothing falls back to files.
+   live in the ToDo-Viewer's database, and you never write note files
+   yourself; nothing falls back to files. If the project's backlog has a
+   mirror in the viewer, the viewer writes the notes into `notes/` below the
+   backlog folder: commit that folder with the rest of the backlog (message
+   `Backlog: …`) as [SKILL.md](SKILL.md) says. How the mirror travels between
+   a cloud session and the viewer: [sync-flow.md](sync-flow.md).
    Notes of another project (`--source <name>`) follow the approval rule of
    the rules of [SKILL.md](SKILL.md) for other projects' backlogs, including `sources`.
 4. If the helper exits with code 3 (server not reachable), tell the user and
    ask whether to start the server or stop. Exit code 4 (project not
    registered in the viewer) is handled as in [SKILL.md](SKILL.md).
-5. Notes are private as long as they live only in the database. Do not treat
-   them as team knowledge and do not copy their content into checked-in files
+5. With `api` and no mirror, notes are private as long as they live only in
+   the database. With a mirror they are files in the repository, and in a cloud
+   session on GitHub: they are then not private (see
+   [notes-files.md](notes-files.md)); tell the owner once when you create the
+   first note in a project with a mirror. In both cases do not treat them as
+   team knowledge and do not copy their content into other checked-in files
    (backlog, daily reports, documentation, commit messages).
 
 ## Note, backlog item, or alarm

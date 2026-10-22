@@ -155,8 +155,12 @@ class HarnessConfig:
         return self.modules.get(module, False)
 
     def notes_enabled(self) -> bool:
-        """Notes are part of the todo module; they live only in the ToDo-Viewer, so they need the API backend."""
-        return self.enabled("todo") and self.todo_backend == "api"
+        """Notes are part of the todo module: in the ToDo-Viewer (api) or as files below the backlog folder (files)."""
+        return self.enabled("todo")
+
+    def viewer_notes_enabled(self) -> bool:
+        """The ToDo-Viewer's notes and alarms (notes_api.py, alarms_api.py) need the API backend."""
+        return self.notes_enabled() and self.todo_backend == "api"
 
     def part_enabled(self, part: str) -> bool:
         return self.enabled("development") and self.development_parts.get(part, True)

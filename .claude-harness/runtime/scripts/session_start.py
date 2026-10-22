@@ -118,9 +118,12 @@ def _single_project(root: Path, projects: ProjectSet) -> list[str]:
         else:
             lines.append(f"Backlog: {config.todo_path}/{TODO_FILE}{_backend_note(config)}; {TODO_HINT}")
             lines += _backlog_problems(root, config)
-    if config.notes_enabled():
+    if config.viewer_notes_enabled():
         # Static line: hooks do not use the network, so due notes are not looked up here.
         lines.append(f"Notes: via ToDo-Viewer API ({config.todo_api_url}); {NOTES_HINT}")
+    elif config.notes_enabled():
+        # Not looked up either: the folder is created by the first note.
+        lines.append(f"Notes: {config.todo_path}/notes/ as files; {NOTES_HINT}")
     if config.enabled("daily"):
         lines.append(f"Daily reports: {config.daily_path}/; {DAILY_HINT}")
     if config.enabled("techdocs"):

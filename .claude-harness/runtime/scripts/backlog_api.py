@@ -5,14 +5,12 @@ The backlog comes from the harness config of the session's project, never from a
 """
 from __future__ import annotations
 
-import os
 import sys
 from collections.abc import Callable
 from typing import Any
 from urllib.parse import quote
 
 from notes_hint import child_in_progress_hint
-from state import add_item
 from viewer_api import (
     EXIT_USAGE, NO_PARENT, Api, ApiError, Target, find_project, item_fields, print_json, print_projects,
     register_project, split_target, stdin_json, target_for, version_arg,
@@ -150,24 +148,41 @@ def run(project_name: str, source_name: str | None, command: str, args: list[str
         print(f"registered as viewer project {record['name']!r} (uid {record['uid']})")
         return
     target = target_for(api, project, source_name)
-    _run(target, command, positional, options, _remember_in(project_name, source_name))
+    _run(target, command, positional, options, _reporter(source_name))
 
 
-def _remember_in(project_name: str, source_name: str | None) -> Callable[[str, str], None]:
-    """Notes the session changed and items it works on ("notes", "active"), kept for the hooks; best effort.
+NOTES_STATES = ("current", "stale", "missing")
+_STATE_HINTS = {"notes_state_stale": "stale", "notes_state_missing": "missing"}
 
-    Only the session's own backlog counts, and only where Claude Code names the session.
+
+def _reporter(source_name: str | None) -> Callable[..., None]:
+    """Machine-readable lines for the PostToolUse hook (mark_notes_state.py), which reads them from the Bash answer.
+
+    `[harness] notes-state <ID> <state>` after a write on an item's notes, `[harness] active <ID>` when the session
+    starts working on an item. Only the session's own backlog counts: nothing for another project (`--source`).
+    The helper stores nothing; the hook runs in the right data folder with the right session.
     """
-    session_id = os.environ.get("CLAUDE_CODE_SESSION_ID")
 
-    def remember(kind: str, identifier: str) -> None:
-        if session_id and source_name is None:
-            try:
-                add_item(session_id, kind, project_name, identifier)
-            except OSError:
-                pass
+    def report(kind: str, identifier: str, answer: Any = None) -> None:
+        if source_name is not None:
+            return
+        line = f"active {identifier}" if kind == "active" else f"notes-state {identifier} {_notes_state(answer)}"
+        print(f"[harness] {line}", file=sys.stderr)
 
-    return remember
+    return report
+
+
+def _notes_state(answer: Any) -> str:
+    """The state of the notes head after a write: from the answer, else from its hints (no hint: current)."""
+    if not isinstance(answer, dict):
+        return "current"
+    for key in ("notes_state", "state"):
+        if answer.get(key) in NOTES_STATES:
+            return str(answer[key])
+    for hint in answer.get("hints") or []:
+        if isinstance(hint, dict) and hint.get("code") in _STATE_HINTS:
+            return _STATE_HINTS[hint["code"]]
+    return "current"
 
 
 def _print_hints(answer: Any) -> None:
@@ -188,7 +203,7 @@ def _notes_call(api: Api, method: str, path: str, body: Any = None, query: dict[
 
 
 def _run(target: Target, command: str, positional: list[str], options: dict[str, str | bool],
-         remember: Callable[[str, str], None]) -> None:
+         report: Callable[..., None]) -> None:
     api, project = target.api, target.uid
     if command == "index":
         text = api.call("GET", "/backlog/index", query={"projects": project})["text"]
@@ -218,7 +233,7 @@ def _run(target: Target, command: str, positional: list[str], options: dict[str,
             body["resolution"] = data["resolution"]
         print_json(api.call("PUT", _item(identifier), body))
         if body["fields"].get("status") == "In progress":
-            remember("active", identifier)
+            report("active", identifier)
     elif command == "move":
         identifier, version, parent = positional[0], version_arg(positional[1]), positional[2]
         body = {"project": project, "version": version,
@@ -228,12 +243,12 @@ def _run(target: Target, command: str, positional: list[str], options: dict[str,
         print_json(api.call("POST", _item(identifier, "/move"), body))
     elif command == "reopen":
         print_json(api.call("POST", _item(positional[0], "/reopen"), {"project": project}))
-        remember("active", positional[0])
+        report("active", positional[0])
     elif command == "note":
         answer = api.call("POST", _item(positional[0], "/notes"), {**stdin_json(), "project": project})
         print_json(answer)
         _print_hints(answer)
-        remember("notes", positional[0])
+        report("notes", positional[0], answer)
         _hint_children_in_progress(api, project, positional[0])
     elif command == "state":
         print_json(_notes_call(api, "GET", _item(positional[0], "/notes/state"), query={"project": project}))
@@ -247,19 +262,19 @@ def _run(target: Target, command: str, positional: list[str], options: dict[str,
         answer = _notes_call(api, "PUT", _item(positional[0], "/notes/state"), body)
         print_json(answer)
         _print_hints(answer)
-        remember("notes", positional[0])
+        report("notes", positional[0], answer)
     elif command == "confirm-state":
         body = {"project": project, "version": version_arg(positional[1])}
         answer = _notes_call(api, "POST", _item(positional[0], "/notes/state/confirm"), body)
         print_json(answer)
         _print_hints(answer)
-        remember("notes", positional[0])
+        report("notes", positional[0], answer)
     elif command == "doc":
         identifier, name = positional
         document = api.call("GET", _item(identifier, f"/documents/{quote(name)}"), query={"project": project})
         sys.stdout.write(f"version: {document['version']}\n\n{document['content']}")
         if name.endswith("_spec.md"):
-            remember("active", identifier)
+            report("active", identifier)
     elif command == "put-doc":
         identifier, name, version = positional
         body = {"project": project, "content": sys.stdin.read(),
@@ -270,7 +285,7 @@ def _run(target: Target, command: str, positional: list[str], options: dict[str,
         print(f"{document['name']}: saved, version {document['version']}")
         if name.endswith("_notes.md"):
             _print_hints(document)
-            remember("notes", identifier)
+            report("notes", identifier, document)
             _hint_children_in_progress(api, project, identifier)
     elif command == "retype":
         identifier, version, new_type = positional

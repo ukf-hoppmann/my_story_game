@@ -319,7 +319,7 @@ def run(project_name: str, source_name: str | None, name: str, args: list[str]) 
     command = Command(0, lambda c: None) if name in local else COMMANDS[name]
     positional, options = _split(command, args)
     project = find_project(project_name, "todo")
-    if not project.config.notes_enabled():
+    if not project.config.viewer_notes_enabled():
         raise ApiError(
             f"notes need todo.backend = \"api\" in project {project.name}: they live only in the ToDo-Viewer",
             EXIT_USAGE,

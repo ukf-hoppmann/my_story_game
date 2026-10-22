@@ -90,7 +90,15 @@ Read only what the task needs:
   - **When:** after every answered question, before asking the next one —
     not at the end.
   - **Head:** after every change to the notes, update the head or
-    deliberately confirm that it is still current.
+    deliberately confirm that it is still current. A check at the end of
+    your turn blocks while the head of notes you changed is `stale` or
+    `missing` (API: it relies on what the helper reported; files: on the
+    stamp); update it (`put-state`) or confirm it (`confirm-state`, files:
+    `backlog.py --confirm-state`) to continue.
+  - **Reminder:** an item you work on (set `In progress`, or its spec read)
+    that gets no notes entry for 5 prompts triggers a short reminder (again
+    after every further 5). It is no block: write the entry if something was
+    clarified, decided, or rejected; otherwise ignore it.
 - Keep the spec current: once something is decided, bring the spec up to
   date; the notes keep the way there. A discussion ends with the spec. The
   implementation plan is made only when implementation starts, presented
@@ -136,10 +144,12 @@ Read only what the task needs:
 ## Notes
 
 Reminders, open questions, observations, and ideas without a completion
-definition are not backlog work; they are notes ([notes.md](notes.md), only
-with the `api` backend; read it when asked to remember, remind, or look
-at due notes). Turning a note into an item and an item back into a note runs
-through it. A backlog item's notes entries
+definition are not backlog work; they are notes. With the `api` backend they
+live in the ToDo-Viewer ([notes.md](notes.md)), with `files` as Markdown files
+below the backlog folder ([notes-files.md](notes-files.md)); read the matching
+file when asked to remember, remind, or look at due notes. Turning a note into
+an item and an item back into a note runs through the viewer ([notes.md](notes.md)).
+A backlog item's notes entries
 (`<ID>_notes.md`) are not those notes; when unclear which is meant, ask.
 A reminder at a fixed time is an alarm in the viewer ([alarms.md](alarms.md),
 only with `api`; read it when asked to remind at a time).
@@ -151,7 +161,13 @@ only with `api`; read it when asked to remind at a time).
 - API mode: the server writes into the backlog folder of the main checkout,
   never into a worktree, and does not commit. Commit those files in the main
   checkout on their own (message `Backlog: …`) when the task is done. During
-  a worktree change, do it after `ExitWorktree` and before the merge.
+  a worktree change, do it after `ExitWorktree` and before the merge. With a
+  mirror this includes `notes/` below the backlog folder, which the viewer
+  writes; you still do not read, edit, create, or delete any of these files
+  yourself.
+- Cloud sessions and the local viewer exchange the backlog through Git and the
+  viewer's sync: [sync-flow.md](sync-flow.md) (read it when a cloud session is
+  prepared or its branch comes back).
 
 Field syntax, lifecycle rules, and details: [format.md](format.md). Read it
 when creating items or when a check or the server reports a rule violation.

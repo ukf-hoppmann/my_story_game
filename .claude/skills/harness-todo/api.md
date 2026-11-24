@@ -35,24 +35,24 @@ EOF
 | `health` | Is the server reachable? |
 | `sources` | `Project \| Folder` of every project the viewer knows; the names `--source` accepts |
 | `register` | Register the session's backlog as a viewer project with a mirror. Only after the owner said yes (exit code 4 below) |
-| `index [--with-trash]` | Overview: `ID \| Type \| Status \| Area \| Title \| Parent`; items in the trash are left out, with `--with-trash` they are shown marked `(Papierkorb)` |
+| `index [--with-trash]` | Overview: `ID \| Type \| Status \| Title \| Parent \| Notes` (`Notes`: state of the notes head, or `-`); items in the trash are left out, with `--with-trash` they are shown marked `(Papierkorb)` |
 | `show <ID>` | One item as JSON with its `version`, archived items included; deleted children carry a `note` and do not count as open work (stderr names unclosed ones as a hint) |
-| `areas` | The areas in use, one per line |
-| `create` | New item. stdin: `type`, `title`, `area`, `goal`, `completion_criteria` (numbered list, one criterion per line, `\n`-separated), optional `parent` (ID), `required_for_parent` (`"Yes"`/`"No"`), `priority`, `dependencies` (list of IDs), `summary`. Prints the item with its new ID |
-| `update <ID> <version>` | stdin: `{"fields": {...}}` with any of `title`, `status`, `parent`, `required_for_parent`, `priority`, `dependencies`, `area`, `goal`, `completion_criteria`, `summary`; add `"resolution": "..."` when setting `Completed` or `Rejected` |
+| `create` | New item. stdin: `type`, `title`, `goal`, `completion_criteria` (numbered list, one criterion per line, `\n`-separated), optional `parent` (ID), `required_for_parent` (`"Yes"`/`"No"`), `priority`, `dependencies` (list of IDs), `summary`. Prints the item with its new ID |
+| `update <ID> <version>` | stdin: `{"fields": {...}}` with any of `title`, `status`, `parent`, `required_for_parent`, `priority`, `dependencies`, `goal`, `completion_criteria`, `summary`; add `"resolution": "..."` when setting `Completed` or `Rejected` |
 | `move <ID> <version> <parent\|-> [--position N]` | New parent (`-` = none) and position among its siblings |
 | `reopen <ID>` | Set the item and its closed ancestors to `In progress`, from the top down |
 | `note <ID>` | Append a dated notes entry. stdin: `{"topic": "...", "discussed": [...], "decided": [...], "open": [...]}`; add `"summary"` if the item has none yet, and `"state"` (the new head) with `"state_version"` (the head's version, once there is a head) to replace the head in the same call. After every notes write (`note`, `put-state`, `confirm-state`, `put-doc` on notes) the server's hints are printed on stderr, one `hint:` line each (stale or long head, rewritten log); they never reject the call. The same commands also print a line `[harness] notes-state <ID> <current|stale|missing>` on stderr (and `update` to `In progress`, `reopen`, and `doc <ID> <ID>_spec.md` print `[harness] active <ID>`): a hook reads them to check the head at the end of your turn and to remind you of the notes; they are not for you to act on. On an epic or story with a child `In progress` (also for `put-doc` on its notes) a hint on stderr asks whether the discussion belongs in that child's notes; the entry is written either way |
 | `state <ID>` | The head (`## State`) of the item's notes without the log, as JSON: `content`, `stamp`, `state` (`current`/`stale`/`missing`), `checksum`, `last_entry`, `version` (of the head). Read it first when discussing an item |
-| `put-state <ID> <version>` | Replace the head with the text from stdin (without heading and stamp); the server stamps it against the last entry. Needs at least one log entry |
+| `put-state <ID> <version>` | Replace the head with the text from stdin (without heading and stamp), in the form of [format.md](format.md#notes) (markers `- Goal/Status:`, `- Next step:`, `- Open:`, `- Decided:`, `- References:`); the server stamps it against the last entry. Needs at least one log entry |
 | `confirm-state <ID> <version>` | The head is still current: only the stamp is renewed |
 | `entries <ID> [--last N]` | The log entries (all, or the last N) as `{position, day, topic, text}`; read them only when you need the reasons behind a decision |
 | `doc <ID> <name>` | Print a notes or spec document: `version: <v>`, a blank line, the text. Names: `<ID>_notes.md`, `<ID>_spec.md`, `<ID>_spec_<topic>.md` |
 | `put-doc <ID> <name> <version\|new> [--summary TEXT]` | Replace a document with the complete text from stdin, or create it with `new` (first notes need `--summary` if the item has none) |
+| `delete-doc <ID> <name> <version>` | Move a notes or spec document to the trash, in the `version` that `doc` printed. With the notes go their head and the item's summary (a new first notes entry needs `summary` again); deleting a spec has no further effect. The answer names `trash_uid`. Refused for an item in the trash. The file leaves the mirror at once if it is unchanged there |
 | `retype <ID> <version> <type>` | Change the type (`Epic`, `Story`, `Task`). The ID's prefix is the type, so the item gets the next free ID of the new type; references in the project's texts follow. Prints `old_label` and `new_label`; refused when the new type breaks a lifecycle rule |
 | `delete <ID> <version> [--cascade]` | Move to the trash; an item with active children needs `--cascade` (the answer names `has_children` first and changes nothing) |
-| `trash` | Backlog items in the trash |
-| `restore <ID>` | Restore from the trash, with the descendants deleted together with it |
+| `trash` | Backlog items and deleted documents in the trash. A document has `kind` `document`, its own `uid` (use that to restore it), the item's ID as `label` and its name as `title` |
+| `restore <ID\|trash uid>` | Restore from the trash: an item with the descendants deleted together with it (by ID), or a deleted document (by the `uid` that `trash` shows; notes come back with head and summary). Refused with `document_exists` if the item has a document of that name again, and with `item_deleted` while the item is in the trash |
 
 A `version` is a number: take it from the last `show` (or write answer) of
 that item or document. A notes entry and every document write count as a
@@ -70,6 +70,28 @@ with a status that is not final, e.g. `{"fields": {"status": "In progress"}}`,
 or `reopen <ID>`, which also reopens its closed ancestors. This works for
 archived items too: the server moves them back to `TODO.md` and drops
 `Resolution`. Then record the reason with `note`.
+
+The topic of an item is the node of the viewer's mindmap it hangs on (tools
+`mindmap_…`, e.g. `mindmap_get_item_node`, `mindmap_assign_item`; or the
+section "Knoten" in the item's detail). There is no filter and no column in the
+index lines for it, and this helper does not offer it. The viewer has no `area`
+field any more: a call with `area` in `fields` fails with `not_editable`, and
+`show` returns no such field.
+
+## Topic tree (MCP tools of the viewer)
+
+Only the viewer's MCP server `todo-viewer` offers these (names as `tools/list`
+prints them; HTTP paths below `/api/mindmap/…`); `backlog_api.py` has no
+commands for them. The rule for using them is in [SKILL.md](SKILL.md)
+(creating an item).
+
+| Tool | Purpose | Main inputs |
+|---|---|---|
+| `mindmap_get_tree` | Read the topic tree: nodes (uid, title, parent, position, counts, state) and the items without a node (`unassigned`) | `project` |
+| `mindmap_create_item_at_node` | Create an item and hang it on the node | `node`, `type` (Epic, Story, Task), `fields` (`completion_criteria` required; `title`, `goal` otherwise from the node) |
+| `mindmap_assign_item` | Hang an existing item on a node | `node`, `item`, `replace` (only to replace another node) |
+| `mindmap_create_node` | Create a node, only after the owner's yes | `project`, `title`, `text`, `parent` |
+| `backlog_create_item` | Create an item without a node, when none fits or the owner declines | `project`, `type`, `fields` |
 
 ## Errors
 

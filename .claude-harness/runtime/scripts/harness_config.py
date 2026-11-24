@@ -45,10 +45,10 @@ TABLE_KEYS = {
     "todo": {"path", "backend", "api_url"},
     "daily": {"path"},
     "techdocs": {"path", "documents"},
-    "development": {"path", "tests", *DEVELOPMENT_PARTS},
+    "development": {"path", "tests", "public_api", *DEVELOPMENT_PARTS},
     "harness": {"repo"},
     "semver": {"file", "sync", "paths"},
-    "cloud": {"export"},
+    "cloud": {"export", "sync"},
 }
 _TOP_LEVEL_KEYS = {"version", "modules", "projects", *TABLE_KEYS}
 # Tables only the root project may contain: the subproject registry, the harness repo, and the cloud copy
@@ -150,17 +150,21 @@ class HarnessConfig:
     todo_backend_note: str = ""
     # The project keeps a copy of the plugin for cloud sessions (see cloud_export.py).
     cloud_export: bool = False
+    # Cloud sessions bring the current branch up to date with origin at startup (see cloud_sync.py).
+    cloud_sync: bool = True
+    # Patterns (like architecture scope paths, relative to the project root) of the project's public API files.
+    public_api: tuple[str, ...] = ()
 
     def enabled(self, module: str) -> bool:
         return self.modules.get(module, False)
 
-    def notes_enabled(self) -> bool:
-        """Notes are part of the todo module: in the ToDo-Viewer (api) or as files below the backlog folder (files)."""
+    def memos_enabled(self) -> bool:
+        """Memos are part of the todo module: in the ToDo-Viewer (api) or as files below the backlog folder (files)."""
         return self.enabled("todo")
 
-    def viewer_notes_enabled(self) -> bool:
-        """The ToDo-Viewer's notes and alarms (notes_api.py, alarms_api.py) need the API backend."""
-        return self.notes_enabled() and self.todo_backend == "api"
+    def viewer_memos_enabled(self) -> bool:
+        """The ToDo-Viewer's memos and alarms (memos_api.py, alarms_api.py) need the API backend."""
+        return self.memos_enabled() and self.todo_backend == "api"
 
     def part_enabled(self, part: str) -> bool:
         return self.enabled("development") and self.development_parts.get(part, True)
@@ -291,7 +295,7 @@ def parse_config(data: dict[str, Any], *, subproject: bool = False) -> HarnessCo
         for name, value in raw_modules.items():
             if name == "notes":
                 errors.append(
-                    "unknown module 'notes': notes are part of todo now (active with todo and "
+                    "unknown module 'notes': memos are part of todo now (active with todo and "
                     "todo.backend = \"api\"); remove modules.notes"
                 )
             elif name not in KNOWN_MODULES:
@@ -334,11 +338,18 @@ def parse_config(data: dict[str, Any], *, subproject: bool = False) -> HarnessCo
         else:
             errors.append(f"development.{part} must be true or false")
 
+    public_api = _pattern_list(raw_development, "public_api", "development", errors)
+
     harness_repos = _harness_repos(_table(data, "harness", errors).get("repo", []), errors)
-    cloud_export = _table(data, "cloud", errors).get("export", False)
+    raw_cloud = _table(data, "cloud", errors)
+    cloud_export = raw_cloud.get("export", False)
     if not isinstance(cloud_export, bool):
         errors.append("cloud.export must be true or false")
         cloud_export = False
+    cloud_sync = raw_cloud.get("sync", True)
+    if not isinstance(cloud_sync, bool):
+        errors.append("cloud.sync must be true or false")
+        cloud_sync = True
     projects = _projects(data.get("projects", {}), errors)
     raw_semver = _table(data, "semver", errors)
     semver_file = _path_value(raw_semver, "file", "semver", DEFAULT_VERSION_FILE, errors)
@@ -370,6 +381,8 @@ def parse_config(data: dict[str, Any], *, subproject: bool = False) -> HarnessCo
         todo_backend=todo_backend,
         todo_api_url=_api_base(todo_api_url),
         cloud_export=cloud_export,
+        cloud_sync=cloud_sync,
+        public_api=public_api,
     )
 
 
@@ -464,6 +477,23 @@ def _path_list(
         except ConfigError as exc:
             errors.append(f"{table_name}.{key} entry {entry!r} {exc}")
     return tuple(paths)
+
+
+def _pattern_list(table: dict[str, Any], key: str, table_name: str, errors: list[str]) -> tuple[str, ...]:
+    """A list of path patterns (relative to the project root, no '..'); empty when absent."""
+    if key not in table:
+        return ()
+    value = table[key]
+    if not isinstance(value, list):
+        errors.append(f"{table_name}.{key} must be a list of path patterns")
+        return ()
+    patterns = []
+    for entry in value:
+        try:
+            patterns.append(_relative_path(entry).as_posix())
+        except ConfigError as exc:
+            errors.append(f"{table_name}.{key} entry {entry!r} {exc}")
+    return tuple(patterns)
 
 
 def _relative_path(value: Any) -> PurePosixPath:

@@ -1,6 +1,6 @@
 ---
 name: harness-todo
-description: Rules for the project backlog and for notes, topics, and alarms (via the ToDo-Viewer API, or TODO.md, archive.md, per-item notes and specs in files mode). Use when reading, discussing, creating, updating, or archiving backlog items — epics, stories, tasks, their status, notes, or specs — and when the user asks to remember, remind, or note something for later or asks about due notes.
+description: Rules for the project backlog and for memos, topics, and alarms (via the ToDo-Viewer API, or TODO.md, archive.md, per-item notes and specs in files mode). Use when reading, discussing, creating, updating, or archiving backlog items — epics, stories, tasks, their status, notes, or specs — and when the user asks to remember, remind, or note something for later or asks about due memos.
 ---
 
 # Project backlog
@@ -94,7 +94,11 @@ Read only what the task needs:
     your turn blocks while the head of notes you changed is `stale` or
     `missing` (API: it relies on what the helper reported; files: on the
     stamp); update it (`put-state`) or confirm it (`confirm-state`, files:
-    `backlog.py --confirm-state`) to continue.
+    `backlog.py --confirm-state`) to continue. The head has exactly the
+    English markers `- Goal/Status:`, `- Next step:`, `- Open:`,
+    `- Decided:`, `- References:` in this order; their content is in the
+    project's language, one point per line with its date
+    ([format.md](format.md#notes)).
   - **Reminder:** an item you work on (set `In progress`, or its spec read)
     that gets no notes entry for 5 prompts triggers a short reminder (again
     after every further 5). It is no block: write the entry if something was
@@ -123,6 +127,30 @@ Read only what the task needs:
 - If the fitting parent is closed, ask whether to reopen it in the same
   question that proposes the new item, before creating anything. Without a
   yes, do not create the item without a parent; ask how to proceed.
+- API mode, creating an item: also place it in the viewer's topic tree (the
+  mindmap), tools in [api.md](api.md#topic-tree-mcp-tools-of-the-viewer).
+  Read the tree first (`mindmap_get_tree`). If a node fits, create the item
+  there (`mindmap_create_item_at_node`) or assign an existing one
+  (`mindmap_assign_item`). If none fits, propose a node or subnode to the
+  owner in the conversation (title, place in the tree) and create it
+  (`mindmap_create_node`) only after the owner's yes; do not invent topics.
+  Without a yes, or on a no or no answer, create no node and create the item
+  without one (`backlog_create_item`, or the helper's `create`): it then
+  appears under "Nicht zugeordnet". If the viewer's MCP tools are not
+  available in the session, tell the owner that the topic tree cannot be
+  reached, create the item with the helper's `create` without a node, and say
+  that it is unassigned. Files mode: see the next point.
+- Files mode, creating an item: if the project has a `mindmap/` folder, think
+  about which node fits (read `mindmap/project.md` and the node files: title,
+  text) and write the item's label under `Items:` of that node
+  ([format.md](format.md#mindmap-files-mode)). If none fits, propose a new
+  node (and its parent) to the owner in the conversation; only after the
+  owner's yes create it as a placeholder file and list it in `project.md`.
+  Without a yes no node is created and the item stays unassigned (the viewer
+  shows it under "Nicht zugeordnet"); do not invent topics. If the project has
+  no `mindmap/` folder, do not create it; tell the owner that the mindmap is
+  not mirrored yet. A new node also needs the owner's yes when it comes up
+  while placing an existing item. Never delete nodes, maps, or files there.
 - With subprojects, each project has its own backlog. New items go into the
   backlog of the project the work belongs to; if that is unclear, ask.
 - A session works only on the backlog of its own project. Another project's
@@ -138,19 +166,24 @@ Read only what the task needs:
   - Before every call into another project, name that project in your answer.
   - The rules of the other project's backlog do not change: format, parent
     rules, and the change authority below apply there as well.
-- Reuse existing areas before inventing new ones. Files: new IDs take the
-  next free number of their type; API: the server assigns them.
+- Files: new IDs take the next free number of their type; API: the server
+  assigns them.
+- The topic of an item is the node of the viewer's mindmap it hangs on (tools
+  `mindmap_…`, e.g. `mindmap_get_item_node`, `mindmap_assign_item`, or the
+  section "Knoten" in the item's detail). There is no field, no filter, and no
+  column in the index lines for it; scripts and skills here do not rebuild it.
+  Rule for new items: see "API mode, creating an item" above.
 
-## Notes
+## Memos
 
 Reminders, open questions, observations, and ideas without a completion
-definition are not backlog work; they are notes. With the `api` backend they
-live in the ToDo-Viewer ([notes.md](notes.md)), with `files` as Markdown files
-below the backlog folder ([notes-files.md](notes-files.md)); read the matching
-file when asked to remember, remind, or look at due notes. Turning a note into
-an item and an item back into a note runs through the viewer ([notes.md](notes.md)).
-A backlog item's notes entries
-(`<ID>_notes.md`) are not those notes; when unclear which is meant, ask.
+definition are not backlog work; they are memos (`MEMO-001`). With the `api`
+backend they live in the ToDo-Viewer ([memos.md](memos.md)), with `files` as
+Markdown files below the backlog folder ([memos-files.md](memos-files.md));
+read the matching file when asked to remember, remind, or look at due memos.
+Turning a memo into an item and an item back into a memo runs through the
+viewer ([memos.md](memos.md)). The notes of a backlog item (`<ID>_notes.md`,
+its discussion log) are not memos; when unclear which is meant, ask.
 A reminder at a fixed time is an alarm in the viewer ([alarms.md](alarms.md),
 only with `api`; read it when asked to remind at a time).
 
@@ -162,7 +195,7 @@ only with `api`; read it when asked to remind at a time).
   never into a worktree, and does not commit. Commit those files in the main
   checkout on their own (message `Backlog: …`) when the task is done. During
   a worktree change, do it after `ExitWorktree` and before the merge. With a
-  mirror this includes `notes/` below the backlog folder, which the viewer
+  mirror this includes `memos/` below the backlog folder, which the viewer
   writes; you still do not read, edit, create, or delete any of these files
   yourself.
 - Cloud sessions and the local viewer exchange the backlog through Git and the

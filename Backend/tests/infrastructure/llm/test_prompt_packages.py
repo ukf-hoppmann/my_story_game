@@ -1,18 +1,28 @@
 from __future__ import annotations
 
+import re
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
 
+from story_game.application import LLMGenerationCall, ModelSelection
 from story_game.application.llm import (
+    GenerationOptions,
+    InitialWorldExtractionRequest,
     InvalidPromptPackageError,
     PromptCategoryNotFoundError,
     PromptDirectiveNotFoundError,
     PromptOptionNotFoundError,
     PromptPackageNotFoundError,
     PromptTaskNotFoundError,
+    TurnExtractionRequest,
 )
 from story_game.infrastructure.llm import FilePromptPackageCatalog
+from story_game.infrastructure.llm.openai_compatible import (
+    initial_extraction_wire,
+    turn_extraction_wire,
+)
 
 
 REPOSITORY_ROOT = Path(__file__).parents[3]
@@ -80,6 +90,68 @@ def test_loads_all_categories_defaults_and_non_selectable_boundary_directive() -
         for category in package.categories
         for option in category.options
     )
+
+
+def _schema_names(node: object) -> set[str]:
+    """Property names and enum values anywhere in a JSON schema."""
+    names: set[str] = set()
+    if isinstance(node, dict):
+        for key, value in node.items():
+            if key == "properties":
+                names.update(value)
+            elif key == "enum":
+                names.update(item for item in value if isinstance(item, str))
+            names |= _schema_names(value)
+    elif isinstance(node, list):
+        for value in node:
+            names |= _schema_names(value)
+    return names
+
+
+def _turn_extraction_schema() -> object:
+    call = LLMGenerationCall(
+        model_selection=ModelSelection("groq", "model"),
+        generation_options=GenerationOptions(temperature=0.1),
+        request=TurnExtractionRequest(
+            system_prompts=("prompt",),
+            world_state="world",
+            narration="narration",
+            language="de",
+        ),
+    )
+    return turn_extraction_wire.build_request(call).response_format.schema
+
+
+def _initial_extraction_schema() -> object:
+    call = LLMGenerationCall(
+        model_selection=ModelSelection("groq", "model"),
+        generation_options=GenerationOptions(temperature=0.1),
+        request=InitialWorldExtractionRequest(
+            system_prompts=("prompt",),
+            opening_narration="narration",
+            language="de",
+            perspective="third_person_limited",
+            control_mode="player",
+        ),
+    )
+    return initial_extraction_wire.build_request(call).response_format.schema
+
+
+@pytest.mark.parametrize(
+    ("task_id", "schema_of"),
+    [
+        ("worldstate_extraction", _turn_extraction_schema),
+        ("worldstate_initialization", _initial_extraction_schema),
+    ],
+)
+def test_extraction_task_text_names_only_fields_of_its_response_schema(
+    task_id: str, schema_of: Callable[[], object]
+) -> None:
+    text = FilePromptPackageCatalog(PROMPT_ROOT).load("story.base", "1").task(task_id).text
+
+    mentioned = set(re.findall(r"\b[a-z]+(?:_[a-z]+)+\b", text))
+
+    assert mentioned - _schema_names(schema_of()) == set()
 
 
 def test_summary_task_is_not_present() -> None:

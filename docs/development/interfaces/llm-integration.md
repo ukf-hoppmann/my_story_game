@@ -41,7 +41,7 @@ The request carries the opening narration but no player seed. The wire schema is
 - New objects get a short `local_ref` chosen by the model; links and facts in the same candidate refer to them by that `local_ref`.
 - `scene` is a tuple of `CandidateSceneReference(reference, evidence)`, most relevant first, naming where the narration looks after the turn.
 - `TurnExtractionRequest.with_evidence` selects one of two wire schemas named `turn_changes` in `Backend/src/story_game/infrastructure/llm/openai_compatible/turn_extraction_wire.py`: with evidence every change carries a verbatim quote from the narration, without it the field is absent. Evidence is diagnostic only; it stays in `ProposedChange.evidence` and is never persisted.
-- On the wire the removal lists are named `removed_links` and `removed_facts` (each item `{handle}` or `{handle, evidence}`). The prompt text in `Backend/prompts/story.base/1.toml` for `worldstate_extraction` calls them `removed_link_handles` and `removed_fact_handles`.
+- On the wire the removal lists are named `removed_links` and `removed_facts` (each item `{handle}` or `{handle, evidence}`); the `worldstate_extraction` task text uses the same names. A test checks that every snake_case name in an extraction task text exists in the response schema of that task (`Backend/tests/infrastructure/llm/test_prompt_packages.py`).
 - The user message has the sections `[language]`, `[world_state]`, `[narration]`; the system message is the joined `system_prompts`. The request contains no player input.
 
 ### Prompt packages

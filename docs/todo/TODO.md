@@ -4,7 +4,7 @@ Active project work: open, in progress, or awaiting a project-owner decision.
 Completed and rejected items are moved to `archive.md`; per-item notes and
 specs live in `items/<ID>/`.
 
-Format: Claude_Harness backlog format version 2. The rules are defined in
+Format: Claude_Harness backlog format version 3. The rules are defined in
 `docs/techdocs/interfaces.md` of the ToDo Viewer.
 
 ## Work items
@@ -611,3 +611,54 @@ Format: Claude_Harness backlog format version 2. The rules are defined in
     werden.
   - Summary: Testeintrag aus einer Cloud-Sitzung, um den Weg von der Cloud
     in den ToDo-Viewer zu belegen. Er hat keinen fachlichen Inhalt.
+
+- `TASK-054` **Ablage der Frontend-Tests klären**
+  - Uid: 2bc66fa4-865d-421d-88ab-a384793a406f.
+  - Type: Task.
+  - Parent: None.
+  - Status: Open.
+  - Created: 2026-11-25.
+  - Priority: Normal.
+  - Dependencies: None.
+  - Goal: Es ist entschieden, wo die Tests von `Frontend-Web` (derzeit rund
+    30 `*.test.*`-Dateien direkt in `Frontend-Web/src`) und `tools/tests`
+    liegen, da die Harness-Config nur einen Testordner (`Backend/tests`)
+    kennt.
+  - Completion criteria: 1. Die Optionen (z. B. Frontend als Teilprojekt mit
+    eigenem Testordner, bewusste Ausnahme für co-lokalisierte Tests, Umzug
+    nach `Frontend-Web/tests`) sind mit Vor- und Nachteilen in den Notizen
+    festgehalten.
+    2. Der Owner hat entschieden; die Entscheidung ist in den Notizen und,
+    falls nötig, in Config oder Architekturregeln umgesetzt.
+    3. Bei einem Umzug ist dafür ein eigener Umsetzungseintrag angelegt.
+  - Summary: Die Frontend-Tests liegen neben dem Quellcode, der Harness
+    erwartet einen getrennten Testordner; das muss entschieden werden.
+
+- `TASK-053` **Backend-Tests nach dem Harness-Testschema umstrukturieren**
+  - Uid: a8b3ef66-ddce-4e12-b205-c58195b5de32.
+  - Type: Task.
+  - Parent: None.
+  - Status: Open.
+  - Created: 2026-11-25.
+  - Priority: Normal.
+  - Dependencies: None.
+  - Goal: Die Backend-Tests folgen der Testing-Regel des Harness:
+    Implementierungstests unter `Backend/tests/implementation/`
+    (unit/integration, Unit-Tests spiegeln die Quellstruktur),
+    Funktionalitätstests nur auf Aufruf unter
+    `Backend/tests/functional/<Funktion>/`, und eine
+    `Backend/tests/README.md` mit den Befehlen.
+  - Completion criteria: 1. Die bestehenden Tests aus `api/`,
+    `application/`, `architecture/`, `domain/`, `infrastructure/` und
+    `persistence/` liegen in `implementation/unit` bzw.
+    `implementation/integration`.
+    2. Live-Tests (z. B. Marker `lmstudio_live`) sind als
+    Funktionalitätstests eingeordnet oder bewusst als Integrationstests
+    markiert.
+    3. `Backend/tests/README.md` nennt den Befehl für alle
+    Implementierungstests, den Befehl für einen Funktionalitätstest mit
+    Beispiel und die Liste der Funktionalitätstests.
+    4. pytest-Konfiguration, conftest-Dateien und Imports sind angepasst;
+    alle Implementierungstests laufen grün.
+  - Summary: Die Backend-Tests sind noch nach Schichten sortiert und sollen
+    in die Ordnerstruktur der Harness-Testregel umziehen.

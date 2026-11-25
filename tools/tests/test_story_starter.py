@@ -20,7 +20,7 @@ def test_logs_help_lists_all_supported_services(capsys: pytest.CaptureFixture[st
         build_parser().parse_args(["logs", "-h"])
 
     assert error.value.code == 0
-    assert "{all,backend,postgres,frontend}" in capsys.readouterr().out
+    assert "{all,backend,postgres,frontend,nginx,keycloak}" in capsys.readouterr().out
 
 
 def test_resolve_services_defaults_to_all_and_rejects_mixed_all() -> None:

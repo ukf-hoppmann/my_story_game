@@ -115,20 +115,15 @@ def test_runtime_resolver_reads_current_task_settings_for_each_call(tmp_path: Pa
     assert second.data.generation_options.temperature == 0.7
 
 
-def test_repository_configuration_defines_all_three_active_tasks() -> None:
+def test_repository_configuration_selects_a_catalog_model_for_every_task() -> None:
     path = Path(__file__).resolve().parents[3] / "configs" / "llm.toml"
 
     configuration = TomlLlmConfigurationLoader().load(path)
 
-    assert configuration.task_models.story == "model.story.default"
-    assert configuration.task_models.extraction == "model.extraction.groq"
-    assert configuration.task_models.summary == "model.summary.default"
-    assert {model.task for model in configuration.models} == {
-        LlmTask.STORY,
-        LlmTask.EXTRACTION,
-        LlmTask.SUMMARY,
-        LlmTask.SCENE_IMAGE,
-    }
+    tasks_by_model = {model.id: model.task for model in configuration.models}
+    for task in LlmTask:
+        assert tasks_by_model[configuration.task_models.for_task(task)] is task
+    assert set(tasks_by_model.values()) == set(LlmTask)
 
 
 def test_loader_allows_additional_candidates_for_one_task(tmp_path: Path) -> None:

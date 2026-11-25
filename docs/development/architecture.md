@@ -96,6 +96,9 @@ file.
 | Scope | Paths | Covers |
 |---|---|---|
 | llm-integration | `Backend/src/story_game/application/llm/**`, `Backend/src/story_game/infrastructure/llm/**`, `Backend/prompts/**`, `Backend/configs/llm*` | Model invocation, prompt preparation, provider and model adapters, and model-derived outputs |
+| story-turn | `Backend/src/story_game/application/play_story_turn.py`, `Backend/src/story_game/application/*story_turn*.py`, `Backend/src/story_game/application/select_*.py`, `Backend/src/story_game/application/story_prompt_sections.py`, `Backend/src/story_game/application/summarize_story.py` | Context selection, turn extraction, change approval, and summary of one story turn |
+| persistence | `Backend/src/story_game/infrastructure/persistence/**` | Atomic turn commit, revisioned world snapshots, and append-only story text |
+| prompt-profile | `Backend/src/story_game/domain/configuration.py`, `Backend/src/story_game/application/game_state/prompt_profile_validation.py`, `Backend/src/story_game/application/prompt_management/**`, `Backend/src/story_game/application/llm/prompt_selection.py`, `Backend/src/story_game/infrastructure/llm/prompts.py`, `Backend/prompts/**` | The prompt profile of a game, its validation, and the prompt package it selects from |
 
 ## 8. Changing this architecture
 
@@ -108,13 +111,12 @@ project owner must explicitly approve the amendment before it becomes binding.
 ## 9. Application composition naming
 
 The shared naming vocabulary for application composition MUST follow
-`docs/human/technical/architecture-naming.md`. In particular, agents and
-contributors SHOULD use `Composition Root`, `Composition Builder`,
+`docs/development/interfaces/application-composition.md`. In particular,
+agents and contributors SHOULD use `Composition Root`, `Composition Builder`,
 `Top-Level Composite`, `Composite Level X`, `Leaf`, `Operation Contract`,
 `Constructor Injection`, `Injected Collaborator`, and `Delegation` with the
-meanings defined there. The naming document is the detailed human-readable
-reference; this section makes its use discoverable from the binding
-architecture contract.
+meanings defined there. The interface doc is the detailed reference; this
+section makes its use discoverable from the binding architecture contract.
 
 ## 10. Lifecycle and removal
 

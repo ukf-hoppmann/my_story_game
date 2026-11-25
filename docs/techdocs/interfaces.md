@@ -2,8 +2,10 @@
 
 <!-- Nur öffentliche Schnittstellen: API, CLI, Dateiformate, Hooks, Ereignisse. -->
 
-Ausführliche Anfrage- und Antwortformen, Fehlercodes und Beispiele stehen in
-[api.md](../human/technical/api.md); hier steht der Überblick.
+Anfrage- und Antwortformen, Fehlercodes und Beispiele der HTTP-API stehen in
+[http-api.md](../development/interfaces/http-api.md); hier steht der Überblick.
+Weitere Schnittstellenbeschreibungen für die KI und die Kataloge der
+wiederverwendbaren Bausteine: [Index](../development/interfaces.md).
 
 ## HTTP-API (`/api/v1`)
 
@@ -31,23 +33,18 @@ Ausführliche Anfrage- und Antwortformen, Fehlercodes und Beispiele stehen in
 | Welt-Tracking abfragen | `GET /api/v1/settings/world-tracking` (`{"enabled": bool}`) | angemeldet |
 | Diagnose | `POST /api/v1/diagnostics/frontend-errors` | angemeldet |
 
-Besonderheiten:
+Besonderheiten im Überblick; Einzelheiten, Anfrage- und Antwortformen und
+Fehlercodes stehen in [http-api.md](../development/interfaces/http-api.md):
 
 - Ein Zug ist nur in einem `ACTIVE`-Lauf möglich; `DRAFT`-Vorlagen werden
   abgezweigt, nicht bespielt.
-- `POST …/scene-images` antwortet sofort mit 202; der Client fragt den Status
-  ab (`pending`, `ready`, `failed`). Die Bildbytes brauchen den Bearer-Token.
+- Szenenbilder entstehen asynchron: `POST` antwortet mit 202, der Client fragt
+  den Status ab (`pending`, `ready`, `failed`).
 - Prompt- und Modelländerungen wirken ab dem nächsten Modellaufruf ohne
-  Neustart. Neue Optionen lassen sich nur für `genre`, `tone` und
-  `prose_style` anlegen. Selbst angelegte Optionen durchlaufen
-  aktiv → Papierkorb (archiviert) → endgültig gelöscht; ins Archiv geht nur,
-  was keine Spielkonfiguration wählt, und nur dort lässt sich endgültig
-  löschen. Mitgelieferte Optionen lassen sich nur zurücksetzen.
-- Welt-Tracking ist global und standardmäßig an. Ausgeschaltet läuft beim
-  Start und in jedem Zug keine Weltextraktion: Der Vorschlag enthält dann nur
-  die im Wizard eingegebenen Figuren, und ein Zug speichert eine leere
-  Änderungsmenge. Die Einstellung gilt ab dem nächsten Start oder Zug, auch in
-  laufenden Spielen.
+  Neustart; eigene Optionen durchlaufen aktiv → Papierkorb → endgültig
+  gelöscht, mitgelieferte lassen sich nur zurücksetzen.
+- Welt-Tracking ist global und standardmäßig an; ausgeschaltet läuft keine
+  Weltextraktion ([Konfiguration](configuration.md)).
 
 ## Web-Oberfläche
 
@@ -69,14 +66,15 @@ Benutzername, Geschichten, Neue Geschichte, für Admins Einstellungen, und
 ## Story-Starter (CLI)
 
 - Zweck: lokalen Docker-Compose-Stack verwalten.
-- Aufruf / Endpunkt: `./story-starter <start|stop|down|upgrade|restart|status|logs|check> [Service]`
+- Aufruf / Endpunkt: `./story-starter <start|stop|down|upgrade|restart|status|logs|check|clean> [Service]`
 - Eingabe: optional ein Service (`backend`, `postgres`, `frontend`, `nginx`, `keycloak`).
 - Ausgabe: Statusmeldungen und Logs.
 - Fehler: Exit-Code ungleich 0 bei fehlgeschlagenem Compose-Aufruf.
-- Details: [story-starter.md](../human/operations/story-starter.md)
+- Details: [story-starter.md](operations/story-starter.md)
 
 ## Dateiformate
 
 - Prompt-Paket: TOML unter `Backend/prompts/story.base`; nur Quelle für den
-  ersten Import, danach gilt die Datenbank.
+  ersten Import, danach gilt die Datenbank
+  ([Format](../development/interfaces/llm-integration.md)).
 - Konfiguration: siehe [Konfiguration](configuration.md).

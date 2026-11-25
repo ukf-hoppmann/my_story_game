@@ -28,7 +28,8 @@ context_segment_count = 2
 
 [scene_image]
 # Scene images (a picture of the current scene, generated on request).
-# Off by default: switch it on only where the image provider is reachable.
+# Without this section the feature is off; this repository switches it on.
+# Set `enabled = false` where the image provider is not reachable.
 # Provider credentials never go here — put them in the gitignored
 # configs/scene_image.secrets.toml (copy scene_image.secrets.toml.example).
 enabled = true

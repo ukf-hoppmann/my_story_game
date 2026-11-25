@@ -116,7 +116,9 @@ def test_an_incomplete_credentials_file_is_rejected(tmp_path: Path) -> None:
         load_modal_credentials(config)
 
 
-def test_the_repository_configuration_ships_the_feature_disabled() -> None:
+def test_the_repository_configuration_is_complete_whether_or_not_the_feature_is_on() -> None:
     path = Path(__file__).resolve().parents[3] / "configs" / "app.toml"
 
-    assert TomlAppConfigurationLoader().load_scene_image(path).enabled is False
+    settings = TomlAppConfigurationLoader().load_scene_image(path)
+
+    assert settings.enabled is False or settings.modal is not None

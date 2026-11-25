@@ -37,7 +37,7 @@ Gesetzt in `compose.yaml`; Standardwerte gelten ohne Docker.
 
 | Einstellung | Typ | Standard | Pflicht | Wirkung |
 |---|---|---|---|---|
-| `[logging] mode` | `prod` / `debug` | `debug` im Repo | nein | `debug` loggt zusätzlich Rohprompts und Zwischenwerte, nie gegen reale Spieler-Umgebungen ([Logging](../human/operations/logging.md)) |
+| `[logging] mode` | `prod` / `debug` | `debug` im Repo | nein | `debug` loggt zusätzlich Rohprompts und Zwischenwerte, nie gegen reale Spieler-Umgebungen ([Logging](operations/logging.md)) |
 | `[logging] level` | Text | `INFO` | nein | Log-Level in `prod` |
 | `[logging] file_path` | Pfad | `logs/story-game.log` | nein | Logdatei |
 | `[logging] file_max_bytes` | Zahl | `10485760` | nein | Größe, ab der rotiert wird |
@@ -57,7 +57,7 @@ Gesetzt in `compose.yaml`; Standardwerte gelten ohne Docker.
 | `[scene_image.modal] timeout_seconds` | Zahl | `900` | nein | Zeitlimit je Erzeugung |
 | `[scene_image.modal] negative_prompt`, `refine_negative_prompt` | Text | leer | nein | Negativprompts |
 
-Details: [Szenenbilder betreiben](../human/operations/szenenbilder.md).
+Details: [Szenenbilder betreiben](operations/szenenbilder.md).
 
 ## Backend/configs/llm.toml
 
@@ -73,8 +73,8 @@ ersten Start in der Datenbank.
 | `[generation_options.<task>] temperature` | Zahl | 0,5 / 0,3 / 0,5 / 0,7 | nein | Vorgabe-Temperatur; nur Seed und Reset-Quelle |
 | `[[models]] id`, `task`, `provider_id`, `model_id` | Text | – | ja je Modell | Katalogeintrag; nur diese Modelle sind in `/settings` wählbar |
 
-Anleitungen je Anbieter: [LM Studio](../human/operations/lmstudio.md),
-[Groq](../human/operations/groq.md), [Gemini](../human/operations/gemini.md).
+Anleitungen je Anbieter: [LM Studio](operations/lmstudio.md),
+[Groq](operations/groq.md), [Gemini](operations/gemini.md).
 
 ## Geheimnisse (nicht versioniert)
 
@@ -105,4 +105,4 @@ Anleitungen je Anbieter: [LM Studio](../human/operations/lmstudio.md),
 
 Realm `story-game` mit Client `story-game-frontend` und der Realm-Rolle
 `admin`, importiert aus `configs/keycloak`. Ein bereits importiertes Realm
-muss die Rolle einmalig von Hand erhalten ([Keycloak](../human/operations/keycloak.md)).
+muss die Rolle einmalig von Hand erhalten ([Keycloak](operations/keycloak.md)).

@@ -12,7 +12,7 @@ todo = true
 daily = true
 techdocs = true
 development = true
-semver = false
+semver = true
 
 # Backlog folder, relative to docs.root. backend: "api" = the AI works through
 # the ToDo-Viewer's HTTP API at api_url (the server checks format and rules);

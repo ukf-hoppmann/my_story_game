@@ -662,3 +662,33 @@ Format: Claude_Harness backlog format version 3. The rules are defined in
     alle Implementierungstests laufen grün.
   - Summary: Die Backend-Tests sind noch nach Schichten sortiert und sollen
     in die Ordnerstruktur der Harness-Testregel umziehen.
+
+- `TASK-055` **Spezialisierte WorldState-Extraktion (mehrere fokussierte Aufrufe) prüfen**
+  - Uid: 8f7aebfc-daed-4ffb-b93e-a2da998601b1.
+  - Type: Task.
+  - Parent: `EPIC-002`.
+  - Required for parent: No.
+  - Status: Open.
+  - Created: 2026-11-25.
+  - Priority: Prospective.
+  - Dependencies: None.
+  - Goal: Die Extraktion eines Zugs kann statt eines gemeinsamen
+    Modellaufrufs mehrere fokussierte Aufrufe je Bereich ausführen (Figuren,
+    Gegenstände, Orte und Beziehungen, Fakten und Wissen, Ziele), um
+    schwächere bzw. lokale Modelle zuverlässiger zu machen. Die
+    Teilergebnisse werden zu demselben gemeinsamen Änderungsvorschlag
+    zusammengeführt; Prüfung, Freigabe und atomares Speichern bleiben
+    unverändert.
+  - Completion criteria: 1. Entschieden ist, ob und für welche Modelle bzw.
+    Tasks die spezialisierte Extraktion genutzt wird (gegen die gemeinsame
+    Extraktion abgewogen: Qualität, Kosten, Laufzeit).
+    2. Bei Umsetzung: je Bereich ein eigener Request mit eigenem
+    Systemprompt; ein sichtbarer Aggregationsschritt löst Duplikate und
+    Querverweise zwischen den Teilergebnissen auf.
+    3. Fehlgeschlagene Bereiche können einzeln wiederholt werden; ein Zug
+    wird nie mit teilweise extrahierten Änderungen gespeichert.
+    4. Validierung, Freigabe und Persistenz werden nicht doppelt
+    implementiert; der allgemeine LLM-Vertrag bleibt unverändert.
+  - Summary: Perspektivische Option aus dem früheren LLM-Plan: die
+    Extraktion auf mehrere kleine Aufrufe je Bereich aufteilen statt eines
+    großen.

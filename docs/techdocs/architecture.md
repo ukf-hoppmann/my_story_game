@@ -9,9 +9,41 @@ Zug besteht aus Erzählung, Extraktion von Zustandsänderungen und deren
 fachlicher Freigabe; die Anwendung besitzt den kanonischen Spielzustand, das
 Modell schlägt nur vor. Hauptteile sind ein Python-Backend (FastAPI), ein
 React-Frontend, PostgreSQL, Keycloak für die Anmeldung und optional Modal für
-Szenenbilder. Vertiefung: [architektur.md](../human/technical/architektur.md),
-[domain-model.md](../human/technical/domain-model.md),
-[architecture-naming.md](../human/technical/architecture-naming.md).
+Szenenbilder. Ein editierbares Übersichtsdiagramm liegt als
+[Draw.io-Datei](architecture.drawio) vor: Tabs für Überblick, Domain,
+Application, den zeitlichen Ablauf eines Zugs und die LLM-Architektur.
+
+## Leitgedanken
+
+Das Ziel ist kein möglichst kompliziertes Architekturmuster, sondern dass eine
+Änderung möglichst wenige Stellen berührt und jeder Baustein für sich
+verständlich und testbar bleibt.
+
+- **Fachliche Bereiche statt Sammelklassen:** Die Application ist nach
+  Aufgaben gegliedert (Zustandsverwaltung, Zug spielen, Extraktion, …), jeweils
+  mit kleinen Operationen. Getrennt wird, wenn Teile unabhängig geändert,
+  ersetzt oder getestet werden sollen, nicht um des Musters willen.
+- **Einheitlicher Aufruf, konkrete Daten:** Jede Operation hat `apply`; Eingabe
+  und Ergebnis sind konkret typisiert. Ein erwartetes Ergebnis ist entweder
+  `Success` mit Daten oder `Failure` mit einem konkreten Fehler, nie ein
+  Antwortbeutel mit optionalen Feldern
+  ([Kompositionsbegriffe](../development/interfaces/application-composition.md)).
+- **Sichtbar zusammengesetzte Abläufe:** Die Composition Root verdrahtet
+  konkrete Implementierungen, eine Policy entscheidet, *wann* etwas fachlich
+  passiert, ein Workflow legt die Reihenfolge fest, eine Operation erledigt
+  genau einen Schritt. Die Verdrahtung wird nicht zum Gehirn der Anwendung.
+- **Austauschbare Infrastruktur:** Die Application beschreibt über schmale
+  Ports, was sie braucht (Spielstand lesen, speichern, Modell aufrufen);
+  Datenbank-, Datei- und Modelladapter erfüllen sie. Es gibt bewusst kein
+  universelles `IDataSource`.
+- **Architektur bleibt veränderbar:** Passt eine Anforderung nicht in die
+  Regeln, wird sie nicht umgangen; zuerst wird beschrieben, welche Regel nicht
+  passt und wie der Vertrag erweitert werden soll, und der Projekteigner
+  entscheidet.
+
+Domainmodell und Persistenz im Detail:
+[domain-model.md](../development/interfaces/domain-model.md),
+[persistence.md](../development/interfaces/persistence.md).
 
 ## Komponenten
 
@@ -53,7 +85,7 @@ Modal rendert das Bild, der Client fragt den Status ab.
 ## Zustand und Speicherung
 
 PostgreSQL ist der einzige persistente Speicher
-([persistence.md](../human/technical/persistence.md)):
+([persistence.md](../development/interfaces/persistence.md)):
 
 - Spielzustand als unveränderliche Revisionen je Lauf (`game_runs`,
   `game_state_revisions`, `world_*`, `story_turns`, `story_summary_segments`).
@@ -77,8 +109,24 @@ Provider-URLs, Secrets und der Modellkatalog bleiben in Dateien
 | Entscheidung | Kurzer Grund | Verweis |
 |---|---|---|
 | Komponierbare Operationsarchitektur mit `apply` und typisierten Ergebnissen | Wenige Änderungsstellen, testbare Bausteine | [Architekturregeln](../development/architecture.md), TASK-006 |
-| Anwendung besitzt den Zustand, das Modell schlägt nur vor | Konsistenz und Freigabegrenze | [domain-model.md](../human/technical/domain-model.md) |
+| Anwendung besitzt den Zustand, das Modell schlägt nur vor | Konsistenz und Freigabegrenze | [domain-model.md](../development/interfaces/domain-model.md), [Scope story-turn](../development/architecture/story-turn.md) |
+| Ein Zug wird atomar gespeichert; ein gescheiterter Zug hinterlässt nichts | Spielstand bleibt konsistent, kein Wiederaufnehmen halber Abläufe | [Scope persistence](../development/architecture/persistence.md) |
 | Zusammenfassung als Kette unveränderlicher Segmente | Kosten pro Zug unabhängig vom Intervall | TASK-032 |
 | Szenenbilder abschaltbar und nicht Teil des Spielzustands | Zielbetrieb erreicht Modal ggf. nicht | [Scope llm-integration §7](../development/architecture/llm-integration.md#7-extensibility-without-a-universal-model-service), STORY-012 |
 | Prompts und Modellwahl in der Datenbank, Bearbeitung nur mit Rolle `admin` | Änderung zur Laufzeit ohne Neustart, mit Verlauf | [Scope llm-integration §2–3](../development/architecture/llm-integration.md#2-application-owned-prompt-meaning), STORY-013 |
-| Neue Optionen nur für Genre, Ton und Prosastil | Struktur der Prompts bleibt serverbestimmt | [api.md](../human/technical/api.md) |
+| Neue Optionen nur für Genre, Ton und Prosastil | Struktur der Prompts bleibt serverbestimmt | [http-api.md](../development/interfaces/http-api.md), [Scope prompt-profile](../development/architecture/prompt-profile.md) |
+
+## Verbindliche Regeln
+
+Die Regeln für die KI stehen in [architecture.md](../development/architecture.md)
+(Wurzelregeln) und in den Scopes darunter:
+
+| Scope | Gegenstand |
+|---|---|
+| [llm-integration](../development/architecture/llm-integration.md) | Modellaufrufe, Prompt-Aufbereitung, Provider-Adapter, Extraktion, Vorschlagsbestätigung, abschaltbares Welt-Tracking |
+| [story-turn](../development/architecture/story-turn.md) | Kontextauswahl, Extraktion, Freigabe und Zusammenfassung eines Zugs |
+| [persistence](../development/architecture/persistence.md) | Atomarer Zug-Commit, Revisionen, nur anhängender Erzähltext |
+| [prompt-profile](../development/architecture/prompt-profile.md) | Promptprofil eines Spiels, seine Prüfung und das Prompt-Paket |
+
+Die Schnittstellenbeschreibungen und Kataloge wiederverwendbarer Bausteine
+stehen im [Index](../development/interfaces.md).

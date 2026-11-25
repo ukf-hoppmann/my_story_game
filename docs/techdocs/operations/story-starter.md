@@ -20,6 +20,7 @@ Der Aufruf ohne Subcommand bleibt aus Kompatibilitätsgründen ein Alias für
 ./story-starter status
 ./story-starter logs
 ./story-starter check
+./story-starter clean
 ```
 
 `start` startet alle Services ohne Image-Neubau. `upgrade` baut das Backend-
@@ -59,7 +60,8 @@ Logs können fortlaufend verfolgt werden:
 
 `check` validiert die Compose-Datei, zeigt laufende Services und prüft den
 direkt veröffentlichten Backend-Endpunkt
-`http://localhost:${BACKEND_HOST_PORT:-8000}/health`. Der Browser sollte
+`http://localhost:${BACKEND_HOST_PORT}/health` (Standard `8001` aus
+`configs/docker/docker.env`). Der Browser sollte
 stattdessen die Proxy-Adressen unter `*.storygame.localhost` verwenden.
 
 ## Datenbank zurücksetzen

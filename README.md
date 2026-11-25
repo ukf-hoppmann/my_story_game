@@ -22,7 +22,7 @@ Zustand selbst fest. Zu jeder Szene lässt sich optional ein Bild erzeugen.
    `Backend/configs/scene_image.secrets.toml` aus
    `scene_image.secrets.toml.example` (nur für Szenenbilder).
 3. Für lokale Modelle LM Studio starten und das gewünschte Modell laden
-   ([LM Studio](docs/human/operations/lmstudio.md)).
+   ([LM Studio](docs/techdocs/operations/lmstudio.md)).
 
 ## Schnellstart
 
@@ -33,9 +33,9 @@ Zustand selbst fest. Zu jeder Szene lässt sich optional ein Bild erzeugen.
 Danach ist die App unter `http://storygame.localhost/` erreichbar. Test-Logins
 gibt es im lokalen Keycloak (`TestAdmin` hat zusätzlich die Rolle `admin` und
 sieht die Einstellungsseite), siehe
-[Keycloak](docs/human/operations/keycloak.md). Weitere Befehle
+[Keycloak](docs/techdocs/operations/keycloak.md). Weitere Befehle
 (`stop`, `down`, `upgrade`, `logs`, …) beschreibt der
-[Story-Starter](docs/human/operations/story-starter.md).
+[Story-Starter](docs/techdocs/operations/story-starter.md).
 
 Tests:
 
@@ -49,6 +49,8 @@ cd Frontend-Web && npm test
 - [Architektur](docs/techdocs/architecture.md)
 - [Schnittstellen](docs/techdocs/interfaces.md)
 - [Konfiguration](docs/techdocs/configuration.md)
-- Vertiefende technische Beschreibungen: [docs/human/technical](docs/human/technical/README.md)
-- Betriebsanleitungen: [docs/human/operations](docs/human/operations/README.md)
-- Verbindliche Architekturregeln: [docs/development/architecture.md](docs/development/architecture.md)
+- [Betrieb](docs/techdocs/operations.md) mit den Anleitungen je Thema unter
+  `docs/techdocs/operations/`
+- Verbindliche Architekturregeln und Schnittstellenbeschreibungen für die KI:
+  [docs/development/architecture.md](docs/development/architecture.md),
+  [docs/development/interfaces.md](docs/development/interfaces.md)

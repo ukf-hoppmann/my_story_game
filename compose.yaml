@@ -43,7 +43,7 @@ services:
       # otherwise every restart re-imported the realm from scratch and
       # handed player-one/player-two a new random user id, invalidating
       # every previously created GameRun's membership. See
-      # docs/human/operations/keycloak.md.
+      # docs/techdocs/operations/keycloak.md.
       KC_DB: postgres
       KC_DB_URL: "jdbc:postgresql://keycloak-postgres:5432/${KEYCLOAK_DB:-keycloak}"
       KC_DB_USERNAME: ${KEYCLOAK_DB_USER:-keycloak}
@@ -58,7 +58,7 @@ services:
     healthcheck:
       # The image ships neither curl nor wget; bash's /dev/tcp is the
       # dependency-free way to hit the management health endpoint (see
-      # docs/human/operations/keycloak.md for the "keycloak unhealthy" case).
+      # docs/techdocs/operations/keycloak.md for the "keycloak unhealthy" case).
       test:
         [
           "CMD-SHELL",
@@ -88,7 +88,7 @@ services:
       # a token's iss claim, and issuer must match that exactly. Fetching the
       # public keys doesn't need to go through nginx, though: keycloak:8080
       # is reachable directly on the compose network. See
-      # docs/human/operations/keycloak.md for why these two are split.
+      # docs/techdocs/operations/keycloak.md for why these two are split.
       STORY_GAME_KEYCLOAK_ISSUER: "http://auth.storygame.localhost/realms/story-game"
       STORY_GAME_KEYCLOAK_JWKS_URI: "http://keycloak:8080/realms/story-game/protocol/openid-connect/certs"
       STORY_GAME_KEYCLOAK_AUDIENCE: "story-game-frontend"

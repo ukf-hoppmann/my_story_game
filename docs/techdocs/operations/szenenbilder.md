@@ -1,10 +1,10 @@
 # Szenenbilder betreiben
 
 Szenenbilder erzeugen zu einem Spielzug ein Bild: Ein LLM schreibt aus den
-letzten Zügen einen Bildprompt, Modal (GPU-Dienst) rendert ihn. Das Feature ist
-**standardmäßig aus**, weil der Zielbetrieb Modal eventuell nicht erreichen
-kann. Schnittstelle:
-[API](../technical/api.md#szenenbilder).
+letzten Zügen einen Bildprompt, Modal (GPU-Dienst) rendert ihn. Ohne Abschnitt
+`[scene_image]` ist das Feature aus; die mitgelieferte `app.toml` schaltet es
+ein. Wo der Zielbetrieb Modal nicht erreichen kann, wird es abgeschaltet.
+Schnittstelle: [HTTP-API](../../development/interfaces/http-api.md).
 
 ## Einschalten
 
@@ -66,7 +66,7 @@ Fehlermeldung am Bild fehl (nicht der Start).
 
 ## Ausschalten
 
-`enabled = false` (Standard) und neu starten. Der Server baut dann keinen
+`enabled = false` (oder den Abschnitt `[scene_image]` entfernen) und neu starten. Der Server baut dann keinen
 Modal-Client, kontaktiert Modal nie, die Szenenbild-Endpunkte antworten 409
 `scene_image_disabled`, `GET /api/v1/scene-images/capabilities` meldet
 `enabled: false`, und das Frontend zeigt nur den Platzhalter ohne Knopf.

@@ -80,7 +80,7 @@ Inkognito-Modus), zwei Logins, zwei unabhängige Spielstände, sowie `TestAdmin`
 
 ## Rolle `admin`
 
-Die Einstellungen der Anwendung (Prompts, später Modellwahl) dürfen nur
+Die Einstellungen der Anwendung (Prompts, Modellwahl, Welt-Tracking) dürfen nur
 Nutzer mit der Realm-Rolle `admin` ändern. Das Backend liest die Rolle aus
 dem Claim `realm_access.roles` des Access-Tokens und antwortet ohne sie mit
 HTTP 403; das Frontend blendet den Menüpunkt nur zusätzlich aus.
@@ -126,7 +126,7 @@ Signaturschlüssel zu holen, kann das Backend aber nicht denselben Weg nehmen
 Container-zu-Container-Aufruf) — dafür gibt es
 `STORY_GAME_KEYCLOAK_JWKS_URI`, das intern über den Compose-Servicenamen
 (`http://keycloak:8080/...`) direkt auflöst. Siehe `compose.yaml` und
-`docs/human/technical/api.md`.
+[HTTP-API](../../development/interfaces/http-api.md).
 
 ## Typische Probleme
 

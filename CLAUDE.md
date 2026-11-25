@@ -12,8 +12,11 @@ fresh each time, since the user edits them directly.
   scope files under `docs/development/architecture/` (e.g. `llm-integration.md`).
   Read it, and every scope matching the files you expect to change, before
   planning or implementing a change.
-- `docs/human/technical/architecture-naming.md` — shared naming vocabulary for
-  application composition, referenced by architecture rule 9.
+- `docs/development/interfaces.md` — index of the interface docs and catalogs
+  of reusable building blocks (`docs/development/interfaces/`). Search the
+  catalogs before building something new.
+- `docs/development/interfaces/application-composition.md` — shared naming
+  vocabulary for application composition, referenced by architecture rule 9.
 
 ## Approval before implementation
 

@@ -35,7 +35,7 @@ path = "development/daily"
 # configuration, operations (file name: <document>.md).
 [techdocs]
 path = "techdocs"
-documents = ["architecture", "interfaces", "configuration"]
+documents = ["architecture", "interfaces", "configuration", "operations"]
 
 # Development suite: binding rules for the AI, always in English, relative to
 # docs.root. Parts are active while the suite is active unless set to false.
@@ -56,7 +56,7 @@ decomposition = true
 worktree = true
 testing = true
 tests = "Backend/tests"
-public_api = []
+public_api = ["Backend/src/story_game/api/routers/**", "Backend/src/story_game/api/schemas/**", "Backend/src/story_game/api/errors.py", "tools/story_starter/cli.py"]
 
 # Release versions (SemVer). file: version file relative to docs.root, holding
 # only MAJOR.MINOR.PATCH. sync: files relative to the project root that must

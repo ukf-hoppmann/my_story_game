@@ -40,8 +40,8 @@ def _service_argument(parser: argparse.ArgumentParser) -> None:
         "services",
         nargs="*",
         choices=SERVICE_CHOICES,
-        metavar="{all,backend,postgres}",
-        help="Service(s), standardmäßig alle: backend, postgres",
+        metavar="{" + ",".join(SERVICE_CHOICES) + "}",
+        help="Service(s), standardmäßig alle: " + ", ".join(KNOWN_SERVICES),
     )
 
 

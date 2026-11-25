@@ -33,6 +33,5 @@ class InitializedStory:
     """Suggested next-action choices for the player, from the opening narration.
 
     Transient UI presentation data, never part of ``story_state`` or a
-    persisted ``GameState`` (see
-    ``.harness/architecture/llm-integration.md`` §5a).
+    persisted ``GameState``.
     """

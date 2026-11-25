@@ -78,8 +78,7 @@ class PlayedStoryTurn:
     continuation_options: tuple[str, ...] = ()
     """Suggested next-action choices for the player, from this turn's narration.
 
-    Transient UI presentation data (see
-    ``.harness/architecture/llm-integration.md`` §5): never part of
+    Transient UI presentation data: never part of
     ``GameState`` or a persisted ``StoryTurn``.
     """
 

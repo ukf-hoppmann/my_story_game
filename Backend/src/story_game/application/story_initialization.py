@@ -51,8 +51,7 @@ class GenerateInitialStoryStateRequest:
 class GeneratedStoryOpening:
     """The transient opening StoryState plus non-canonical continuation choices.
 
-    ``continuation_options`` are pure UI presentation data (see
-    ``.harness/architecture/llm-integration.md`` §5a): kept alongside, never
+    ``continuation_options`` are pure UI presentation data: kept alongside, never
     folded into ``story_state`` so they can never reach a persisted
     ``GameState``.
     """

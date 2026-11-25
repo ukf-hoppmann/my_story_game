@@ -1,22 +1,17 @@
 # Menschliche Dokumentation
 
-Dieser Bereich ist für Menschen geschrieben. Er erklärt Entscheidungen,
-technische Zusammenhänge und den Betrieb des Projekts in verständlicher Form.
+Dieser Bereich ist für Menschen geschrieben. Er vertieft technische
+Zusammenhänge und den Betrieb des Projekts in verständlicher Form.
 
 ## Bereiche
 
-- [`decisions/`](decisions/) enthält Entscheidungsdokumente mit Kontext,
-  Begründung, Alternativen und Folgen.
-- [`technical/`](technical/) beschreibt die technische Umsetzung und das
-  technische Zielbild. Geplante technische Arbeiten liegen unter
-  [`technical/planned/`](technical/planned/).
+- [`technical/`](technical/) beschreibt die technische Umsetzung im aktuellen
+  Stand.
 - [`operations/`](operations/) enthält Anleitungen für Start, Tests,
   Migrationen, Deployment und Troubleshooting.
 
-Der autoritative Backlog liegt weiterhin in [`../todo/TODO.md`](../todo/TODO.md). Die
-verbindlichen, agenten- und harnessrelevanten Regeln liegen in
-[`../../.harness/`](../../.harness/); ihre fachliche Begründung gehört, wenn
-nötig, in `decisions/`.
-
-Dokumente unter `docs/temp/` sind Entwürfe in Prüfung. Sie gelten erst nach
-bewusster Zuordnung und Freigabe als dauerhafte Dokumentation.
+Die technische Übersicht steht in [`../techdocs/`](../techdocs/), die
+verbindlichen Architekturregeln in
+[`../development/architecture.md`](../development/architecture.md). Geplante
+Arbeiten und die Begründungen von Entscheidungen stehen im Backlog
+(ToDo-Viewer).

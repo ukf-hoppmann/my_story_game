@@ -115,8 +115,7 @@ class StoryGenerationRequest:
 class StoryGenerationData:
     """Normalized prose plus transient continuation suggestions.
 
-    ``continuation_options`` are pure UI presentation data (see
-    ``.harness/architecture/llm-integration.md`` §5): never canonical
+    ``continuation_options`` are pure UI presentation data: never canonical
     narrative content, never persisted as part of ``GameState`` or a
     ``StoryTurn``.
     """
@@ -160,8 +159,7 @@ class StoryInitializationRequest:
 class InitialStoryText:
     """Normalized opening prose plus transient continuation suggestions.
 
-    ``continuation_options`` are pure UI presentation data (see
-    ``.harness/architecture/llm-integration.md`` §5a): never canonical
+    ``continuation_options`` are pure UI presentation data: never canonical
     narrative content, never persisted as part of ``GameState`` or a
     ``StoryTurn``.
     """

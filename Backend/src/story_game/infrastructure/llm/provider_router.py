@@ -11,7 +11,7 @@ wiring exactly one provider in for the lifetime of the process.
 Each router is a thin, explicitly typed wrapper around one application port.
 A generic/untyped dispatcher was deliberately rejected in favor of five small
 classes, one per port shape, to keep the concrete sequence and types visible
-at the Composition Root (see ``.harness/architecture-rules.md`` §4).
+at the Composition Root.
 """
 
 from __future__ import annotations

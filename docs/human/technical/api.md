@@ -220,7 +220,7 @@ filtert direkt nach `(issuer, subject)`.
 ## Szenenbilder
 
 Szenenbilder sind ein abschaltbares Zusatzfeature
-([Betrieb](../operations/szenenbilder.md), [Entscheidung](../decisions/szenenbilder.md)).
+([Betrieb](../operations/szenenbilder.md)).
 `GET /api/v1/scene-images/capabilities` antwortet immer mit 200:
 `enabled: false`, wenn das Feature per Konfiguration aus ist, sonst zusätzlich
 mit den Standardwerten (`default_model`, `default_refine`,

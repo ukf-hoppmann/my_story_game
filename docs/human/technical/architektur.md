@@ -74,5 +74,5 @@ welche Regel nicht passt und wie der Architekturvertrag erweitert werden soll.
 Erst nach einer bewussten Entscheidung wird implementiert.
 
 Die verbindlichen, technisch genaueren Regeln stehen in
-[`architecture-rules.md`](../../../.harness/architecture-rules.md). Dieses
+[`architecture.md`](../../development/architecture.md). Dieses
 Dokument erklärt ihren Sinn und ist nicht selbst die normative Regelquelle.

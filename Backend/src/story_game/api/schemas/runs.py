@@ -65,7 +65,7 @@ class ContinuationModel(APIModel):
     (``TurnResultModel.state``) or would have lived on its own
     (``RunProposalModel``). ``options`` is transient, non-canonical
     presentation data — never persisted as part of ``GameState`` or a
-    ``StoryTurn`` (see ``.harness/architecture/llm-integration.md`` §5/§5a).
+    ``StoryTurn``.
     """
 
     narration: str = Field(min_length=1)

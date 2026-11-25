@@ -3,9 +3,7 @@
 Web-Frontend des Story-Spiels: React 19 + Redux Toolkit (inkl. RTK Query) +
 React Router + TypeScript, gebaut mit Vite.
 
-Dies ist der Neuaufbau, der das ursprüngliche MVP-Frontend abgelöst hat (das
-alte Frontend liegt zur Referenz unter `../Frontend-Web-old`, siehe dessen
-README).
+Dies ist der Neuaufbau, der das ursprüngliche MVP-Frontend abgelöst hat.
 
 ## Stack
 

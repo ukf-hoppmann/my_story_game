@@ -3,7 +3,7 @@
 Szenenbilder erzeugen zu einem Spielzug ein Bild: Ein LLM schreibt aus den
 letzten Zügen einen Bildprompt, Modal (GPU-Dienst) rendert ihn. Das Feature ist
 **standardmäßig aus**, weil der Zielbetrieb Modal eventuell nicht erreichen
-kann. Hintergrund: [Entscheidung](../decisions/szenenbilder.md), Schnittstelle:
+kann. Schnittstelle:
 [API](../technical/api.md#szenenbilder).
 
 ## Einschalten

@@ -26,7 +26,6 @@ Szenenbilder. Vertiefung: [architektur.md](../human/technical/architektur.md),
 | Keycloak | Anmeldung (OIDC) und Realm-Rolle `admin`; Realm-Import | `configs/keycloak` |
 | nginx | Lokaler Proxy: `storygame.localhost` (Frontend), `backend.storygame.localhost` (API), `auth.storygame.localhost` (Keycloak) | `configs/nginx` |
 | Story-Starter | CLI für den lokalen Compose-Stack | `story-starter`, `compose.yaml` |
-| Frontend-Web-old | Frühere Oberfläche, nicht mehr im Stack | `Frontend-Web-old` |
 
 ## Datenfluss
 
@@ -35,7 +34,11 @@ Der Browser meldet sich per Keycloak an (`keycloak-js`, stiller
 die API mit dem Bearer-Token auf. Ein Zug läuft in der Application als sichtbar
 zusammengesetzte Kette: Kontext auswählen → Erzählung erzeugen → Änderungen
 extrahieren → fachlich prüfen und freigeben → speichern → bei Bedarf
-Zusammenfassungssegment erzeugen. Ist das globale Welt-Tracking aus (vorläufige
+Zusammenfassungssegment erzeugen. Der Kontext enthält Fakten, Wissen und Ziele
+ohne Filter nach Sichtbarkeit; verdeckte Fakten gehen derzeit unmarkiert in den
+Prompt (Kennzeichnung offen, TASK-018). Die vorgeschlagenen
+Fortsetzungsoptionen eines Zugs gehen nur an den Client und werden nicht
+gespeichert. Ist das globale Welt-Tracking aus (vorläufige
 Ausnahme für schwache lokale Modelle, Scope `llm-integration` §6c), entfallen
 Extraktion und Freigabe: Der Start baut die Welt nur aus den eingegebenen
 Figuren, ein Zug speichert eine leere Änderungsmenge. Eine Policy liest die
@@ -76,6 +79,6 @@ Provider-URLs, Secrets und der Modellkatalog bleiben in Dateien
 | Komponierbare Operationsarchitektur mit `apply` und typisierten Ergebnissen | Wenige Änderungsstellen, testbare Bausteine | [Architekturregeln](../development/architecture.md), TASK-006 |
 | Anwendung besitzt den Zustand, das Modell schlägt nur vor | Konsistenz und Freigabegrenze | [domain-model.md](../human/technical/domain-model.md) |
 | Zusammenfassung als Kette unveränderlicher Segmente | Kosten pro Zug unabhängig vom Intervall | TASK-032 |
-| Szenenbilder abschaltbar und nicht Teil des Spielzustands | Zielbetrieb erreicht Modal ggf. nicht | [szenenbilder.md](../human/decisions/szenenbilder.md) |
-| Prompts und Modellwahl in der Datenbank, Bearbeitung nur mit Rolle `admin` | Änderung zur Laufzeit ohne Neustart, mit Verlauf | [promptprofil-und-modellwahl.md](../human/decisions/promptprofil-und-modellwahl.md) |
+| Szenenbilder abschaltbar und nicht Teil des Spielzustands | Zielbetrieb erreicht Modal ggf. nicht | [Scope llm-integration §7](../development/architecture/llm-integration.md#7-extensibility-without-a-universal-model-service), STORY-012 |
+| Prompts und Modellwahl in der Datenbank, Bearbeitung nur mit Rolle `admin` | Änderung zur Laufzeit ohne Neustart, mit Verlauf | [Scope llm-integration §2–3](../development/architecture/llm-integration.md#2-application-owned-prompt-meaning), STORY-013 |
 | Neue Optionen nur für Genre, Ton und Prosastil | Struktur der Prompts bleibt serverbestimmt | [api.md](../human/technical/api.md) |
